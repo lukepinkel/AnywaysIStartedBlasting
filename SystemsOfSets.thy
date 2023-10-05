@@ -45,9 +45,21 @@ definition FilterSubbase::"'X set set \<Rightarrow> bool" where
 definition FilterBase::"'X set set \<Rightarrow> bool" where
   "FilterBase \<A> \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) "
 
-
 definition FilterOfSets::"'X set set \<Rightarrow> bool" where
   "FilterOfSets \<A> \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed \<A>) "
+
+
+definition FilterSubbaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
+  "FilterSubbaseIn \<A> X  \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (FIP \<A>) "
+
+definition FilterBaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
+  "FilterBaseIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) "
+
+definition FilterOfSetsIn::"'X set set\<Rightarrow> 'X set \<Rightarrow> bool" where
+  "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) "
+
+definition \<FF>::"'X set \<Rightarrow> 'X set set set" where
+  "\<FF> X = {\<F> \<in> Pow (Pow X). FilterOfSetsIn \<F> X} "
 
 
 subsection RelationsAndOperations
@@ -61,14 +73,27 @@ definition fequiv:: "'X set set \<Rightarrow> 'X set set \<Rightarrow> bool" (in
 definition upclosure:: "'X set set \<Rightarrow> 'X set set" where
   "upclosure \<A>  = {E. (\<exists>A \<in>\<A>.( A \<subseteq> E)) }"
 
+definition upclosure_in:: "'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
+  "upclosure_in \<A> X  = {E \<in> Pow X. (\<exists>A \<in>\<A>.( A \<subseteq> E)) }"
+
 definition fmeetclosure:: "'X set set \<Rightarrow> 'X set set" where
   "fmeetclosure \<A> = {A. (\<exists>\<B>\<in>(Pow \<A>). (finite \<B>) \<and> ( A=\<Inter>\<B>) \<and> (\<B> \<noteq> {}))}"
+
+definition fmeetclosure_in:: "'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
+  "fmeetclosure_in \<A> X = {A \<in> Pow X. (\<exists>\<B>\<in>(Pow \<A>). (finite \<B>) \<and> ( A=\<Inter>\<B>) \<and> (\<B> \<noteq> {}))}"
+
 
 definition meshes:: "'X set set \<Rightarrow> 'X set set \<Rightarrow> bool" where
   "meshes \<A> \<B> \<equiv> \<forall>A \<in> \<A>. \<forall>B \<in>\<B>. (A \<inter> B \<noteq> {})"
 
 definition grill_of::"'X set set \<Rightarrow> 'X set  \<Rightarrow> 'X set set" where
   "grill_of \<A> X =  {E \<in> Pow X. meshes {E} \<A> } "
+
+definition filter_generated_by:: "'X set set \<Rightarrow> 'X set set" where
+  "filter_generated_by \<C> =  upclosure (fmeetclosure \<C>) "
+
+definition filter_generated_by_in:: "'X set set\<Rightarrow> 'X set  \<Rightarrow> 'X set set" where
+  "filter_generated_by_in \<C> X =  upclosure_in (fmeetclosure_in \<C> X) X "
 
 subsection SyntaxForFC
 
@@ -120,15 +145,67 @@ lemma upclosed_equiv_then_equal:
  shows  "\<A>=\<B>"
   by (meson A0 A1 UpClosed_def fequiv_def preceq_def subsetI subset_antisym)
 
+lemma upclosed_then_upclosed_in:
+  "\<forall>X. \<forall>\<A>. UpClosed \<A> \<longrightarrow> UpClosed_In \<A> X"
+  by (simp add: UpClosed_In_def UpClosed_def)
+
+lemma upclosed_in_equiv_then_equal:
+  assumes A0: "\<A> \<in> Pow (Pow X) \<and> \<B> \<in> Pow (Pow X)" and
+          A1:"UpClosed_In \<A> X  \<and> UpClosed_In \<B> X " and
+          A2:"\<A> ~ \<B>"
+ shows  "\<A>=\<B>"
+proof-
+  have B0:"\<forall>A \<in> \<A>. \<exists>B \<in> \<B>. A \<supseteq> B"
+    by (meson A2 fequiv_def preceq_def)
+  have B1:"\<forall>A \<in> \<A>. \<exists>B \<in> \<B>. A \<supseteq> B \<longrightarrow> A \<in> \<B>"
+    by (metis A0 A1 B0 UnionI Union_Pow_eq UpClosed_In_def)
+  have B2:"\<forall>B \<in> \<B>. \<exists>A \<in> \<A>. A \<subseteq>  B"
+    by (meson A2 fequiv_def preceq_def)
+  have B3:"\<forall>B \<in> \<B>. \<exists>A \<in> \<A>. A \<subseteq>  B \<longrightarrow> B \<in> \<A>"
+    by (meson A0 A1 B2 PowD UpClosed_In_def in_mono)
+  have B4:"\<B> \<subseteq> \<A>  \<and> \<A> \<subseteq> \<B>"
+    by (meson A0 A1 B0 B2 PowD UpClosed_In_def in_mono subsetI)
+  have B5:"\<A> =\<B>"  by (simp add: B4 subset_antisym)
+  with B5 show ?thesis by simp
+qed
+
 lemma upclosure_is_upclosed1:
   assumes "\<A>=upclosure \<B>"
   shows "UpClosed \<A>"
   by (smt (verit, ccfv_SIG) CollectD CollectI UpClosed_def assms dual_order.trans upclosure_def)
 
+lemma upclosure_in_is_upclosed_in1:
+  assumes "\<A>=upclosure_in \<B> X"
+  shows "UpClosed_In \<A> X"
+  by (smt (verit, ccfv_SIG) CollectD CollectI UpClosed_In_def assms subset_eq upclosure_in_def)
+
+
 lemma upclosure_is_upclosed2:
   assumes "\<A>=upclosure \<B>"
   shows "\<A> ~ \<B>"
   by (smt (verit, ccfv_threshold) assms dual_order.refl fequiv_def mem_Collect_eq preceq_def upclosure_def)
+
+lemma upclosure_in_is_upclosed_in2:
+  assumes A0: "\<B> \<in> Pow (Pow X)" and
+          A1: "ProperNE \<B>" and
+          A2:"\<A>=(upclosure_in \<B> X)"
+  shows "\<A> ~ \<B>"
+proof-
+  have B0: "\<forall>A \<in> \<A>. \<exists>B \<in> \<B>. A \<supseteq> B"
+    by (simp add: A2 upclosure_in_def)
+  have B1:"\<A> \<preceq> \<B>"
+    by (simp add: B0 preceq_def)
+  have B2:"(\<forall>B \<in> \<B>. B \<in>\<A>) \<longrightarrow> (\<forall>B \<in> \<B>. (\<exists>A \<in> \<A>. A \<supseteq> B))"
+    by auto
+  have B3:"(\<forall>B \<in> \<B>. (\<exists>A \<in> \<A>. A \<supseteq> B)) "
+    by (metis (no_types, lifting) A0 A2 UnionI Union_Pow_eq dual_order.refl mem_Collect_eq upclosure_in_def)
+  have B4:"\<B> \<preceq> \<A>"
+    by (metis (no_types, lifting) A0 A2 PowD in_mono mem_Collect_eq subsetI subseteq_imp_preceq upclosure_in_def)
+  have B5:"\<A> ~ \<B>"
+    by (simp add: B1 B4 fequiv_def)
+  with B5 show ?thesis
+    by simp
+qed
 
 lemma upclosure_preserves_properness:
   assumes A0:"Proper \<A>"
@@ -419,7 +496,8 @@ lemma generated_filter:
   shows "FilterOfSets( upclosure (fmeetclosure \<C>))"
   by (simp add: assms sup_base9 sup_subbase4) 
 
-
-
-
+(*lemma generated_filter_in:
+   assumes A0:"FilterSubbaseIn \<C> X"
+   shows " FilterOfSetsIn (filter_generated_by_in \<C> X) X"
+ *)
 end
