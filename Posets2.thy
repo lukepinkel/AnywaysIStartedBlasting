@@ -65,6 +65,8 @@ definition antitone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::orde
 
 definition isotone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> 'Y::order set \<Rightarrow> bool " where "isotone f X Y \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x1 \<le> f x2))"
 
+definition Sup1::"'X::order set\<Rightarrow> 'X::order set \<Rightarrow> 'X::order" where "Sup1 A X = (THE s. IsSup s A X)"
+definition Inf1::"'X::order set\<Rightarrow> 'X::order set \<Rightarrow> 'X::order" where "Inf1 A X = (THE i. IsInf i A X)"
 
 section Lemmas
 
@@ -310,48 +312,151 @@ proof-
   with B6 show ?thesis by simp
 qed
 
+lemma sup_lem0:"IsSup s A X \<longrightarrow> (s \<in> UpperBounds A X)" by (simp add: IsSup_def)
+lemma sup_lem1:"IsSup s A X \<longrightarrow> (IsMinimum s( UpperBounds A X))" by (simp add: IsSup_def)
+lemma sup_lem2:"IsSup s A X \<longrightarrow> (\<forall>u \<in> UpperBounds A X. s \<le> u)" by (meson IsLowerBound_def IsMinimum_def sup_lem1)
+lemma sup_lem3:"IsSup s A X \<longrightarrow> (\<forall>x \<in> X. (s \<le> x) \<longrightarrow> (x \<in> UpperBounds A X))" by (meson IsUpset_def sup_lem0 upper_bounds_lem5)
+lemma sup_lem4:"IsSup s A X \<longrightarrow> s \<in> X" using sup_lem0 upper_bounds_lem0 by fastforce
+lemma sup_lem5:"(s=Sup1 A X) \<longrightarrow> (s=(THE s. IsSup s A X))" by (simp add: Sup1_def)
 
 lemma lem_lub1:
   assumes A0:"HasSup A X" and
           A1: "A \<noteq> {}" and
           A2: "A \<in> Pow X" and
           A3: "s \<in> X"
-  shows "(IsSup s A X) \<longleftrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longleftrightarrow> (s \<le> x))"
+  shows "IsSup s A X \<longleftrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longleftrightarrow> (s \<le> x))"
 proof-
+  let ?L="IsSup s A X"
   let ?U="UpperBounds A X"
   let ?R="\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longleftrightarrow> (s \<le> x)"
   let ?RL="\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longrightarrow> (s \<le> x)"
   let ?RR="\<forall>x \<in> X. (s \<le> x) \<longrightarrow> (\<forall>a \<in>A. a \<le> x)"
-  have B00:"IsSup s A X \<longrightarrow> (s \<in> ?U)" by (simp add: IsSup_def)
-  have B01:"IsSup s A X \<longrightarrow> (IsMinimum s ?U)" by (simp add: IsSup_def)
-  have B02:"?R \<longleftrightarrow> (?RL \<and> ?RR)" by auto
-  have LtR:"IsSup s A X \<longrightarrow> ?R"
+  have B0:"?L \<longrightarrow> (s \<in> ?U)" by (simp add: IsSup_def)
+  have B1:"?L \<longrightarrow> (IsMinimum s ?U)" by (simp add: IsSup_def)
+  have B2:"?R \<longleftrightarrow> (?RL \<and> ?RR)" by auto
+  have LtR:"?L \<longrightarrow> ?R"
   proof-
-    have B0:"IsSup s A X \<longrightarrow> (\<forall>u \<in> ?U. s \<le> u)" by (meson B01 IsLowerBound_def IsMinimum_def)
-    have B1:"IsSup s A X \<longrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longrightarrow> x \<in> ?U)" by (simp add: IsUpperBound_def upper_bounds_lem2)
-    have B2:"IsSup s A X \<longrightarrow> ?RL"  by (simp add: B0 B1) 
-    have B3:"IsSup s A X \<longrightarrow> (\<forall>x \<in> X. (s \<le> x) \<longrightarrow> x \<in> ?U)" using B00 lem01_dual upper_bounds_lem5 by auto
-    have B4:"IsSup s A X \<longrightarrow> ?RR" using B3 upper_bounds_lem4 by blast
-    have B5:"IsSup s A X \<longrightarrow> ?R" using B2 B4 by blast
-    with B5 show ?thesis by simp
+    have B0:"?L \<longrightarrow> (\<forall>u \<in> ?U. s \<le> u)" by (simp add: sup_lem2)
+    have B1:"?L \<longrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longrightarrow> x \<in> ?U)"  by (simp add: upper_bounds_lem6)
+    have B2:"?L \<longrightarrow> ?RL"  by (simp add: B0 B1) 
+    have B3:"?L \<longrightarrow> (\<forall>x \<in> X. (s \<le> x) \<longrightarrow> x \<in> ?U)" by (simp add: sup_lem3)
+    have B4:"?L \<longrightarrow> ?RR" using B3 upper_bounds_lem4 by blast
+    show "?L \<longrightarrow> ?R" using B2 B4 by blast
   qed
-  have RtL:"?R \<longrightarrow> IsSup s A X"
+  have RtL:"?R \<longrightarrow> ?L"
   proof-
     have C0:"\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longrightarrow> x \<in> ?U" by (simp add: upper_bounds_lem6)
     have C1:"?RL \<longrightarrow> (\<forall>x \<in>X. x \<in> ?U \<longrightarrow> s\<le> x)" by (simp add: upper_bounds_lem3)
-    have C2:"s \<le> s" by simp
-    have C3:"?RR \<longrightarrow> s \<in> ?U" by (simp add: A3 C0)
-    have C4:"?R\<longrightarrow> (?RL \<and> ?RR) \<longrightarrow> ((\<forall>x \<in>X. x \<in> ?U \<longrightarrow> s\<le> x) \<and> ( s \<in> ?U))" using C1 C3 by blast
-    have C5:"?R \<longrightarrow> IsLowerBound s ?U ?U" by (smt (verit) C1 C3 IsLowerBound_def subset_eq upper_bounds_lem0)
-    have C6:"?R \<longrightarrow> IsMinimum s ?U" by (simp add: C5 IsMinimum_def)
-    have C7:"?R \<longrightarrow> IsSup s A X" by (simp add: C3 C6 IsSup_def)
-    with C7 show ?thesis by simp
+    have C2:"?RR \<longrightarrow> s \<in> ?U" by (simp add: A3 C0)
+    have C3:"?R \<longrightarrow> IsLowerBound s ?U ?U" by (smt (verit) C1 C2 IsLowerBound_def subset_eq upper_bounds_lem0)
+    have C4:"?R \<longrightarrow> IsMinimum s ?U" by (simp add: C3 IsMinimum_def)
+    show "?R \<longrightarrow> ?L" by (simp add: C2 C4 IsSup_def)
   qed
-  from RtL LtR have RtLtR:"IsSup s A X \<longleftrightarrow> ?R" by auto
-  with RtLtR show ?thesis by simp
+  show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
 qed
 
+lemma inf_lem0:"IsInf i A X \<longrightarrow> (i \<in> LowerBounds A X)" by (simp add: IsInf_def)
+lemma inf_lem1:"IsInf i A X \<longrightarrow> (IsMaximum i (LowerBounds A X))" by (simp add: IsInf_def)
+lemma inf_lem2:"IsInf i A X \<longrightarrow> (\<forall>l \<in> LowerBounds A X. i \<ge> l)" by (meson IsUpperBound_def IsMaximum_def inf_lem1)
+lemma inf_lem3:"IsInf i A X \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (x \<in> LowerBounds A X))" by (meson IsDownset_def inf_lem0 lower_bounds_lem5)
+lemma inf_lem4:"IsInf i A X \<longrightarrow> i \<in> X" using inf_lem0 lower_bounds_lem0 by fastforce
+lemma inf_lem5:"(i=Inf1 A X) \<longrightarrow> (i=(THE i. IsInf i A X))" by (simp add: Inf1_def)
+
+
+lemma lem_glb1:
+  assumes A0:"HasInf A X" and
+          A1: "A \<noteq> {}" and
+          A2: "A \<in> Pow X" and
+          A3: "i \<in> X"
+  shows "IsInf i A X \<longleftrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longleftrightarrow> (i \<ge> x))"
+proof-
+  let ?L="IsInf i A X"
+  let ?Lw="LowerBounds A X"
+  let ?R="\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longleftrightarrow> (i \<ge> x)"
+  let ?RL="\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longrightarrow> (i \<ge> x)"
+  let ?RR="\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (\<forall>a \<in>A. a \<ge> x)"
+  
+  have B0:"?L \<longrightarrow> (i \<in> ?Lw)" by (simp add: IsInf_def)
+  have B1:"?L \<longrightarrow> (IsMaximum i ?Lw)" by (simp add: IsInf_def)
+  have B2:"?R \<longleftrightarrow> (?RL \<and> ?RR)" by auto
+  
+  have LtR:"?L \<longrightarrow> ?R"
+  proof-
+    have B0:"?L \<longrightarrow> (\<forall>l \<in> ?Lw. i \<ge> l)" by (simp add: inf_lem2)
+    have B1:"?L \<longrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longrightarrow> x \<in> ?Lw)" by (simp add: lower_bounds_lem6)
+    have B2:"?L \<longrightarrow> ?RL" by (simp add: B0 B1) 
+    have B3:"?L \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> x \<in> ?Lw)" by (simp add: inf_lem3)
+    have B4:"?L \<longrightarrow> ?RR" using B3 lower_bounds_lem4 by blast
+    show "?L \<longrightarrow> ?R" using B2 B4 by blast
+  qed
+  
+  have RtL:"?R \<longrightarrow> ?L"
+  proof-
+    have C0:"\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longrightarrow> x \<in> ?Lw" by (simp add: lower_bounds_lem6)
+    have C1:"?RL \<longrightarrow> (\<forall>x \<in>X. x \<in> ?Lw \<longrightarrow> i \<ge> x)" by (simp add: lower_bounds_lem3)
+    have C2:"?RR \<longrightarrow> i \<in> ?Lw" by (simp add: A3 C0)
+    have C3:"?R \<longrightarrow> IsUpperBound i ?Lw ?Lw" by (smt (verit) C1 C2 IsUpperBound_def subset_eq lower_bounds_lem0)
+    have C4:"?R \<longrightarrow> IsMaximum i ?Lw" by (simp add: C3 IsMaximum_def)
+    show "?R \<longrightarrow> ?L" by (simp add: C2 C4 IsInf_def)
+  qed
+  
+  show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
+qed
+
+lemma sup_unique:
+  "HasSup A X \<longrightarrow> (\<exists>!s. IsSup s A X)"
+  by (meson HasSup_def IsLowerBound_def IsMinimum_def order_antisym_conv sup_lem1)
+
+lemma inf_unique:
+  "HasInf A X \<longrightarrow> (\<exists>!i. IsInf i A X)"
+  by (meson HasInf_def IsUpperBound_def IsMaximum_def order_antisym_conv inf_lem1)
+
+
+lemma inf_to_sup0:
+  assumes A0: "X \<noteq> {}" and A1:"A \<in> Pow X" and A2:"A \<noteq> {}" and A3:"HasInf (UpperBounds A X) X"
+  shows "HasSup A X \<and> Sup1 A X = Inf1 (UpperBounds A X) X "
+proof-
+  let ?U="UpperBounds A X"
+  let ?i="Inf1 ?U X"
+  have C0:"?i=(THE i. IsInf i ?U X)" by (simp add: Inf1_def)
+  have B0:"IsMaximum ?i (LowerBounds ?U X)" by (metis A3 C0 IsInf_def Posets2.inf_unique theI)
+  have B1:"\<forall>a \<in> A. (\<forall>u \<in> ?U. a\<le> u)" by (simp add: upper_bounds_lem3)
+  have B2:"\<forall>a \<in> A. (a \<in> LowerBounds ?U X)" by (meson A1 B1 PowD in_mono lower_bounds_lem6)
+  have B3:"\<forall>a \<in> A. (a\<le>?i)" by (metis B0 B2 IsMaximum_def IsUpperBound_def)
+  have B4:"\<forall>z \<in> X. (\<forall>a \<in> A. a\<le> z)\<longrightarrow> (?i\<le>z)" by (metis B0 IsMaximum_def IsUpperBound_def lower_bounds_lem4 upper_bounds_lem6)
+  have B5:"?i \<in> UpperBounds A X" by (smt (verit) B0 B3 IsMaximum_def IsUpperBound_def insert_absorb insert_subset lower_bounds_lem0 upper_bounds_lem6)
+  have B6:"\<forall>u \<in> ?U. ?i\<le> u" by (metis B1 B4 in_mono upper_bounds_lem0)
+  have B8:"IsMinimum ?i ?U" by (simp add: B5 B6 IsLowerBound_def IsMinimum_def)
+  have B9:"IsSup ?i A X" by (simp add: B5 B8 IsSup_def)
+  have B10:"HasSup A X"  using B9 HasSup_def by auto
+  have B11:"Sup1 A X = Inf1 ?U X"  by (metis B9 HasSup_def Posets2.sup_unique Sup1_def the_equality)
+  with B10 B11 show ?thesis  by simp
+qed
+
+lemma sup_to_inf0:
+  assumes A0: "X \<noteq> {}" and A1: "A \<in> Pow X" and A2: "A \<noteq> {}" and A3: "HasSup (LowerBounds A X) X"
+  shows "HasInf A X \<and> Inf1 A X = Sup1 (LowerBounds A X) X "
+proof-
+  let ?L = "LowerBounds A X"
+  let ?s="Sup1 ?L X"
+  have C0:"?s=(THE s. IsSup s ?L X)" by (simp add: Sup1_def)
+  have B0: "IsMinimum ?s (UpperBounds ?L X)" by (metis A3 C0 IsSup_def Posets2.sup_unique theI)
+  have B1: "\<forall>a \<in> A. (\<forall>l \<in> ?L. l \<le> a)" by (simp add: lower_bounds_lem3)
+  have B2: "\<forall>a \<in> A. (a \<in> UpperBounds ?L X)" by (meson A1 B1 PowD in_mono upper_bounds_lem6)
+  have B3: "\<forall>a \<in> A. (?s \<le> a)" by (metis B0 B2 IsMinimum_def IsLowerBound_def)
+  have B4: "\<forall>z \<in> X. (\<forall>a \<in> A. z \<le> a) \<longrightarrow> (z \<le> ?s)" by (metis B0 IsMinimum_def IsLowerBound_def upper_bounds_lem4 lower_bounds_lem6)
+  have B5: "?s \<in> LowerBounds A X" by (smt (verit) B0 B3 IsMinimum_def IsLowerBound_def insert_absorb insert_subset upper_bounds_lem0 lower_bounds_lem6)
+  have B6: "\<forall>l \<in> ?L. l \<le> ?s" by (metis B1 B4 in_mono lower_bounds_lem0)
+  have B8: "IsMaximum ?s ?L" by (simp add: B5 B6 IsUpperBound_def IsMaximum_def)
+  have B9: "IsInf ?s A X" by (simp add: B5 B8 IsInf_def)
+  have B10: "HasInf A X" using B9 HasInf_def by auto
+  have B11: "Inf1 A X = Sup1 ?L X" by (metis B9 HasInf_def Posets2.inf_unique Inf1_def the_equality)
+  with B10 B11 show ?thesis by simp
+qed
+
+
 (*"IsSup s A X \<equiv> (s \<in> UpperBounds A X) \<and> (IsMinimum s ( UpperBounds A X))"*)
+
 (*definition IsLowerBound::"'X::order  \<Rightarrow> 'X::order set  \<Rightarrow> 'X::order set  \<Rightarrow>  bool" 
   where "IsLowerBound m A X \<equiv> (m \<in> X) \<and> (\<forall>a \<in> A.  m\<le>a)"
 
