@@ -181,7 +181,10 @@ lemma issup_sup1:
 proof-
   let ?s="Sup1 A X"
   have B0:"?s=(THE s. IsSup s A X)" using Sup1_def by auto
-  have B2:"IsSup ?s A X"
+  have B1:"IsSup ?s A X"
+    by (metis B0 HasSup_def assms issup_then_lbub issup_then_lub order_class.order_eq_iff theI')
+  with B1 show ?thesis by simp
+qed
 
 lemma sup_lem6:
   assumes A0:"A \<in> Pow X \<and> A \<noteq> {} \<and> HasSup A X"
