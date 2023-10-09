@@ -34,23 +34,6 @@ definition UpperBounds::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow>
 
 definition LowerBounds::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set" where "LowerBounds A X = {l \<in> X. IsLowerBound l A X }"
 
-definition IsDownset::"'X::order set\<Rightarrow>'X::order set \<Rightarrow> bool" where  "IsDownset D X \<equiv> (D \<in> Pow X) \<and> (\<forall>x \<in> X. \<forall>d \<in> D. x\<le>d \<longrightarrow> x \<in> D)"
-
-definition IsUpset::"'X::order set\<Rightarrow>'X::order set \<Rightarrow> bool" where "IsUpset U X \<equiv> (U \<in> Pow X) \<and> (\<forall>x \<in> X. \<forall>u \<in> U. u\<le>x \<longrightarrow> x \<in> U)"
-
-definition DownSets::"'X::order set \<Rightarrow>  'X::order set set" where "DownSets X = {D\<in>(Pow X). IsDownset D X }"
-
-definition UpSets::"'X::order set \<Rightarrow>  'X::order set set" where "UpSets X = {U\<in>(Pow X). IsUpset U X }"
- 
-definition DownClosure::"'X::order set \<Rightarrow>  'X::order set\<Rightarrow>'X::order set" where "DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a }"
-
-definition UpClosure::"'X::order set \<Rightarrow>  'X::order set\<Rightarrow>'X::order set" where "UpClosure A X = {x \<in> X. \<exists>a \<in> A. a \<le> x }"
- 
-definition PrincipalDownClosure::"'X::order \<Rightarrow>'X::order set \<Rightarrow> 'X::order set" where "PrincipalDownClosure x X = (DownClosure {x} X)"
-
-definition PrincipalUpClosure::"'X::order \<Rightarrow>'X::order set \<Rightarrow> 'X::order set" where "PrincipalUpClosure x X = (UpClosure {x} X)"
-
-
 subsection BasicLemmas
 
 lemma upper_bounds_well_defined: 
@@ -69,15 +52,6 @@ lemma upper_bound_then_in_upperbounds:
   "\<forall>x \<in> X. (\<forall>a \<in>A. a \<le> x) \<longrightarrow> x \<in> UpperBounds A X" 
   by (simp add: IsUpperBound_def upper_bound_is_upper_bound1)
 
-lemma upper_bounds_lem5:"IsUpset (UpperBounds A X) X"
-proof-
-  have B0:"\<forall>u \<in> UpperBounds A X. \<forall>a \<in> A. a\<le>u" by (simp add: upper_bound_is_upper_bound2)
-  have B1:"\<forall>x \<in> X. ((\<exists>u \<in> UpperBounds A X. x \<ge> u) \<longrightarrow>(\<forall>a \<in> A. a \<le> x)) " by (meson B0 dual_order.trans)
-  have B2:"\<forall>x \<in> X. ((\<exists>u \<in> UpperBounds A X. x \<ge> u) \<longrightarrow>(x \<in> UpperBounds A X))" by (meson B1 IsUpperBound_def upper_bound_is_upper_bound1)
-  have B3:"IsUpset (UpperBounds A X) X" by (meson B2 IsUpset_def upper_bounds_well_defined)
-  with B3 show ?thesis by auto
-qed
-
 lemma lower_bounds_well_defined: 
   "(LowerBounds A X \<subseteq> X) \<and> (LowerBounds A X \<in> Pow X)"
   by (simp add: LowerBounds_def)
@@ -94,7 +68,236 @@ lemma lower_bound_then_in_lowerbounds:
   "\<forall>x \<in> X. (\<forall>a \<in> A. x \<le> a) \<longrightarrow> x \<in> LowerBounds A X"
   by (simp add: IsLowerBound_def lower_bound_is_lower_bound1)
 
-lemma lower_bounds_lem5:"IsDownset (LowerBounds A X) X"
+section DownsetsUpsets
+subsection Predicates
+subsubsection DefinitionalPredicates
+
+definition IsDownset::"'X::order set\<Rightarrow>'X::order set \<Rightarrow> bool" where  "IsDownset D X \<equiv> (D \<in> Pow X) \<and> (\<forall>x \<in> X. \<forall>d \<in> D. x\<le>d \<longrightarrow> x \<in> D)"
+
+definition IsUpset::"'X::order set\<Rightarrow>'X::order set \<Rightarrow> bool" where "IsUpset U X \<equiv> (U \<in> Pow X) \<and> (\<forall>x \<in> X. \<forall>u \<in> U. u\<le>x \<longrightarrow> x \<in> U)"
+
+subsection Operators
+
+definition DownSets::"'X::order set \<Rightarrow>  'X::order set set" where "DownSets X = {D\<in>(Pow X). IsDownset D X }"
+
+definition UpSets::"'X::order set \<Rightarrow>  'X::order set set" where "UpSets X = {U\<in>(Pow X). IsUpset U X }"
+ 
+definition DownClosure::"'X::order set \<Rightarrow>  'X::order set\<Rightarrow>'X::order set" where "DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a }"
+
+definition UpClosure::"'X::order set \<Rightarrow>  'X::order set\<Rightarrow>'X::order set" where "UpClosure A X = {x \<in> X. \<exists>a \<in> A. a \<le> x }"
+ 
+definition PrincipalDownClosure::"'X::order \<Rightarrow>'X::order set \<Rightarrow> 'X::order set" where "PrincipalDownClosure x X = (DownClosure {x} X)"
+
+definition PrincipalUpClosure::"'X::order \<Rightarrow>'X::order set \<Rightarrow> 'X::order set" where "PrincipalUpClosure x X = (UpClosure {x} X)"
+
+
+subsection BasicLemmas
+
+
+lemma downset_is_downset:"IsDownset D X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D)" by (simp add: IsDownset_def)
+
+lemma upset_is_upset: "IsUpset U X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> U. d \<le> x\<longrightarrow> x \<in>U)" by (simp add: IsUpset_def)
+
+
+lemma downclosure_is_welldefined:"(DownClosure A X) \<subseteq> X"
+proof-
+  have B0:"DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a}" using DownClosure_def by auto
+  have B1:"\<forall>x \<in> DownClosure A X.  x \<in> X" by (simp add: B0)
+  have B2:"(DownClosure A X) \<subseteq> X" by (simp add: B1 subsetI)
+  with B2 show ?thesis by simp
+qed
+
+lemma upclosure_is_welldefined:"(UpClosure A X) \<subseteq> X"
+proof-
+  have B0:"UpClosure A X = {x \<in> X. \<exists>a \<in> A. x \<ge>  a}" using UpClosure_def  by auto
+  have B1:"\<forall>x \<in> UpClosure A X.  x \<in> X" by (simp add: B0)
+  have B2:"(UpClosure A X) \<subseteq> X" by (simp add: B1 subsetI)
+  with B2 show ?thesis by simp
+qed
+
+
+lemma downset_is_transitive:
+  assumes A0: "X \<noteq> {}" and
+          A1: "E \<in> DownSets X" and
+          A2: "D \<in> DownSets E" 
+        shows "D \<in> DownSets X"
+proof-
+  have B0:"IsDownset D E" using A2 DownSets_def by auto
+  have B1:"IsDownset E X" using A1 DownSets_def by auto
+  have B21: "(D \<in> Pow E)" using B0 IsDownset_def by auto 
+  have B22:"(\<forall>y \<in> E. \<forall>d \<in> D. y\<le>d \<longrightarrow> y \<in> D)" by (meson B0 IsDownset_def)
+  have B31:"(E \<in> Pow X)" using B1 IsDownset_def by auto 
+  have B32:"(\<forall>x \<in> X. \<forall>y \<in> E. x\<le>y \<longrightarrow> x \<in> E)" by (meson B1 IsDownset_def)
+  have B4:"D \<in> Pow X" using B21 B31 by blast
+  have B5:"\<forall>x \<in> X. \<forall>d \<in> D. x \<le>d \<longrightarrow> x \<in> D" using B21 B22 B32 by blast
+  have B6:"IsDownset D X" by (meson B4 B5 IsDownset_def)
+  from B4 B6 have B7:"D \<in> DownSets X" by (simp add: DownSets_def)
+  with B7 show ?thesis by simp
+qed
+
+
+lemma upset_is_transitive:
+  assumes A0: "X \<noteq> {}" and
+          A1: "E \<in> UpSets X" and
+          A2: "U \<in> UpSets E" 
+        shows "U \<in> UpSets X"
+proof-
+  have B0:"IsUpset U E" using A2 UpSets_def by auto
+  have B1:"IsUpset E X" using A1 UpSets_def by auto
+  have B21: "(U \<in> Pow E)" using B0 IsUpset_def by auto 
+  have B22:"(\<forall>y \<in> E. \<forall>u \<in> U. y \<ge> u \<longrightarrow> y \<in> U)" by (meson B0 IsUpset_def)
+  have B31:"(E \<in> Pow X)" using B1 IsUpset_def by auto 
+  have B32:"(\<forall>x \<in> X. \<forall>y \<in> E. x \<ge> y \<longrightarrow> x \<in> E)" by (meson B1 IsUpset_def)
+  have B4:"U \<in> Pow X" using B21 B31 by blast
+  have B5:"\<forall>x \<in> X. \<forall>u \<in> U. x \<ge> u \<longrightarrow> x \<in> U" using B21 B22 B32 by blast
+  have B6:"IsUpset U X" by (meson B4 B5 IsUpset_def)
+  from B4 B6 have B7:"U \<in> UpSets X" by (simp add: UpSets_def)
+  with B7 show ?thesis by simp
+qed
+
+lemma downset_iff_complement_upset:
+  assumes A0: "X \<noteq> {}" and
+          A1: "D \<in> Pow X"
+  shows "IsDownset D X \<longleftrightarrow> IsUpset (X-D) X"
+proof-
+  have B0:"IsDownset D X \<longrightarrow> IsUpset (X-D) X"
+  proof-
+    have C0: "IsDownset D X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D)" by (simp add: IsDownset_def) 
+    have C1: " (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D) \<longrightarrow>  (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<notin> D)" by auto
+    have C2: "(\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<notin> D) \<longrightarrow>  (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<in>(X-D))" by blast
+    have C3:" (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<in>(X-D)) \<longrightarrow> IsUpset (X-D) X" by (simp add: IsUpset_def)
+    have C4:"IsDownset D X \<longrightarrow> IsUpset (X-D) X" using C0 C3 by blast
+    with C4 show ?thesis by simp
+  qed
+  have B1:"IsUpset (X-D) X \<longrightarrow> IsDownset D X"
+  proof-
+    have D0: "IsUpset (X-D) X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> (X-D). d \<le> x\<longrightarrow> x \<in>(X-D))" by (simp add: IsUpset_def) 
+    have D1: "(\<forall>x \<in> X. \<forall>d \<in> (X-D). d \<le> x\<longrightarrow> x \<in>(X-D)) \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> D. x \<le> d \<longrightarrow> x \<in> D) "  using A1 by blast
+    have D2: " (\<forall>x \<in> X. \<forall>d \<in> D. x \<le> d \<longrightarrow> x \<in> D)  \<longrightarrow> IsDownset D X" using A1 IsDownset_def by auto
+    have D3:"IsUpset (X-D) X \<longrightarrow> IsDownset D X" using D0 D1 D2 by blast
+    with D3 show ?thesis by simp
+  qed
+  from B0 B1 have B2:"IsDownset D X \<longleftrightarrow> IsUpset (X-D) X" by blast
+  with B2 show ?thesis by simp
+qed
+
+
+lemma principal_downclosure_expression:
+  "PrincipalDownClosure a X = {x \<in> X. x\<le> a }"
+proof-
+  have B0:"PrincipalDownClosure a X = {x \<in> X. \<exists>b \<in> {a}. x \<le> b }"
+    by (simp add: DownClosure_def PrincipalDownClosure_def)
+  have B1:"PrincipalDownClosure a X = {x \<in> X.  x \<le> a }" using B0 by auto
+  with B1 show ?thesis by simp
+qed
+
+lemma principal_upclosure_expression:
+  "PrincipalUpClosure a X = {x \<in> X. x\<ge> a }"
+proof-
+  have B0:"PrincipalUpClosure a X = {x \<in> X. \<exists>b \<in> {a}. x \<ge> b }"
+    by (simp add: UpClosure_def PrincipalUpClosure_def)
+  have B1:"PrincipalUpClosure a X = {x \<in> X. x \<ge> a }" using B0 by auto
+  with B1 show ?thesis by simp
+qed
+
+lemma principal_upclosure_welldefined:
+  "PrincipalUpClosure a X \<subseteq> X"
+proof-
+  let ?U="PrincipalUpClosure a X"
+  have B0:"?U = {x \<in> X. \<exists>b \<in> {a}. x \<ge> b }"
+    by (simp add: UpClosure_def PrincipalUpClosure_def)
+  have B1:"\<forall>x \<in>?U. x \<in> X"  by (simp add: B0)
+  with B1 show ?thesis by auto
+qed
+
+lemma principal_downclosure_welldefined:"PrincipalDownClosure a X \<subseteq> X"
+proof-
+  let ?D="PrincipalDownClosure a X"
+  have B0:"?D = {x \<in> X. \<exists>b \<in> {a}. x \<le>  b }"
+    by (simp add: DownClosure_def PrincipalDownClosure_def)
+  have B1:"\<forall>x \<in>?D. x \<in> X"  by (simp add: B0)
+  with B1 show ?thesis by auto
+qed
+
+lemma principal_downclosure_order_iso:
+  assumes A0:"X \<noteq> {}" and A1: "x1 \<in> X" and A2:"x2 \<in> X"
+  shows "PrincipalDownClosure x1 X \<subseteq> PrincipalDownClosure x2 X \<longleftrightarrow> x1 \<le> x2"
+proof-
+  let ?D1="PrincipalDownClosure x1 X"
+  let ?D2="PrincipalDownClosure x2 X"
+  have B01:"\<forall>x \<in> X. (x \<in> ?D1  \<longleftrightarrow> x \<le> x1)" using principal_downclosure_expression A0 A1 by auto
+  have B02:"\<forall>x \<in> X. (x \<in> ?D2  \<longleftrightarrow> x \<le> x2)" using principal_downclosure_expression A0 A2 by auto
+  have B03:"?D1 \<in> Pow X" by (simp add: principal_downclosure_welldefined)
+  have B04:"?D2 \<in> Pow X" by (simp add: principal_downclosure_welldefined)
+  have B1: "?D1 \<subseteq> ?D2  \<longrightarrow>  x1 \<le> x2"
+  proof-
+    have B11:"?D1 \<subseteq> ?D2 \<longrightarrow> (\<forall>x \<in> ?D1. x \<in> ?D2) " by (simp add: in_mono)
+    have B12:"x1 \<in> ?D1"  by (simp add: A1 B01)
+    have B13:"?D1 \<subseteq> ?D2 \<longrightarrow> x1 \<in> ?D2" by (simp add: B11 B12)
+    have B14:"?D1 \<subseteq> ?D2 \<longrightarrow> x1 \<le> x2" using A1 B02 B13 by auto
+    with B14 show ?thesis by simp
+  qed
+  have B2: "x1 \<le> x2  \<longrightarrow> ?D1 \<subseteq> ?D2 "
+  proof-
+    have B21:"x1\<le>x2 \<longrightarrow> (\<forall>x \<in> X. x\<le>x1 \<longrightarrow> x \<le> x2)"
+      by auto
+    have B22:"(\<forall>x \<in> X. x\<le>x1 \<longrightarrow> x \<le> x2) \<longrightarrow>(\<forall>x \<in> X. (x \<in> ?D1  \<longrightarrow>  x \<in> ?D2)) "
+      by (simp add: B01 B02)
+    have B23:"x1\<le>x2 \<longrightarrow>  ?D1 \<subseteq> ?D2" using B03 B21 B22 by blast 
+    with B23 show ?thesis by simp
+  qed
+  have B3: "?D1 \<subseteq> ?D2 \<longleftrightarrow> x1 \<le> x2" using B1 B2 by blast
+  with B3 show ?thesis by auto
+qed
+
+
+lemma downsets_closed_under_union:
+  assumes A0:"X \<noteq> {}"  and
+          A1:"\<D> \<in> Pow (DownSets X)"
+  shows "\<Union>\<D> \<in> DownSets X"
+proof-
+  let ?D="\<Union>\<D>"
+  have B0:"\<forall>d \<in> X. (d \<in> ?D \<longleftrightarrow> (\<exists>D \<in>\<D>. d \<in> D))" by simp
+  have B1:"\<forall>x \<in> X. (\<forall>d \<in>?D. (x\<le> d) \<longrightarrow> (\<exists>D \<in>\<D>. x \<in> D))"
+    by (smt (verit, best) A1 DownSets_def IsDownset_def Pow_iff UnionE in_mono mem_Collect_eq)
+  have B2:"\<forall>x \<in> X. (\<forall>d \<in>?D. (x\<le> d) \<longrightarrow> x \<in> ?D)" using B1 by blast
+  have B3:"\<forall>d \<in> ?D. d \<in> X"  using A1 DownSets_def by blast
+  have B4:"?D \<in> Pow X"  using B3 by blast
+  from B2 IsDownset_def B3 B4 have B5:"IsDownset ?D X" by metis
+  have B6:"?D \<in> DownSets X"
+    using B4 B5 DownSets_def by auto
+  with B6 show ?thesis by simp
+qed
+
+lemma upsets_closed_under_intersection:
+  assumes A0:"X \<noteq> {}"  and
+          A1:"\<U> \<in> Pow (UpSets X)" and
+          A2:"\<Inter>\<U> \<in> Pow X"
+  shows "\<Inter>\<U> \<in> UpSets X"
+proof-
+  let ?U="\<Inter>\<U>"
+  have B0:"\<forall>u \<in> X. (u \<in> ?U \<longleftrightarrow> (\<forall>U \<in>\<U>. u \<in> U))" by simp
+  have B1:"\<forall>x \<in> X. (\<forall>u \<in>?U. (u \<le> x) \<longrightarrow> (\<forall>U \<in>\<U>. x \<in> U))"
+    by (smt (verit, best) A1 UpSets_def IsUpset_def Pow_iff InterE in_mono mem_Collect_eq)
+  have B2:"\<forall>x \<in> X. (\<forall>u \<in>?U. (u \<le> x) \<longrightarrow> x \<in> ?U)" using B1 by blast
+  have B3:"\<forall>u \<in> ?U. u \<in> X"  using A1 A2 UpSets_def by blast
+  have B4:"\<Inter>\<U> \<in> Pow X"  using B3 by blast
+  from B2 IsUpset_def B3 B4 have B5:"IsUpset ?U X" by metis
+  have B6:"?U \<in> UpSets X"
+    using B4 B5 UpSets_def by auto
+  with B6 show ?thesis by simp
+qed
+
+lemma upperbounds_is_upset:"IsUpset (UpperBounds A X) X"
+proof-
+  have B0:"\<forall>u \<in> UpperBounds A X. \<forall>a \<in> A. a\<le>u" by (simp add: upper_bound_is_upper_bound2)
+  have B1:"\<forall>x \<in> X. ((\<exists>u \<in> UpperBounds A X. x \<ge> u) \<longrightarrow>(\<forall>a \<in> A. a \<le> x)) " by (meson B0 dual_order.trans)
+  have B2:"\<forall>x \<in> X. ((\<exists>u \<in> UpperBounds A X. x \<ge> u) \<longrightarrow>(x \<in> UpperBounds A X))" by (meson B1 IsUpperBound_def upper_bound_is_upper_bound1)
+  have B3:"IsUpset (UpperBounds A X) X" by (meson B2 IsUpset_def upper_bounds_well_defined)
+  with B3 show ?thesis by auto
+qed
+
+lemma lowerbounds_is_downset:"IsDownset (LowerBounds A X) X"
 (* by (smt (verit) IsDownset_def dual_order.trans lower_bound_is_lower_bound2 lower_bound_then_in_lowerbounds lower_bounds_well_defined)*)
 proof-
   have B0:"\<forall>l \<in> LowerBounds A X. \<forall>a \<in> A. l \<le> a" by (simp add: lower_bound_is_lower_bound2)
@@ -103,7 +306,6 @@ proof-
   have B3:"IsDownset (LowerBounds A X) X" by (meson B2 IsDownset_def lower_bounds_well_defined)
   with B3 show ?thesis by auto
 qed
-
 
 section MaximumMinimum
 subsection Predicates
@@ -136,6 +338,8 @@ lemma max_unique:
 lemma min_unique:
   "HasMinimum A \<longrightarrow> (\<exists>!m. IsMinimum m A)"
   by (meson HasMinimum_def IsLowerBound_def IsMinimum_def order_antisym_conv)
+
+lemma space_is_max_in_powerset_lattice:"IsMaximum X (Pow X)"  by (metis IsMaximum_def IsUpperBound_def Pow_iff Pow_top)
 
 
 section SupremaInfima
@@ -173,7 +377,7 @@ lemma issup_then_lbub:
 
 lemma issup_lt_then_ub:
   "IsSup s A X \<longrightarrow> (\<forall>x \<in> X. (s \<le> x) \<longrightarrow> (x \<in> UpperBounds A X))" 
-  by (meson IsUpset_def issup_then_lub upper_bounds_lem5)
+  by (meson IsUpset_def issup_then_lub upperbounds_is_upset)
 
 lemma issup_sup1:
   assumes "HasSup A X"
@@ -248,7 +452,7 @@ qed
 lemma inf_lem0:"IsInf i A X \<longrightarrow> (i \<in> LowerBounds A X)" by (simp add: IsInf_def)
 lemma inf_lem1:"IsInf i A X \<longrightarrow> (IsMaximum i (LowerBounds A X))" by (simp add: IsInf_def)
 lemma inf_lem2:"IsInf i A X \<longrightarrow> (\<forall>l \<in> LowerBounds A X. i \<ge> l)" by (meson IsUpperBound_def IsMaximum_def inf_lem1)
-lemma inf_lem3:"IsInf i A X \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (x \<in> LowerBounds A X))" by (meson IsDownset_def inf_lem0 lower_bounds_lem5)
+lemma inf_lem3:"IsInf i A X \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (x \<in> LowerBounds A X))" by (meson IsDownset_def inf_lem0 lowerbounds_is_downset)
 lemma inf_lem4:"IsInf i A X \<longrightarrow> i \<in> X" using inf_lem0 lower_bounds_well_defined by fastforce
 lemma inf_lem5:"(i=Inf1 A X) \<longrightarrow> (i=(THE i. IsInf i A X))" by (simp add: Inf1_def)
 lemma inf_lem6:  assumes A0:"A \<in> Pow X \<and> A \<noteq> {} \<and> HasInf A X" shows "Inf1 A X \<in> LowerBounds A X"
@@ -412,207 +616,7 @@ lemma lemf3: "(\<forall>A. A \<subseteq>X \<longrightarrow>  f`A \<subseteq> Y) 
 lemma lemf4: " (\<forall>A \<in> Pow X. f`A \<in> Pow Y) \<longrightarrow>  ftriple f X Y" by (meson PowD PowI lemf3)
 
 
-section Lemmas
 
-
-lemma lem0:"IsMaximum X (Pow X)"  by (metis IsMaximum_def IsUpperBound_def Pow_iff Pow_top)
-
-lemma lem01:"IsDownset D X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D)" by (simp add: IsDownset_def)
-
-lemma lem01_dual: "IsUpset U X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> U. d \<le> x\<longrightarrow> x \<in>U)" by (simp add: IsUpset_def)
-
-lemma lem02:"(DownClosure A X) \<subseteq> X"
-proof-
-  have B0:"DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a}" using DownClosure_def by auto
-  have B1:"\<forall>x \<in> DownClosure A X.  x \<in> X" by (simp add: B0)
-  have B2:"(DownClosure A X) \<subseteq> X" by (simp add: B1 subsetI)
-  with B2 show ?thesis by simp
-qed
-
-lemma lem02_dual:"(UpClosure A X) \<subseteq> X"
-proof-
-  have B0:"UpClosure A X = {x \<in> X. \<exists>a \<in> A. x \<ge>  a}" using UpClosure_def  by auto
-  have B1:"\<forall>x \<in> UpClosure A X.  x \<in> X" by (simp add: B0)
-  have B2:"(UpClosure A X) \<subseteq> X" by (simp add: B1 subsetI)
-  with B2 show ?thesis by simp
-qed
-
-lemma lem1:
-  assumes A0: "X \<noteq> {}" and
-          A1: "E \<in> DownSets X" and
-          A2: "D \<in> DownSets E" 
-        shows "D \<in> DownSets X"
-proof-
-  have B0:"IsDownset D E" using A2 DownSets_def by auto
-  have B1:"IsDownset E X" using A1 DownSets_def by auto
-  have B21: "(D \<in> Pow E)" using B0 IsDownset_def by auto 
-  have B22:"(\<forall>y \<in> E. \<forall>d \<in> D. y\<le>d \<longrightarrow> y \<in> D)" by (meson B0 IsDownset_def)
-  have B31:"(E \<in> Pow X)" using B1 IsDownset_def by auto 
-  have B32:"(\<forall>x \<in> X. \<forall>y \<in> E. x\<le>y \<longrightarrow> x \<in> E)" by (meson B1 IsDownset_def)
-  have B4:"D \<in> Pow X" using B21 B31 by blast
-  have B5:"\<forall>x \<in> X. \<forall>d \<in> D. x \<le>d \<longrightarrow> x \<in> D" using B21 B22 B32 by blast
-  have B6:"IsDownset D X" by (meson B4 B5 IsDownset_def)
-  from B4 B6 have B7:"D \<in> DownSets X" by (simp add: DownSets_def)
-  with B7 show ?thesis by simp
-qed
-
-
-lemma lem1_dual:
-  assumes A0: "X \<noteq> {}" and
-          A1: "E \<in> UpSets X" and
-          A2: "U \<in> UpSets E" 
-        shows "U \<in> UpSets X"
-proof-
-  have B0:"IsUpset U E" using A2 UpSets_def by auto
-  have B1:"IsUpset E X" using A1 UpSets_def by auto
-  have B21: "(U \<in> Pow E)" using B0 IsUpset_def by auto 
-  have B22:"(\<forall>y \<in> E. \<forall>u \<in> U. y \<ge> u \<longrightarrow> y \<in> U)" by (meson B0 IsUpset_def)
-  have B31:"(E \<in> Pow X)" using B1 IsUpset_def by auto 
-  have B32:"(\<forall>x \<in> X. \<forall>y \<in> E. x \<ge> y \<longrightarrow> x \<in> E)" by (meson B1 IsUpset_def)
-  have B4:"U \<in> Pow X" using B21 B31 by blast
-  have B5:"\<forall>x \<in> X. \<forall>u \<in> U. x \<ge> u \<longrightarrow> x \<in> U" using B21 B22 B32 by blast
-  have B6:"IsUpset U X" by (meson B4 B5 IsUpset_def)
-  from B4 B6 have B7:"U \<in> UpSets X" by (simp add: UpSets_def)
-  with B7 show ?thesis by simp
-qed
-
-
-lemma lem2:
-  assumes A0: "X \<noteq> {}" and
-          A1: "D \<in> Pow X"
-  shows "IsDownset D X \<longleftrightarrow> IsUpset (X-D) X"
-proof-
-  have B0:"IsDownset D X \<longrightarrow> IsUpset (X-D) X"
-  proof-
-    have C0: "IsDownset D X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D)" by (simp add: IsDownset_def) 
-    have C1: " (\<forall>x \<in> X. \<forall>d \<in>D. x\<le> d\<longrightarrow> x \<in> D) \<longrightarrow>  (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<notin> D)" by auto
-    have C2: "(\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<notin> D) \<longrightarrow>  (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<in>(X-D))" by blast
-    have C3:" (\<forall>x \<in> X. \<forall>d \<in>(X-D). d\<le> x \<longrightarrow> x \<in>(X-D)) \<longrightarrow> IsUpset (X-D) X" by (simp add: IsUpset_def)
-    have C4:"IsDownset D X \<longrightarrow> IsUpset (X-D) X" using C0 C3 by blast
-    with C4 show ?thesis by simp
-  qed
-  have B1:"IsUpset (X-D) X \<longrightarrow> IsDownset D X"
-  proof-
-    have D0: "IsUpset (X-D) X \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> (X-D). d \<le> x\<longrightarrow> x \<in>(X-D))" by (simp add: IsUpset_def) 
-    have D1: "(\<forall>x \<in> X. \<forall>d \<in> (X-D). d \<le> x\<longrightarrow> x \<in>(X-D)) \<longrightarrow> (\<forall>x \<in> X. \<forall>d \<in> D. x \<le> d \<longrightarrow> x \<in> D) "  using A1 by blast
-    have D2: " (\<forall>x \<in> X. \<forall>d \<in> D. x \<le> d \<longrightarrow> x \<in> D)  \<longrightarrow> IsDownset D X" using A1 IsDownset_def by auto
-    have D3:"IsUpset (X-D) X \<longrightarrow> IsDownset D X" using D0 D1 D2 by blast
-    with D3 show ?thesis by simp
-  qed
-  from B0 B1 have B2:"IsDownset D X \<longleftrightarrow> IsUpset (X-D) X" by blast
-  with B2 show ?thesis by simp
-qed
-
-
-
-lemma lem3:
-  "PrincipalDownClosure a X = {x \<in> X. x\<le> a }"
-proof-
-  have B0:"PrincipalDownClosure a X = {x \<in> X. \<exists>b \<in> {a}. x \<le> b }"
-    by (simp add: DownClosure_def PrincipalDownClosure_def)
-  have B1:"PrincipalDownClosure a X = {x \<in> X.  x \<le> a }" using B0 by auto
-  with B1 show ?thesis by simp
-qed
-
-lemma lem3_dual:
-  "PrincipalUpClosure a X = {x \<in> X. x\<ge> a }"
-proof-
-  have B0:"PrincipalUpClosure a X = {x \<in> X. \<exists>b \<in> {a}. x \<ge> b }"
-    by (simp add: UpClosure_def PrincipalUpClosure_def)
-  have B1:"PrincipalUpClosure a X = {x \<in> X. x \<ge> a }" using B0 by auto
-  with B1 show ?thesis by simp
-qed
-
-lemma lem4:
-  "PrincipalUpClosure a X \<subseteq> X"
-proof-
-  let ?U="PrincipalUpClosure a X"
-  have B0:"?U = {x \<in> X. \<exists>b \<in> {a}. x \<ge> b }"
-    by (simp add: UpClosure_def PrincipalUpClosure_def)
-  have B1:"\<forall>x \<in>?U. x \<in> X"  by (simp add: B0)
-  with B1 show ?thesis by auto
-qed
-
-lemma lem4_dual:"PrincipalDownClosure a X \<subseteq> X"
-proof-
-  let ?D="PrincipalDownClosure a X"
-  have B0:"?D = {x \<in> X. \<exists>b \<in> {a}. x \<le>  b }"
-    by (simp add: DownClosure_def PrincipalDownClosure_def)
-  have B1:"\<forall>x \<in>?D. x \<in> X"  by (simp add: B0)
-  with B1 show ?thesis by auto
-qed
-
-lemma lem5:
-  assumes A0:"X \<noteq> {}" and A1: "x1 \<in> X" and A2:"x2 \<in> X"
-  shows "PrincipalDownClosure x1 X \<subseteq> PrincipalDownClosure x2 X \<longleftrightarrow> x1 \<le> x2"
-proof-
-  let ?D1="PrincipalDownClosure x1 X"
-  let ?D2="PrincipalDownClosure x2 X"
-  have B01:"\<forall>x \<in> X. (x \<in> ?D1  \<longleftrightarrow> x \<le> x1)" using lem3 A0 A1 by auto
-  have B02:"\<forall>x \<in> X. (x \<in> ?D2  \<longleftrightarrow> x \<le> x2)" using lem3 A0 A2 by auto
-  have B03:"?D1 \<in> Pow X" by (simp add: lem4_dual)
-  have B04:"?D2 \<in> Pow X" by (simp add: lem4_dual)
-  have B1: "?D1 \<subseteq> ?D2  \<longrightarrow>  x1 \<le> x2"
-  proof-
-    have B11:"?D1 \<subseteq> ?D2 \<longrightarrow> (\<forall>x \<in> ?D1. x \<in> ?D2) " by (simp add: in_mono)
-    have B12:"x1 \<in> ?D1"  by (simp add: A1 B01)
-    have B13:"?D1 \<subseteq> ?D2 \<longrightarrow> x1 \<in> ?D2" by (simp add: B11 B12)
-    have B14:"?D1 \<subseteq> ?D2 \<longrightarrow> x1 \<le> x2" using A1 B02 B13 by auto
-    with B14 show ?thesis by simp
-  qed
-  have B2: "x1 \<le> x2  \<longrightarrow> ?D1 \<subseteq> ?D2 "
-  proof-
-    have B21:"x1\<le>x2 \<longrightarrow> (\<forall>x \<in> X. x\<le>x1 \<longrightarrow> x \<le> x2)"
-      by auto
-    have B22:"(\<forall>x \<in> X. x\<le>x1 \<longrightarrow> x \<le> x2) \<longrightarrow>(\<forall>x \<in> X. (x \<in> ?D1  \<longrightarrow>  x \<in> ?D2)) "
-      by (simp add: B01 B02)
-    have B23:"x1\<le>x2 \<longrightarrow>  ?D1 \<subseteq> ?D2" using B03 B21 B22 by blast 
-    with B23 show ?thesis by simp
-  qed
-  have B3: "?D1 \<subseteq> ?D2 \<longleftrightarrow> x1 \<le> x2" using B1 B2 by blast
-  with B3 show ?thesis by auto
-qed
-
-
-
-
-
-lemma lem6:
-  assumes A0:"X \<noteq> {}"  and
-          A1:"\<D> \<in> Pow (DownSets X)"
-  shows "\<Union>\<D> \<in> DownSets X"
-proof-
-  let ?D="\<Union>\<D>"
-  have B0:"\<forall>d \<in> X. (d \<in> ?D \<longleftrightarrow> (\<exists>D \<in>\<D>. d \<in> D))" by simp
-  have B1:"\<forall>x \<in> X. (\<forall>d \<in>?D. (x\<le> d) \<longrightarrow> (\<exists>D \<in>\<D>. x \<in> D))"
-    by (smt (verit, best) A1 DownSets_def IsDownset_def Pow_iff UnionE in_mono mem_Collect_eq)
-  have B2:"\<forall>x \<in> X. (\<forall>d \<in>?D. (x\<le> d) \<longrightarrow> x \<in> ?D)" using B1 by blast
-  have B3:"\<forall>d \<in> ?D. d \<in> X"  using A1 DownSets_def by blast
-  have B4:"?D \<in> Pow X"  using B3 by blast
-  from B2 IsDownset_def B3 B4 have B5:"IsDownset ?D X" by metis
-  have B6:"?D \<in> DownSets X"
-    using B4 B5 DownSets_def by auto
-  with B6 show ?thesis by simp
-qed
-
-lemma lem6_dual:
-  assumes A0:"X \<noteq> {}"  and
-          A1:"\<U> \<in> Pow (UpSets X)" and
-          A2:"\<Inter>\<U> \<in> Pow X"
-  shows "\<Inter>\<U> \<in> UpSets X"
-proof-
-  let ?U="\<Inter>\<U>"
-  have B0:"\<forall>u \<in> X. (u \<in> ?U \<longleftrightarrow> (\<forall>U \<in>\<U>. u \<in> U))" by simp
-  have B1:"\<forall>x \<in> X. (\<forall>u \<in>?U. (u \<le> x) \<longrightarrow> (\<forall>U \<in>\<U>. x \<in> U))"
-    by (smt (verit, best) A1 UpSets_def IsUpset_def Pow_iff InterE in_mono mem_Collect_eq)
-  have B2:"\<forall>x \<in> X. (\<forall>u \<in>?U. (u \<le> x) \<longrightarrow> x \<in> ?U)" using B1 by blast
-  have B3:"\<forall>u \<in> ?U. u \<in> X"  using A1 A2 UpSets_def by blast
-  have B4:"\<Inter>\<U> \<in> Pow X"  using B3 by blast
-  from B2 IsUpset_def B3 B4 have B5:"IsUpset ?U X" by metis
-  have B6:"?U \<in> UpSets X"
-    using B4 B5 UpSets_def by auto
-  with B6 show ?thesis by simp
-qed
 
 
 
