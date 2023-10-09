@@ -449,28 +449,51 @@ proof-
   show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
 qed
 
-lemma inf_lem0:"IsInf i A X \<longrightarrow> (i \<in> LowerBounds A X)" by (simp add: IsInf_def)
-lemma inf_lem1:"IsInf i A X \<longrightarrow> (IsMaximum i (LowerBounds A X))" by (simp add: IsInf_def)
-lemma inf_lem2:"IsInf i A X \<longrightarrow> (\<forall>l \<in> LowerBounds A X. i \<ge> l)" by (meson IsUpperBound_def IsMaximum_def inf_lem1)
-lemma inf_lem3:"IsInf i A X \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (x \<in> LowerBounds A X))" by (meson IsDownset_def inf_lem0 lowerbounds_is_downset)
-lemma inf_lem4:"IsInf i A X \<longrightarrow> i \<in> X" using inf_lem0 lower_bounds_well_defined by fastforce
+lemma isinf_then_glb:
+  "(IsInf i A X) \<longrightarrow> ((i \<in> LowerBounds A X) \<and> (IsMaximum i (LowerBounds A X)))"
+  by (simp add: IsInf_def)
+
+lemma isinf_well_defined:
+  "IsInf i A X \<longrightarrow> i \<in> X"
+  using isinf_then_glb lower_bounds_well_defined by fastforce
+
+lemma isinf_then_ublb:
+  "IsInf i A X \<longrightarrow> (\<forall>l \<in> LowerBounds A X. i \<ge> l) \<and> (i \<in> UpperBounds (LowerBounds A X) X)"
+  by (meson IsUpperBound_def IsMaximum_def in_mono isinf_then_glb upper_bound_then_in_upperbounds lower_bounds_well_defined)
+
+lemma isinf_gt_then_lb:
+  "IsInf i A X \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> (x \<in> LowerBounds A X))"
+  by (meson IsDownset_def isinf_then_glb lowerbounds_is_downset)
+
+lemma isinf_inf1:
+  assumes "HasInf A X"
+  shows "IsInf (Inf1 A X) A X"
+proof-
+  let ?i="Inf1 A X"
+  have B0:"?i=(THE i. IsInf i A X)" using Inf1_def by auto
+  have B1:"IsInf ?i A X"
+    by (metis B0 HasInf_def assms isinf_then_ublb isinf_then_glb order_class.order_eq_iff theI')
+  with B1 show ?thesis by simp
+qed
+
+
+lemma inf_lem2:"IsInf i A X \<longrightarrow> (\<forall>l \<in> LowerBounds A X. i \<ge> l)" by (simp add: isinf_then_ublb)
 lemma inf_lem5:"(i=Inf1 A X) \<longrightarrow> (i=(THE i. IsInf i A X))" by (simp add: Inf1_def)
 lemma inf_lem6:  assumes A0:"A \<in> Pow X \<and> A \<noteq> {} \<and> HasInf A X" shows "Inf1 A X \<in> LowerBounds A X"
 proof-
-  have B0:"IsInf (Inf1 A X) A X"
-    by (metis HasInf_def Inf1_def assms order_class.order_eq_iff inf_lem0 inf_lem2 the_equality)
-  have B1:"Inf1 A X \<in> LowerBounds A X" by (simp add: B0 inf_lem0)
+  have B0:"IsInf (Inf1 A X) A X" by (simp add: assms isinf_inf1)
+  have B1:"Inf1 A X \<in> LowerBounds A X" by (simp add: B0 isinf_then_glb)
   with B1 show ?thesis by simp
 qed
 lemma inf_lem7:"IsMaximum i (LowerBounds A X) \<longrightarrow>  IsInf i A X" by (simp add: IsInf_def IsMaximum_def IsUpperBound_def)
-lemma inf_lem8:"IsMaximum i (LowerBounds A X) \<longleftrightarrow>  IsInf i A X" using inf_lem1 inf_lem7 by blast 
-lemma inf_unique: "HasInf A X \<longrightarrow> (\<exists>!i. IsInf i A X)"  by (meson HasInf_def IsUpperBound_def IsMaximum_def order_antisym_conv inf_lem1)
+lemma inf_lem8:"IsMaximum i (LowerBounds A X) \<longleftrightarrow>  IsInf i A X" using IsInf_def inf_lem7 by blast
+lemma inf_unique: "HasInf A X \<longrightarrow> (\<exists>!i. IsInf i A X)" by (meson IsMaximum_def IsUpperBound_def Orderings.order_eq_iff isinf_inf1 isinf_then_glb) 
 lemma inf_lem9:"HasInf A X \<longrightarrow> (IsInf (Inf1 A X) A X)" by (metis PosetsDraft.inf_unique Inf1_def the_equality)
 lemma inf_lem01:assumes A0: "HasInf A X" shows "(Inf1 A X) \<in> (LowerBounds A X)"
 proof-
   let ?i="Inf1 A X"
   have B0:"IsInf ?i A X" by (simp add: assms inf_lem9)
-  have B1:"?i \<in> LowerBounds A X" by (simp add: B0 inf_lem0)
+  have B1:"?i \<in> LowerBounds A X" using B0 isinf_then_glb by auto
   with B1 show ?thesis by auto
 qed
 
@@ -498,7 +521,7 @@ proof-
     have B0:"?L \<longrightarrow> (\<forall>l \<in> ?Lw. i \<ge> l)" by (simp add: inf_lem2)
     have B1:"?L \<longrightarrow> (\<forall>x \<in> X. (\<forall>a \<in>A. a \<ge> x) \<longrightarrow> x \<in> ?Lw)" by (simp add: lower_bound_then_in_lowerbounds)
     have B2:"?L \<longrightarrow> ?RL" by (simp add: B0 B1) 
-    have B3:"?L \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> x \<in> ?Lw)" by (simp add: inf_lem3)
+    have B3:"?L \<longrightarrow> (\<forall>x \<in> X. (i \<ge> x) \<longrightarrow> x \<in> ?Lw)"by (simp add: isinf_gt_then_lb)
     have B4:"?L \<longrightarrow> ?RR" using B3 lower_bound_is_lower_bound2 by blast
     show "?L \<longrightarrow> ?R" using B2 B4 by blast
   qed
@@ -581,7 +604,7 @@ proof-
   proof-
     have C0:"?R \<longrightarrow> (\<forall>a \<in>A. a \<in> LowerBounds B X)" by (metis A0 PowD in_mono lower_bound_then_in_lowerbounds)
     have C1:"(\<forall>a \<in>A. a \<in> LowerBounds B X) \<longrightarrow> (\<forall>a \<in> A. a \<le> ?i)"  using A1 inf_lem2 inf_lem9 by blast
-    have C2:"(\<forall>a \<in> A. a \<le> ?i)\<longrightarrow> (?i \<in> UpperBounds A X)" using A1 inf_lem4 inf_lem9 upper_bound_then_in_upperbounds by blast
+    have C2:"(\<forall>a \<in> A. a \<le> ?i)\<longrightarrow> (?i \<in> UpperBounds A X)" using A1 isinf_inf1 isinf_well_defined upper_bound_then_in_upperbounds by blast
     have C3:"(?i \<in> UpperBounds A X) \<longrightarrow> (?s \<le> ?i)" using A1 issup_then_lbub sup_lem9 by blast
     have C4:"?R\<longrightarrow>?L" by (simp add: C0 C1 C2 C3) 
     with C4 show ?thesis by simp
