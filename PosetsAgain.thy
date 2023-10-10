@@ -100,9 +100,7 @@ lemma inf_is_unique:
 lemma test1:
   assumes "HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X"
   shows "(\<forall>a \<in> A. a \<le> (Supremum A X))"
-proof-
-  let ?s= "(Supremum A X)"
-  have B0:"?s \<in> UpperBounds A X" by (metis HasSup_def Supremum_def assms min_lemma2)
-  have B1:"(HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X) \<longrightarrow> (\<forall>a \<in> A. (a \<le> ?s))"
+  by (metis (no_types, lifting) HasSup_def Supremum_def UpperBounds_def assms mem_Collect_eq min_lemma2)
+
 
 end
