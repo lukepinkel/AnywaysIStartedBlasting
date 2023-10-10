@@ -539,27 +539,26 @@ proof-
   show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
 qed
 
-
-
 lemma inf_to_sup0:
   assumes A0: "X \<noteq> {}" and A1:"A \<in> Pow X" and A2:"A \<noteq> {}" and A3:"HasInf (UpperBounds A X) X"
   shows "HasSup A X \<and> Sup1 A X = Inf1 (UpperBounds A X) X "
 proof-
   let ?U="UpperBounds A X"
   let ?i="Inf1 ?U X"
-  have C0:"?i=(THE i. IsInf i ?U X)" by (simp add: Inf1_def)
-  have B0:"IsMaximum ?i (LowerBounds ?U X)" by (metis A3 C0 IsInf_def PosetsDraft.inf_unique theI)
-  have B1:"\<forall>a \<in> A. (\<forall>u \<in> ?U. a\<le> u)" by (simp add: upper_bound_is_upper_bound2)
-  have B2:"\<forall>a \<in> A. (a \<in> LowerBounds ?U X)" by (meson A1 B1 PowD in_mono lower_bound_then_in_lowerbounds)
-  have B3:"\<forall>a \<in> A. (a\<le>?i)" by (metis B0 B2 IsMaximum_def IsUpperBound_def)
-  have B4:"\<forall>z \<in> X. (\<forall>a \<in> A. a\<le> z)\<longrightarrow> (?i\<le>z)" by (meson A3 inf_lem01 lower_bound_is_lower_bound2 upper_bound_then_in_upperbounds)
-  have B5:"?i \<in> UpperBounds A X" by (smt (verit) B0 B3 IsMaximum_def IsUpperBound_def insert_absorb insert_subset lower_bounds_well_defined upper_bound_then_in_upperbounds)
-  have B6:"\<forall>u \<in> ?U. ?i\<le> u" by (metis B1 B4 in_mono upper_bounds_well_defined)
-  have B8:"IsMinimum ?i ?U" by (simp add: B5 B6 IsLowerBound_def IsMinimum_def)
-  have B9:"IsSup ?i A X" by (simp add: B5 B8 IsSup_def)
-  have B10:"HasSup A X"  using B9 HasSup_def by auto
-  have B11:"Sup1 A X = Inf1 ?U X"  by (metis B9 HasSup_def PosetsDraft.sup_unique Sup1_def the_equality)
-  with B10 B11 show ?thesis  by simp
+  have B0:"?i \<in> ?U"
+  proof-
+    have C0:"\<forall>a \<in> A. (\<forall>u \<in> ?U. a\<le> u)" by (simp add: upper_bound_is_upper_bound2)
+    have C1:"\<forall>a \<in> A. (a \<in> LowerBounds ?U X)" by (meson A1 Pow_iff lower_bound_then_in_lowerbounds subsetD upper_bound_is_upper_bound2)
+    have C2:"\<forall>a \<in> A. (a\<le>?i)" using A3 C1 inf_lem2 inf_lem9 by blast
+    have C3:"?i \<in> ?U" using A3 C2 inf_lem9 isinf_well_defined upper_bound_then_in_upperbounds by blast
+    with C3 show ?thesis by simp
+  qed
+  have B1:"IsMinimum ?i ?U"
+    by (meson A3 B0 IsLowerBound_def IsMinimum_def inf_lem01 lower_bound_is_lower_bound2)
+  have B2:"IsSup ?i A X"  by (simp add: B0 B1 IsSup_def)
+  have B3:"HasSup A X" using B2 HasSup_def by auto
+  have B4:"Sup1 A X = Inf1 ?U X" using B2 B3 PosetsDraft.sup_unique sup_lem9 by blast
+  with B3 B4 show ?thesis by simp
 qed
 
 lemma sup_to_inf0:
@@ -567,22 +566,22 @@ lemma sup_to_inf0:
   shows "HasInf A X \<and> Inf1 A X = Sup1 (LowerBounds A X) X "
 proof-
   let ?L = "LowerBounds A X"
-  let ?s="Sup1 ?L X"
-  have C0:"?s=(THE s. IsSup s ?L X)" by (simp add: Sup1_def)
-  have B0: "IsMinimum ?s (UpperBounds ?L X)" by (metis A3 C0 IsSup_def PosetsDraft.sup_unique theI)
-  have B1: "\<forall>a \<in> A. (\<forall>l \<in> ?L. l \<le> a)" by (simp add: lower_bound_is_lower_bound2)
-  have B2: "\<forall>a \<in> A. (a \<in> UpperBounds ?L X)" by (meson A1 B1 PowD in_mono upper_bound_then_in_upperbounds)
-  have B3: "\<forall>a \<in> A. (?s \<le> a)" by (metis B0 B2 IsMinimum_def IsLowerBound_def)
-  have B4: "\<forall>z \<in> X. (\<forall>a \<in> A. z \<le> a) \<longrightarrow> (z \<le> ?s)" by (metis B0 IsMinimum_def IsLowerBound_def upper_bound_is_upper_bound2 lower_bound_then_in_lowerbounds)
-  have B5: "?s \<in> LowerBounds A X" by (smt (verit) B0 B3 IsMinimum_def IsLowerBound_def insert_absorb insert_subset upper_bounds_well_defined lower_bound_then_in_lowerbounds)
-  have B6: "\<forall>l \<in> ?L. l \<le> ?s" by (metis B1 B4 in_mono lower_bounds_well_defined)
-  have B8: "IsMaximum ?s ?L" by (simp add: B5 B6 IsUpperBound_def IsMaximum_def)
-  have B9: "IsInf ?s A X" by (simp add: B5 B8 IsInf_def)
-  have B10: "HasInf A X" using B9 HasInf_def by auto
-  have B11: "Inf1 A X = Sup1 ?L X" by (metis B9 HasInf_def PosetsDraft.inf_unique Inf1_def the_equality)
-  with B10 B11 show ?thesis by simp
+  let ?s = "Sup1 ?L X"
+  have B0: "?s \<in> ?L"
+  proof-
+    have C0: "\<forall>a \<in> A. (\<forall>l \<in> ?L. l \<le> a)" by (simp add: lower_bound_is_lower_bound2)
+    have C1: "\<forall>a \<in> A. (a \<in> UpperBounds ?L X)"by (metis A1 C0 UnionI Union_Pow_eq upper_bound_then_in_upperbounds) 
+    have C2: "\<forall>a \<in> A. (?s \<le> a)" using A3 C1 issup_sup1 issup_then_lbub by blast
+    have C3: "?s \<in> ?L" using A3 C2 sup_lem9 issup_well_defined lower_bound_then_in_lowerbounds by blast
+    with C3 show ?thesis by simp
+  qed
+  have B1: "IsMaximum ?s ?L"
+    by (meson A3 B0 IsMaximum_def IsUpperBound_def issup_then_lub1 upper_bound_is_upper_bound2)
+  have B2: "IsInf ?s A X" by (simp add: B0 B1 IsInf_def)
+  have B3: "HasInf A X" using B2 HasInf_def by auto
+  have B4: "Inf1 A X = Sup1 ?L X" using B2 B3 PosetsDraft.inf_unique inf_lem9 by blast
+  with B3 B4 show ?thesis by simp
 qed
-
 
 
 lemma sup_leq_inf_iff:
