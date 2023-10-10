@@ -98,9 +98,42 @@ lemma inf_is_unique:
   using HasInf_def assms max_lemma1 by blast
 
 lemma test1:
-  assumes "HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X"
+  assumes "HasSup A X"
   shows "(\<forall>a \<in> A. a \<le> (Supremum A X))"
   by (metis (no_types, lifting) HasSup_def Supremum_def UpperBounds_def assms mem_Collect_eq min_lemma2)
 
+lemma posets_lemma_0:
+  assumes "HasSup A X" 
+  shows "\<forall>x \<in> X. ((x \<ge> Supremum A X) \<longleftrightarrow> (\<forall>a \<in> A. x \<ge> a))"
+  by (smt (verit, ccfv_threshold) HasSup_def Supremum_def UpperBounds_def assms dual_order.trans mem_Collect_eq min_lemma2)
+
+lemma posets_lemma_1:
+  assumes "HasSup A X \<and> HasInf B X \<and> A \<subseteq> X \<and> B \<subseteq> X" 
+  shows "(Supremum A X \<le> Infimum B X) \<longleftrightarrow>  (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)"
+proof-
+  have LR:"(Supremum A X \<le> Infimum B X) \<longrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)" 
+    by (metis (no_types, lifting) HasInf_def Infimum_def LowerBounds_def assms dual_order.trans max_lemma2 mem_Collect_eq test1)
+  have RL:"(\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)\<longrightarrow>(Supremum A X \<le> Infimum B X)"
+    by (smt (verit) HasInf_def Infimum_def LowerBounds_def assms max_lemma2 mem_Collect_eq posets_lemma_0 subset_eq)
+  with LR RL show ?thesis by meson
+qed
+
+lemma sup_isinf_ub:
+  assumes A0:"(A \<subseteq> X)" and
+          A1:"(A \<noteq> {})" and
+          A2:"HasInf(UpperBounds A X) X"
+  shows "Supremum A X = Infimum (UpperBounds A X) X"
+proof-
+  let ?i="Infimum (UpperBounds A X) X"
+  have B0:"?i \<in> UpperBounds A X"
+    by (smt (verit) A0 A2 HasInf_def Infimum_def LowerBounds_def UpperBounds_def max_lemma2 mem_Collect_eq subset_eq)
+  have B1:"\<forall>u \<in> UpperBounds A X. ?i \<le> u"
+    by (metis (no_types, lifting) A2 HasInf_def Infimum_def LowerBounds_def max_lemma2 mem_Collect_eq)
+  have B2:"?i=Minimum (UpperBounds A X)"
+    by (meson B0 B1 HasMinimum_def min_lemma2 order_antisym)
+  have B3:"?i=Supremum A X"
+    by (simp add: B2 Supremum_def)
+  with B3 show ?thesis by simp
+qed
 
 end
