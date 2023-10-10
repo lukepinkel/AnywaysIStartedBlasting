@@ -364,6 +364,8 @@ definition Inf1::"'X::order set\<Rightarrow> 'X::order set \<Rightarrow> 'X::ord
 
 subsection BasicLemmas
 
+lemma issup_then_ub:"IsSup s A X \<longrightarrow> (\<forall>a \<in> A. a\<le> s)" using IsSup_def upper_bound_is_upper_bound2 by blast
+
 lemma issup_then_lub:
   "(IsSup s A X) \<longrightarrow> ((s \<in> UpperBounds A X) \<and> (IsMinimum s( UpperBounds A X)))"
   by (simp add: IsSup_def)
@@ -419,7 +421,7 @@ proof-
   have RtL:"HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((\<forall>a \<in> A. a\<le> x)\<longrightarrow>(x \<ge> Sup1 A X)))"
     using issup_then_lbub sup_lem9 upper_bound_then_in_upperbounds by blast
   have LtRtL:  "HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((x \<ge> Sup1 A X) \<longleftrightarrow> (\<forall>a \<in> A. a\<le> x)) )"
-    using LtR RtL by auto
+    using LtR RtL by blast
   with LtRtL show ?thesis by simp
 qed
 
@@ -459,6 +461,9 @@ proof-
   qed
   show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
 qed
+
+
+lemma isinf_then_lb:"IsInf i A X \<longrightarrow> (\<forall>a\<in> A. i \<le> a)" using IsInf_def lower_bound_is_lower_bound2 by blast
 
 lemma isinf_then_glb:
   "(IsInf i A X) \<longrightarrow> ((i \<in> LowerBounds A X) \<and> (IsMaximum i (LowerBounds A X)))"
