@@ -77,14 +77,32 @@ lemma max_nonnull: "HasMaximum A \<longrightarrow> A \<noteq> {}" using max_lemm
 lemma min_nonnull: "HasMinimum A \<longrightarrow> A \<noteq> {}" using min_lemma1 by auto
 
 
-lemma sup_ltub:
+lemma sup_lt_ub:
   assumes "HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X"
   shows "\<forall>u \<in> X. (\<forall>a \<in> A. a \<le> u) \<longrightarrow> Supremum A X \<le> u"
   by (smt (verit) HasSup_def Supremum_def UpperBounds_def assms mem_Collect_eq min_lemma2)
 
-lemma inf_gtlb:
+lemma inf_gt_lb:
   assumes "HasInf A X \<and> A \<noteq> {} \<and> A \<subseteq> X"
   shows "\<forall>l \<in> X. (\<forall>a \<in> A. l \<le> a) \<longrightarrow> l \<le>  Infimum A X"
   by (smt (verit) HasInf_def Infimum_def LowerBounds_def assms max_lemma2 mem_Collect_eq)
+
+lemma sup_is_unique:
+  assumes "HasSup A X"
+  shows "\<exists>!s. (s \<in> UpperBounds A X \<and> (\<forall>u \<in> UpperBounds A X. s \<le> u))"
+  using HasSup_def assms min_lemma1 by blast
+
+lemma inf_is_unique:
+  assumes "HasInf A X"
+  shows "\<exists>!i. (i \<in> LowerBounds A X \<and> (\<forall>l \<in> LowerBounds A X. l \<le> i))"
+  using HasInf_def assms max_lemma1 by blast
+
+lemma test1:
+  assumes "HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X"
+  shows "(\<forall>a \<in> A. a \<le> (Supremum A X))"
+proof-
+  let ?s= "(Supremum A X)"
+  have B0:"?s \<in> UpperBounds A X" by (metis HasSup_def Supremum_def assms min_lemma2)
+  have B1:"(HasSup A X \<and> A \<noteq> {} \<and> A \<subseteq> X) \<longrightarrow> (\<forall>a \<in> A. (a \<le> ?s))"
 
 end
