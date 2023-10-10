@@ -411,6 +411,17 @@ proof-
   with B1 show ?thesis by auto
 qed
 
+lemma sup_lem10:
+  "HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((x \<ge> Sup1 A X) \<longleftrightarrow> (\<forall>a \<in> A. a\<le> x)) )"
+proof-
+  have LtR:"HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((x \<ge> Sup1 A X) \<longrightarrow>  (\<forall>a \<in> A. a\<le> x)))" 
+    using issup_then_lub1 upper_bound_is_upper_bound2 by fastforce
+  have RtL:"HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((\<forall>a \<in> A. a\<le> x)\<longrightarrow>(x \<ge> Sup1 A X)))"
+    using issup_then_lbub sup_lem9 upper_bound_then_in_upperbounds by blast
+  have LtRtL:  "HasSup A X \<longrightarrow> (\<forall>x \<in> X. ((x \<ge> Sup1 A X) \<longleftrightarrow> (\<forall>a \<in> A. a\<le> x)) )"
+    using LtR RtL by auto
+  with LtRtL show ?thesis by simp
+qed
 
 
 lemma lem_lub1:
