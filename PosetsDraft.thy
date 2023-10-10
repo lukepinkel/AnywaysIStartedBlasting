@@ -335,9 +335,61 @@ lemma max_unique:
   "HasMaximum A \<longrightarrow> (\<exists>!m. IsMaximum m A)"
   by (meson HasMaximum_def IsMaximum_def IsUpperBound_def order_class.order_eq_iff)
 
+lemma max_unique1:
+  "IsMaximum m1 A \<and> IsMaximum m2 A \<longrightarrow> m1=m2"
+  by (simp add: IsMaximum_def IsUpperBound_def Orderings.order_eq_iff)
+
+lemma maximum_lt_set:
+  "HasMaximum A \<longrightarrow> (\<exists>m. (m \<in> A) \<and> (\<forall>a \<in> A. m\<ge> a))" by (meson HasMaximum_def)
+
+lemma ismaximum_lt_set:
+  "IsMaximum m A \<longrightarrow> ((m \<in> A) \<and> (\<forall>a \<in> A. m\<ge> a))" by (simp add: IsMaximum_def IsUpperBound_def)
+
+lemma maximum_then_max:
+  assumes "HasMaximum A" 
+  shows "((Max A) \<in> A) \<and> (\<forall>a \<in> A. (Max A)\<ge> a)"
+proof-
+  let ?m="Max A"
+  have B0:"?m \<in> A" by (metis PosetsDraft.Max_def assms ismaximum_lt_set max_unique the_equality)
+  have B1:"\<forall>a \<in> A. a \<le> ?m"  by (metis PosetsDraft.Max_def assms ismaximum_lt_set max_unique the_equality)
+  with B0 B1 show ?thesis by simp
+qed
+
+lemma max_then_maximum:
+  assumes A0:"m \<in> A" and
+          A1:"(\<forall>a \<in> A. a\<le> m)"
+  shows "m=Max A"
+  by (meson A0 A1 HasMaximum_def antisym maximum_then_max)
+
 lemma min_unique:
   "HasMinimum A \<longrightarrow> (\<exists>!m. IsMinimum m A)"
   by (meson HasMinimum_def IsLowerBound_def IsMinimum_def order_antisym_conv)
+
+lemma min_unique1:
+  "IsMinimum m1 A \<and> IsMinimum m2 A \<longrightarrow> m1=m2"
+  by (simp add: IsLowerBound_def IsMinimum_def Orderings.order_eq_iff)
+
+lemma minimum_lt_set:
+  "HasMinimum A \<longrightarrow> (\<exists>m. (m \<in> A) \<and> (\<forall>a \<in> A. m\<le> a))" by (meson HasMinimum_def)
+
+lemma isminimum_lt_set:
+  "IsMinimum m A \<longrightarrow> ((m \<in> A) \<and> (\<forall>a \<in> A. m\<le>a))" by (simp add: IsLowerBound_def IsMinimum_def) 
+
+lemma minimum_then_min:
+  assumes "HasMinimum A" 
+  shows "((Min A) \<in> A) \<and> (\<forall>a \<in> A. (Min A) \<le> a)"
+proof-
+  let ?m="Min A"
+  have B0:"?m \<in> A" by (metis PosetsDraft.Min_def assms isminimum_lt_set min_unique the_equality)
+  have B1:"\<forall>a \<in> A. a \<ge> ?m"  by (metis PosetsDraft.Min_def assms isminimum_lt_set min_unique the_equality)
+  with B0 B1 show ?thesis by simp
+qed
+
+lemma min_then_minimum:
+  assumes A0:"m \<in> A" and
+          A1:"(\<forall>a \<in> A. m\<le> a)"
+  shows "m=Min A"
+  by (meson A0 A1 HasMinimum_def Orderings.order_eq_iff minimum_then_min)
 
 lemma space_is_max_in_powerset_lattice:"IsMaximum X (Pow X)"  by (metis IsMaximum_def IsUpperBound_def Pow_iff Pow_top)
 
@@ -462,6 +514,17 @@ proof-
   show "?L \<longleftrightarrow> ?R" using RtL LtR by auto
 qed
 
+lemma sup1_is_minub: "HasSup A X \<longrightarrow> (Sup1 A X = (Min (UpperBounds A X)))"
+proof-
+  let ?s="Sup1 A X"
+  let ?U="UpperBounds A X"
+  have B0:"HasSup A X \<longrightarrow> ?s \<in> ?U" by (simp add: issup_then_lub1)
+  have B1:"HasSup A X \<longrightarrow> (\<forall>u \<in> ?U. ?s \<le> u)" using issup_then_lbub sup_lem9 by blast
+  have B2:"HasSup A X \<longrightarrow> (?s = Min ?U)"  by (simp add: B0 B1 min_then_minimum)
+  with B2 show ?thesis by simp
+qed
+
+
 
 lemma isinf_then_lb:"IsInf i A X \<longrightarrow> (\<forall>a\<in> A. i \<le> a)" using IsInf_def lower_bound_is_lower_bound2 by blast
 
@@ -513,6 +576,15 @@ proof-
   with B1 show ?thesis by auto
 qed
 
+lemma inf1_is_maxlb: "HasInf A X \<longrightarrow> (Inf1 A X = (Max (LowerBounds A X)))"
+proof-
+  let ?i="Inf1 A X"
+  let ?L="LowerBounds A X"
+  have B0:"HasInf A X \<longrightarrow> ?i \<in> ?L" using inf_lem01 by auto
+  have B1:"HasInf A X \<longrightarrow> (\<forall>l \<in> ?L. ?i \<ge> l)" using isinf_inf1 isinf_then_ublb by blast
+  have B2:"HasInf A X \<longrightarrow> (?i = Max ?L)" by (simp add: B0 B1 max_then_maximum)
+  with B2 show ?thesis by simp
+qed
 
 
 lemma lem_glb1:
@@ -629,11 +701,41 @@ proof-
 qed
 
 
-lemma isotone_lem1:"A \<subseteq> B \<longrightarrow> UpperBounds A X \<supseteq> UpperBounds B X" by (meson subsetD subsetI upper_bounds_well_defined upper_bound_is_upper_bound2 upper_bound_then_in_upperbounds)
-lemma isotone_lem2:"A \<subseteq> B \<longrightarrow> LowerBounds A X \<supseteq> LowerBounds B X" by (meson subsetD subsetI lower_bounds_well_defined lower_bound_is_lower_bound2 lower_bound_then_in_lowerbounds)
-lemma isotone_lem3:"A \<subseteq> B \<longrightarrow> HasInf A X \<longrightarrow> HasInf B X \<longrightarrow> (Inf1 B X \<le> Inf1 A X)" by (meson in_mono inf_lem01 inf_lem2 inf_lem9 isotone_lem2) 
-lemma isotone_lem4:"A \<subseteq> B \<longrightarrow> HasSup A X \<longrightarrow> HasSup B X \<longrightarrow> (Sup1 A X \<le> Sup1  B X)" by (meson in_mono isotone_lem1 issup_then_lub1 issup_then_lbub sup_lem9)
+lemma isotone_lem1:
+  "A \<subseteq> B \<longrightarrow> UpperBounds A X \<supseteq> UpperBounds B X" 
+  by (meson subsetD subsetI upper_bounds_well_defined upper_bound_is_upper_bound2 upper_bound_then_in_upperbounds)
+lemma isotone_lem2:
+  "A \<subseteq> B \<longrightarrow> LowerBounds A X \<supseteq> LowerBounds B X" 
+  by (meson subsetD subsetI lower_bounds_well_defined lower_bound_is_lower_bound2 lower_bound_then_in_lowerbounds)
+lemma isotone_lem3:
+  "A \<subseteq> B \<longrightarrow> HasInf A X \<longrightarrow> HasInf B X \<longrightarrow> (Inf1 B X \<le> Inf1 A X)"
+   by (meson in_mono inf_lem01 inf_lem2 inf_lem9 isotone_lem2) 
+lemma isotone_lem4:
+  "A \<subseteq> B \<longrightarrow> HasSup A X \<longrightarrow> HasSup B X \<longrightarrow> (Sup1 A X \<le> Sup1  B X)"
+   by (meson in_mono isotone_lem1 issup_then_lub1 issup_then_lbub sup_lem9)
+lemma isotone_lem5:
+   assumes A0:"A \<subseteq> B" and
+           A1:"HasMinimum A \<and> HasMinimum B"
+   shows "Min B \<le> Min A"
+   by (meson A0 A1 in_mono minimum_then_min)
+lemma isotone_lem6:
+   assumes A0:"A \<subseteq> B" and
+           A1:"HasMaximum A \<and> HasMaximum B"
+   shows "Max A \<le> Max B"
+  by (meson A0 A1 in_mono maximum_then_max)
 
+lemma isotone_lem7:
+  assumes A0:"(A \<subseteq> B) \<and> (B \<subseteq> X)" and
+          A1:"(HasSup A X) \<and> (HasSup A B)"
+  shows "(Sup1 A X) \<le> (Sup1 A B)"
+  by (meson A0 A1 in_mono issup_then_lub1 issup_well_defined sup_lem10 sup_lem9 upper_bound_is_upper_bound2)
+
+
+lemma isotone_lem8:
+  assumes A0:"(A \<subseteq> B) \<and> (B \<subseteq> X)" and
+          A1:"(HasInf A X) \<and> (HasInf A B)"
+  shows "(Inf1 A B) \<le> (Inf1 A X)"
+  by (meson A0 A1 in_mono inf_lem01 isinf_inf1 isinf_then_ublb isinf_well_defined lower_bound_is_lower_bound2 lower_bound_then_in_lowerbounds)
 
 
 section Functions
