@@ -140,24 +140,20 @@ lemma has_min_sup_null:
   assumes P1:"HasMinimum X"
   shows "Supremum {} X = Minimum X"
 proof-
-  have B1: "\<forall>x \<in> X. (x \<in> {y \<in> X. \<forall>a \<in> {}. y \<le> a})" by simp
-  from B1 have  B2: "\<forall>x \<in> X. (x \<in> UpperBounds {} X)" by (simp add: UpperBounds_def)
-  have B3:"X = (UpperBounds {} X)" by (simp add: UpperBounds_def)
-  have B4:"Minimum X=Minimum(UpperBounds {} X)" using B3 by auto
-  have B5:"Minimum X=(Supremum {} X)" by (simp add: B4 Supremum_def)
-  with B5 show ?thesis by simp
+  have B1:"X = (UpperBounds {} X)" by (simp add: UpperBounds_def)
+  have B2:"Minimum X=Minimum(UpperBounds {} X)" using B1 by auto
+  have B3:"Minimum X=(Supremum {} X)" by (simp add: B2 Supremum_def)
+  with B3 show ?thesis by simp
 qed
 
 lemma has_max_inf_null:
   assumes P1:"HasMaximum X"
   shows "Infimum {} X = Maximum X"
 proof-
-  have B1: "\<forall>x \<in> X. (x \<in> {y \<in> X. \<forall>a \<in> {}. y \<ge> a})" by simp
-  from B1 have  B2: "\<forall>x \<in> X. (x \<in> LowerBounds {} X)" by (simp add: LowerBounds_def)
-  have B3:"X=(LowerBounds {} X)" by (simp add: LowerBounds_def)
-  have B4:"Maximum X=Maximum (LowerBounds {} X)" using B3 by auto
-  have B5:"Maximum X=(Infimum {} X)" by (simp add: B4 Infimum_def)
-  with B5 show ?thesis by simp
+  have B1:"X=(LowerBounds {} X)" by (simp add: LowerBounds_def)
+  have B2:"Maximum X=Maximum (LowerBounds {} X)" using B1 by auto
+  have B3:"Maximum X=(Infimum {} X)" by (simp add: B2 Infimum_def)
+  with B3 show ?thesis by simp
 qed
 
 
