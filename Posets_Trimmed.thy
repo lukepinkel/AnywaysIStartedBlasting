@@ -73,6 +73,7 @@ proof-
   with B3 show ?thesis by simp
 qed
 
+
 lemma max_nonnull: "HasMaximum A \<longrightarrow> A \<noteq> {}" using max_lemma1 by auto
 lemma min_nonnull: "HasMinimum A \<longrightarrow> A \<noteq> {}" using min_lemma1 by auto
 
@@ -156,7 +157,11 @@ proof-
   with B3 show ?thesis by simp
 qed
 
-definition is_ftriple::"('X \<Rightarrow> 'Y) \<Rightarrow> 'X set \<Rightarrow> 'Y set \<Rightarrow> bool " where "is_ftriple f X Y \<equiv> (\<forall>x \<in>X. f x \<in> Y)"
+
+
+
+definition is_ftriple::"('X \<Rightarrow> 'Y) \<Rightarrow> 'X set \<Rightarrow> 'Y set \<Rightarrow> bool " 
+  where "is_ftriple f X Y \<equiv> (\<forall>x \<in>X. f x \<in> Y)"
 
 definition is_antitone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> 'Y::order set \<Rightarrow> bool " 
   where "is_antitone f X Y \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x2 \<le> f x1))"
@@ -173,6 +178,21 @@ definition is_idempotent::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X:
 definition is_a_closure::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X::order set \<Rightarrow> bool"
   where "is_a_closure f X \<equiv> ((is_extensive f X) \<and> (is_isotone f X X) \<and> (is_idempotent f X) \<and> (is_ftriple f X X)) "
 
+definition IsUpClosed::"'X::order set \<Rightarrow>'X::order set \<Rightarrow>bool"
+  where "IsUpClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<le> x \<longrightarrow> x \<in> A)"
+
+definition IsDownClosed::"'X::order set \<Rightarrow>'X::order set \<Rightarrow>bool"
+  where "IsDownClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<le> x \<longrightarrow> x \<in> A)"
+
+definition UpClosure::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set"
+  where "UpClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a}"
+
+definition DownClosure::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set"
+  where "DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<ge>  a}"
+
+lemma upper_bounds_is_up_closed:
+  "IsUpClosed (UpperBounds A X) X"
+
 lemma lemf1: "is_ftriple f X Y \<longrightarrow> (\<forall>A \<in> Pow X. f`A \<in> Pow Y)" by (metis PowI UnionI Union_Pow_eq is_ftriple_def image_subsetI)
 
 lemma lemf2: "is_ftriple f X Y \<longrightarrow> (\<forall>A. A \<subseteq>X \<longrightarrow>  f`A \<subseteq> Y)" by (meson PowD PowI lemf1)
@@ -180,6 +200,8 @@ lemma lemf2: "is_ftriple f X Y \<longrightarrow> (\<forall>A. A \<subseteq>X \<l
 lemma lemf3: "(\<forall>A. A \<subseteq>X \<longrightarrow>  f`A \<subseteq> Y) \<longrightarrow> is_ftriple f X Y " by (meson is_ftriple_def image_subset_iff order_refl)
 
 lemma lemf4: " (\<forall>A \<in> Pow X. f`A \<in> Pow Y) \<longrightarrow>  is_ftriple f X Y" by (meson PowD PowI lemf3)
+
+
 
 lemma smallest_larger_closed_element:
   assumes P:"is_a_closure f X"
