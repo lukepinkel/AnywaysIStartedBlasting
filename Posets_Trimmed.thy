@@ -182,7 +182,7 @@ definition IsUpClosed::"'X::order set \<Rightarrow>'X::order set \<Rightarrow>bo
   where "IsUpClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<le> x \<longrightarrow> x \<in> A)"
 
 definition IsDownClosed::"'X::order set \<Rightarrow>'X::order set \<Rightarrow>bool"
-  where "IsDownClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<le> x \<longrightarrow> x \<in> A)"
+  where "IsDownClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<ge> x \<longrightarrow> x \<in> A)"
 
 definition UpClosure::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set"
   where "UpClosure A X = {x \<in> X. \<exists>a \<in> A. x \<le> a}"
@@ -190,8 +190,43 @@ definition UpClosure::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> '
 definition DownClosure::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set"
   where "DownClosure A X = {x \<in> X. \<exists>a \<in> A. x \<ge>  a}"
 
+definition UpSetsIn::"'X::order set \<Rightarrow> 'X::order set set" 
+  where "UpSetsIn X = {U \<in> Pow X. IsUpClosed U X}"
+
+definition DownSetsIn::"'X::order set \<Rightarrow> 'X::order set set" 
+  where "DownSetsIn X = {D \<in> Pow X. IsDownClosed D X}"
+
+
 lemma upper_bounds_is_up_closed:
   "IsUpClosed (UpperBounds A X) X"
+  by (simp add: IsUpClosed_def UpperBounds_def dual_order.trans)
+
+lemma lower_bounds_is_down_closed:
+  "IsDownClosed (LowerBounds A X) X"
+  by (smt (verit) IsDownClosed_def LowerBounds_def dual_order.trans mem_Collect_eq)
+
+lemma downset_transitivity:
+  assumes P0:"D \<in> DownSetsIn E" and
+          P1:"E \<in> DownSetsIn X"
+  shows " D \<in> DownSetsIn X"
+proof-
+  have B0:"D \<in> Pow E \<and> E \<in> Pow X" using DownSetsIn_def P0 P1 by blast  
+  have B1:"D \<in> Pow X" using B0 P0 P1 by blast
+  have B2:"IsDownClosed D X" by (smt (verit) DownSetsIn_def IsDownClosed_def P0 P1 PowD mem_Collect_eq subset_eq)
+  with B1 B2 show ?thesis by (simp add: DownSetsIn_def)
+qed
+
+
+lemma upset_transitivity:
+  assumes P0:"U \<in> UpSetsIn E" and
+          P1:"E \<in> UpSetsIn X"
+  shows "U \<in> UpSetsIn X"
+proof-
+  have B0:"U \<in> Pow E \<and> E \<in> Pow X" using UpSetsIn_def P0 P1 by blast  
+  have B1:"U \<in> Pow X" using B0 P0 P1 by blast
+  have B2:"IsUpClosed U X" by (smt (verit) UpSetsIn_def IsUpClosed_def P0 P1 PowD mem_Collect_eq subset_eq)
+  with B1 B2 show ?thesis by (simp add: UpSetsIn_def)
+qed
 
 lemma lemf1: "is_ftriple f X Y \<longrightarrow> (\<forall>A \<in> Pow X. f`A \<in> Pow Y)" by (metis PowI UnionI Union_Pow_eq is_ftriple_def image_subsetI)
 
