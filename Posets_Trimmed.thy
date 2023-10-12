@@ -171,7 +171,7 @@ definition is_idempotent::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X:
   where "is_idempotent f X \<equiv> (\<forall>x \<in> X. f x = f (f x))"
 
 definition is_a_closure::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X::order set \<Rightarrow> bool"
-  where "is_a_closure f X \<equiv> ((is_extensive f X) \<and> (is_isotone f X X) \<and> (is_idempotent f X))"
+  where "is_a_closure f X \<equiv> ((is_extensive f X) \<and> (is_isotone f X X) \<and> (is_idempotent f X) \<and> (is_ftriple f X X)) "
 
 lemma lemf1: "is_ftriple f X Y \<longrightarrow> (\<forall>A \<in> Pow X. f`A \<in> Pow Y)" by (metis PowI UnionI Union_Pow_eq is_ftriple_def image_subsetI)
 
@@ -182,7 +182,25 @@ lemma lemf3: "(\<forall>A. A \<subseteq>X \<longrightarrow>  f`A \<subseteq> Y) 
 lemma lemf4: " (\<forall>A \<in> Pow X. f`A \<in> Pow Y) \<longrightarrow>  is_ftriple f X Y" by (meson PowD PowI lemf3)
 
 lemma smallest_largedst_closed:
-  "is_a_closure f X \<longrightarrow> (\<forall>a \<in> X. (f a = Minimum ({y \<in> f`X. a \<le>x })))"
-
+  assumes P:"is_a_closure f X"
+  shows "(\<forall>a \<in> X. (f a = Minimum ({y \<in> f`X. a \<le>y })))"
+proof
+  fix a assume A0:"a \<in> X"
+  let ?C="f`X" and ?aUp="{x \<in> X. a \<le> x}" and ?b="f a" and ?Ca="{y \<in> f`X. a \<le>y }"
+  have B0:"?b \<in> ?C" by (simp add: A0)
+  have B1:"?b \<in> X" by (meson A0 assms is_a_closure_def is_ftriple_def)
+  have B2:"?b \<in> ?aUp" using A0 B1 assms is_a_closure_def is_extensive_def by blast
+  have B3:"?Ca= (?C \<inter> ?aUp)" by (smt (verit, ccfv_SIG) Collect_cong Int_def assms image_iff is_a_closure_def is_ftriple_def mem_Collect_eq)
+  have B4:"?b \<in> ?Ca" using B0 B2 by blast
+  have B5:"\<forall>y \<in> ?Ca. (\<exists>x\<in>X. (y=(f x)) \<and> (a \<le> (f x))) \<longrightarrow> (\<exists>x\<in>X. (y=(f x)) \<and> (f a \<le>  f x))"
+    using A0 assms is_a_closure_def is_isotone_def by blast
+  have B6:"\<forall>y \<in> ?Ca. (f a \<le> y)" 
+    using B5 by auto
+  have B7:"f a = Minimum {y \<in> f`X. a \<le>y }"
+    by (metis (no_types, lifting) B4 B6 HasMinimum_def min_lemma2 order_antisym)
+  show "(f a = Minimum ({y \<in> f`X. a \<le>y }))"
+    using B7 by blast
+qed
+  
 
 end
