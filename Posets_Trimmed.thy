@@ -181,7 +181,7 @@ lemma lemf3: "(\<forall>A. A \<subseteq>X \<longrightarrow>  f`A \<subseteq> Y) 
 
 lemma lemf4: " (\<forall>A \<in> Pow X. f`A \<in> Pow Y) \<longrightarrow>  is_ftriple f X Y" by (meson PowD PowI lemf3)
 
-lemma smallest_largedst_closed:
+lemma smallest_larger_closed_element:
   assumes P:"is_a_closure f X"
   shows "(\<forall>a \<in> X. (f a = Minimum ({y \<in> f`X. a \<le>y })))"
 proof
@@ -201,6 +201,12 @@ proof
   show "(f a = Minimum ({y \<in> f`X. a \<le>y }))"
     using B7 by blast
 qed
-  
+
+lemma maximum_then_closed:
+  assumes P1:"HasMaximum X" and P2:"is_a_closure f X"
+  shows "f (Maximum X) = Maximum X"
+  by (meson P1 P2 antisym is_a_closure_def is_extensive_def is_ftriple_def max_lemma2)
+
+
 
 end
