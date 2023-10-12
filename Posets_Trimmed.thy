@@ -196,6 +196,12 @@ definition UpSetsIn::"'X::order set \<Rightarrow> 'X::order set set"
 definition DownSetsIn::"'X::order set \<Rightarrow> 'X::order set set" 
   where "DownSetsIn X = {D \<in> Pow X. IsDownClosed D X}"
 
+definition PrincipalIdeal::"'X::order \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set" where
+  "PrincipalIdeal a X = {x \<in> X. x \<le> a}"
+
+definition PrincipalFilter::"'X::order \<Rightarrow> 'X::order set \<Rightarrow> 'X::order set" where
+  "PrincipalFilter a X = {x \<in> X. x \<ge> a}"
+
 
 lemma upper_bounds_is_up_closed:
   "IsUpClosed (UpperBounds A X) X"
@@ -227,6 +233,37 @@ proof-
   have B2:"IsUpClosed U X" by (smt (verit) UpSetsIn_def IsUpClosed_def P0 P1 PowD mem_Collect_eq subset_eq)
   with B1 B2 show ?thesis by (simp add: UpSetsIn_def)
 qed
+
+lemma downset_iff_comp_upset:
+  assumes P0:"X \<noteq> {}" and P1:"D \<in> Pow X" shows
+  "D \<in> DownSetsIn X \<longleftrightarrow> (X-D) \<in> UpSetsIn X"
+  by (smt (z3) DiffD2 DiffI Diff_subset DownSetsIn_def IsDownClosed_def IsUpClosed_def P1 PowD PowI UpSetsIn_def mem_Collect_eq subset_eq)
+
+lemma principal_order_iso1:
+  assumes P0:"a \<in> X \<and> b \<in> X" shows
+  "PrincipalIdeal a X \<subseteq> PrincipalIdeal b X \<longleftrightarrow> a \<le> b"
+  by (smt (verit) PrincipalIdeal_def assms dual_order.trans in_mono mem_Collect_eq order_refl subsetI)
+
+lemma principal_order_iso2:
+  assumes P0:"a \<in> X \<and> b \<in> X" shows
+  "PrincipalFilter a X \<subseteq> PrincipalFilter b X \<longleftrightarrow> a \<ge> b"
+  by (smt (verit) Collect_mono_iff PrincipalFilter_def assms dual_order.trans order_refl)
+
+lemma downsets_unionclosed:
+  assumes P0: "\<E> \<in> Pow (DownSetsIn X)"
+  shows "(\<Union>\<E>) \<in> (DownSetsIn X)"
+  by (smt (verit, ccfv_threshold) DownSetsIn_def IsDownClosed_def Pow_iff Union_iff assms mem_Collect_eq subset_eq)
+
+lemma upsets_unionclosed:
+  assumes P0: "\<E> \<in> Pow (UpSetsIn X)" and P1:"\<E> \<noteq> {}"
+  shows "(\<Inter>\<E>) \<in> (UpSetsIn X)"
+proof-
+  let ?I="(\<Inter>\<E>)" and ?U="UpSetsIn X"
+  have B0:"?I \<in> Pow X" by (metis (no_types, lifting) CollectD Inf_less_eq P0 P1 PowD PowI UpSetsIn_def subset_eq)
+  have B1:"IsUpClosed ?I X" by (smt (verit, best) Inter_iff IsUpClosed_def P0 PowD UpSetsIn_def mem_Collect_eq subset_eq)
+  with B0 B1 show ?thesis by (simp add: UpSetsIn_def)
+qed
+
 
 lemma lemf1: "is_ftriple f X Y \<longrightarrow> (\<forall>A \<in> Pow X. f`A \<in> Pow Y)" by (metis PowI UnionI Union_Pow_eq is_ftriple_def image_subsetI)
 
