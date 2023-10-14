@@ -163,11 +163,11 @@ qed
 definition is_ftriple::"('X \<Rightarrow> 'Y) \<Rightarrow> 'X set \<Rightarrow> 'Y set \<Rightarrow> bool " 
   where "is_ftriple f X Y \<equiv> (\<forall>x \<in>X. f x \<in> Y)"
 
-definition is_antitone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> 'Y::order set \<Rightarrow> bool " 
-  where "is_antitone f X Y \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x2 \<le> f x1))"
+definition is_antitone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> bool " 
+  where "is_antitone f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x2 \<le> f x1))"
 
-definition is_isotone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> 'Y::order set \<Rightarrow> bool " 
-  where "is_isotone f X Y \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x1 \<le> f x2))"
+definition is_isotone::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> 'X::order set \<Rightarrow> bool " 
+  where "is_isotone f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1 \<le> x2)\<longrightarrow>(f x1 \<le> f x2))"
 
 definition is_extensive::"('X::order \<Rightarrow> 'X::order) \<Rightarrow>  'X::order set  \<Rightarrow> bool"
   where "is_extensive f X \<equiv> (\<forall>x \<in> X. x \<le> (f x) )"
@@ -176,7 +176,7 @@ definition is_idempotent::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X:
   where "is_idempotent f X \<equiv> (\<forall>x \<in> X. f x = f (f x))"
 
 definition is_a_closure::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X::order set \<Rightarrow> bool"
-  where "is_a_closure f X \<equiv> ((is_extensive f X) \<and> (is_isotone f X X) \<and> (is_idempotent f X) \<and> (is_ftriple f X X)) "
+  where "is_a_closure f X \<equiv> ((is_extensive f X) \<and> (is_isotone f X) \<and> (is_idempotent f X) \<and> (is_ftriple f X X)) "
 
 definition IsUpClosed::"'X::order set \<Rightarrow>'X::order set \<Rightarrow>bool"
   where "IsUpClosed A X \<equiv> (\<forall>x \<in> X. \<forall>a \<in> A. a \<le> x \<longrightarrow> x \<in> A)"
@@ -305,12 +305,65 @@ lemma maximum_then_closed:
 definition hull_equivalence::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X::order set \<Rightarrow> bool"
   where "hull_equivalence f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. ((x1 \<le> f x2) \<longleftrightarrow>(f x1 \<le> f x2)))"
 
+definition is_closure_range::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> bool"
+  where "is_closure_range C X \<equiv> (C \<in> Pow X) \<and> (\<forall>x \<in> X. HasMinimum (PrincipalFilter x C))"
+
+definition closure_from_closure_range::"'X::order set \<Rightarrow> 'X::order set \<Rightarrow> ('X::order \<Rightarrow> 'X::order)"
+  where "closure_from_closure_range C X = (\<lambda>x. Minimum (PrincipalFilter x C))"
+
 lemma closure_equiv:
   "is_a_closure f X \<longleftrightarrow> (hull_equivalence f X) \<and> (is_ftriple f X X)"
 proof-
   let ?L="is_a_closure f X" and ?R="(hull_equivalence f X) \<and> (is_ftriple f X X)"
   have C1:"?R \<longrightarrow> is_extensive f X" by (simp add: hull_equivalence_def is_extensive_def)
-  have C2:"?R \<longrightarrow> is_isotone f X X" 
+  have C2:"?R \<longrightarrow> is_isotone f X"
+  proof-
+    have C20:"?R \<longrightarrow> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1 \<le>x2 \<longrightarrow> f x1 \<le> f x2))"
+      by (metis C1 dual_order.trans hull_equivalence_def is_extensive_def)
+    with C20 show ?thesis by (simp add: is_isotone_def)
+  qed  
+  have C3:"?R\<longrightarrow>is_idempotent f X"
+    by (simp add: hull_equivalence_def is_ftriple_def is_idempotent_def order_class.order_eq_iff)
+  have RtL:"?R \<longrightarrow> ?L" by (simp add: C1 C2 C3 is_a_closure_def)  
+  have LtR:"?L \<longrightarrow> ?R"
+    by (smt (verit, ccfv_threshold) dual_order.trans hull_equivalence_def is_a_closure_def is_extensive_def is_ftriple_def is_idempotent_def is_isotone_def)
+  with RtL LtR show ?thesis by fastforce
+qed
+
+lemma cr_cl_is_closure:
+  assumes P0:"is_closure_range C X"
+  shows "is_a_closure (closure_from_closure_range C X) X"
+proof-
+  let ?f="closure_from_closure_range C X" and ?pf="\<lambda>x. PrincipalFilter x C" 
+  let ?P0="is_closure_range C X"
+  have C0:"is_extensive ?f X"
+  proof-
+    have C00:"\<forall>x \<in> X. (?f x) = Minimum (?pf x)" by (simp add: closure_from_closure_range_def)
+    have C01:"is_closure_range C X \<longrightarrow> (\<forall>x \<in> X. HasMinimum (?pf x))"
+      by (simp add: is_closure_range_def)
+    have C02:"is_closure_range C X \<longrightarrow> (\<forall>x \<in> X. (?f x) \<in> (?pf x))"
+      by (simp add: C01 closure_from_closure_range_def min_lemma2)
+    have C03:"is_closure_range C X \<longrightarrow> (\<forall>x \<in> X. x \<le> (?f x))"
+      using C02 PrincipalFilter_def by fastforce
+    with C03 P0  show ?thesis using is_extensive_def by blast
+  qed
+  have C1:"is_closure_range C X \<longrightarrow> is_isotone ?f X"
+  proof-
+    have C10:"?P0\<longrightarrow> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1 \<le> x2) \<longrightarrow> (?pf x2 \<subseteq> ?pf x1))"
+      by (smt (verit, best) PrincipalFilter_def dual_order.trans mem_Collect_eq subsetI)
+    have C11:"?P0 \<longrightarrow> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1 \<le> x2) \<longrightarrow> (?f x1 \<le> ?f x2))"
+      by (metis C10 closure_from_closure_range_def in_mono is_closure_range_def min_lemma2)
+    with C11 show ?thesis by (simp add: is_isotone_def)
+  qed
+  have C2:"?P0 \<longrightarrow> is_idempotent ?f X"
+  proof-
+    have C20:"?P0 \<longrightarrow> (\<forall>c \<in> C. ?f c = c)"
+      by (smt (verit, ccfv_threshold) PowD PrincipalFilter_def closure_from_closure_range_def dual_order.refl in_mono is_closure_range_def mem_Collect_eq min_lemma2 order_antisym)
+    have C21:"?P0 \<longrightarrow> is_idempotent ?f X "
+      by (metis (no_types, lifting) C20 PrincipalFilter_def closure_from_closure_range_def is_closure_range_def is_idempotent_def mem_Collect_eq min_lemma2)
+    with C21 show ?thesis by simp
+  qed
+  with C0 C1 C2 show ?thesis
 
 
 end
