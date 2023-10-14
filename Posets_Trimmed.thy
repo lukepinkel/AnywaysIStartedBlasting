@@ -302,5 +302,15 @@ lemma maximum_then_closed:
   by (meson P1 P2 antisym is_a_closure_def is_extensive_def is_ftriple_def max_lemma2)
 
 
+definition hull_equivalence::"('X::order \<Rightarrow> 'X::order) \<Rightarrow> 'X::order set \<Rightarrow> bool"
+  where "hull_equivalence f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. ((x1 \<le> f x2) \<longleftrightarrow>(f x1 \<le> f x2)))"
+
+lemma closure_equiv:
+  "is_a_closure f X \<longleftrightarrow> (hull_equivalence f X) \<and> (is_ftriple f X X)"
+proof-
+  let ?L="is_a_closure f X" and ?R="(hull_equivalence f X) \<and> (is_ftriple f X X)"
+  have C1:"?R \<longrightarrow> is_extensive f X" by (simp add: hull_equivalence_def is_extensive_def)
+  have C2:"?R \<longrightarrow> is_isotone f X X" 
+
 
 end
