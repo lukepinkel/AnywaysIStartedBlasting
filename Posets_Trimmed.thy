@@ -287,7 +287,7 @@ proof
   have B3:"?Ca= (?C \<inter> ?aUp)" by (smt (verit, ccfv_SIG) Collect_cong Int_def assms image_iff is_a_closure_def is_ftriple_def mem_Collect_eq)
   have B4:"?b \<in> ?Ca" using B0 B2 by blast
   have B5:"\<forall>y \<in> ?Ca. (\<exists>x\<in>X. (y=(f x)) \<and> (a \<le> (f x))) \<longrightarrow> (\<exists>x\<in>X. (y=(f x)) \<and> (f a \<le>  f x))"
-    using A0 assms is_a_closure_def is_isotone_def by blast
+    by (smt (verit, best) A0 assms is_a_closure_def is_ftriple_def is_idempotent_def is_isotone_def)
   have B6:"\<forall>y \<in> ?Ca. (f a \<le> y)" 
     using B5 by auto
   have B7:"f a = Minimum {y \<in> f`X. a \<le>y }"
@@ -364,6 +364,8 @@ proof-
     with C21 show ?thesis by simp
   qed
   with C0 C1 C2 show ?thesis
+    by (smt (verit, ccfv_threshold) CollectD PowD PrincipalFilter_def assms closure_from_closure_range_def in_mono is_a_closure_def is_closure_range_def is_ftriple_def min_lemma2)
+qed
 
 
 end
