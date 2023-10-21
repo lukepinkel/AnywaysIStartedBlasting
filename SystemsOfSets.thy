@@ -50,13 +50,13 @@ definition FilterOfSets::"'X set set \<Rightarrow> bool" where
 
 
 definition FilterSubbaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterSubbaseIn \<A> X  \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (FIP \<A>) "
+  "FilterSubbaseIn \<A> X  \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (FIP \<A>) \<and> (\<A> \<in> Pow (Pow X))"
 
 definition FilterBaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterBaseIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) "
+  "FilterBaseIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) \<and> (\<A> \<in> Pow (Pow X))"
 
 definition FilterOfSetsIn::"'X set set\<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) "
+  "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) \<and>  (\<A> \<in> Pow (Pow X)) "
 
 definition \<FF>::"'X set \<Rightarrow> 'X set set set" where
   "\<FF> X = {\<F> \<in> Pow (Pow X). FilterOfSetsIn \<F> X} "
@@ -495,9 +495,13 @@ lemma generated_filter:
   assumes A0:"FilterSubbase \<C>"
   shows "FilterOfSets( upclosure (fmeetclosure \<C>))"
   by (simp add: assms sup_base9 sup_subbase4) 
-
-(*lemma generated_filter_in:
+(*
+lemma generated_filter_in:
    assumes A0:"FilterSubbaseIn \<C> X"
    shows " FilterOfSetsIn (filter_generated_by_in \<C> X) X"
- *)
+proof-
+  let ?\<A>="(filter_generated_by_in \<C> X)"
+  let ?\<S>="FilterSubbaseIn \<C> X"
+  have F0:"?\<S>\<longrightarrow>?\<A>\<noteq>{}"
+  *)
 end
