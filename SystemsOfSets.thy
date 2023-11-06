@@ -818,6 +818,11 @@ proof-
   with L R show ?thesis by simp
 qed
 
+lemma bozowatch3:
+  assumes A0:"FilterOfSetsIn F X" and A1:"F \<in> Pow (Pow X)"
+  shows "F = fmeetclosure_in F X"
+  by (metis A0 A1 FilterOfSetsIn_def bozowatch2)
+
 lemma fsubbase1712:
   assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
   shows "F \<in> (FilUpSets C X) \<longrightarrow>  (filter_generated_by_in C X) \<preceq> F "
@@ -825,17 +830,7 @@ proof-
   let ?BF="(fmeetclosure_in C X)" 
   let ?EF="upclosure_in ?BF X "
   have B0:"C \<preceq> ?BF"
-  proof-
-    have B00:"\<forall>c \<in> C. finite({c})" by simp
-    have B01:"\<forall>c \<in> C. {c} \<noteq> {}" by simp 
-    have B02:"\<forall>c \<in> C. ({c} \<in> (Pow C))" by auto
-    have B03:"\<forall>c \<in> C. \<Inter>{c}=c" by simp
-    have B04:"\<forall>c \<in> C. c \<in> (fmeetclosure_in C X)"
-      by (smt (verit, ccfv_SIG) A1 B00 B01 B02 B03 CollectI PowD fmeetclosure_in_def subset_eq)
-    have B05:"\<forall>c \<in> C. (\<exists>b \<in> ?BF. (b \<subseteq> c))"
-      using B04 by blast
-    with B05 show ?thesis by (simp add: preceq_def)
-  qed
+    by (metis A1 empty_subsetI fmc_monotone subseteq_imp_preceq)
   have B1:"?BF \<preceq> ?EF"
     by (smt (verit, del_insts) CollectD CollectI fmeetclosure_in_def preceq_def preceq_reflexive upclosure_in_def)
   have B2:"Fp \<in> FilUpSets C X \<longrightarrow> C \<preceq> Fp"
