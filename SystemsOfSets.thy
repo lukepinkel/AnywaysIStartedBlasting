@@ -1,5 +1,5 @@
 theory SystemsOfSets
-  imports Main "./Posets"
+  imports Main "./Posets" "./FiltersAndIdeals"
 begin
 
 section Definitions
@@ -50,13 +50,13 @@ definition FilterOfSets::"'X set set \<Rightarrow> bool" where
 
 
 definition FilterSubbaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterSubbaseIn \<A> X  \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (FIP \<A>) \<and> (\<A> \<in> Pow (Pow X))"
+  "FilterSubbaseIn \<A> X  \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (FIP \<A>) "
 
 definition FilterBaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterBaseIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) \<and> (\<A> \<in> Pow (Pow X))"
+  "FilterBaseIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (DownDirected \<A>) "
 
 definition FilterOfSetsIn::"'X set set\<Rightarrow> 'X set \<Rightarrow> bool" where
-  "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) \<and>  (\<A> \<in> Pow (Pow X)) "
+  "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) "
 
 definition \<FF>::"'X set \<Rightarrow> 'X set set set" where
   "\<FF> X = {\<F> \<in> Pow (Pow X). FilterOfSetsIn \<F> X} "
@@ -74,7 +74,7 @@ definition upclosure:: "'X set set \<Rightarrow> 'X set set" where
   "upclosure \<A>  = {E. (\<exists>A \<in>\<A>.( A \<subseteq> E)) }"
 
 definition upclosure_in:: "'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
-  "upclosure_in \<A> X  = {E \<in> Pow X. (\<exists>A \<in>\<A>.( A \<subseteq> E)) }"
+  "upclosure_in \<A> X  = {E \<in> Pow X. (\<exists>A \<in>\<A>. ( A \<subseteq> E)) }"
 
 definition fmeetclosure:: "'X set set \<Rightarrow> 'X set set" where
   "fmeetclosure \<A> = {A. (\<exists>\<B>\<in>(Pow \<A>). (finite \<B>) \<and> ( A=\<Inter>\<B>) \<and> (\<B> \<noteq> {}))}"
@@ -82,6 +82,12 @@ definition fmeetclosure:: "'X set set \<Rightarrow> 'X set set" where
 definition fmeetclosure_in:: "'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
   "fmeetclosure_in \<A> X = {A \<in> Pow X. (\<exists>\<B>\<in>(Pow \<A>). (finite \<B>) \<and> ( A=\<Inter>\<B>) \<and> (\<B> \<noteq> {}))}"
 
+definition fmeet_in::"'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set \<Rightarrow> bool" where
+  "fmeet_in \<A> X A \<equiv> ((A \<in> Pow X) \<and> (\<exists>\<B>\<in>(Pow \<A>).  (finite \<B>) \<and> ( A=\<Inter>\<B>) \<and> (\<B> \<noteq> {})))"
+
+(*finite_inter_of_idemp*)
+definition FilUpSets::"'X set set \<Rightarrow>  'X set \<Rightarrow> 'X set set set" where
+  "FilUpSets A X = {F \<in> Pow (Pow X). (FilterOfSetsIn F X) \<and> (A \<preceq> F)}"
 
 definition meshes:: "'X set set \<Rightarrow> 'X set set \<Rightarrow> bool" where
   "meshes \<A> \<B> \<equiv> \<forall>A \<in> \<A>. \<forall>B \<in>\<B>. (A \<inter> B \<noteq> {})"
@@ -108,6 +114,7 @@ section Lemmas
 
 subsection PropertiesOfRelations
 
+(*1.70.1*)
 lemma preceq_transitive:
    "\<forall>\<A> \<B> \<C>. (\<A> \<preceq> \<B> \<and>  \<B> \<preceq> \<C>) \<longrightarrow> (\<A> \<preceq> \<C>)"
   by (meson dual_order.trans preceq_def)
@@ -116,6 +123,7 @@ lemma preceq_reflexive:
   "\<forall>\<A>. \<A> \<preceq> \<A>"
   using preceq_def by auto
 
+(*1.70.2*)
 lemma subseteq_imp_preceq:
   " \<forall>\<A> \<B>. \<A> \<subseteq> \<B>\<longrightarrow>\<A> \<preceq> \<B>"
   by (meson dual_order.refl in_mono preceq_def)
@@ -124,6 +132,7 @@ lemma preceq_trns2:
   "\<forall>\<A> \<B> \<C>. \<A> \<subseteq> \<B> \<and> \<B> \<preceq> \<C> \<longrightarrow> \<A> \<preceq> \<C>  "
   using preceq_transitive subseteq_imp_preceq by blast
 
+(*1.70.3*)
 lemma upclosed_then_preceq_imp_subseteq:
   assumes A0: "(Proper \<A>) \<and> (\<A> \<noteq> {})" and
           A1: "(Proper \<B>) \<and> (\<B> \<noteq> {})" and
@@ -139,6 +148,8 @@ proof-
     by (meson subsetI)
 qed
 
+
+(*1.70.4*)
 lemma upclosed_equiv_then_equal:
   assumes A0:"UpClosed  \<A> \<and> UpClosed \<B> " and
           A1:"\<A> ~ \<B>"
@@ -174,17 +185,19 @@ lemma upclosure_is_upclosed1:
   shows "UpClosed \<A>"
   by (smt (verit, ccfv_SIG) CollectD CollectI UpClosed_def assms dual_order.trans upclosure_def)
 
+(*1.70.5*)
 lemma upclosure_in_is_upclosed_in1:
   assumes "\<A>=upclosure_in \<B> X"
   shows "UpClosed_In \<A> X"
   by (smt (verit, ccfv_SIG) CollectD CollectI UpClosed_In_def assms subset_eq upclosure_in_def)
 
-
+(*1.70.5*)
 lemma upclosure_is_upclosed2:
   assumes "\<A>=upclosure \<B>"
   shows "\<A> ~ \<B>"
   by (smt (verit, ccfv_threshold) assms dual_order.refl fequiv_def mem_Collect_eq preceq_def upclosure_def)
 
+(*1.70.7*)
 lemma upclosure_in_is_upclosed_in2:
   assumes A0: "\<B> \<in> Pow (Pow X)" and
           A1: "ProperNE \<B>" and
@@ -275,6 +288,7 @@ lemma lem_meshing5:
 
 subsection PropertiesOfTypes
 
+(*1.70.8*)
 lemma equiv_fbase_imp_fbase:
   assumes A0:"FilterBase \<B> "and
         A1: "\<A> ~\<B> "
@@ -308,6 +322,7 @@ proof-
     by (simp add: FilterBase_def)
 qed
 
+(*1.70.9*)
 lemma fbase_gen_filter:
   assumes A0: "FilterBase A"
   shows "FilterOfSets (upclosure A)"
@@ -336,12 +351,55 @@ proof-
   with B9 show ?thesis by simp
 qed
 
+(*1.70.10*)
+lemma upclosure_iff:
+  assumes A0:"X \<noteq> {}" and A1:"A \<in> Pow (Pow X)"
+  shows "\<forall>f \<in> Pow X. ((f \<in> (upclosure_in A X) \<longleftrightarrow> (\<exists>a \<in> A. a \<subseteq> f)))"
+proof-
+  let ?L="\<lambda>f. f \<in> (upclosure_in A X)" and ?R="\<lambda>f. (\<exists>a \<in> A. a \<subseteq> f)"
+  have LR:"\<forall>f \<in> Pow X. (?L f \<longrightarrow>?R f)"
+    by (simp add: upclosure_in_def)
+  have RL:"\<forall>f \<in> Pow X. (?R f \<longrightarrow>?L f)"
+    by (simp add: upclosure_in_def)
+  with LR RL show ?thesis by blast
+qed
+
+(*1.70.9*)
+lemma fbase_gen_filterb:
+  assumes A0: "FilterBaseIn A X" and A1:"X \<noteq> {}" and A2:"A \<in> Pow(Pow X)"
+  shows "FilterOfSetsIn (upclosure_in A X) X"
+proof-
+  let ?F="upclosure_in A X"
+  have B0: "\<forall>f \<in> Pow X. (f \<in> ?F \<longleftrightarrow> (\<exists>a \<in> A. a \<subseteq> f))"
+    by (simp add: upclosure_in_def)
+  have B1:"Proper A"
+    using A0 FilterBaseIn_def by blast
+  from B0 B1 have  B2:"{} \<notin> ?F"
+    by (simp add: Proper_def)
+  have B3:"Proper ?F"
+    by (simp add: B2 Proper_def)
+  have B4: "\<forall>F1 \<in> ?F. \<forall>F2 \<in> ?F. \<exists>B1\<in>A. \<exists>B2\<in> A. \<exists>B3 \<in> A. (B1 \<subseteq>F1) \<and> (B2 \<subseteq> F2) \<and> (B3 \<subseteq> (B1 \<inter> B2))"
+    by (smt (verit, best) A0 CollectD DownDirected_def FilterBaseIn_def upclosure_in_def)
+  have B5: "\<forall>F1 \<in> ?F. \<forall>F2 \<in> ?F. \<exists>B3 \<in> A. (B3 \<subseteq> (F1 \<inter> F2)) "
+    by (smt (verit, ccfv_SIG) B4 inf.absorb_iff2 inf.cobounded2 inf_assoc)
+  have B6: "\<forall>F1 \<in> ?F. \<forall>F2 \<in> ?F. ((F1 \<inter> F2) \<in> ?F)"
+    by (metis (mono_tags, lifting) B5 Pow_iff inf.absorb_iff2 inf_assoc mem_Collect_eq upclosure_in_def)
+  have B7: "PiSystem ?F"
+    using B6 PiSystem_def by blast
+  have B8: "UpClosed_In ?F X"
+    by (simp add: upclosure_in_is_upclosed_in1)
+  from B3 B7 B8 have B9: "FilterOfSetsIn ?F X"
+    by (metis (no_types, lifting) A0 A2 B0 FilterBaseIn_def FilterOfSetsIn_def Pow_iff bot.extremum_uniqueI in_mono subsetI)
+  with B9 show ?thesis by simp
+qed
+(*1.70.10*)
 lemma fbase_condition:
   assumes A0: "(Proper B)" and
           A1: "FilterOfSets F"
   shows "(F=upclosure B) \<longleftrightarrow> (F \<preceq> B) \<and> (B \<subseteq> F)"
   by (metis A0 A1 FilterOfSets_def UpClosed_def empty_iff fequiv_def fequiv_iff_upclosure_equal subseteq_imp_preceq upclosed_equiv_then_equal upclosed_then_preceq_imp_subseteq upclosure_is_upclosed1 upclosure_is_upclosed2)
 
+(*1.70.11*)
 lemma upprop_fip:
   assumes A0:"Centered B" and
           A1: "A \<preceq> B"
@@ -350,9 +408,31 @@ lemma upprop_fip:
 
 
 
+
 lemma union_inter_c:
   "\<Inter>(\<A> \<union> \<B>) = (\<Inter>\<A>)\<inter>(\<Inter>\<B> )"
   by blast
+
+lemma union_inter_c2:
+  assumes  "I \<noteq> {}" and
+           "B \<in> Pow X" and
+           "\<forall>i \<in> I. A(i) \<in> Pow X" and
+           "X \<noteq> {}"
+  shows "B \<inter> (\<Union>i \<in> I. A(i)) = (\<Union>i \<in> I. (B \<inter> A(i)))"
+  by simp
+
+lemma union_inter_c3:
+  assumes "\<forall>j \<in> J. I(j) \<noteq> {}" and "J \<noteq> {}" and
+          "\<forall>j \<in> J. \<forall>i \<in> I(j). A(i) \<in> Pow X" and "X \<noteq> {}"
+  shows "(\<Union>i\<in>(\<Union>j \<in> J. I(j)). A(i)) =(\<Union>j\<in>J. (\<Union>i\<in>I(j). A(i)))"
+  by blast
+
+
+lemma union_inter_c4:
+  assumes "I \<noteq> {}" and "finite I" and "\<forall>i \<in> I. (A i) \<in> Pow X" and 
+          "\<forall>i \<in> I. (finite (A i))"
+  shows "finite (\<Union>i\<in>I. A (i))"
+  using assms(2) assms(4) by blast
 
 lemma sup_subbase0:
   assumes A0:"FilterSubbase \<C>"
@@ -427,6 +507,30 @@ proof-
   with B5 B6 show ?thesis by blast
 qed
 
+
+
+lemma union_fiter0b:
+  assumes A0:"FilterSubbaseIn C X" 
+  shows "\<forall>B \<in> Pow X. (B \<in> (fmeetclosure_in C X) \<longleftrightarrow> (\<exists>\<E>\<in>(f_many C). B=\<Inter>\<E> ))"
+proof-
+  have B0:"B \<in>(fmeetclosure_in C X) \<longleftrightarrow> (B \<in> Pow X \<and> (\<exists>\<B>\<in>Pow C. (finite \<B>) \<and> ( B=\<Inter>\<B>) \<and> (\<B> \<noteq> {}))) "
+    by (simp add: fmeetclosure_in_def)
+  have B1:"\<forall>\<E>. (\<E>\<in>(f_many C) \<longleftrightarrow>  is_f_many \<E> C)"
+    by (simp add: f_many_def)
+  have B2:"\<forall>\<E>. ( is_f_many \<E> C) \<longleftrightarrow> ((\<E> \<subseteq>C) \<and> (finite \<E>) \<and> (\<E> \<noteq> {}))"
+    by (simp add: is_f_many_def)
+  have B3:"\<forall>\<E>. (\<E>\<in>(f_many C)) \<longleftrightarrow> ((\<E>  \<in> Pow C) \<and> (finite \<E>) \<and> (\<E> \<noteq> {}))"
+    by (simp add: B1 B2)
+  have B4:"B\<in>(fmeetclosure_in C X) \<longrightarrow> (\<exists>\<E>. ((\<E>  \<in> Pow C) \<and> (finite \<E>) \<and> (\<E> \<noteq> {})) \<and>( B=\<Inter>\<E>) )"
+    using B0 by blast
+  have B5:"B\<in>(fmeetclosure_in C X) \<longrightarrow>  (\<exists>\<E>\<in>(f_many C). B=\<Inter>\<E> )"
+    using B0 B3 by blast
+  have B6:"\<forall>B \<in> Pow X. (((\<exists>\<E>\<in>(f_many C). B=\<Inter>\<E> ) \<longrightarrow> B\<in>(fmeetclosure_in C X)))"
+    by (metis (mono_tags, lifting) B3 CollectI fmeetclosure_in_def)
+  with B5 B6 show ?thesis
+    by (smt (verit, best) B3 fmeetclosure_in_def mem_Collect_eq)
+qed
+
 subsection Subbases
 
 lemma sup_subbase1:
@@ -440,11 +544,26 @@ lemma sup_subbase1:
          union_inter_c)
 
 
+lemma sup_subbase1b:
+  assumes A0:"FilterSubbaseIn C X" and
+          A1:"(A1\<in>(fmeetclosure_in C X)) \<and> (A2 \<in>(fmeetclosure_in C X))"
+  shows "(A1 \<inter> A2) \<in> (fmeetclosure_in C X)"
+  by (smt (verit) A1 CollectD CollectI IntD2 Pow_iff Un_empty finite_Un fmeetclosure_in_def le_sup_iff subset_eq union_inter_c)
+
+
+
+
 
 lemma sup_subbase2:
   assumes A0:"FilterSubbase \<C>"
   shows "PiSystem (fmeetclosure \<C>)"
   by (simp add: PiSystem_def assms sup_subbase1)
+
+
+lemma sup_subbase2b:
+  assumes A0:"FilterSubbaseIn C X"
+  shows "PiSystem (fmeetclosure_in C X)"
+  by (simp add: PiSystem_def assms sup_subbase1b)
 
 
 lemma sup_subbase3:
@@ -458,10 +577,30 @@ lemma sup_subbase5:
   shows "( fmeetclosure \<C>) \<noteq> {}"
   by (metis CollectI FilterSubbase_def assms bot.extremum ex_in_conv f_many_def finite.emptyI finite.insertI insert_subset is_f_many_def union_fiter0)
 
+
+lemma sup_subbase5b:
+  assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
+  shows "(fmeetclosure_in C X) \<noteq> {}"
+proof -
+  obtain bb :: "'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" where
+    f1: "\<forall>X0 X1. bb X0 X1 = is_f_many X1 X0"
+    by moura
+  then have "\<forall>A. f_many A = Collect (bb A)"
+    using f_many_def by blast
+  then show ?thesis
+    using f1 by (metis (no_types) A1 A2 FilterSubbaseIn_def Pow_iff cInf_singleton ex_in_conv finite.emptyI finite_insert insert_not_empty insert_subset is_f_many_def mem_Collect_eq subset_eq union_fiter0b)
+qed
+
+
 lemma sup_subbase4:
   assumes A0:"FilterSubbase \<C>"
   shows "FilterBase (fmeetclosure \<C> )"
   by (simp add: FilterBase_def assms sup_subbase0 sup_subbase2 sup_subbase3 sup_subbase5)
+
+lemma sup_subbase4b:
+  assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
+  shows "FilterBaseIn (fmeetclosure_in C X) X"
+  by (smt (verit) A0 A1 A2 CollectD FIP_def FilterBaseIn_def FilterSubbaseIn_def Proper_def fmeetclosure_in_def sup_subbase2b sup_subbase3 sup_subbase5b)
 
 
 subsection Bases
@@ -471,37 +610,216 @@ lemma sup_base5:
   shows "(upclosure \<B>) \<noteq> {}"
   using FilterOfSets_def assms fbase_gen_filter by auto
 
+lemma sup_base5b:
+  assumes A0: "X \<noteq> {}" and A1:"B \<in> Pow(Pow X)" and A2:"FilterBaseIn B X"
+  shows "(upclosure_in B X) \<noteq> {}"
+  by (metis A0 A1 A2 FilterOfSetsIn_def fbase_gen_filterb)
+
+
 lemma sup_base6:
   assumes A0: "FilterBase \<B>"
   shows "Proper ( upclosure( \<B> ))"
   using FilterBase_def assms upclosure_preserves_properness by auto
+
+lemma sup_base6b:
+  assumes A0:"X \<noteq> {}" and A1:"B \<in> Pow(Pow X)" and A2:"FilterBaseIn B X"
+  shows "Proper ( upclosure_in B  X)"
+  by (meson A0 A1 A2 FilterOfSetsIn_def fbase_gen_filterb)
+
 
 lemma sup_base7:
   assumes A0: "FilterBase \<B>"
   shows "PiSystem (upclosure \<B>)"
   using FilterOfSets_def assms fbase_gen_filter by auto
 
+
+
+lemma sup_base7b:
+  assumes A0: "FilterBaseIn B X"
+  shows "PiSystem (upclosure_in B X)"
+  by (smt (verit, ccfv_threshold) A0 CollectD CollectI DownDirected_def FilterBaseIn_def PiSystem_def Pow_iff inf.absorb_iff2 inf.bounded_iff inf_aci(2) upclosure_in_def)
+
 lemma sup_base8:
    assumes A0: "FilterBase \<B>"
    shows "UpClosed (upclosure \<B>)"
   by (simp add: upclosure_is_upclosed1)
+
+
+lemma sup_base8b:
+   assumes A0: "FilterBaseIn B X"
+   shows "UpClosed_In (upclosure_in B X) X"
+  by (simp add: upclosure_in_is_upclosed_in1)
 
 lemma sup_base9:
   assumes A0: "FilterBase \<B>"
   shows "FilterOfSets (upclosure \<B>)"
   by (simp add: assms fbase_gen_filter)
 
+(*1.70.9*)
+lemma sup_base9b:
+  assumes A0:"X \<noteq> {}" and A1:"B \<in> Pow (Pow X)" and A2: "FilterBaseIn B X"
+  shows "FilterOfSetsIn (upclosure_in B X) X"
+  using A0 A1 A2 fbase_gen_filterb by blast
+
 lemma generated_filter:
   assumes A0:"FilterSubbase \<C>"
   shows "FilterOfSets( upclosure (fmeetclosure \<C>))"
   by (simp add: assms sup_base9 sup_subbase4) 
-(*
+
 lemma generated_filter_in:
-   assumes A0:"FilterSubbaseIn \<C> X"
-   shows " FilterOfSetsIn (filter_generated_by_in \<C> X) X"
+   assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
+   shows "FilterOfSetsIn (filter_generated_by_in C X) X"
+  by (metis (no_types, lifting) A0 A1 A2 CollectD PowI fbase_gen_filterb filter_generated_by_in_def fmeetclosure_in_def subsetI sup_subbase4b)
+
+
+
+lemma fmc_monotone:
+  assumes A0:"C \<in> Pow (Pow X)" and A1:"C \<noteq> {}"
+  shows "C \<subseteq> (fmeetclosure_in C X)"
 proof-
-  let ?\<A>="(filter_generated_by_in \<C> X)"
-  let ?\<S>="FilterSubbaseIn \<C> X"
-  have F0:"?\<S>\<longrightarrow>?\<A>\<noteq>{}"
-  *)
+  have B00:"\<forall>c \<in> C. finite({c})" by simp
+  have B01:"\<forall>c \<in> C. {c} \<noteq> {}" by simp 
+  have B02:"\<forall>c \<in> C. ({c} \<in> (Pow C))" by auto
+  have B03:"\<forall>c \<in> C. \<Inter>{c}=c" by simp
+  have B04:"\<forall>c \<in> C. c \<in> (fmeetclosure_in C X)"
+        by (smt (verit, ccfv_SIG) A0 B00 B01 B02 B03 CollectI PowD fmeetclosure_in_def subset_eq)
+  with B04 show ?thesis
+    by (simp add: subsetI)
+qed
+
+
+lemma finite_intersections_in_set:
+  fixes X::"'X set"
+  assumes A0:"C \<noteq> {}" and
+          A1:"C \<in> Pow(Pow (X))" and
+          A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
+          A3:"finite E" and
+          A4:"E \<noteq> {}"  and
+          A5:"E \<subseteq> C"
+  shows "(\<Inter>E) \<in> C"
+proof -
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x)
+    with assms show ?case
+      by simp
+    next
+    case (insert x F)
+    then have "(\<Inter>(insert x F)) \<in> C" using assms
+    proof-
+      have P0:"x \<in> C"
+        using insert.prems by auto
+      have P1: "F \<subseteq> C"
+        using insert.prems by auto
+      with A2 have P2:"x \<inter> (\<Inter>F) \<in> C"
+        by (simp add: P0 insert.hyps(4))
+      from insert.hyps have P3:"(\<Inter>F) \<in> C"
+        using P1 by blast
+      have  P4:"\<Inter>(insert x F) = x \<inter> (\<Inter>F)" by simp
+      then show "(\<Inter>(insert x F)) \<in> C"
+        by (simp add: P2)
+    qed
+    show ?case
+      using \<open>\<Inter> (insert (x::'X set) (F::'X set set)) \<in> (C::'X set set)\<close> by auto
+  qed
+qed
+
+
+lemma fmeet_invol:
+  assumes A0:"C \<in> Pow (Pow X)" and A1:"C \<noteq> {}"
+  shows "(fmeetclosure_in C X) = fmeetclosure_in (fmeetclosure_in C X) X"
+proof-
+  let ?C1= "(fmeetclosure_in C X)"
+  let ?C2= "(fmeetclosure_in ?C1 X)"
+  have B0: "C \<subseteq> ?C1"
+    by (metis A0 A1 fmc_monotone)
+  have B1:"?C1 \<subseteq> ?C2"
+    by (metis (no_types, lifting) Pow_iff empty_iff fmc_monotone fmeetclosure_in_def mem_Collect_eq subsetI)
+  have B2:"?C2 \<subseteq> ?C1"
+  proof
+    fix a assume "a \<in> ?C2"    
+    have "a \<in> Pow X"
+      by (metis (no_types, lifting) CollectD \<open>(a::'a set) \<in> fmeetclosure_in (fmeetclosure_in (C::'a set set) (X::'a set)) X\<close> fmeetclosure_in_def)
+    let ?r="\<lambda>a. \<lambda>C.  (\<exists>B\<in>(Pow C). (finite B) \<and> (a=\<Inter>B) \<and> (B \<noteq> {}))"
+    have B20:"a \<in> ?C2 \<longleftrightarrow> (\<exists>B\<in>(Pow ?C1). (finite B) \<and> (a=\<Inter>B) \<and> (B \<noteq> {}))"
+      by (smt (verit, ccfv_SIG) \<open>a \<in> Pow X\<close> fmeetclosure_in_def mem_Collect_eq)
+    have B30:"a \<in> ?C1 \<longleftrightarrow> (\<exists>b\<in>(Pow C). (finite b) \<and> (a=\<Inter>b) \<and> (b \<noteq> {}))"
+      by (smt (verit, ccfv_SIG) \<open>a \<in> Pow X\<close> fmeetclosure_in_def mem_Collect_eq)
+    have B40:"a \<in> ?C2 \<longleftrightarrow> ?r a ?C1"
+      using B20 by blast
+    have B50:"d \<in> ?C1 \<longleftrightarrow> ?r d C"
+      by (smt (verit, ccfv_threshold) A0 Inf_lower2 Pow_iff Set.set_insert finite_has_minimal fmeetclosure_in_def insert_subset mem_Collect_eq)
+   obtain B where "(B \<in> (Pow ?C1)) \<and> finite B \<and> (a=(\<Inter>B)) \<and> (B \<noteq> {})"
+     by (smt (verit, best) CollectD \<open>(a::'a set) \<in> fmeetclosure_in (fmeetclosure_in (C::'a set set) (X::'a set)) X\<close> fmeetclosure_in_def)
+   have B60:"B \<in> Pow ?C1"
+        using \<open>(B::'a set set) \<in> Pow (fmeetclosure_in (C::'a set set) (X::'a set)) \<and> finite B \<and> (a::'a set) = \<Inter> B \<and> B \<noteq> {}\<close> by blast
+   obtain f where "f=(\<lambda>x.  SOME t. ( (is_f_many t C) \<and> (x=\<Inter>t)))"
+      by simp
+   have B70: "\<forall>b \<in> B. (?r b C)"
+        by (smt (verit, best) CollectD PowD Set.set_insert \<open>(B::'a set set) \<in> Pow (fmeetclosure_in (C::'a set set) (X::'a set)) \<and> finite B \<and> (a::'a set) = \<Inter> B \<and> B \<noteq> {}\<close> fmeetclosure_in_def insert_subset)
+   have B80:"\<forall>b \<in> B. (\<exists>t. ((is_f_many t C) \<and> (b=\<Inter>t)))"
+        by (meson PowD \<open>\<forall>b::'a set\<in>B::'a set set. \<exists>B::'a set set\<in>Pow (C::'a set set). finite B \<and> b = \<Inter> B \<and> B \<noteq> {}\<close> is_f_many_def)   
+   have B90:"\<forall>b \<in> B. (b=\<Inter>(f b))"
+        by (metis (mono_tags, lifting) \<open>(f::'a set \<Rightarrow> 'a set set) = (\<lambda>x::'a set. SOME t::'a set set. is_f_many t (C::'a set set) \<and> x = \<Inter> t)\<close> \<open>\<forall>b::'a set\<in>B::'a set set. \<exists>t::'a set set. is_f_many t (C::'a set set) \<and> b = \<Inter> t\<close> someI)
+   have B90:"\<forall>b \<in> B. (is_f_many (f b) C)"
+     by (metis (mono_tags, lifting) B80 \<open>(f::'a set \<Rightarrow> 'a set set) = (\<lambda>x::'a set. SOME t::'a set set. is_f_many t (C::'a set set) \<and> x = \<Inter> t)\<close> someI)
+   have B100:"\<forall>b \<in> B. (finite (f b))"
+     using B90 is_f_many_def by blast
+   have B110:"finite B"
+     by (simp add: \<open>(B::'a set set) \<in> Pow (fmeetclosure_in (C::'a set set) (X::'a set)) \<and> finite B \<and> (a::'a set) = \<Inter> B \<and> B \<noteq> {}\<close>)    
+   let ?D="\<Union>b \<in> B. (f b)"
+   have B120:"finite ?D"
+     using B100 B110 by blast
+   have B130:"?D \<in> Pow C"
+     by (meson B90 PowI UN_least is_f_many_def)
+   have B140:"?D \<noteq> {}"
+     using B90 \<open>(B::'a set set) \<in> Pow (fmeetclosure_in (C::'a set set) (X::'a set)) \<and> finite B \<and> (a::'a set) = \<Inter> B \<and> B \<noteq> {}\<close> is_f_many_def by fastforce
+   have B150:"a=\<Inter>B"
+     by (simp add: \<open>(B::'a set set) \<in> Pow (fmeetclosure_in (C::'a set set) (X::'a set)) \<and> finite B \<and> (a::'a set) = \<Inter> B \<and> B \<noteq> {}\<close>)
+   have B160:"a=(\<Inter>b\<in>B. b)"
+     by (simp add: B150)
+   have B170:"\<forall>b \<in> B. (b=(\<Inter>(f b)))"
+     by (metis (mono_tags, lifting) B80 \<open>(f::'a set \<Rightarrow> 'a set set) = (\<lambda>x::'a set. SOME t::'a set set. is_f_many t (C::'a set set) \<and> x = \<Inter> t)\<close> someI_ex)
+   have B180:"a=(\<Inter>b\<in>B. (\<Inter>(f b)))"
+     using B160 B170 by auto
+  have B190:"a=\<Inter>?D"
+    using B180 by blast
+  with B120 B130 B140 B190 have B200:"a \<in> ?C1"
+    using B30 by blast
+  show "a \<in> ?C1"
+    by (simp add: B200)
+  qed
+  have B3:"?C1 = ?C2"
+    by (simp add: B1 B2 subset_antisym)
+  with B3 show ?thesis
+    by simp
+qed
+ 
+  
+
+lemma fsubbase1712:
+  assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
+  shows "F \<in> (FilUpSets C X) \<longrightarrow>  (filter_generated_by_in C X) \<preceq> F "
+proof-
+  let ?BF="(fmeetclosure_in C X)" 
+  let ?EF="upclosure_in ?BF X "
+  have B0:"C \<preceq> ?BF"
+  proof-
+    have B00:"\<forall>c \<in> C. finite({c})" by simp
+    have B01:"\<forall>c \<in> C. {c} \<noteq> {}" by simp 
+    have B02:"\<forall>c \<in> C. ({c} \<in> (Pow C))" by auto
+    have B03:"\<forall>c \<in> C. \<Inter>{c}=c" by simp
+    have B04:"\<forall>c \<in> C. c \<in> (fmeetclosure_in C X)"
+      by (smt (verit, ccfv_SIG) A1 B00 B01 B02 B03 CollectI PowD fmeetclosure_in_def subset_eq)
+    have B05:"\<forall>c \<in> C. (\<exists>b \<in> ?BF. (b \<subseteq> c))"
+      using B04 by blast
+    with B05 show ?thesis by (simp add: preceq_def)
+  qed
+  have B1:"?BF \<preceq> ?EF"
+    by (smt (verit, del_insts) CollectD CollectI fmeetclosure_in_def preceq_def preceq_reflexive upclosure_in_def)
+  have B2:"Fp \<in> FilUpSets C X \<longrightarrow> C \<preceq> Fp"
+    by (simp add: FilUpSets_def)
+  have B3:"Fp \<in> FilUpSets C X \<longrightarrow> ?BF \<preceq> Fp "
+
+
 end
