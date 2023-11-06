@@ -724,7 +724,7 @@ proof -
 qed
 
 
-lemma fmeet_invol:
+lemma fmeet_idemp:
   assumes A0:"C \<in> Pow (Pow X)" and A1:"C \<noteq> {}"
   shows "(fmeetclosure_in C X) = fmeetclosure_in (fmeetclosure_in C X) X"
 proof-
@@ -833,9 +833,34 @@ proof-
     by (metis A1 empty_subsetI fmc_monotone subseteq_imp_preceq)
   have B1:"?BF \<preceq> ?EF"
     by (smt (verit, del_insts) CollectD CollectI fmeetclosure_in_def preceq_def preceq_reflexive upclosure_in_def)
-  have B2:"Fp \<in> FilUpSets C X \<longrightarrow> C \<preceq> Fp"
+  have B2:"F \<in> FilUpSets C X \<longrightarrow> C \<preceq> F"
     by (simp add: FilUpSets_def)
-  have B3:"Fp \<in> FilUpSets C X \<longrightarrow> ?BF \<preceq> Fp "
+  have B3:"F \<in> FilUpSets C X \<longrightarrow> C \<subseteq> F "
+  proof
+    fix Fp assume "Fp \<in> FilUpSets C X"
+    have B30:"Proper Fp"
+      using FilUpSets_def FilterOfSetsIn_def \<open>Fp \<in> FilUpSets C X\<close> by fastforce
+    have B31:"Fp \<noteq> {}"
+      using FilUpSets_def FilterOfSetsIn_def \<open>Fp \<in> FilUpSets C X\<close> by fastforce
+    from A2 have B32:"Proper C"
+      using FilterSubbaseIn_def by blast
+    from A2 have B33:"C \<noteq> {}"
+      by (simp add: FilterSubbaseIn_def)
+    from B2 have B34:"C \<preceq> Fp"
+      using FilUpSets_def \<open>Fp \<in> FilUpSets C X\<close> by auto
+    show "C \<subseteq> Fp"
+      by (smt (verit, del_insts) A1 CollectD FilUpSets_def FilterOfSetsIn_def PowD UpClosed_In_def \<open>Fp \<in> FilUpSets C X\<close> in_mono preceq_def subsetI)
+  qed
+  have B4:"F \<in> FilUpSets C X \<longrightarrow> ?BF \<preceq> F"
+    by (smt (verit, del_insts) B3 CollectD FilUpSets_def FilterOfSetsIn_def Pow_mono bozowatch1 fmeetclosure_in_def preceq_def subset_eq)
+  have B5:"F \<in> (FilUpSets C X) \<longrightarrow> ?EF \<preceq> F"
+    by (smt (verit, ccfv_threshold) B4 CollectD FilUpSets_def FilterOfSetsIn_def UpClosed_In_def fmeetclosure_in_def preceq_def upclosure_in_def)
+  have B6:"?EF = (filter_generated_by_in C X)"
+    by (simp add: filter_generated_by_in_def)
+  with B5 B6 show ?thesis
+    by simp
+qed
+  
 
 
 end
