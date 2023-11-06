@@ -1,5 +1,5 @@
 theory SystemsOfSets
-  imports Main "./Posets" "./FiltersAndIdeals"
+  imports Main "./Posets"
 begin
 
 section Definitions
@@ -690,8 +690,7 @@ qed
 
 lemma finite_intersections_in_set:
   fixes X::"'X set"
-  assumes A0:"C \<noteq> {}" and
-          A1:"C \<in> Pow(Pow (X))" and
+  assumes A1:"C \<in> Pow(Pow (X))" and
           A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
           A3:"finite E" and
           A4:"E \<noteq> {}"  and
@@ -794,8 +793,12 @@ proof-
   with B3 show ?thesis
     by simp
 qed
- 
-  
+
+lemma bozowatch1:
+  assumes A0:"PiSystem A" and A1:"A \<noteq> {}" and A2:"A \<in> Pow(Pow(X))"
+  shows "\<forall>E \<in> Pow A. E \<noteq> {} \<longrightarrow> finite E \<longrightarrow> \<Inter>E \<in> A"
+  by (metis A0 A2 PiSystem_def PowD finite_intersections_in_set)
+
 
 lemma fsubbase1712:
   assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
