@@ -799,6 +799,24 @@ lemma bozowatch1:
   shows "\<forall>E \<in> Pow A. E \<noteq> {} \<longrightarrow> finite E \<longrightarrow> \<Inter>E \<in> A"
   by (metis A0 A2 PiSystem_def PowD finite_intersections_in_set)
 
+lemma bozowatch2:
+  assumes A0:"PiSystem A" and A1:"A \<noteq> {}" and A2:"A \<in> Pow(Pow(X))"
+  shows "A = fmeetclosure_in A X"
+proof-
+  have L:"A \<subseteq> fmeetclosure_in A X"
+    by (meson A1 A2 fmc_monotone)
+  have R:"fmeetclosure_in A X \<subseteq> A"
+  proof
+    fix a assume "a \<in> fmeetclosure_in A X"
+    have R0:"(a \<in> Pow X)"
+      by (metis (no_types, lifting) CollectD \<open>a \<in> fmeetclosure_in A X\<close> fmeetclosure_in_def)
+    have R1:"\<exists>B\<in>(Pow A). (finite B) \<and> (a=\<Inter>B) \<and> (B \<noteq> {})"
+      using \<open>a \<in> fmeetclosure_in A X\<close> fmeetclosure_in_def by auto
+    show "a \<in> A"
+      by (metis A0 A1 A2 R1 bozowatch1)
+  qed
+  with L R show ?thesis by simp
+qed
 
 lemma fsubbase1712:
   assumes A0:"X \<noteq> {}" and A1:"C \<in> Pow (Pow X)" and A2:"FilterSubbaseIn C X"
