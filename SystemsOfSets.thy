@@ -110,6 +110,7 @@ definition f_many::"'X set \<Rightarrow> 'X set set" where
   "f_many \<A> = {\<B>. is_f_many \<B> \<A> }"
 
 
+
 section Lemmas
 
 subsection PropertiesOfRelations
@@ -724,6 +725,42 @@ proof -
 qed
 
 
+lemma finite_union_in_set:
+  fixes X::"'X set"
+  assumes A1:"C \<in> Pow(Pow (X))" and
+          A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<union>  a2 \<in> C"and 
+          A3:"finite E" and
+          A4:"E \<noteq> {}"  and
+          A5:"E \<subseteq> C"
+  shows "(\<Union>E) \<in> C"
+proof -
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x)
+    with assms show ?case
+      by simp
+    next
+    case (insert x F)
+    then have "(\<Union>(insert x F)) \<in> C" using assms
+    proof-
+      have P0:"x \<in> C"
+        using insert.prems by auto
+      have P1: "F \<subseteq> C"
+        using insert.prems by auto
+      with A2 have P2:"x \<union> (\<Union>F) \<in> C"
+        by (simp add: P0 insert.hyps(4))
+      from insert.hyps have P3:"(\<Union>F) \<in> C"
+        using P1 by blast
+      have  P4:"\<Union>(insert x F) = x \<union> (\<Union>F)" by simp
+      then show "(\<Union>(insert x F)) \<in> C"
+        by (simp add: P2)
+    qed
+    show ?case
+      using \<open>\<Union> (insert (x::'X set) (F::'X set set)) \<in> (C::'X set set)\<close> by auto
+  qed
+qed
+
+
 lemma fmeet_idemp:
   assumes A0:"C \<in> Pow (Pow X)" and A1:"C \<noteq> {}"
   shows "(fmeetclosure_in C X) = fmeetclosure_in (fmeetclosure_in C X) X"
@@ -860,7 +897,117 @@ proof-
   with B5 B6 show ?thesis
     by simp
 qed
-  
+
+
+definition ewunion::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
+  "(ewunion \<A> \<B> X) = {E \<in> Pow(X). \<exists>A \<in> \<A>. \<exists>B \<in> \<B>. E=A\<union>B}"
+
+
+definition ewinter::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
+  "(ewinter \<A> \<B> X) = {E \<in> Pow(X). \<exists>A \<in> \<A>. \<exists>B \<in> \<B>. E=A\<inter>B}"
+
+lemma ewi1:
+  assumes "\<A> \<in> Pow(Pow X)" and "\<B> \<in> Pow(Pow X)" and "\<A> \<noteq> {}" and " \<B> \<noteq> {}" and "(ewinter \<A> \<B> X) \<noteq> {}"
+  shows "(ewinter \<A> \<B> X) = (ewinter \<B> \<A> X)"
+proof-
+  have L:"(ewinter \<A> \<B> X) \<subseteq> (ewinter \<B> \<A> X)" by (smt (verit) CollectD CollectI Int_commute ewinter_def subsetI)
+  have R:"(ewinter \<B> \<A> X) \<subseteq> (ewinter \<A> \<B> X)" by (smt (verit) CollectD CollectI Int_commute ewinter_def subsetI)
+  with L R show ?thesis by simp 
+qed
+    
+
+lemma ewu1:
+  assumes "\<A> \<in> Pow(Pow X)" and "\<B> \<in> Pow(Pow X)" and "\<A> \<noteq> {}" and " \<B> \<noteq> {}" and "(ewunion \<A> \<B> X) \<noteq> {}"
+  shows "(ewunion \<A> \<B> X) = (ewunion \<B> \<A> X)"
+proof-
+  let ?L="(ewunion \<A> \<B> X)"
+  let ?R="(ewunion \<B> \<A> X)"
+  have LsR:"?L \<subseteq>?R"
+  proof
+    fix E assume A00:"E \<in> ?L"
+    have A01:"\<exists>A \<in> \<A>. \<exists>B \<in> \<B>. E=A\<union>B"
+      by (smt (verit) A00 CollectD ewunion_def) 
+    have A02:"\<exists>B\<in>\<B>. \<exists>A\<in>\<A>. E=B\<union>A" using A01 by blast
+    show "E \<in> ?R"
+      by (smt (verit, ccfv_threshold) A00 A02 ewunion_def mem_Collect_eq)
+  qed
+  have RsL:"?R \<subseteq> ?L"
+    by (smt (verit, del_insts) CollectD CollectI ewunion_def subsetI sup_commute)
+  with LsR RsL show ?thesis by simp 
+qed
+
+lemma ewi2:
+  assumes A0:"\<A> \<in> Pow(Pow X)" and A1:"\<B> \<in> Pow(Pow X)" and A2:"\<C> \<in> Pow(Pow X)"
+  and A3:"\<A> \<noteq> {}" and A4:"\<B> \<noteq> {}" and A5:"\<C> \<noteq> {}" and A6:"(ewinter \<A> (ewinter \<B> \<C>  X) X) \<noteq> {}"
+  shows "(ewinter \<A> (ewinter \<B> \<C>  X) X) = (ewinter (ewinter \<A> \<B> X) \<C> X)"
+proof-
+  let ?BC="ewinter \<B> \<C> X" let ?AB="(ewinter \<A> \<B> X)"
+  have LtR:"(ewinter (?AB) \<C> X) \<subseteq> (ewinter \<A> (?BC) X)"
+  proof
+    fix E assume LtR0:"E \<in> (ewinter (?AB) \<C> X)"
+    obtain AB C where "AB \<in> (?AB) \<and> C \<in> \<C> \<and> (E= AB \<inter> C)" by (smt (verit) CollectD LtR0 ewinter_def)
+    obtain A B where "A \<in> \<A> \<and> B \<in> \<B> \<and> (AB = A \<inter> B)" by (smt (verit) CollectD \<open>AB \<in> ewinter \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<inter> C\<close> ewinter_def)
+    have "E= (A \<inter> B \<inter> C)"
+      by (simp add: \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<inter> B\<close> \<open>AB \<in> ewinter \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<inter> C\<close>)
+    have "B \<inter> C \<in> ?BC"
+      using A2 \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<inter> B\<close> \<open>AB \<in> ewinter \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<inter> C\<close> ewinter_def by fastforce
+    show "E \<in> (ewinter \<A> (?BC) X) "
+      by (metis (mono_tags, lifting) CollectD CollectI LtR0 \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<inter> B\<close> \<open>B \<inter> C \<in> ewinter \<B> \<C> X\<close> \<open>E = A \<inter> B \<inter> C\<close> ewinter_def inf_aci(2))
+  qed
+  have RtL:" (ewinter \<A> (?BC) X) \<subseteq> (ewinter (?AB) \<C> X)"
+  proof
+    fix E assume RtL0: "E \<in> (ewinter \<A> (?BC) X)"
+    then obtain A BC where "A \<in> \<A> \<and> BC \<in> ?BC \<and> E = A \<inter> BC" by (smt (verit) CollectD RtL0 ewinter_def)
+    then obtain B C where "B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<inter> C" by (smt (verit) CollectD ewinter_def)
+    then have "E = A \<inter> (B \<inter> C)"
+      by (simp add: \<open>A \<in> \<A> \<and> BC \<in> ewinter \<B> \<C> X \<and> E = A \<inter> BC\<close>)
+    then have "E = (A \<inter> B) \<inter> C"
+      by (simp add: inf_assoc)
+    then have "A \<inter> B \<in> ?AB"
+      by (smt (verit, best) A1 Pow_iff \<open>A \<in> \<A> \<and> BC \<in> ewinter \<B> \<C> X \<and> E = A \<inter> BC\<close> \<open>B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<inter> C\<close> ewinter_def le_infI2 mem_Collect_eq subset_eq)
+    then show "E \<in> (ewinter (?AB) \<C> X)"
+      by (metis (mono_tags, lifting) CollectD CollectI RtL0 \<open>B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<inter> C\<close> \<open>E = A \<inter> B \<inter> C\<close> ewinter_def)
+  qed
+  thus "(ewinter \<A> (ewinter \<B> \<C> X) X) = (ewinter (ewinter \<A> \<B> X) \<C> X)"
+    by (simp add: LtR dual_order.eq_iff)
+qed
+
+
+lemma ewu2:
+  assumes A0:"\<A> \<in> Pow(Pow X)" and A1:"\<B> \<in> Pow(Pow X)" and A2:"\<C> \<in> Pow(Pow X)"
+  and A3:"\<A> \<noteq> {}" and A4:"\<B> \<noteq> {}" and A5:"\<C> \<noteq> {}" and A6:"(ewunion \<A> (ewunion \<B> \<C>  X) X) \<noteq> {}"
+  shows "(ewunion \<A> (ewunion \<B> \<C>  X) X) = (ewunion (ewunion \<A> \<B> X) \<C> X)"
+proof-
+  let ?BC="ewunion \<B> \<C> X" let ?AB="(ewunion \<A> \<B> X)"
+  have LtR:"(ewunion (?AB) \<C> X) \<subseteq> (ewunion \<A> (?BC) X)"
+  proof
+    fix E assume LtR0:"E \<in> (ewunion (?AB) \<C> X)"
+    obtain AB C where "AB \<in> (?AB) \<and> C \<in> \<C> \<and> (E= AB \<union> C)" by (smt (verit) CollectD LtR0 ewunion_def)
+    obtain A B where "A \<in> \<A> \<and> B \<in> \<B> \<and> (AB = A \<union> B)" by (smt (verit) CollectD \<open>AB \<in> ewunion \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<union> C\<close> ewunion_def)
+    have "E= (A \<union> B \<union> C)"
+      by (simp add: \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<union> B\<close> \<open>AB \<in> ewunion \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<union> C\<close>)
+    have "B \<union> C \<in> ?BC"
+      by (smt (verit) A1 A2 CollectI Pow_iff Un_iff \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<union> B\<close> \<open>AB \<in> ewunion \<A> \<B> X \<and> C \<in> \<C> \<and> E = AB \<union> C\<close> ewunion_def subset_eq)
+    show "E \<in> (ewunion \<A> (?BC) X) "
+      by (metis (mono_tags, lifting) CollectD CollectI LtR0 \<open>A \<in> \<A> \<and> B \<in> \<B> \<and> AB = A \<union>  B\<close> \<open>B \<union> C \<in> ewunion \<B> \<C> X\<close> \<open>E = A \<union> B \<union> C\<close> ewunion_def sup_aci(2))
+  qed
+  have RtL:" (ewunion \<A> (?BC) X) \<subseteq> (ewunion (?AB) \<C> X)"
+  proof
+    fix E assume RtL0: "E \<in> (ewunion \<A> (?BC) X)"
+    then obtain A BC where "A \<in> \<A> \<and> BC \<in> ?BC \<and> E = A \<union> BC" by (smt (verit) CollectD RtL0 ewunion_def)
+    then obtain B C where "B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<union> C" by (smt (verit) CollectD ewunion_def)
+    then have "E = A \<union> (B \<union> C)"
+      by (simp add: \<open>A \<in> \<A> \<and> BC \<in> ewunion \<B> \<C> X \<and> E = A \<union> BC\<close>)
+    then have "E = (A \<union> B) \<union> C"
+      by (simp add: sup_assoc)
+    then have "A \<union>  B \<in> ?AB"
+      by (smt (verit, ccfv_SIG) A0 A1 CollectI Pow_iff Un_subset_iff \<open>A \<in> \<A> \<and> BC \<in> ewunion \<B> \<C> X \<and> E = A \<union> BC\<close> \<open>B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<union> C\<close> ewunion_def subsetD)
+    then show "E \<in> (ewunion (?AB) \<C> X)"
+      by (metis (mono_tags, lifting) CollectD CollectI RtL0 \<open>B \<in> \<B> \<and> C \<in> \<C> \<and> BC = B \<union> C\<close> \<open>E = A \<union> B \<union> C\<close> ewunion_def)
+  qed
+  thus "(ewunion \<A> (ewunion \<B> \<C> X) X) = (ewunion (ewunion \<A> \<B> X) \<C> X)"
+    by (simp add: LtR subset_antisym)
+qed
 
 
 end
