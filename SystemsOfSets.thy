@@ -906,6 +906,7 @@ definition ewunion::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set \<
 definition ewinter::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set \<Rightarrow> 'X set set" where
   "(ewinter \<A> \<B> X) = {E \<in> Pow(X). \<exists>A \<in> \<A>. \<exists>B \<in> \<B>. E=A\<inter>B}"
 
+(*1.71.1a*)
 lemma ewi1:
   assumes "\<A> \<in> Pow(Pow X)" and "\<B> \<in> Pow(Pow X)" and "\<A> \<noteq> {}" and " \<B> \<noteq> {}" and "(ewinter \<A> \<B> X) \<noteq> {}"
   shows "(ewinter \<A> \<B> X) = (ewinter \<B> \<A> X)"
@@ -915,7 +916,7 @@ proof-
   with L R show ?thesis by simp 
 qed
     
-
+(*1.71.1a*)
 lemma ewu1:
   assumes "\<A> \<in> Pow(Pow X)" and "\<B> \<in> Pow(Pow X)" and "\<A> \<noteq> {}" and " \<B> \<noteq> {}" and "(ewunion \<A> \<B> X) \<noteq> {}"
   shows "(ewunion \<A> \<B> X) = (ewunion \<B> \<A> X)"
@@ -936,6 +937,7 @@ proof-
   with LsR RsL show ?thesis by simp 
 qed
 
+(*1.71.1b*)
 lemma ewi2:
   assumes A0:"\<A> \<in> Pow(Pow X)" and A1:"\<B> \<in> Pow(Pow X)" and A2:"\<C> \<in> Pow(Pow X)"
   and A3:"\<A> \<noteq> {}" and A4:"\<B> \<noteq> {}" and A5:"\<C> \<noteq> {}" and A6:"(ewinter \<A> (ewinter \<B> \<C>  X) X) \<noteq> {}"
@@ -972,7 +974,7 @@ proof-
     by (simp add: LtR dual_order.eq_iff)
 qed
 
-
+(*1.71.1b*)
 lemma ewu2:
   assumes A0:"\<A> \<in> Pow(Pow X)" and A1:"\<B> \<in> Pow(Pow X)" and A2:"\<C> \<in> Pow(Pow X)"
   and A3:"\<A> \<noteq> {}" and A4:"\<B> \<noteq> {}" and A5:"\<C> \<noteq> {}" and A6:"(ewunion \<A> (ewunion \<B> \<C>  X) X) \<noteq> {}"
@@ -1007,6 +1009,109 @@ proof-
   qed
   thus "(ewunion \<A> (ewunion \<B> \<C> X) X) = (ewunion (ewunion \<A> \<B> X) \<C> X)"
     by (simp add: LtR subset_antisym)
+qed
+
+lemma lem1712a1:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 \<subseteq> A2" and A5:"B1 \<subseteq> B2" 
+          shows "ewinter A1 B1 X \<subseteq> ewinter A2 B2 X"
+  by (smt (verit, ccfv_SIG) A4 A5 CollectD CollectI ewinter_def subsetD subsetI)
+      
+lemma lem1712a2:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 \<subseteq> A2" and A5:"B1 \<subseteq> B2" 
+          shows "ewunion A1 B1 X \<subseteq> ewunion A2 B2 X"
+  by (smt (verit, ccfv_threshold) A4 A5 CollectD CollectI ewunion_def subsetD subsetI)
+  
+lemma lem1712b1:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 \<preceq> A2" and A5:"B1 \<preceq> B2" 
+          shows "ewinter A1 B1 X \<preceq>  ewinter A2 B2 X"
+proof-
+  let ?A1B1="ewinter A1 B1 X" let ?A2B2="ewinter A2 B2 X"
+  have P0:"\<forall>E \<in> ?A1B1. \<exists>C \<in> ?A2B2. C \<subseteq>E"
+  proof
+  fix E assume "E \<in> ?A1B1"
+  obtain a1 b1 where "a1 \<in> A1 \<and> b1 \<in> B1 \<and> E=a1 \<inter> b1" by (smt (verit, ccfv_SIG) CollectD \<open>E \<in> ewinter A1 B1 X\<close> ewinter_def)
+  from A4 obtain a2 where "a2 \<in> A2 \<and> a2 \<subseteq> a1"  by (meson \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<inter> b1\<close> preceq_def)
+  from A5 obtain b2 where "b2 \<in> B2 \<and> b2 \<subseteq> b1"  by (meson \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<inter> b1\<close> preceq_def)
+  have "a2 \<inter> b2 \<in> ?A2B2"
+    using A2 Pow_iff \<open>a2 \<in> A2 \<and> a2 \<subseteq> a1\<close> \<open>b2 \<in> B2 \<and> b2 \<subseteq> b1\<close> ewinter_def by fastforce
+  have "a2 \<inter> b2 \<subseteq> a1 \<inter> b1"
+    using \<open>a2 \<in> A2 \<and> a2 \<subseteq> a1\<close> \<open>b2 \<in> B2 \<and> b2 \<subseteq> b1\<close> by blast
+  have "\<exists>c \<in> ?A2B2.( c \<subseteq> (E))"
+    using \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<inter> b1\<close> \<open>a2 \<inter> b2 \<in> ewinter A2 B2 X\<close> \<open>a2 \<inter> b2 \<subseteq> a1 \<inter> b1\<close> by blast
+  show "\<exists>C \<in> ?A2B2. C \<subseteq>E"
+    by (simp add: \<open>\<exists>c\<in>ewinter A2 B2 X. c \<subseteq> E\<close>)
+  qed
+  with P0 show ?thesis
+    using preceq_def by blast
+qed
+
+lemma lem1712b2:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 \<preceq> A2" and A5:"B1 \<preceq> B2" 
+          shows "ewunion A1 B1 X \<preceq>  ewunion A2 B2 X"
+proof-
+  let ?A1B1="ewunion A1 B1 X" let ?A2B2="ewunion A2 B2 X"
+  have P0:"\<forall>E \<in> ?A1B1. \<exists>C \<in> ?A2B2. C \<subseteq>E"
+  proof
+  fix E assume "E \<in> ?A1B1"
+  obtain a1 b1 where "a1 \<in> A1 \<and> b1 \<in> B1 \<and> E=a1 \<union> b1" by (smt (verit, ccfv_SIG) CollectD \<open>E \<in> ewunion A1 B1 X\<close> ewunion_def)
+  from A4 obtain a2 where "a2 \<in> A2 \<and> a2 \<subseteq> a1"  by (meson \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<union> b1\<close> preceq_def)
+  from A5 obtain b2 where "b2 \<in> B2 \<and> b2 \<subseteq> b1"  by (meson \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<union> b1\<close> preceq_def)
+  have "a2 \<union> b2 \<in> ?A2B2"
+    using A1 A2 \<open>a2 \<in> A2 \<and> a2 \<subseteq> a1\<close> \<open>b2 \<in> B2 \<and> b2 \<subseteq> b1\<close> ewunion_def by fastforce
+  have "a2 \<union> b2 \<subseteq> a1 \<union> b1"
+    using \<open>a2 \<in> A2 \<and> a2 \<subseteq> a1\<close> \<open>b2 \<in> B2 \<and> b2 \<subseteq> b1\<close> by blast
+  have "\<exists>c \<in> ?A2B2.( c \<subseteq> (E))"
+    using \<open>a1 \<in> A1 \<and> b1 \<in> B1 \<and> E = a1 \<union> b1\<close> \<open>a2 \<union> b2 \<in> ewunion A2 B2 X\<close> \<open>a2 \<union> b2 \<subseteq> a1 \<union> b1\<close> by blast
+  show "\<exists>C \<in> ?A2B2. C \<subseteq>E"
+    by (simp add: \<open>\<exists>c\<in>ewunion A2 B2 X. c \<subseteq> E\<close>)
+  qed
+  with P0 show ?thesis
+    using preceq_def by blast
+qed  
+
+lemma lem1712c1:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 ~ A2" and A5:"B1 ~ B2" 
+          shows "ewinter A1 B1 X ~  ewinter A2 B2 X"
+  by (meson A0 A1 A2 A4 A5 assms(3) fequiv_def lem1712b1)
+
+
+lemma lem1712c2:
+  assumes A0:"A1 \<in> Pow (Pow X)" and A1:"A2 \<in> Pow (Pow X)" and
+          A2:"B1 \<in> Pow (Pow X)" and A2:"B2 \<in> Pow (Pow X)" and
+          A4:"A1 ~ A2" and A5:"B1 ~ B2" 
+          shows "ewunion A1 B1 X ~  ewunion A2 B2 X"
+  by (meson A0 A1 A2 A4 A5 assms(3) fequiv_def lem1712b2)
+
+lemma lem171311:
+  assumes A0:"A \<in> Pow (Pow X)" and A1:"B \<in> Pow (Pow X)" 
+  shows "ewunion A B X \<preceq> A"
+  by (smt (verit) CollectD Un_subset_iff dual_order.refl ewunion_def preceq_def)
+
+lemma lem171312:
+  assumes A0:"A \<in> Pow (Pow X)" and A1:"B \<in> Pow (Pow X)" and "ewinter A B X \<noteq> {}" and "B \<noteq> {}" and "A \<noteq> {}"
+  and "\<forall>a \<in> A. \<exists>b \<in>B. a \<inter>b \<noteq> {}" 
+  shows "A \<preceq> ewinter A B X"
+proof-
+  let ?AB="ewinter A B X"
+  have P:"\<forall>a\<in>A. \<exists>ab\<in>?AB. (a \<supseteq> ab)"
+  proof
+    fix a assume "a \<in> A"
+    obtain b where "b \<in> B \<and> (a \<inter> b \<noteq> {})" by (meson \<open>a \<in> A\<close> assms(6))
+    have "a \<inter> b \<in> ?AB"  using A0 \<open>a \<in> A\<close> \<open>b \<in> B \<and> a \<inter> b \<noteq> {}\<close> ewinter_def by fastforce
+    have "a \<supseteq> (a \<inter> b)"  by simp
+    show "\<exists>ab\<in>?AB. (a \<supseteq> ab)"  using \<open>a \<inter> b \<in> ewinter A B X\<close> \<open>a \<inter> b \<subseteq> a\<close> by blast
+  qed
+  with P show ?thesis by (simp add: preceq_def)
 qed
 
 
