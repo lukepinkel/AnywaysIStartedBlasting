@@ -58,8 +58,17 @@ definition FilterBaseIn::"'X set set \<Rightarrow> 'X set \<Rightarrow> bool" wh
 definition FilterOfSetsIn::"'X set set\<Rightarrow> 'X set \<Rightarrow> bool" where
   "FilterOfSetsIn \<A> X \<equiv> (\<A> \<noteq> {}) \<and> (Proper \<A>) \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) "
 
-definition \<FF>::"'X set \<Rightarrow> 'X set set set" where
-  "\<FF> X = {\<F> \<in> Pow (Pow X). FilterOfSetsIn \<F> X} "
+definition FilSpace::"'X set \<Rightarrow> 'X set set set" where
+  "FilSpace X = {\<F> \<in> Pow (Pow X). FilterOfSetsIn \<F> X} "
+
+definition FilterOfSetsIn2::"'X set set\<Rightarrow> 'X set \<Rightarrow> bool" where
+  "FilterOfSetsIn2 \<A> X \<equiv> (\<A> \<noteq> {})  \<and> (PiSystem \<A>) \<and> (UpClosed_In \<A> X) "
+
+definition DPow::"'X set \<Rightarrow> 'X set set set" where "DPow X = (Pow (Pow X))"
+
+definition FilSpace2::"'X set \<Rightarrow> 'X set set set" where
+  "FilSpace2 X = {\<F> \<in> (DPow X). FilterOfSetsIn2 \<F> X} "
+
 
 
 subsection RelationsAndOperations
@@ -1114,5 +1123,84 @@ proof-
   with P show ?thesis by (simp add: preceq_def)
 qed
 
+
+lemma filter_inter:
+  fixes X::"'X set" fixes FFam::"'X set set set"
+  assumes A0:"X \<noteq> {}" and  A1:"FFam \<in> Pow( FilSpace X)"
+  and A2:"Proper (\<Inter>FFam)"
+  shows "\<Inter>FFam \<in> FilSpace X"
+proof-
+  let ?EF="\<Inter>FFam"
+  have F00:"\<forall>Fi \<in> FFam. FilterOfSetsIn Fi X"  using A1 FilSpace_def by fastforce
+  have F01:"\<forall>Fi \<in> FFam. Fi \<noteq> {}" using F00 FilterOfSetsIn_def by blast
+  have F02:"\<forall>Fi \<in> FFam. X \<in> Fi" by (smt (verit) A1 CollectD FilSpace_def FilterOfSetsIn_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
+  have F03:"X \<in> ?EF" by (simp add: F02)
+  have F0:"?EF \<noteq> {}" using F03 by blast
+  have F1:"Proper ?EF" by (simp add: A2)
+  have F2:"PiSystem ?EF" by (meson F00 FilterOfSetsIn_def Inter_iff PiSystem_def)
+  have F3:"UpClosed_In ?EF X" by (meson F00 FilterOfSetsIn_def Inter_iff UpClosed_In_def)
+  have T1:"FilterOfSetsIn ?EF X" by (simp add: F0 F1 F2 F3 FilterOfSetsIn_def)
+  have T2:"?EF \<in> Pow (Pow X)" by (smt (verit, ccfv_SIG) A1 CollectD F1 FilSpace_def Inter_iff PowD PowI Proper_def subset_eq)
+  have T3:"?EF \<in> FilSpace X" using FilSpace_def T1 T2 by auto
+  with T3 show ?thesis by simp
+qed
+
+declare [[show_types]]
+
+lemma mega_bozo:
+  "\<A> \<in> DPow X \<longleftrightarrow> \<A> \<in> (Pow (Pow X))"
+  by (simp add: DPow_def)
+
+lemma filter_inter2:
+  fixes X::"'X set" fixes FFam::"'X set set set"
+  assumes A0:"X \<noteq> {}" and  A1:"FFam \<in> Pow (FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "\<Inter>FFam \<in> FilSpace2 X"
+proof-
+  let ?EF="\<Inter>FFam"
+  have F00:"\<forall>Fi \<in> FFam. FilterOfSetsIn2 Fi X"  using A1 FilSpace2_def by fastforce
+  have F01:"\<forall>Fi \<in> FFam. Fi \<noteq> {}" using F00 FilterOfSetsIn2_def by blast
+  have F02:"\<forall>Fi \<in> FFam. X \<in> Fi" by (smt (verit) A1 CollectD FilSpace2_def DPow_def mega_bozo FilterOfSetsIn2_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
+  have F03:"X \<in> ?EF" by (simp add: F02)
+  have F0:"?EF \<noteq> {}" using F03 by blast
+  have F2:"PiSystem ?EF" by (meson F00 FilterOfSetsIn2_def Inter_iff PiSystem_def)
+  have F3:"UpClosed_In ?EF X" by (meson F00 FilterOfSetsIn2_def Inter_iff UpClosed_In_def)
+  have T1:"FilterOfSetsIn2 ?EF X" by (simp add: F0 F2 F3 FilterOfSetsIn2_def)
+  have T2:"FFam \<in> Pow (DPow X)" using A1 FilSpace2_def by blast
+  have T3:"?EF \<in> DPow X" using A2 T2
+    by (metis DPow_def Inf_lower2 IntD2 Pow_iff equals0I inf.order_iff) 
+  have T4:"?EF \<in>(FilSpace2 X)" using FilSpace2_def T1 T3 by auto
+  with T4 show ?thesis by simp
+qed
+
+(*(\<forall>z \<in> X. ((\<forall>a \<in> A. z \<le>  a)\<longrightarrow> (z \<le>  m) )) *)
+
+lemma bozowatch6:
+  assumes A0:"X \<noteq> {}" and 
+          A1:"FFam \<in> Pow (Pow (Pow X))" and
+          A2:"F \<in> Pow (Pow X)" and
+          A3:"\<forall>Fi \<in> FFam. F \<subseteq> Fi"
+  shows "F \<subseteq> (\<Inter>FFam)"
+  by (simp add: A3 Inter_greatest)
+
+lemma bozowatch7:
+  "FilSpace2 X \<subseteq> DPow X"
+  by (simp add: FilSpace2_def)
+
+lemma lem1761:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace X)" and A2:"Proper (\<Inter>FFam)"
+  shows "IsInf2 (\<Inter>FFam) FFam (FilSpace X)"
+proof-
+  let ?EF="\<Inter>FFam"
+  have B0:"?EF\<in> (FilSpace X)" by (meson A0 A1 A2 filter_inter)
+  have B1:"\<forall>Fi \<in> FFam. ?EF \<subseteq> Fi" by (simp add: Inter_lower)
+  have B2:"\<forall>F\<in>(FilSpace X). (\<forall>Fi \<in> FFam. (F \<subseteq> Fi)) \<longrightarrow> (F \<subseteq> ?EF)"
+  proof
+    fix F assume "F \<in> (FilSpace X) "
+    have "IsInf2 (?EF) FFam (Pow (Pow X))" by (metis (no_types, lifting) B0 B1 CollectD FilSpace_def Inter_greatest IsInf2_def lower_bounds_are_lower_bounds2)
+    have "FilSpace X \<subseteq> Pow (Pow X)" using FilSpace_def by auto
+    show "(\<forall>Fi \<in> FFam. (F \<subseteq> Fi)) \<longrightarrow> (F \<subseteq> ?EF)" by (simp add: Inter_greatest)
+  qed
+  show ?thesis by (simp add: B0 B1 B2 IsInf2_def lower_bounds_are_lower_bounds2)
+qed
 
 end
