@@ -1203,4 +1203,54 @@ proof-
   show ?thesis by (simp add: B0 B1 B2 IsInf2_def lower_bounds_are_lower_bounds2)
 qed
 
+lemma lem1762:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "IsInf2 (\<Inter>FFam) FFam (FilSpace2 X)"
+proof-
+  let ?EF="\<Inter>FFam"
+  have B0:"?EF\<in> (FilSpace2 X)" by (meson A0 A1 A2 filter_inter2)
+  have B1:"\<forall>Fi \<in> FFam. ?EF \<subseteq> Fi" by (simp add: Inter_lower)
+  have B2:"\<forall>F\<in>(FilSpace X). (\<forall>Fi \<in> FFam. (F \<subseteq> Fi)) \<longrightarrow> (F \<subseteq> ?EF)"
+  proof
+    fix F assume "F \<in> (FilSpace X) "
+    have "IsInf2 (?EF) FFam (Pow (Pow X))"
+      by (metis (no_types, lifting) B0 B1 CollectD DPow_def FilSpace2_def Inter_greatest IsInf2_def lower_bounds_are_lower_bounds2)
+    have "FilSpace2 X \<subseteq> Pow (Pow X)" using DPow_def bozowatch7 by blast 
+    show "(\<forall>Fi \<in> FFam. (F \<subseteq> Fi)) \<longrightarrow> (F \<subseteq> ?EF)" by (simp add: Inter_greatest)
+  qed
+  show ?thesis by (simp add: B0 B1 Inter_greatest IsInf2_def lower_bounds_are_lower_bounds2)
+qed
+
+lemma lem1763:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "HasLowerBound1 FFam (FilSpace2 X)"
+  by (metis A0 A1 A2 HasLowerBound1_def Inf_lower IsLowerBound_def emptyE filter_inter2 lower_bounds_are_lower_bounds)
+
+lemma lem1764:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "HasUpperBound1 FFam (FilSpace2 X)"
+proof-
+  let ?P="Pow X"
+  have B0:"?P \<in> FilSpace2 X"
+  proof-
+    have B00:"(UpClosed_In ?P X) " by (simp add: UpClosed_In_def)
+    have B01:"PiSystem ?P" using PiSystem_def by blast
+    have B02:"?P \<noteq> {}" by (simp add: Pow_not_empty)
+    show ?thesis by (simp add: B00 B01 B02 DPow_def FilSpace2_def FilterOfSetsIn2_def)
+  qed
+  have B1:"?P \<in> UpperBoundsIn FFam (FilSpace2 X)" by (metis A1 A2 B0 DPow_def PowD bozowatch7 in_mono ub_in_ub_set)
+  show ?thesis using B1 HasUpperBound1_def by blast
+qed
+
+lemma lem1765:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "HasAnInf1 FFam (FilSpace2 X)"
+  by (metis A0 A1 A2 HasAnInf2_def has_inf1_iff_has_inf2 lem1762 subset_nonempty)
+
+lemma lem1766:
+  assumes A0:"X \<noteq> {}" and A1:"FFam \<in> Pow( FilSpace2 X)" and A2:"FFam \<noteq> {}"
+  shows "HasASup1 FFam (FilSpace2 X)"
+  by (metis A0 A1 A2 Pow_top bounded_above_infs_then_sups lem1764 lem1765 subset_nonempty)
+
+
 end
