@@ -1252,5 +1252,62 @@ lemma lem1766:
   shows "HasASup1 FFam (FilSpace2 X)"
   by (metis A0 A1 A2 Pow_top bounded_above_infs_then_sups lem1764 lem1765 subset_nonempty)
 
+lemma lem1767:
+   assumes A0:"X \<noteq> {}" and A1:"I \<noteq> {}" and A2:"\<forall>i \<in> I. ((F i) \<in> (FilSpace2 X))" 
+   shows "HasAnInf1 (F`(I)) (FilSpace2 X)"
+  by (simp add: A0 A1 A2 image_subset_iff lem1765)
+
+lemma lem1768:
+   assumes A0:"X \<noteq> {}" and A1:"I \<noteq> {}" and A2:"\<forall>i \<in> I. ((F i) \<in> (FilSpace2 X))" 
+   shows "HasASup1 (F`(I)) (FilSpace2 X)"
+  by (simp add: A0 A1 A2 image_subset_iff lem1766)
+
+
+lemma lem1769b:
+  assumes A00:"X \<noteq> {}" and A01:"Y \<noteq> {}" and A10:"A \<in> (DPow X)" and A11:"(B \<in> DPow Y)" and A21:"UpClosed_In A X" and A22:"UpClosed_In B Y"
+  shows "UpClosed_In (ewunion A B (X \<union> Y)) (X \<union> Y)"
+proof-
+  let ?XY="X \<union> Y"
+  let ?AB="ewunion A B ?XY"
+  have B0:"\<forall>c \<in> (Pow ?XY). (\<exists>ab \<in>?AB. c \<supseteq> ab) \<longrightarrow> c \<in> ?AB"
+  proof
+    fix c assume A3:"c \<in> (Pow ?XY)"
+    show "(\<exists>ab \<in>?AB. c \<supseteq> ab) \<longrightarrow> c \<in> ?AB"
+    proof
+      assume A4:"(\<exists>ab \<in>?AB. c \<supseteq> ab)"
+      obtain ab where A4:"ab \<subseteq> c \<and> ab \<in> ?AB"  using A4 by blast
+      obtain a b where A5:"a \<in> A \<and> b \<in> B \<and> ab=a \<union> b" by (smt (verit, ccfv_SIG) A4 CollectD ewunion_def)
+      have B011:"a \<subseteq> (c \<inter> X)" using A10 A4 A5 mega_bozo by auto  
+      have B012:"b \<subseteq> (c \<inter> Y)" using A11 A4 A5 mega_bozo by auto
+      have B021:"(ab \<inter> X) \<subseteq> X" by simp
+      have B022:"(ab \<inter> Y) \<subseteq> Y" by simp
+      let ?cX="c \<inter> X"
+      let ?cY="c \<inter> Y"
+      have B031:"?cX \<in> A" by (meson A21 A5 B011 PowI UpClosed_In_def inf_le2)
+      have B032:"?cY \<in> B" by (meson A22 A5 B012 PowI UpClosed_In_def inf_le2) 
+      have B04:"?cX  \<union> ?cY = c \<inter> (X \<union> Y)" by (simp add: Int_Un_distrib)
+      have B05:" ... = c" using A3 by blast
+      have B06:"(?cX \<union> ?cY) \<in> ?AB"by (metis (mono_tags, lifting) A3 B031 B032 B04 B05 CollectI ewunion_def) 
+      show "c \<in> ?AB" using B04 B05 B06 by presburger
+    qed
+  qed
+  with B0 show ?thesis by (simp add: UpClosed_In_def)
+qed
+
+lemma lem1769c:
+  assumes A0:"X \<noteq> {}" and A10:"A \<in> (DPow X)" and A11:"(B \<in> DPow X)" and A20:"UpClosed_In A X" and A21:"UpClosed_In B X"
+  shows "UpClosed_In (ewunion A B X) X"
+  by (metis A0 A10 A11 A20 A21 lem1769b sup.idem)
+
+lemma lem1769:
+  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)"
+  shows "(Inf1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<union> f2}"
+proof
+  let ?INF="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<union> f2}"
+  have B0:"?INF = (ewunion F1 F2 X)" by (simp add: ewunion_def)
+  have B1:"?INF \<preceq> F1" using preceq_def by fastforce
+  have B2:"?INF \<preceq> F2" using preceq_def by fastforce (* by (metis A1 A2 B0 DPow_def preceq_def bozowatch7 lem171311 subsetD)*)
+  have B3:"UpClosed_In ?INF X"
+  have B3:"?INF \<subseteq> F1"
 
 end
