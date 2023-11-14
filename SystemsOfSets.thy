@@ -158,6 +158,25 @@ proof-
     by (meson subsetI)
 qed
 
+lemma upclosed_then_preceq_imp_subseteq2:
+  assumes A0:"X \<noteq> {}" and 
+          A1: "A \<noteq> {}" and
+          A2:"B \<noteq> {}" and
+          A3:"A \<in> (DPow X)" and 
+          A4:"B \<in> (DPow X)" and
+          A5: "UpClosed_In B X" and
+          A6: "A \<preceq> B" 
+  shows "A \<subseteq> B"
+proof-
+  have B0:"\<forall>a \<in> (Pow X). (\<exists>b \<in> B. b \<subseteq> a) \<longrightarrow> a \<in> B"
+  proof
+    fix a assume "a \<in> Pow X"
+    show " (\<exists>b \<in> B. b \<subseteq> a) \<longrightarrow> a \<in> B"  using A5 UpClosed_In_def \<open>a \<in> Pow X\<close> by blast
+  qed   
+  have B1:"\<forall>a \<in> A. (\<exists>b \<in> B. b \<subseteq> a)" using A6 preceq_def by auto
+  with B0 B1 show ?thesis
+    by (metis A3 DPow_def PowD in_mono subsetI)
+qed
 
 (*1.70.4*)
 lemma upclosed_equiv_then_equal:
@@ -1307,7 +1326,7 @@ proof
   have B0:"?INF = (ewunion F1 F2 X)" by (simp add: ewunion_def)
   have B1:"?INF \<preceq> F1" using preceq_def by fastforce
   have B2:"?INF \<preceq> F2" using preceq_def by fastforce (* by (metis A1 A2 B0 DPow_def preceq_def bozowatch7 lem171311 subsetD)*)
-  have B3:"UpClosed_In ?INF X"
-  have B3:"?INF \<subseteq> F1"
+  have B3:"UpClosed_In ?INF X" by (metis (no_types, lifting) A0 A1 A2 B0 FilSpace2_def FilterOfSetsIn2_def lem1769c mem_Collect_eq)
+  have B4:"?INF \<subseteq> F1"
 
 end
