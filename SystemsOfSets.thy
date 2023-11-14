@@ -160,7 +160,7 @@ qed
 
 lemma upclosed_then_preceq_imp_subseteq2:
   assumes A0:"X \<noteq> {}" and 
-          A1: "A \<noteq> {}" and
+          A1:"A \<noteq> {}" and
           A2:"B \<noteq> {}" and
           A3:"A \<in> (DPow X)" and 
           A4:"B \<in> (DPow X)" and
@@ -1318,15 +1318,71 @@ lemma lem1769c:
   shows "UpClosed_In (ewunion A B X) X"
   by (metis A0 A10 A11 A20 A21 lem1769b sup.idem)
 
-lemma lem1769:
-  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)"
+lemma mega_bozowatch_thesqueakuel:
+  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
   shows "(Inf1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<union> f2}"
-proof
+proof-
   let ?INF="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<union> f2}"
   have B0:"?INF = (ewunion F1 F2 X)" by (simp add: ewunion_def)
   have B1:"?INF \<preceq> F1" using preceq_def by fastforce
   have B2:"?INF \<preceq> F2" using preceq_def by fastforce (* by (metis A1 A2 B0 DPow_def preceq_def bozowatch7 lem171311 subsetD)*)
   have B3:"UpClosed_In ?INF X" by (metis (no_types, lifting) A0 A1 A2 B0 FilSpace2_def FilterOfSetsIn2_def lem1769c mem_Collect_eq)
-  have B4:"?INF \<subseteq> F1"
+  have B4:"?INF \<subseteq> F1" by (smt (verit) A1 B1 FilSpace2_def FilterOfSetsIn2_def UpClosed_In_def mem_Collect_eq preceq_def subsetI) 
+  have B5:"?INF \<subseteq> F2" by (smt (verit) A2 B2 FilSpace2_def FilterOfSetsIn2_def UpClosed_In_def mem_Collect_eq preceq_def subsetI)
+  have B6:"\<forall>F\<in>(FilSpace2 X). (\<forall>Fi \<in> {F1, F2}. (F \<subseteq> Fi)) \<longrightarrow> (F \<subseteq> ?INF)"
+  proof
+    fix F3 assume A3:"F3 \<in> (FilSpace2 X)"
+    show "(\<forall>Fi \<in> {F1, F2}. (F3 \<subseteq> Fi)) \<longrightarrow> (F3 \<subseteq> ?INF)"
+    proof
+      assume A4:"(\<forall>Fi \<in> {F1, F2}. (F3 \<subseteq> Fi))"
+      have B50:"(F3 \<subseteq> F1) \<and> (F3 \<subseteq> F2)" by (simp add: A4)
+      show "F3 \<subseteq> ?INF"
+      proof
+        fix f3 assume A5:"f3 \<in> F3"
+        obtain f1 where A6:"(f1 \<in> F1) \<and> (f1 \<subseteq> f3)" using A5 B50 by blast
+        obtain f2 where A7:"(f2 \<in> F2) \<and> (f2 \<subseteq> f3)" using A5 B50 by blast 
+        have B51:"f1 \<union> f2 \<subseteq> f3" by (simp add: A6 A7)
+        have B52:"f1 \<union> f2 \<in> ?INF" using A1 A2 A6 A7 DPow_def bozowatch7 by auto
+        show "f3 \<in> ?INF" using A3 A5 B50 DPow_def FilSpace2_def by blast
+      qed
+    qed
+  qed
+  have B7:"\<forall>Fi \<in> {F1, F2}. ?INF \<subseteq> Fi"  using B4 B5 by auto
+  have B8:"\<forall>a \<in> ?INF. \<forall>b \<in> ?INF. a \<inter> b \<in>?INF "
+  proof
+    fix a assume B80:"a \<in> ?INF"
+    obtain a1 a2 where B81:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> a=a1 \<union> a2" using B80 by blast
+    show "\<forall>b \<in> ?INF. a \<inter> b \<in> ?INF"
+    proof
+      fix b assume B82:"b \<in> ?INF"
+      obtain b1 b2 where B83:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> b=b1 \<union> b2" using B82 by blast
+      have B84:"(a1 \<union> a2) \<inter> (b1 \<union> b2) = (a1 \<inter> b1) \<union> (a1 \<inter> b2) \<union> (a2 \<inter> b1) \<union> (a2 \<inter> b2)" by fastforce
+      let ?a1b1="a1 \<inter> b1"  let ?a2b2="a2 \<inter> b2" let ?c="?a1b1 \<union> ?a2b2"
+      have B85:"... \<supseteq> ?a1b1 \<union> ?a2b2" by auto 
+      have B86:"\<forall>a1 \<in> F1. \<forall>b1 \<in> F1. a1 \<inter> b1 \<in> F1" by (smt (verit) A1 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+      have B87:"\<forall>a2 \<in> F2. \<forall>b2 \<in> F2. a2 \<inter> b2 \<in> F2" by (smt (verit) A2 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+      have B88:"?a1b1 \<in> F1" by (simp add: B81 B83 B86)
+      have B89:"?a2b2 \<in> F2" by (simp add: B81 B83 B87) 
+      have B810:"?c \<subseteq> a \<inter> b" using B81 B83 by blast
+      show "a \<inter>b \<in> ?INF" by (smt (verit) B4 B5 B80 B82 B86 B87 CollectD CollectI Int_Un_eq(3) Pow_iff Un_Int_eq(4) Un_subset_iff subset_eq)
+    qed
+  qed
+  have B9:"PiSystem ?INF" using B8 PiSystem_def by blast
+  have B10:"?INF \<noteq> {}"
+  proof-
+    have B100:"\<exists>a \<in> Pow X. a \<in> F1" using A01 A1 DPow_def UnCI bozowatch7 by fastforce
+    have B101:"\<exists>a \<in> Pow X. a \<in> F2" using A02 A2 DPow_def UnCI bozowatch7 by fastforce
+    have B102:"X \<in> F1" by (metis (no_types, lifting) A1 B100 CollectD FilSpace2_def FilterOfSetsIn2_def PowD Pow_top UpClosed_In_def)
+    have B103:"X \<in> F2" by (metis (no_types, lifting) A2 B101 CollectD FilSpace2_def FilterOfSetsIn2_def PowD Pow_top UpClosed_In_def)
+    have B104:"X \<in> ?INF" using B102 B103 by blast
+    show ?thesis using B104 by blast
+  qed
+  have B11:"?INF \<in> (FilSpace2 X)" by (metis (no_types, lifting) A1 B10 B3 B4 B9 CollectI DPow_def FilSpace2_def FilterOfSetsIn2_def Pow_iff bozowatch7 in_mono subset_trans)
+  have B12:"IsInf2 ?INF {F1, F2} (FilSpace2 X)" by (smt (verit) B11 B6 B7 IsInf2_def lower_bounds_are_lower_bounds2)
+  show ?thesis
+    by (smt (verit) B12 Inf1_def IsInf2_def lower_bounds_are_lower_bounds2 maximum_is_greatest)
+qed     
+        
 
+        
 end
