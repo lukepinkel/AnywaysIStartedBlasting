@@ -1318,6 +1318,47 @@ lemma lem1769c:
   shows "UpClosed_In (ewunion A B X) X"
   by (metis A0 A10 A11 A20 A21 lem1769b sup.idem)
 
+
+lemma lem1769d:
+  assumes A00:"X \<noteq> {}" and
+          A01:"Y \<noteq> {}" and
+          A10:"A \<in> (DPow X)" and 
+          A11:"(B \<in> DPow Y)" and 
+          A21:"UpClosed_In A X" and
+          A22:"UpClosed_In B Y" and
+          A3:"X \<inter> Y \<noteq> {}"
+  shows "UpClosed_In (ewinter A B (X \<inter> Y)) (X \<inter> Y)"
+proof-
+  let ?XY="X \<inter> Y"
+  let ?AB="ewinter A B ?XY"
+  have B0:"\<forall>c \<in> (Pow ?XY). (\<exists>ab \<in>?AB. c \<supseteq> ab) \<longrightarrow> c \<in> ?AB"
+  proof
+    fix c assume A3:"c \<in> (Pow ?XY)"
+    show "(\<exists>ab \<in>?AB. c \<supseteq> ab) \<longrightarrow> c \<in> ?AB"
+    proof
+      assume A4:"(\<exists>ab \<in>?AB. c \<supseteq> ab)"
+      obtain ab where A4:"(ab \<subseteq> c) \<and> (ab \<in> ?AB)"  using A4 by blast
+      obtain a b where A5:"a \<in> A \<and> b \<in> B \<and> (ab=a \<inter> b)" by (smt (verit, best) A4 CollectD ewinter_def)
+      have B011:"a \<subseteq> (a \<union> c)" using A10 A4 A5 mega_bozo by auto  
+      have B012:"... \<subseteq> X \<union> (X \<inter> Y)"  using A10 A3 A5 mega_bozo by auto
+      have B013:"... = X" by simp
+      have B014:"b \<subseteq> (b \<union> c)" using A11 A4 A5 mega_bozo by auto
+      have B015:"... \<subseteq> Y \<union> (Y \<inter> X)"  using A11 A3 A5 DPow_def by auto 
+      have B016:"... = Y" by simp
+      have B017:"a \<union> c \<in> A"  by (metis A21 A5 B011 B012 B013 PowI UpClosed_In_def)
+      have B018:"b \<union> c \<in> B" by (metis A22 A5 B014 B015 B016 PowI UpClosed_In_def) 
+      have B019:"(a \<union> c) \<inter> (b \<union> c) = (a \<inter> b) \<union> (a \<inter> c) \<union> (c \<inter> b) \<union> c" by blast
+      have B020:"... = c" using A4 A5 by blast
+      have B021:"c \<subseteq> (X \<inter> Y)" using A3 by auto
+      have B022:"\<exists>a1 \<in> A. \<exists>b1 \<in>B. c=a1 \<inter> b1" by (metis B017 B018 B019 B020)
+      have B023:"c \<in> ?AB"  using A3 B022 ewinter_def by fastforce
+      show "c \<in> ?AB" by (simp add: B023)
+    qed
+  qed
+  with B0 show ?thesis by (simp add: UpClosed_In_def)
+qed
+
+
 lemma mega_bozowatch_thesqueakuel:
   assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
   shows "(Inf1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<union> f2}"
@@ -1382,7 +1423,40 @@ proof-
   show ?thesis
     by (smt (verit) B12 Inf1_def IsInf2_def lower_bounds_are_lower_bounds2 maximum_is_greatest)
 qed     
-        
+    
 
-        
+lemma mega_bozowatch_thechipwrecked1:
+  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
+  shows "PiSystem {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
+proof-
+  let ?SUP="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"    
+  have B0:"\<forall>a \<in> ?SUP. \<forall>b \<in> ?SUP. a \<inter> b \<in>?SUP "
+  proof
+    fix a assume B01:"a \<in> ?SUP"
+    obtain a1 a2 where B02:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> a=a1 \<inter> a2" using B01 by blast
+    show "\<forall>b \<in> ?SUP. a \<inter> b \<in> ?SUP"
+    proof
+      fix b assume B03:"b \<in> ?SUP"
+      obtain b1 b2 where B04:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> b=b1 \<inter> b2" using B03 by blast
+      have B05:"(a1 \<inter> a2) \<inter> (b1 \<inter> b2) = (a1 \<inter> b1 ) \<inter> (a2 \<inter> b2)" by fastforce
+      have B06:"(a1 \<inter> b1) \<in> F1" by (metis (no_types, lifting) A1 B02 B04 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+      have B07:"(a2 \<inter> b2) \<in> F2" by (metis (no_types, lifting) A2 B02 B04 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+      have B08:"(a1 \<inter> b1 ) \<inter> (a2 \<inter> b2) \<in> ?SUP" using B03 B04 B06 B07 by blast
+      show B09:"a \<inter> b \<in> ?SUP" using B02 B04 B05 B08 by presburger
+    qed
+  qed
+  with B0 show ?thesis by (meson PiSystem_def)
+qed
+
+
+
+
+lemma mega_bozowatch_thechipwrecked:
+  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
+  shows "(Sup1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
+proof-
+  let ?SUP="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
+  
+qed
+      
 end
