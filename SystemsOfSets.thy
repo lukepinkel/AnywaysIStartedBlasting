@@ -1125,6 +1125,13 @@ lemma lem171311:
   shows "ewunion A B X \<preceq> A"
   by (smt (verit) CollectD Un_subset_iff dual_order.refl ewunion_def preceq_def)
 
+lemma lem171311b:
+  assumes A0:"A \<in> Pow (Pow X)" and A1:"B \<in> Pow (Pow X)" 
+  shows "ewunion A B X \<preceq> B"
+  by (smt (verit) CollectD PowD Pow_top Un_subset_iff ewunion_def preceq_def)
+
+
+
 lemma lem171312:
   assumes A0:"A \<in> Pow (Pow X)" and A1:"B \<in> Pow (Pow X)" and "ewinter A B X \<noteq> {}" and "B \<noteq> {}" and "A \<noteq> {}"
   and "\<forall>a \<in> A. \<exists>b \<in>B. a \<inter>b \<noteq> {}" 
@@ -1470,9 +1477,71 @@ lemma filt_univ:
   shows "X \<in> F"
   by (smt (verit, best) A1 CollectD DPow_def FilSpace2_def FilterOfSetsIn2_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
 
-(*
+
+lemma lem171311c:
+  assumes A0:"A \<in> FilSpace2 X" and
+          A1:"B \<in> FilSpace2 X" and 
+          A2:"\<forall>a \<in> A. \<forall>b \<in> B. a \<inter> b \<noteq> {}" and
+          A3:"X \<noteq> {}"
+  shows "A \<preceq> ewinter A B X"
+proof-
+  let ?C="ewinter A B X"
+  have B0:"\<forall>a \<in> A. \<exists>c \<in> ?C. c \<subseteq> a"
+  proof 
+    fix a assume A4:"a \<in> A"
+    show "\<exists>c \<in> ?C. c \<subseteq> a"
+    proof-
+      have B01:"X \<in> B" by (simp add: A1 A3 filt_univ) 
+      have B02:"(a \<inter> X) \<in> ?C" using A4 B01 ewinter_def by fastforce
+      have B03:"(a \<inter> X)\<subseteq>a" by simp
+      show "\<exists>c \<in> ?C. c \<subseteq> a"  using B02 B03 by blast
+    qed
+  qed
+  show ?thesis by (simp add: B0 preceq_def)
+qed
+
+lemma lem171311d:
+  assumes A0:"A \<in> FilSpace2 X" and
+          A1:"B \<in> FilSpace2 X" and 
+          A2:"\<forall>a \<in> A. \<forall>b \<in> B. a \<inter> b \<noteq> {}" and
+          A3:"X \<noteq> {}"
+  shows "B \<preceq> ewinter A B X"
+  by (smt (verit) A0 A1 A2 A3 Int_commute bozowatch7 ewi1 filt_ne lem171311c mega_bozo subsetD)
+
+lemma lem171311e:
+  assumes A0:"X \<noteq> {}" and
+          A1:"A \<in> FilSpace2 X" and
+          A2:"B \<in> FilSpace2 X" and
+          A3:"C \<in> DPow X" and
+          A4:"PiSystem C" and
+          A5:"\<forall>a \<in> A. \<forall>b \<in> B. a \<inter> b \<noteq> {}" and
+          A6:"A \<preceq> C \<and> B \<preceq> C"
+  shows "(ewinter A B X) \<preceq> C"
+proof-
+  let ?AB="(ewinter A B X)"
+  have B0:"\<forall>ab \<in> ?AB. \<exists>c \<in> C.  c \<subseteq> ab "
+  proof
+    fix ab assume A7:"ab \<in> ?AB"
+    show "\<exists>c \<in> C. c \<subseteq> ab"
+    proof-
+      obtain a b  where A8:"a \<in> A \<and> b \<in> B \<and> a \<inter> b=ab" by (smt (verit, del_insts) A7 CollectD ewinter_def)
+      obtain ca cb where A9:"ca \<in> C \<and> cb \<in> C \<and> ca \<subseteq> a \<and> cb \<subseteq> b" by (meson A6 A8 preceq_def)
+      have B01:"ca \<inter> cb \<subseteq> a \<inter> b" using A9 by blast
+      have B02:"... = ab" by (simp add: A8)
+      have B03:"ca \<inter> cb \<in> C" by (meson A4 A9 PiSystem_def)
+      have B04:"\<exists>c \<in> C. c \<subseteq> ab" using A8 B01 B03 by blast
+      show ?thesis  by (simp add: B04)
+    qed
+  qed
+  show ?thesis by (simp add: B0 preceq_def)
+qed
+
+
 lemma mega_bozowatch_thechipwrecked:
-  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
+  assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and
+           A01:"F1 \<noteq> {}" and
+           A02:"F2 \<noteq> {}" and
+           A03:"\<forall>f1 \<in> F1. \<forall>f2 \<in> F2. f1 \<inter> f2 \<noteq> {}"
   shows "(Sup1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
 proof-
   let ?SUP="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
@@ -1504,8 +1573,34 @@ proof-
   have P7:"?SUP \<in> DPow X" by (simp add: Collect_mono_iff Pow_def mega_bozo)
   have P8:"?SUP \<in> FilSpace2 X" using FilSpace2_def P6 P7 by blast
   have P9:"\<forall>F\<in>(FilSpace2 X). (\<forall>Fi \<in> {F1, F2}. (Fi \<subseteq> F)) \<longrightarrow> (?SUP \<subseteq> F)"
- 
+  proof
+    fix F assume P9A0:"F\<in>(FilSpace2 X)"
+    show "(\<forall>Fi \<in> {F1, F2}. (Fi \<subseteq> F)) \<longrightarrow> (?SUP \<subseteq> F)"
+    proof
+      assume P9A1:"(\<forall>Fi \<in> {F1, F2}. (Fi \<subseteq> F))"
+      show "(?SUP \<subseteq> F)"
+      proof-
+        have P90:"F1 \<subseteq> F"  using P9A1 by blast
+        have P91:"F2 \<subseteq> F" by (simp add: P9A1) 
+        have P92:"F1 \<preceq> F" by (simp add: P90 subseteq_imp_preceq)
+        have P93:"F2 \<preceq> F" by (simp add: P91 subseteq_imp_preceq)
+        have P94:"(ewinter F1  F2 X) \<preceq> F"
+          by (metis (no_types, lifting) A0 A03 A1 A2 FilSpace2_def FilterOfSetsIn2_def P92 P93 P9A0 lem171311e mem_Collect_eq)
+        show ?thesis
+          by (metis (no_types, lifting) A0 FilSpace2_def FilterOfSetsIn2_def P0 P4 P7 P94 P9A0 mem_Collect_eq upclosed_then_preceq_imp_subseteq2)
+      qed
+    qed
+  qed
+  have B7:"\<forall>Fi \<in> {F1, F2}. Fi \<subseteq> ?SUP"
+    by (metis (no_types, lifting) A0 A01 A02 A03 A1 A2 P0 P3 P4 P7 bozowatch7 in_mono insertE lem171311c lem171311d singleton_iff upclosed_then_preceq_imp_subseteq2)
+  have B8:"IsSup2 ?SUP {F1, F2} (FilSpace2 X)"
+    by (smt (verit, ccfv_SIG) B7 IsSup2_def P8 P9 upper_bounds_are_upper_bounds2)
+  show ?thesis
+    by (smt (verit) B8 IsSup2_def Sup1_def element_lb_is_least_alt upper_bounds_are_upper_bounds2)
+qed
+        
+
 
 qed
-*)   
+   
 end
