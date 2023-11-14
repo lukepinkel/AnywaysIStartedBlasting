@@ -1358,6 +1358,15 @@ proof-
   with B0 show ?thesis by (simp add: UpClosed_In_def)
 qed
 
+lemma lem1769e:
+  assumes A0:"X \<noteq> {}" and
+          A10:"A \<in> (DPow X)" and 
+          A11:"(B \<in> DPow X)" and 
+          A20:"UpClosed_In A X" and
+          A21:"UpClosed_In B X"
+  shows "UpClosed_In (ewinter A B X) X"
+  by (metis A0 A10 A11 A20 A21 Int_absorb lem1769d)
+
 
 lemma mega_bozowatch_thesqueakuel:
   assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
@@ -1449,14 +1458,54 @@ proof-
 qed
 
 
+lemma filt_ne:
+  assumes A0:"X \<noteq> {}" and
+          A1:"F \<in> (FilSpace2 X)"
+  shows "F \<noteq> {}"
+  using A1 FilSpace2_def FilterOfSetsIn2_def by blast
 
+lemma filt_univ:
+  assumes A0:"X \<noteq> {}" and
+          A1:"F \<in> (FilSpace2 X)"
+  shows "X \<in> F"
+  by (smt (verit, best) A1 CollectD DPow_def FilSpace2_def FilterOfSetsIn2_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
 
+(*
 lemma mega_bozowatch_thechipwrecked:
   assumes A0:"X \<noteq> {}" and A1:"F1 \<in> (FilSpace2 X)" and A2:"F2 \<in>( FilSpace2 X)" and A01:"F1 \<noteq> {}" and A02:"F2 \<noteq> {}"
   shows "(Sup1 {F1, F2} (FilSpace2 X)) = {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
 proof-
   let ?SUP="{f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
-  
+  have P0:"?SUP=ewinter F1 F2 X" by (simp add: ewinter_def)
+  have P1:"PiSystem {f \<in> Pow X. \<exists>f1 \<in> F1. \<exists>f2 \<in> F2. f=f1 \<inter> f2}"
+  proof-
+    have B0:"\<forall>a \<in> ?SUP. \<forall>b \<in> ?SUP. a \<inter> b \<in>?SUP "
+    proof
+      fix a assume B01:"a \<in> ?SUP"
+      obtain a1 a2 where B02:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> a=a1 \<inter> a2" using B01 by blast
+      show "\<forall>b \<in> ?SUP. a \<inter> b \<in> ?SUP"
+      proof
+        fix b assume B03:"b \<in> ?SUP"
+        obtain b1 b2 where B04:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> b=b1 \<inter> b2" using B03 by blast
+        have B05:"(a1 \<inter> a2) \<inter> (b1 \<inter> b2) = (a1 \<inter> b1 ) \<inter> (a2 \<inter> b2)" by fastforce
+        have B06:"(a1 \<inter> b1) \<in> F1" by (metis (no_types, lifting) A1 B02 B04 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+        have B07:"(a2 \<inter> b2) \<in> F2" by (metis (no_types, lifting) A2 B02 B04 FilSpace2_def FilterOfSetsIn2_def PiSystem_def mem_Collect_eq)
+        have B08:"(a1 \<inter> b1 ) \<inter> (a2 \<inter> b2) \<in> ?SUP" using B03 B04 B06 B07 by blast
+        show B09:"a \<inter> b \<in> ?SUP" using B02 B04 B05 B08 by presburger
+      qed
+    qed
+    with B0 show ?thesis by (meson PiSystem_def)
+  qed
+  have P2:"UpClosed_In (ewinter F1 F2 X) X" by (metis (no_types, lifting) A0 A1 A2 CollectD FilSpace2_def FilterOfSetsIn2_def lem1769e)
+  have P3:"UpClosed_In ?SUP X" using P0 P2 by auto
+  have P4:"?SUP \<noteq> {}" by (metis (mono_tags, lifting) A0 A1 A2 CollectI PowD Pow_top bex_empty filt_univ inf.absorb_iff1)
+  have P5:"PiSystem ?SUP"  using P1 by auto
+  have P6:"FilterOfSetsIn2 ?SUP X" using FilterOfSetsIn2_def P3 P4 P5 by blast
+  have P7:"?SUP \<in> DPow X" by (simp add: Collect_mono_iff Pow_def mega_bozo)
+  have P8:"?SUP \<in> FilSpace2 X" using FilSpace2_def P6 P7 by blast
+  have P9:"\<forall>F\<in>(FilSpace2 X). (\<forall>Fi \<in> {F1, F2}. (Fi \<subseteq> F)) \<longrightarrow> (?SUP \<subseteq> F)"
+ 
+
 qed
-      
+*)   
 end
