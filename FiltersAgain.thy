@@ -20,7 +20,6 @@ definition isfilter::"'X set set \<Rightarrow> bool" where "isfilter F \<equiv> 
 definition cl_fmeet1::"'X set set \<Rightarrow> 'X set set" where
     "cl_fmeet1 A = {a. \<exists>f\<in>Pow(A). finite f \<and>  f \<noteq> {} \<and>  \<Inter>f=a}"
 
-
 definition cl_fmeet2::"'X set set \<Rightarrow> 'X set set" where
     "cl_fmeet2 A = {a. \<exists>f\<in>Pow(A). finite f  \<and>  \<Inter>f=a}"
 
@@ -40,6 +39,102 @@ proof-
     by (smt (verit) Inf_empty UnCI cl_fmeet1_def cl_fmeet2_def insert_iff mem_Collect_eq subsetI)
   show ?thesis using B2 B3 by blast
 qed
+
+lemma lem_clfm2:
+  "A \<subseteq> cl_fmeet2 A"
+proof-
+  have B0:"\<forall>a \<in> A. finite {a} \<and> {a} \<in> Pow(A) \<and> a=\<Inter>{a}" by simp
+  have B1:"\<forall>a \<in> A. \<exists>f \<in> Pow(A). finite f \<and> \<Inter>f=a"using B0 by blast
+  with B1 show ?thesis  by (simp add: cl_fmeet2_def subsetI)
+qed
+
+lemma lem_clfm2b:
+  "A \<subseteq> cl_fmeet1 A"
+proof-
+  have B0:"\<forall>a \<in> A. finite {a} \<and> {a} \<noteq> {}  \<and> {a} \<in> Pow(A) \<and> a=\<Inter>{a}" by simp
+  have B1:"\<forall>a \<in> A. \<exists>f \<in> Pow(A). f \<noteq> {} \<and> finite f \<and> \<Inter>f=a"using B0 by blast
+  with B0 B1 show ?thesis by (smt (verit, del_insts) CollectI cl_fmeet1_def subsetI)
+qed
+
+
+lemma lem_clfm3:
+  "A \<subseteq> B \<longrightarrow> cl_fmeet2 A \<subseteq> cl_fmeet2 B"
+  by (smt (verit) Pow_iff cl_fmeet2_def mem_Collect_eq subset_eq)
+  
+lemma lem_clfm3b:
+  "A \<subseteq> B \<longrightarrow> cl_fmeet1 A \<subseteq> cl_fmeet1 B"
+  by (smt (verit) CollectD CollectI PowD PowI cl_fmeet1_def order_trans subsetI)
+  
+
+lemma lem_clfm4:
+  "cl_fmeet2 A = cl_fmeet2 (cl_fmeet2 A)"
+proof-
+  let ?C1="cl_fmeet2 A"
+  let ?C2="cl_fmeet2 ?C1"
+  have B0:"A \<subseteq> ?C1" by (simp add: lem_clfm2)
+  have B1:"?C1 \<subseteq> ?C2" by (simp add: lem_clfm2)
+  have B2:"?C2 \<subseteq> ?C1"
+  proof
+    fix a assume A0:"a \<in> ?C2"
+    obtain f where A1:"f= (\<lambda>a. SOME E. E \<in> Pow(A) \<and> finite E \<and> a=\<Inter>E)" by simp
+    obtain B where A2:"B \<in> (Pow ?C1) \<and> finite B \<and> a=(\<Inter>B)" by (smt (verit, best) A0 cl_fmeet2_def mem_Collect_eq)
+    have B20:"\<forall>b \<in> B. \<exists>E \<in> Pow (A). finite E \<and> b = \<Inter>E"
+      by (smt (verit, ccfv_threshold) A2 CollectD Union_Pow_eq Union_iff cl_fmeet2_def)
+    have B30:"\<forall>b \<in> B. (b=(\<Inter>(f b)))" by (metis (mono_tags, lifting) A1 B20 someI)
+    have B40:"a=(\<Inter>b\<in>B. (\<Inter>(f b)))" using A2 B30 by auto
+    let ?D="\<Union>b \<in> B. (f b)"
+    have B50:"\<forall>b \<in> B. finite (f b)" by (metis (mono_tags, lifting) A1 B20 verit_sko_ex_indirect2)
+    have B60:"\<forall>b \<in> B. (f b) \<in> Pow A"  by (metis (mono_tags, lifting) A1 B20 verit_sko_ex_indirect2)
+    have B70:"?D \<in> Pow(A)" using B60 by blast
+    have B80:"finite ?D" using A2 B50 by blast
+    have B90:"a=\<Inter>?D" using B40 by blast
+    show B110:"a \<in> ?C1" using B70 B80 B90 cl_fmeet2_def by blast
+  qed
+  show ?thesis using B1 B2 by auto
+qed
+
+lemma lem_clfm4b:
+  assumes "A \<noteq> {}" shows "cl_fmeet1 A = cl_fmeet1 (cl_fmeet1 A)"
+proof-
+  let ?C1="cl_fmeet1 A"
+  let ?C2="cl_fmeet1 ?C1"
+  have B0:"A \<subseteq> ?C1" by (simp add: lem_clfm2b)
+  have B1:"?C1 \<subseteq> ?C2" by (simp add: lem_clfm2b)
+  have B2:"?C2 \<subseteq> ?C1"
+  proof
+    fix a assume A0:"a \<in> ?C2"
+    obtain f where A1:"f= (\<lambda>a. SOME E. E \<in> Pow(A) \<and> E \<noteq> {} \<and> finite E \<and> a=\<Inter>E)" by simp
+    obtain B where A2:"B \<in> (Pow ?C1) \<and> finite B \<and> B \<noteq> {} \<and> a=(\<Inter>B)" by (smt (verit, best) A0 cl_fmeet1_def mem_Collect_eq)
+    have B20:"\<forall>b \<in> B. \<exists>E \<in> Pow (A). finite E \<and> E \<noteq> {}  \<and> b = \<Inter>E" by (smt (verit, ccfv_threshold) A2 CollectD Union_Pow_eq Union_iff cl_fmeet1_def)
+    have B30:"\<forall>b \<in> B. (b=(\<Inter>(f b)))" by (metis (mono_tags, lifting) A1 B20 someI)
+    have B40:"a=(\<Inter>b\<in>B. (\<Inter>(f b)))" using A2 B30 by auto
+    let ?D="\<Union>b \<in> B. (f b)"
+    have B50:"\<forall>b \<in> B. finite (f b)"
+    proof
+      fix b assume A3:"b \<in> B"
+      have B500:"\<exists>E \<in> Pow A. E \<noteq> {} \<and> finite E \<and> b= (\<Inter>E)" by (metis A3 B20)
+      show "finite (f b)" by (metis (mono_tags, lifting) A1 B500 someI_ex)
+    qed
+    have B60:"\<forall>b \<in> B. (f b) \<in> Pow A" by (smt (verit, ccfv_SIG) A1 B20 verit_sko_ex_indirect2)
+    have B70:"?D \<in> Pow(A)" using B60 by blast
+    have B80:"finite ?D" using A2 B50 by blast
+    have B90:"a=\<Inter>?D" using B40 by blast
+    have B110:"?D \<noteq> {}" by (smt (verit, del_insts) A1 A2 B20 SUP_bot_conv(1) equals0I someI_ex)
+    show B120:"a \<in> ?C1" using B110 B70 B80 B90 cl_fmeet1_def by blast
+  qed
+  show ?thesis using B1 B2 by auto
+qed
+    
+   
+lemma lem_clfm5:
+  "closure cl_fmeet2"
+  by (metis closure_unfold extensive_def idempotent_def isotone_def lem_clfm2 lem_clfm3 lem_clfm4) 
+
+lemma lem_clfm5b:
+  "closure cl_fmeet1"
+  by (smt (verit) Pow_iff cl_fmeet1_def closure_equivalence empty_iff lem_clfm2b lem_clfm4b mem_Collect_eq order_trans subsetI subset_antisym)
+
+
 lemma finite_intersections_in_set:
   fixes X::"'X set"
   assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
