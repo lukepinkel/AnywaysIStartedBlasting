@@ -1,0 +1,129 @@
+theory FiltersAgain
+  imports Main "./Posets"
+begin
+hide_type Filter.filter
+
+definition inhabited::"'X set  \<Rightarrow> bool" where "inhabited X \<equiv> X \<noteq> {}"
+
+definition pisystem::"'X set set \<Rightarrow> bool" where "pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> a \<inter> b  \<in> X)"
+
+definition pi_base::"'X set set \<Rightarrow> bool" where "pi_base X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow>(\<exists>c  \<in> X. c \<subseteq> a \<inter> b ))"
+
+definition fcsystem::"'X set set \<Rightarrow> bool" where "fcsystem X \<equiv> (\<forall>F. F \<noteq> {} \<longrightarrow> finite F \<longrightarrow> F  \<subseteq> X \<longrightarrow> \<Inter>F \<in> X)"
+
+definition fc_base::"'X set set \<Rightarrow> bool" where "fc_base X \<equiv> (\<forall>F. finite F \<longrightarrow> F  \<subseteq> X \<longrightarrow> (\<exists>c \<in> X. c \<subseteq> \<Inter>F))"
+
+definition upclosed::"'X::order set \<Rightarrow> bool" where "upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
+
+definition isfilter::"'X set set \<Rightarrow> bool" where "isfilter F \<equiv> (pisystem F \<and> upclosed F \<and> inhabited F)"
+
+definition cl_fmeet1::"'X set set \<Rightarrow> 'X set set" where
+    "cl_fmeet1 A = {a. \<exists>f\<in>Pow(A). finite f \<and>  f \<noteq> {} \<and>  \<Inter>f=a}"
+
+
+definition cl_fmeet2::"'X set set \<Rightarrow> 'X set set" where
+    "cl_fmeet2 A = {a. \<exists>f\<in>Pow(A). finite f  \<and>  \<Inter>f=a}"
+
+lemma lem_clfm1:
+  "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
+proof-
+  let ?C1="(cl_fmeet1 A)" let ?C2="cl_fmeet2 A"
+  have B0:"?C1 \<subseteq> ?C2"
+  proof
+    fix c1 assume P0:"c1 \<in> ?C1"
+    obtain f where P1:"f \<in> Pow(A) \<and>  finite f \<and>  f \<noteq> {} \<and>  \<Inter>f=c1" by (smt (verit, best) P0 CollectD cl_fmeet1_def)
+    show "c1 \<in> ?C2"  using P1 cl_fmeet2_def by blast
+  qed
+  have B1:"UNIV \<in> ?C2 "using cl_fmeet2_def by auto
+  have B2:"?C1 \<union> {UNIV} \<subseteq> ?C2" by (simp add: B0 B1)
+  have B3:"?C2 \<subseteq> ?C1 \<union> {UNIV}"
+    by (smt (verit) Inf_empty UnCI cl_fmeet1_def cl_fmeet2_def insert_iff mem_Collect_eq subsetI)
+  show ?thesis using B2 B3 by blast
+qed
+lemma finite_intersections_in_set:
+  fixes X::"'X set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C"
+  shows "(\<Inter>E) \<in> C"
+proof -
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x) with assms show ?case by simp
+    next case (insert x F)
+    then have "(\<Inter>(insert x F)) \<in> C" using assms
+    proof-
+      have P0:"x \<in> C" using insert.prems by auto
+      have P1: "F \<subseteq> C" using insert.prems by auto
+      with A2 have P2:"x \<inter> (\<Inter>F) \<in> C" by (simp add: P0 insert.hyps(4))
+      from insert.hyps have P3:"(\<Inter>F) \<in> C" using P1 by blast
+      have  P4:"\<Inter>(insert x F) = x \<inter> (\<Inter>F)" by simp
+      then show "(\<Inter>(insert x F)) \<in> C"  by (simp add: P2)
+    qed
+    show ?case
+      using \<open>\<Inter> (insert x F) \<in> C\<close> by auto
+  qed
+qed
+
+
+lemma finite_union_in_set:
+  fixes X::"'X set"
+  assumes A1:"C \<in> Pow(Pow (X))" and A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<union>  a2 \<in> C"and 
+          A3:"finite E" and A4:"E \<noteq> {}"  and A5:"E \<subseteq> C"
+  shows "(\<Union>E) \<in> C"
+proof -
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x)  with assms show ?case by simp
+    next case (insert x F)
+    then have "(\<Union>(insert x F)) \<in> C" using assms
+    proof-
+      have P0:"x \<in> C"  using insert.prems by auto
+      have P1: "F \<subseteq> C" using insert.prems by auto
+      with A2 have P2:"x \<union> (\<Union>F) \<in> C" by (simp add: P0 insert.hyps(4))
+      from insert.hyps have P3:"(\<Union>F) \<in> C" using P1 by blast
+      have  P4:"\<Union>(insert x F) = x \<union> (\<Union>F)" by simp
+      then show "(\<Union>(insert x F)) \<in> C" by (simp add: P2)
+    qed
+    show ?case
+      using \<open>\<Union> (insert (x::'X set) (F::'X set set)) \<in> (C::'X set set)\<close> by auto
+  qed
+qed
+
+lemma unfold_double:
+  assumes "\<forall>x y. P x \<longrightarrow> Q y \<longrightarrow> R x y"
+  shows "\<forall>x y. (P x \<and> Q y) \<longrightarrow>  R x y"
+  by (simp add: assms)
+
+
+lemma finite_intersections_in_set_app:
+  assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" shows "pisystem A \<longleftrightarrow> fcsystem A"
+proof-
+  let ?L="pisystem A" let ?R="fcsystem A"
+  have RiL:"?R \<longrightarrow> ?L"
+    by (metis (no_types, opaque_lifting) Inf_insert cInf_singleton empty_iff empty_subsetI fcsystem_def finite.emptyI finite_insert insert_subset pisystem_def)
+  have LiR:"?L\<longrightarrow> ?R"
+  proof
+    assume P0:?L 
+    have P1:"\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow> a1 \<inter> a2 \<in> A" using P0 pisystem_def by blast
+    have P2: "\<And>F. ((F \<noteq> {}  \<and> finite F \<and> F  \<subseteq> A) \<longrightarrow>( \<Inter>F \<in> A))"
+    proof
+      fix F assume P3:"F \<noteq> {} \<and> finite F \<and> F \<subseteq> A"
+      show "(\<Inter>F) \<in> A"
+        by (simp add: P1 P3 finite_intersections_in_set)
+    qed
+    show ?R by (simp add: P2 fcsystem_def)
+  qed
+  with RiL LiR show ?thesis by blast
+qed
+ 
+lemma lem1:
+  "isfilter F \<longleftrightarrow>  (pisystem F \<and> upclosed F \<and>  (UNIV \<in>  F))"
+  by (metis ex_in_conv inhabited_def isfilter_def top_greatest upclosed_def)
+
+lemma lem2:
+  "isfilter F \<longleftrightarrow> (fcsystem F \<and>  upclosed F \<and>  (UNIV \<in>  F))"
+  using finite_intersections_in_set_app lem1 by auto
+
+ 
+
+end
