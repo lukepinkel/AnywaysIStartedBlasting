@@ -537,8 +537,7 @@ proof-
 qed
 (*1.70.10*)
 lemma fbase_condition:
-  assumes A0: "(Proper B)" and
-          A1: "FilterOfSets F"
+  assumes A0: "(Proper B)" and A1: "FilterOfSets F"
   shows "(F=upclosure B) \<longleftrightarrow> (F \<preceq> B) \<and> (B \<subseteq> F)"
   by (metis A0 A1 FilterOfSets_def UpClosed_def empty_iff fequiv_def fequiv_iff_upclosure_equal subseteq_imp_preceq upclosed_equiv_then_equal upclosed_then_preceq_imp_subseteq upclosure_is_upclosed1 upclosure_is_upclosed2)
 
@@ -1740,12 +1739,12 @@ proof-
   show ?thesis
     by (smt (verit) B8 IsSup2_def Sup1_def element_lb_is_least_alt upper_bounds_are_upper_bounds2)
 qed
-
+(*
 definition fcl::"('X set set \<Rightarrow> 'X set set) \<Rightarrow> 'X set set set \<Rightarrow> bool" where
   "fcl = (\<lambda>E. \<lambda>X.  filter_generated_by_in E X)"
 
         
 lemma fil_closure:
   "closure_on (\<lambda>E. filter_generated_by_in E X) (DPow X)"
-
+*)
 end
