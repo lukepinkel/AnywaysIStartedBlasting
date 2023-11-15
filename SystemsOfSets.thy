@@ -159,13 +159,8 @@ proof-
 qed
 
 lemma upclosed_then_preceq_imp_subseteq2:
-  assumes A0:"X \<noteq> {}" and 
-          A1:"A \<noteq> {}" and
-          A2:"B \<noteq> {}" and
-          A3:"A \<in> (DPow X)" and 
-          A4:"B \<in> (DPow X)" and
-          A5: "UpClosed_In B X" and
-          A6: "A \<preceq> B" 
+  assumes A0:"X \<noteq> {}" and A1:"A \<noteq> {}" and A2:"B \<noteq> {}" and A3:"A \<in> (DPow X)" and  A4:"B \<in> (DPow X)" and
+          A5: "UpClosed_In B X" and  A6: "A \<preceq> B" 
   shows "A \<subseteq> B"
 proof-
   have B0:"\<forall>a \<in> (Pow X). (\<exists>b \<in> B. b \<subseteq> a) \<longrightarrow> a \<in> B"
@@ -180,8 +175,7 @@ qed
 
 (*1.70.4*)
 lemma upclosed_equiv_then_equal:
-  assumes A0:"UpClosed  \<A> \<and> UpClosed \<B> " and
-          A1:"\<A> ~ \<B>"
+  assumes A0:"UpClosed  \<A> \<and> UpClosed \<B> " and  A1:"\<A> ~ \<B>"
  shows  "\<A>=\<B>"
   by (meson A0 A1 UpClosed_def fequiv_def preceq_def subsetI subset_antisym)
 
@@ -317,11 +311,101 @@ lemma lem_meshing5:
 
 subsection PropertiesOfTypes
 
+lemma filt_ne:
+  assumes A0:"X \<noteq> {}" and
+          A1:"F \<in> (FilSpace2 X)"
+  shows "F \<noteq> {}"
+  using A1 FilSpace2_def FilterOfSetsIn2_def by blast
+
+lemma filt_ne1:
+  assumes A0:"X \<noteq> {}" and
+          A1:"F \<in> (FilSpace X)"
+  shows "F \<noteq> {}"
+  using A1 FilSpace_def FilterOfSetsIn_def by fastforce 
+
+
+
+lemma filt_univ:
+  assumes A0:"X \<noteq> {}" and A1:"F \<in> (FilSpace2 X)" shows "X \<in> F"
+  by (smt (verit, best) A1 CollectD DPow_def FilSpace2_def FilterOfSetsIn2_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
+
+lemma filt_univ2:
+  assumes A0:"X \<noteq> {}" and  A1:"F \<in> (FilSpace X)" shows "X \<in> F"
+  by (metis (no_types, lifting) A0 A1 DPow_def FilSpace2_def FilSpace_def FilterOfSetsIn2_def FilterOfSetsIn_def filt_univ mem_Collect_eq)
+
+
+lemma filt_pws1:
+   assumes A0:"F \<in> (FilSpace2 X)" shows "F \<in> DPow X" using A0 FilSpace2_def by fastforce
+
+lemma filt_pws12:
+   assumes A0:"F \<in> (FilSpace X)" shows "F \<in> DPow X" by (metis (no_types, lifting) CollectD DPow_def FilSpace_def assms)
+
+lemma dpow_lem:
+  assumes A0:"A \<in> DPow X" and A1:"a \<in> A"
+  shows "a \<in> Pow X"
+  using A0 A1 DPow_def by auto
+
+lemma filt_pws2:
+   assumes A0:"F \<in> (FilSpace2 X)" and A1:"a \<in> F" shows "a \<in> Pow X"
+   using A0 A1 dpow_lem filt_pws1 by blast
+
+lemma filt_pws22:
+   assumes A0:"F \<in> (FilSpace X)" and A1:"a \<in> F" shows "a \<in> Pow X"
+   using A0 A1 dpow_lem filt_pws12 by blast
+
+lemma filt_upc:
+  assumes A0:"F \<in> (FilSpace2 X)" and A1:"b \<in> Pow X" and A2:"a \<in> F"   and A3:"a \<subseteq> b"
+  shows "b \<in> F"
+proof -
+  have "FilterOfSetsIn2 F X"
+    using A0 FilSpace2_def by fastforce
+  then show ?thesis
+    by (metis (no_types) A1 A2 A3 FilterOfSetsIn2_def UpClosed_In_def)
+qed
+
+lemma filt_upc2:
+  assumes A0:"F \<in> (FilSpace X)" and A1:"b \<in> Pow X" and A2:"a \<in> F" and A3:"a \<subseteq> b"
+  shows "b \<in> F"  by (metis (no_types, lifting) A0 A1 A2 A3 CollectD FilSpace_def FilterOfSetsIn_def UpClosed_In_def)
+
+lemma lfil1:
+  assumes A0:"F \<in> FilSpace2 X" and A1:"a \<in>F  \<and>  b \<in>F"
+  shows "a \<inter> b \<in> F"
+  by (metis (no_types, lifting) A0 A1 CollectD FilSpace2_def FilterOfSetsIn2_def PiSystem_def)
+
+
+lemma lfil12:
+  assumes A0:"F \<in> FilSpace X" and A1:"a \<in>F  \<and>  b \<in>F"  shows "a \<inter> b \<in> F"
+  by (smt (verit) A0 A1 CollectD FilSpace_def FilterOfSetsIn_def PiSystem_def)
+
+lemma lfil2:
+  assumes A0:"F \<in> FilSpace2 X"  shows "a \<in>F  \<and>  b \<in>F \<longrightarrow>a \<inter> b \<in> F" using assms lfil1 by auto
+
+lemma lfil22:
+  assumes A0:"F \<in> FilSpace X"  shows "a \<in>F  \<and>  b \<in>F \<longrightarrow>a \<inter> b \<in> F" using assms lfil12 by auto
+
+lemma lfil3:
+  assumes "F \<in> FilSpace2 X"  shows  "\<And>a b. a \<in> F \<Longrightarrow> b \<in> F \<Longrightarrow> a \<inter> b \<in> F" using assms lfil2 by blast
+
+lemma lfil32:
+  assumes "F \<in> FilSpace X"  shows  "\<And>a b. a \<in> F \<Longrightarrow> b \<in> F \<Longrightarrow> a \<inter> b \<in> F" using assms lfil22 by blast
+
+lemma lfil4:
+  assumes A0:"F \<in> FilSpace2 X" and A1:"a \<in> Pow X" and A2:"b \<in> Pow X" shows "(a \<inter> b \<in> F) \<longrightarrow>  (a \<in> F)" using A0 A1 filt_upc by blast
+
+lemma lfil42:
+  assumes A0:"F \<in> FilSpace X" and A1:"a \<in> Pow X" and A2:"b \<in> Pow X" shows "(a \<inter> b \<in> F) \<longrightarrow>  (a \<in> F)" using A0 A1 filt_upc2 by blast
+
+lemma lfil5:
+   assumes A0:"F \<in> FilSpace2 X" and A1:"a \<in> Pow X" and A2:"b \<in> Pow X" shows "((a \<inter> b) \<in> F) \<longleftrightarrow> ((a \<in> F) \<and> (b \<in> F))"
+   by (meson A0 A1 A2 filt_upc inf_le2 lfil1 lfil4)
+
+lemma lfil52:
+   assumes A0:"F \<in> FilSpace X" and A1:"a \<in> Pow X" and A2:"b \<in> Pow X" shows "((a \<inter> b) \<in> F) \<longleftrightarrow> ((a \<in> F) \<and> (b \<in> F))"
+   by (meson A0 A1 A2 filt_upc2 inf_le2 lfil12 lfil42)
+
 (*1.70.8*)
 lemma equiv_fbase_imp_fbase:
-  assumes A0:"FilterBase \<B> "and
-        A1: "\<A> ~\<B> "
-  shows "FilterBase \<A>"
+  assumes A0:"FilterBase \<B> "and  A1: "\<A> ~\<B> " shows "FilterBase \<A>"
 proof-
   have B0: "\<forall>A \<in> \<A>. (\<exists>B \<in> \<B>. B \<subseteq> A)"
     by (meson A1 fequiv_def preceq_def)
@@ -351,10 +435,13 @@ proof-
     by (simp add: FilterBase_def)
 qed
 
+lemma equiv_fbase_imp_fbase2:
+  assumes A0:"FilterBaseIn B X "and  A1: "A ~B " shows "FilterBaseIn A X"
+  by (metis A0 A1 FilterBaseIn_def FilterBase_def equiv_fbase_imp_fbase)
+
 (*1.70.9*)
 lemma fbase_gen_filter:
-  assumes A0: "FilterBase A"
-  shows "FilterOfSets (upclosure A)"
+  assumes A0: "FilterBase A"  shows "FilterOfSets (upclosure A)"
 proof-
   let ?F="upclosure A"
   have B0: "f \<in> ?F \<longleftrightarrow> (\<exists>a \<in> A. a \<subseteq> f)"
@@ -380,6 +467,33 @@ proof-
   with B9 show ?thesis by simp
 qed
 
+
+lemma fbase_gen_filter2:
+  assumes A0:"FilterBaseIn A X" and A1:"A \<in> DPow X" shows "FilterOfSetsIn (upclosure_in A X) X"
+proof-
+   let ?F="upclosure_in A X"
+   have B0: "\<forall>f \<in> Pow X. (f \<in> ?F \<longleftrightarrow> (\<exists>a \<in> A. a \<subseteq> f))"  by (simp add: upclosure_in_def)
+   have B1:"Proper A" using A0 FilterBaseIn_def by blast
+   have B3:"Proper ?F"  by (metis A0 A1 DPow_def FilterBaseIn_def ProperNE_def equiv_fbase_imp_fbase2 upclosure_in_is_upclosed_in2)
+   have B4: "\<forall>f1 \<in> ?F. \<forall>f2 \<in> ?F. (\<exists>b1\<in>A. \<exists>b2\<in> A. \<exists>b3 \<in> A. (b1 \<subseteq>f1) \<and> (b2 \<subseteq> f2) \<and> (b3 \<subseteq> (b1 \<inter> b2)))"
+   proof
+    fix f1 assume B4A0:"f1 \<in> ?F"
+    obtain b1 where B4A1:"b1 \<in> A \<and> b1 \<subseteq> f1" by (smt (verit) B4A0 CollectD upclosure_in_def)
+    show "\<forall>f2 \<in> ?F. (\<exists>b1\<in>A. \<exists>b2\<in> A. \<exists>b3 \<in> A. (b1 \<subseteq>f1) \<and> (b2 \<subseteq> f2) \<and> (b3 \<subseteq> (b1 \<inter> b2)))"
+    proof
+      fix f2 assume B4A2:"f2 \<in> ?F"
+      obtain b2 where B4A3:"b2 \<in> A \<and> b2 \<subseteq> f2" by (smt (verit) B4A2 CollectD upclosure_in_def)
+      obtain b3 where B4A4:"b3 \<in> A \<and> b3 \<subseteq> (b1 \<inter> b2)" by (metis A0 B4A1 B4A3 DownDirected_def FilterBaseIn_def)
+      show "(\<exists>b1\<in>A. \<exists>b2\<in> A. \<exists>b3 \<in> A. (b1 \<subseteq>f1) \<and> (b2 \<subseteq> f2) \<and> (b3 \<subseteq> (b1 \<inter> b2)))" using B4A1 B4A3 B4A4 by blast
+    qed
+   qed
+   have B6: "\<forall>f1 \<in> ?F. \<forall>f2 \<in> ?F. ((f1 \<inter> f2) \<in> ?F)" by (smt (verit) B0 B4 CollectD Pow_iff inf.absorb_iff2 inf.bounded_iff inf_le2 upclosure_in_def)
+   have B7: "PiSystem ?F" using B6 PiSystem_def by blast
+   have B8: "UpClosed_In ?F X" by (simp add: upclosure_in_is_upclosed_in1)
+   from B3 B7 B8 have B9: "FilterOfSetsIn ?F X" by (metis A0 A1 DPow_def FilterBaseIn_def FilterOfSetsIn_def ProperNE_def equiv_fbase_imp_fbase2 upclosure_in_is_upclosed_in2)
+   with B9 show ?thesis by simp
+qed
+  
 (*1.70.10*)
 lemma upclosure_iff:
   assumes A0:"X \<noteq> {}" and A1:"A \<in> Pow (Pow X)"
@@ -788,6 +902,46 @@ proof -
   qed
 qed
 
+
+lemma lfil6:
+  assumes A0:"(X \<noteq> {}) \<and> (F \<in> FilSpace2 X) \<and> (F \<noteq> {})" and A1:"(finite I) \<and> (I \<noteq> {})" 
+  and A2:"\<forall>i \<in> I. (f i) \<in> F"
+  shows "(\<Inter>(f`I)) \<in> F"
+  proof-
+    let ?E="(f`I)"
+    have B0:"F \<in> DPow X"  by (simp add: A0 filt_pws1)
+    have B1:"... =  Pow (Pow X)" by (simp add: DPow_def)
+    have B2:"finite ?E" by (simp add: A1)
+    have B3:"?E \<subseteq> F" by (simp add: A2 image_subsetI)
+    have B4:"\<And>a1 a2. a1 \<in> F \<Longrightarrow> a2 \<in> F \<Longrightarrow> a1 \<inter> a2 \<in> F" using A0 lfil1 by blast
+    have B5:"?E \<noteq> {}" by (simp add: A1)
+    have B6:"(\<Inter>?E) \<in> F"  by (metis B0 B1 B2 B3 B4 B5 finite_intersections_in_set)
+    with B6 show ?thesis by simp
+qed
+
+lemma lfil7:
+  assumes A0:"(X \<noteq> {}) \<and> (F \<in> FilSpace2 X) \<and> (F \<noteq> {})" and A1:"(finite I) \<and> (I \<noteq> {})" 
+  and A2:"((\<Inter>(f`I)) \<in> F) \<and> ((f`I) \<in> DPow X)"
+  shows "\<forall>i \<in> I. (f i) \<in> F"
+proof-
+    let ?fI="(\<Inter>(f`I))"
+    have B0:"\<forall>i \<in> I. ?fI \<subseteq> (f i)" by blast
+    have B1:"?fI \<in> F" by (simp add: A2)
+    have B2:"\<forall>i \<in> I.  ((f i) \<in> F)" by (meson A0 A2 INF_lower dpow_lem filt_upc rev_image_eqI)
+    with B2 show ?thesis by simp
+qed
+  
+lemma lfil8:
+  assumes A0:"(X \<noteq> {}) \<and> (F \<in> FilSpace2 X) \<and> (F \<noteq> {})" and
+          A1:"(finite I) \<and> (I \<noteq> {})" and
+          A2:"f`I \<in> DPow X"
+  shows "(\<Inter>(f`I)) \<in> F \<longleftrightarrow>  (\<forall>i \<in> I. (f i) \<in> F)"
+  by (meson A0 A1 A2 lfil6 lfil7)
+
+lemma lfil9:
+   assumes A0:"(F \<in> FilSpace2 X)"
+   shows "\<And>a. a \<in> Pow X \<Longrightarrow> ((\<exists>b \<in> F. b \<subseteq> a) \<longleftrightarrow> (a \<in> F))"
+  using assms filt_upc by blast
 
 lemma fmeet_idemp:
   assumes A0:"C \<in> Pow (Pow X)" and A1:"C \<noteq> {}"
@@ -1465,18 +1619,6 @@ proof-
 qed
 
 
-lemma filt_ne:
-  assumes A0:"X \<noteq> {}" and
-          A1:"F \<in> (FilSpace2 X)"
-  shows "F \<noteq> {}"
-  using A1 FilSpace2_def FilterOfSetsIn2_def by blast
-
-lemma filt_univ:
-  assumes A0:"X \<noteq> {}" and
-          A1:"F \<in> (FilSpace2 X)"
-  shows "X \<in> F"
-  by (smt (verit, best) A1 CollectD DPow_def FilSpace2_def FilterOfSetsIn2_def PowD PowI UpClosed_In_def subset_eq subset_nonempty)
-
 
 lemma lem171311c:
   assumes A0:"A \<in> FilSpace2 X" and
@@ -1598,9 +1740,12 @@ proof-
   show ?thesis
     by (smt (verit) B8 IsSup2_def Sup1_def element_lb_is_least_alt upper_bounds_are_upper_bounds2)
 qed
+
+definition fcl::"('X set set \<Rightarrow> 'X set set) \<Rightarrow> 'X set set set \<Rightarrow> bool" where
+  "fcl = (\<lambda>E. \<lambda>X.  filter_generated_by_in E X)"
+
         
+lemma fil_closure:
+  "closure_on (\<lambda>E. filter_generated_by_in E X) (DPow X)"
 
-
-qed
-   
 end
