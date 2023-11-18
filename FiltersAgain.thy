@@ -285,7 +285,6 @@ lemma fil_inter3:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)"
   shows "Inf EF = \<Inter>EF" by simp
 
-declare [[show_types]]
 
 lemma fil_inter4:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
