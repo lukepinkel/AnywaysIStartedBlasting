@@ -128,6 +128,10 @@ qed
 lemma lem_clfm4c:
   assumes "A = {}" shows "cl_fmeet1 A = cl_fmeet1 (cl_fmeet1 A)"
   by (simp add: assms cl_fmeet1_def)
+
+lemma lem_clfm4d:
+  "cl_fmeet1 A = cl_fmeet1 (cl_fmeet1 A)"
+  by (metis lem_clfm4b lem_clfm4c)
     
 lemma lem_clfm5:
   "closure cl_fmeet2"
@@ -135,7 +139,13 @@ lemma lem_clfm5:
 
 lemma lem_clfm5b:
   "closure cl_fmeet1"
-  by (smt (verit) Pow_iff cl_fmeet1_def closure_equivalence empty_iff lem_clfm2b lem_clfm4b mem_Collect_eq order_trans subsetI subset_antisym)
+proof-
+  have P0: "isotone cl_fmeet1"  by (simp add: isotone_def lem_clfm3b)
+  have P1: "extensive cl_fmeet1" by (simp add: extensive_def lem_clfm2b) 
+  have P2: "pseudo_closure cl_fmeet1" by (simp add: pseudo_closure_def P0 P1)
+  have P3: "idempotent cl_fmeet1" using idempotent_def lem_clfm4d by auto
+  with P2 P3 show ?thesis by (simp add: closure_def)
+qed
 
 
 lemma finite_intersections_in_set:
