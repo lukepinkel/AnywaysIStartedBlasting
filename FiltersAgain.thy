@@ -124,8 +124,11 @@ proof-
   qed
   show ?thesis using B1 B2 by auto
 qed
+
+lemma lem_clfm4c:
+  assumes "A = {}" shows "cl_fmeet1 A = cl_fmeet1 (cl_fmeet1 A)"
+  by (simp add: assms cl_fmeet1_def)
     
-   
 lemma lem_clfm5:
   "closure cl_fmeet2"
   by (metis closure_unfold extensive_def idempotent_def isotone_def lem_clfm2 lem_clfm3 lem_clfm4) 
