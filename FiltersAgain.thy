@@ -264,7 +264,6 @@ lemma lem4:
 
 
 lemma fil_inter1:
-  fixes EF::"'X set set set"
   assumes A0:"\<forall>F \<in> EF. (isfilter F)"
   shows "isfilter (\<Inter>EF)"
 proof-
@@ -278,6 +277,24 @@ proof-
 qed
 
 
-  
+lemma fil_inter2:
+  assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"\<forall>F \<in> EF. G \<subseteq> F"
+  shows "G \<subseteq> (\<Inter>EF)" by (simp add: A1 Inter_greatest)
+
+lemma fil_inter3:
+  assumes A0:"\<forall>F \<in> EF. (isfilter F)"
+  shows "Inf EF = \<Inter>EF" by simp
+
+lemma fil_inter4:
+  assumes A0:"\<forall>F \<in> EF. (isfilter F)"
+  shows "Inf EF = {H. \<exists>\<U>. (H=(\<Union>\<U>) \<and> (\<forall>U \<in> \<U>. \<exists>F \<in> EF. U \<in> F))}"
+proof-
+  let ?R="{H. \<exists>\<U>. (H=(\<Union>\<U>) \<and> (\<forall>U \<in> \<U>. \<exists>F \<in> EF. U \<in> F))}"
+  have LtR:"Inf EF \<subseteq> ?R"
+  proof
+    fix a assume A1:"a \<in> Inf EF"
+    have B0:"\<forall>F \<in> EF. a \<in> F" using A1 by auto
+    have B1:"\<exists>\<U>. "
+    show "a \<in> ?R"
 
 end
