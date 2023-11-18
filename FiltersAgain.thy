@@ -17,11 +17,18 @@ definition upclosed::"'X::order set \<Rightarrow> bool" where "upclosed X \<equi
 
 definition isfilter::"'X set set \<Rightarrow> bool" where "isfilter F \<equiv> (pisystem F \<and> upclosed F \<and> inhabited F)"
 
+definition filspace::"'X set set set" where "filspace = {F. isfilter F}"
+
+
 definition cl_fmeet1::"'X set set \<Rightarrow> 'X set set" where
     "cl_fmeet1 A = {a. \<exists>f\<in>Pow(A). finite f \<and>  f \<noteq> {} \<and>  \<Inter>f=a}"
 
 definition cl_fmeet2::"'X set set \<Rightarrow> 'X set set" where
     "cl_fmeet2 A = {a. \<exists>f\<in>Pow(A). finite f  \<and>  \<Inter>f=a}"
+
+definition upclosure::"'X::order set \<Rightarrow> 'X::order set" where
+    "upclosure A = {x. \<exists>a \<in> A. a \<le> x}"
+
 
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
@@ -148,6 +155,32 @@ proof-
 qed
 
 
+
+lemma lem_upcl1:
+  "A \<subseteq> B \<longrightarrow> upclosure A \<subseteq> upclosure B"
+  by (smt (verit, best) Collect_mono subsetD upclosure_def)
+
+lemma lem_upcl2:
+  "A \<subseteq> upclosure A"
+  using upclosure_def by fastforce
+
+lemma lem_upcl3:
+  "upclosure (upclosure A) = upclosure A"
+proof-
+  let ?A1="upclosure A" let ?A2="upclosure ?A1"
+  have LtR:"?A1 \<subseteq> ?A2"  by (simp add: lem_upcl2)
+  have RtL:"?A2 \<subseteq> ?A1" by (smt (verit) CollectD CollectI order_trans subsetI upclosure_def)
+  with LtR RtL show ?thesis by fastforce
+qed
+
+lemma lem_upcl4:
+  "closure upclosure"
+  by (simp add: closure_unfold extensive_def idempotent_def isotone_def lem_upcl1 lem_upcl2 lem_upcl3)
+
+lemma lem_upcl5:
+  "upclosed (upclosure A)"
+  using lem_upcl3 upclosed_def upclosure_def by fastforce
+
 lemma finite_intersections_in_set:
   fixes X::"'X set"
   assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
@@ -172,6 +205,30 @@ proof -
   qed
 qed
 
+
+lemma finite_intersections_base:
+  fixes X::"'X set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (\<exists>a3 \<in> C. a1 \<inter> a2 \<supseteq> a3)"and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C"
+  shows " (\<exists>a3 \<in> C. (\<Inter>E) \<supseteq> a3)"
+proof -
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x) with assms show ?case  by fastforce
+    next case (insert x F)
+    then have "\<exists>a3 \<in> C. (\<Inter>(insert x F)) \<supseteq> a3" using assms
+    proof-
+      have P0:"x \<in> C" using insert.prems by auto
+      have P1: "F \<subseteq> C" using insert.prems by auto
+      have P2:"\<exists>a \<in> C. (\<Inter>F) \<supseteq> a"  by (simp add: P1 insert.hyps(4))
+      have P3:"\<exists>b \<in> C. (x \<inter> (\<Inter>F)) \<supseteq> b"  by (metis A2 Int_subset_iff P0 P2 inf.order_iff)
+      have P4:"\<exists>a3 \<in> C. (\<Inter>(insert x F)) \<supseteq> a3" using P3 by auto
+      then show "\<exists>a3 \<in> C. (\<Inter>(insert x F)) \<supseteq> a3"  by (simp add: P4)
+    qed
+    show ?case
+      using \<open>\<exists>a3\<in>C. a3 \<subseteq> \<Inter> (insert x F)\<close> by blast
+  qed
+qed
 
 lemma finite_union_in_set:
   fixes X::"'X set"
@@ -223,7 +280,62 @@ proof-
   qed
   with RiL LiR show ?thesis by blast
 qed
+
+
+lemma finite_intersections_base_app:
+  assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" shows "pi_base A \<longleftrightarrow> fc_base A"
+proof-
+  let ?L="pi_base A" let ?R="fc_base A"
+  have RiL:"?R \<longrightarrow> ?L"
+  proof
+    assume ?R
+    show ?L
+    proof-
+      have RiL_P0:"(\<forall>a \<in> A. \<forall>b \<in> A. (\<exists>c  \<in> A. c \<subseteq> a \<inter> b ))"
+      proof
+        fix a assume RiL_A0:"a \<in> A"
+        show "\<forall>b \<in> A. (\<exists>c  \<in> A. c \<subseteq> a \<inter> b )"
+        proof
+          fix b assume RiL_A1:"b \<in> A"
+          let ?F="{a, b}"
+          have RiL_B0:"finite ?F" by simp
+          have RiL_B1:"?F \<subseteq> A" by (simp add: RiL_A0 RiL_A1) 
+          obtain c where RiL_B2:"c \<in> A \<and> c \<subseteq> \<Inter>?F" by (metis RiL_B0 RiL_B1 \<open>fc_base A\<close> fc_base_def)
+          have RiL_B3:"\<Inter>?F = a \<inter> b"  by simp
+          show "(\<exists>c  \<in> A. c \<subseteq> a \<inter> b )" using RiL_B2 by auto
+        qed
+      qed
+      show ?thesis  using RiL_P0 pi_base_def by blast
+    qed
+  qed
+  have LiR:"?L\<longrightarrow> ?R"
+  proof
+    assume P0:?L 
+    have P1:"\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>(\<exists>c  \<in> A. c \<subseteq> a1 \<inter> a2 )" using P0 pi_base_def by auto
+    have P2: "\<And>F. ((F \<noteq> {}  \<and> finite F \<and> F  \<subseteq> A) \<longrightarrow>(\<exists>c. c \<in> A \<and> c \<subseteq> \<Inter>F))" by (metis P1 finite_intersections_base)
+    show ?R  by (metis Inter_greatest P2 assms empty_iff fc_base_def order_class.order_eq_iff subset_iff)
+  qed
+  with RiL LiR show ?thesis by blast
+qed
  
+
+lemma lem_clfm6:
+  "fcsystem (cl_fmeet1 A)"
+  by (metis (mono_tags, lifting) Pow_iff cl_fmeet1_def fcsystem_def lem_clfm4d mem_Collect_eq)
+
+
+lemma lem_clfm7:
+  assumes "A \<noteq> {}"
+  shows "fcsystem A \<longrightarrow> fc_base A"
+  by (metis Inf_empty assms dual_order.refl equals0I fc_base_def fcsystem_def top_greatest)
+
+
+lemma lem_clfm7b:
+  assumes "A \<noteq> {}"
+  shows "pisystem A \<longrightarrow> pi_base A"
+  by (metis assms empty_subsetI finite_intersections_base_app finite_intersections_in_set_app insertI1 lem_clfm7 pi_base_def)
+
+
 lemma lem1:
   "isfilter F \<longleftrightarrow>  (pisystem F \<and> upclosed F \<and>  (UNIV \<in>  F))"
   by (metis ex_in_conv inhabited_def isfilter_def top_greatest upclosed_def)
@@ -257,10 +369,11 @@ proof-
   with LtR RtL show ?thesis by blast
 qed
 
+
 lemma lem4:
-  assumes A0"isfilter F1 \<and> isfilter F2"
+  assumes A0:"isfilter F1 \<and> isfilter F2"
   shows "F1 \<subseteq> F2 \<longleftrightarrow> (\<forall>f1 \<in> F1. \<exists>f2 \<in> F2. f1 \<supseteq> f2)"
-  by (meson assms(2) lem3 subset_eq upclosed_def)
+  by (meson assms in_mono lem3 subsetI upclosed_def)
 
 
 lemma fil_inter1:
@@ -311,6 +424,30 @@ proof-
   with Eq show ?thesis by simp
 qed
 
+declare [[show_types]]
+
+lemma fil_inter5:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "Inf1 (EF`(I)) filspace = (Inf (EF`(I))) "
+proof-
+  let ?INF="Inf (EF`(I))"
+  have B0:"\<forall>F \<in> filspace. (\<forall>Fi \<in> EF`(I). F \<subseteq> Fi) \<longrightarrow> F \<subseteq> ?INF"
+  proof
+    fix F::"'b set set" assume AB00:"F \<in> filspace"
+    show "(\<forall>Fi \<in> EF`(I). F \<subseteq> Fi) \<longrightarrow> F \<subseteq> ?INF"
+    proof
+      assume AB01:"\<forall>Fi \<in> EF`(I). F \<subseteq> Fi"
+      show "F \<subseteq> ?INF" using AB01 by blast
+    qed
+  qed
+  have B1:"\<forall>Fi \<in> EF`(I). ?INF \<subseteq> Fi " by blast
+  have B2:"?INF \<in> filspace" by (simp add: A0 fil_inter1 filspace_def)
+  have B3:"?INF \<in> LowerBoundsIn (EF`(I)) filspace"
+    by (simp add: B1 B2 lower_bounds_are_lower_bounds2)
+  have B4:"IsInf2 ?INF (EF`I) filspace"  by (simp add: B0 B3 IsInf2_def)
+  with A0 A1 B4 show ?thesis by (smt (verit, ccfv_SIG) B1 B2 Inf_greatest glb_then_inf1)
+qed
+  
 lemma filter_un1:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"EF \<noteq> {} \<and> EF \<noteq> {{}}"
   shows "(upclosed (\<Union>EF)) \<and> (UNIV \<in> (\<Union>EF))"
@@ -343,5 +480,93 @@ proof
   show "a \<in> ?R" using B10 B9 by blast
 qed
 
+lemma filter_un3:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}" and A2:"I \<noteq> {}"
+  shows "\<forall>a \<in>  Sup (EF`(I)). (\<exists>U. (a=(\<Inter>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i))))"
+proof
+  let ?S="Sup (EF`(I))"
+  let ?P="(\<lambda>H.  (\<exists>U. (H=(\<Inter>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i)))))"
+  fix a assume A3:"a \<in> ?S "
+  have B0:"?S \<subseteq> {H. ?P H}" by (simp add: A0 A1 A2 filter_un2)
+  have B1:"a \<in> {H. ?P H} " using A3 B0 by blast
+  show "?P a"  using B1 by blast
+qed
+
+lemma imp_in_upclosure:
+  "\<And>a. a \<in> A \<longrightarrow> a \<in> (upclosure A)"  using lem_upcl2 by blast
+
+lemma in_upclosure_imp:
+  "\<And>a. a \<in> (upclosure A) \<longrightarrow>(\<exists>b \<in> A. a \<supseteq> b )" by (simp add: upclosure_def)
+
+
+lemma fc_base_lem1:
+  assumes A0:"fc_base B"
+  shows "\<forall>a1 \<in> B. \<forall>a2 \<in> B.  (\<exists>a3 \<in> B. a3 \<subseteq> a1 \<inter> a2)"
+proof
+  fix a1 assume A1:"a1 \<in> B"
+  show "\<forall>a2 \<in> B. (\<exists>a3 \<in> B. a3 \<subseteq> a1 \<inter> a2)"
+  proof
+    fix a2 assume A2:"a2 \<in> B"
+    let ?F="{a1, a2}"
+    have B0:"finite ?F" by simp
+    have B1:"?F \<subseteq> B" by (simp add: A1 A2)
+    have B2:"a1 \<inter> a2 = \<Inter>?F" by simp
+    show "\<exists>a3 \<in> B. a3 \<subseteq> a1 \<inter> a2" by (metis B0 B1 B2 assms fc_base_def)
+  qed
+qed
+
+lemma fc_base_lem2:
+  "fc_base A \<longleftrightarrow> (\<forall>F. (finite F \<and>  F  \<subseteq> A) \<longrightarrow> (\<exists>c \<in> A. c \<subseteq> \<Inter>F))"
+  using fc_base_def by auto
+
+lemma fc_base_lem3:
+  "fc_base A \<longleftrightarrow> (\<forall>F \<in> Pow A. finite F \<longrightarrow> (\<exists>c \<in> A. c \<subseteq> \<Inter>F))"
+  using fc_base_lem2 by auto
+
+lemma fc_base_lem4:
+   "fc_base A \<longleftrightarrow>  (\<forall>F \<in> Pow A. finite F  \<longrightarrow> HasLowerBound1 F A)"
+  by (simp add: HasLowerBound2_def IsLowerBound_def fc_base_lem3 le_Inf_iff lower_bounded_equiv)
+
+lemma filter_base_gen_filter:
+  assumes A0:"fc_base B" shows "isfilter (upclosure B)"
+proof-
+  let ?F="upclosure B"
+  have P0:"pisystem ?F"
+  proof-
+    have P00: "\<forall>a0 \<in> ?F. \<forall>a1 \<in> ?F. a0 \<inter> a1 \<in> ?F"
+    proof
+      fix a0 assume P00_A0:"a0 \<in> ?F"
+      obtain b0 where P00_B0:"(b0 \<in> B) \<and> (b0 \<subseteq> a0)"  using P00_A0 in_upclosure_imp by blast
+      show "\<forall>a1 \<in> ?F. a0 \<inter> a1 \<in> ?F"
+      proof
+        fix a1 assume P00_A1:"a1 \<in> ?F"
+        obtain b1 where P00_B1:"(b1 \<in> B) \<and> (b1 \<subseteq> a1)"  using P00_A1 in_upclosure_imp by blast
+        let ?b01="b0 \<inter> b1"
+        obtain b where P00_B2:"(b \<in> B) \<and> (b \<subseteq> ?b01)" using P00_B0 P00_B1 fc_base_lem1  using assms by blast
+        have P00_B3:"b \<subseteq> a0 \<inter> a1"  using P00_B0 P00_B1 P00_B2 by blast
+        show "a0 \<inter> a1 \<in> ?F" by (metis (no_types, lifting) P00_B2 P00_B3 mem_Collect_eq upclosure_def)
+      qed
+    qed
+    with P00 show ?thesis  by (simp add: pisystem_def)
+  qed
+  have P1:"upclosed ?F" by (simp add: lem_upcl5)
+  have P2:"inhabited ?F" by (metis assms emptyE fc_base_def finite.emptyI inhabited_def lem_upcl2 subset_empty)
+  with P0 P1 P2 show ?thesis by (simp add: isfilter_def)
+qed
+      
+lemma fil_union4:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "fc_base (cl_fmeet1 (Sup (EF`I)))"
+proof-
+  let ?IM="Sup (EF`I)" let ?B="cl_fmeet1 ?IM"
+  have B0:"fcsystem ?B" by (simp add: lem_clfm6)
+  have B1:"fc_base ?B" by (metis A1 Pow_empty lem_clfm2b lem_clfm6 lem_clfm7 subset_Pow_Union subset_empty subset_singletonD)
+  with B1 show ?thesis by simp
+qed
+
+lemma fil_union5:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "isfilter (upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
+  using A0 A1 fil_union4 filter_base_gen_filter by blast
 
 end
