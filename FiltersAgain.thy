@@ -285,16 +285,31 @@ lemma fil_inter3:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)"
   shows "Inf EF = \<Inter>EF" by simp
 
+declare [[show_types]]
+
 lemma fil_inter4:
-  assumes A0:"\<forall>F \<in> EF. (isfilter F)"
-  shows "Inf EF = {H. \<exists>\<U>. (H=(\<Union>\<U>) \<and> (\<forall>U \<in> \<U>. \<exists>F \<in> EF. U \<in> F))}"
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "Inf (EF`(I)) = {H. \<exists>U. (H=(\<Union>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i)))}"
 proof-
-  let ?R="{H. \<exists>\<U>. (H=(\<Union>\<U>) \<and> (\<forall>U \<in> \<U>. \<exists>F \<in> EF. U \<in> F))}"
-  have LtR:"Inf EF \<subseteq> ?R"
+  let ?L="Inf (EF`(I))" let ?R="{H. \<exists>U. (H=(\<Union>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i)))}"
+  have LtR:"?L \<subseteq> ?R"
   proof
-    fix a assume A1:"a \<in> Inf EF"
-    have B0:"\<forall>F \<in> EF. a \<in> F" using A1 by auto
-    have B1:"\<exists>\<U>. "
-    show "a \<in> ?R"
+    fix a assume A2:"a \<in> ?L"
+    define U::"'a \<Rightarrow> 'b set" where A3:"U = (\<lambda>i. a)"
+    have B0:"\<forall>i \<in> I. a \<in> EF(i)" using A2 by auto
+    have B1:"a=\<Union>(U`(I))" using A1 A3 by auto
+    have B2:"\<forall>i \<in> I. (U(i)) \<in> (EF(i))"  using A3 B0 by fastforce 
+    show "a \<in> ?R" using B1 B2 by blast
+  qed
+  have RtL:"?R \<subseteq> ?L"
+  proof
+    fix a assume A4:"a \<in> ?R"
+    have B3:"\<forall>i \<in> I. \<exists>fi \<in>  (EF(i)). fi \<subseteq> a" using A4 by blast
+    have B4:"\<forall>i \<in> I. a \<in> (EF(i))" by (meson A0 B3 lem2 upclosed_def)
+    show "a \<in> ?L" using B4 by blast
+  qed
+  from LtR RtL have Eq:"?R = ?L" by blast
+  with Eq show ?thesis by simp
+qed
 
 end
