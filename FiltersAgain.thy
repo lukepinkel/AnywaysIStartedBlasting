@@ -257,6 +257,27 @@ proof-
   with LtR RtL show ?thesis by blast
 qed
 
+lemma lem4:
+  assumes A0"isfilter F1 \<and> isfilter F2"
+  shows "F1 \<subseteq> F2 \<longleftrightarrow> (\<forall>f1 \<in> F1. \<exists>f2 \<in> F2. f1 \<supseteq> f2)"
+  by (meson assms(2) lem3 subset_eq upclosed_def)
 
+
+lemma fil_inter1:
+  fixes EF::"'X set set set"
+  assumes A0:"\<forall>F \<in> EF. (isfilter F)"
+  shows "isfilter (\<Inter>EF)"
+proof-
+  let ?I="\<Inter>EF"
+  have B0:"\<forall>F \<in> EF. (fcsystem F \<and> upclosed F \<and> inhabited F \<and> F \<noteq> {} \<and> pisystem F \<and> UNIV \<in> F)"
+    by (metis assms inhabited_def lem1 lem3)
+  have P0:"UNIV \<in> ?I" by (simp add: B0)
+  have P1:"pisystem ?I" by (meson B0 Inter_iff pisystem_def)
+  have P2:"upclosed ?I" by (meson B0 Inter_iff upclosed_def)
+  with P0 P1 P2 show ?thesis  by (simp add: lem1)
+qed
+
+
+  
 
 end
