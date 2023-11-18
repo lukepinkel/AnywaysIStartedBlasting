@@ -569,4 +569,53 @@ lemma fil_union5:
   shows "isfilter (upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
   using A0 A1 fil_union4 filter_base_gen_filter by blast
 
+lemma fil_union6:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "\<forall>i \<in> I. ((EF(i)) \<subseteq> upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
+  using lem_clfm2b lem_upcl2 by fastforce
+  
+lemma fil_union7:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}" and A2:"isfilter G"
+  shows "(\<forall>i \<in> I. ((EF(i)) \<subseteq> G)) \<longrightarrow> ( upclosure( cl_fmeet1 (Sup (EF`(I))))  \<subseteq> G)"
+proof
+  let ?L="(\<forall>i \<in> I. ((EF(i)) \<subseteq> G))"
+  let ?IM="EF`(I)"
+  let ?UN="Sup ?IM"
+  let ?S="upclosure(cl_fmeet1 ?UN)"
+  let ?R="?S \<subseteq> G"
+  assume L0:?L
+  show ?R
+  proof
+    fix a assume LtR_A0:"a \<in> ?S"
+    obtain b where LtR_A1:"b \<in> (cl_fmeet1 ?UN) \<and> a \<supseteq> b " using LtR_A0 in_upclosure_imp by blast
+    obtain F where LtR_A2:"(F \<in> Pow(?UN)) \<and> (finite F) \<and> b=(\<Inter>F)" by (smt (verit) LtR_A1 cl_fmeet1_def mem_Collect_eq)
+    have LtR_B0:"F \<subseteq> ?UN" using LtR_A2 by blast
+    have LtR_B1:"\<forall>f \<in> F. \<exists>i \<in> I. f \<in> EF(i)" using LtR_B0 by auto
+    have LtR_B2:"\<forall>f \<in> F.  f \<in> G" using L0 LtR_B1 by fastforce
+    have LtR_B3:"F \<subseteq> G" by (simp add: LtR_B2 subsetI)
+    have LtR_B4:"(\<Inter>F) \<in> G"   by (metis A2 Inf_empty LtR_A2 LtR_B3 fcsystem_def lem2)
+    have LtR_B5:"(\<Inter>F) =b"using LtR_A2 by blast 
+    have LtR_B6:"... \<subseteq> a" by (simp add: LtR_A1)
+    show "a \<in> G"  using A2 LtR_B4 LtR_B5 LtR_B6 lem3 upclosed_def by blast
+  qed
+qed
+
+    
+lemma fil_sup1:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "IsSup2 (upclosure( cl_fmeet1 (Sup (EF`(I))))) (EF`(I)) filspace "
+proof-
+  let ?IM="(EF`(I))"
+  let ?SUP="upclosure( cl_fmeet1 (Sup (?IM)))"
+  let ?IsUB="(\<lambda>G. (\<forall>i \<in> I. ((EF(i)) \<subseteq> G)))"
+  have B0:"?SUP \<in> UpperBoundsIn ?IM filspace "
+  proof-
+    have B00:"?SUP \<in> filspace"  by (metis A0 A1 fil_union4 filspace_def filter_base_gen_filter mem_Collect_eq)
+    have B01:"\<forall>Fi \<in> ?IM. Fi \<subseteq> ?SUP"  using A0 fil_union6 by blast
+    with B00 B01 show ?thesis  by (simp add: upper_bounds_are_upper_bounds2)
+  qed
+  have B1:"\<forall>G \<in> filspace. ?IsUB G \<longrightarrow> ?SUP \<subseteq> G" using A0 A1 fil_union7 filspace_def by blast
+  with B0 B1 show ?thesis  by (simp add: IsSup2_def)
+qed
+
 end
