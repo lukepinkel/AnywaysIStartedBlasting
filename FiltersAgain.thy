@@ -311,4 +311,37 @@ proof-
   with Eq show ?thesis by simp
 qed
 
+lemma filter_un1:
+  assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"EF \<noteq> {} \<and> EF \<noteq> {{}}"
+  shows "(upclosed (\<Union>EF)) \<and> (UNIV \<in> (\<Union>EF))"
+proof-
+  let ?S="\<Union>EF"
+  have P0:"upclosed ?S" by (meson A0 Union_iff isfilter_def upclosed_def)
+  have P3:"UNIV \<in> ?S"  using A0 A1 lem2 by fastforce
+  with P0 P3 show ?thesis by blast
+qed
+
+lemma filter_un2:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}" and A2:"I \<noteq> {}"
+  shows "Sup (EF`(I)) \<subseteq>  {H. \<exists>U. (H=(\<Inter>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i)))}"
+proof
+  let ?L="Sup (EF`(I))" let ?R=" {H. \<exists>U. (H=(\<Inter>(U`(I))) \<and> (\<forall>i \<in> I. U(i) \<in> EF(i)))}"
+  fix a assume A3:"a \<in> ?L"  
+  obtain j where "a \<in> (EF(j)) \<and> j \<in> I" using A3 by blast
+  define U where "U=(\<lambda>i. if i \<noteq> j then UNIV else a)"
+  have B0:"\<forall>i \<in> I. i \<noteq> j \<longrightarrow> U(i) = UNIV" by (simp add: U_def)
+  have B1:"\<forall>i \<in> I. i=j \<longrightarrow> U(i) = a" by (simp add: U_def)
+  have B2:"\<forall>i \<in> I. (U(i)) \<in> {UNIV, a}" using B0 B1 by blast
+  have B3:"(U`(I)) \<subseteq> {UNIV, a}" using B2 by blast
+  have B4:"\<forall>i \<in> I. (i=j) \<or> (i \<noteq> j)"  by simp
+  have B5:"\<forall>i \<in> I. (U(i) = UNIV) \<or> (U(i) = a)" using B0 B1 by blast
+  have B6:"a = UNIV \<inter> a" by simp
+  have B7:"\<exists>j \<in> I. a = (U(j))" using B1 \<open>a \<in> EF j \<and> j \<in> I\<close> by blast
+  have B8:"{a} \<subseteq> U`(I)"  using B7 by blast
+  have B9:"a = (\<Inter>(U`(I)))" using B5 B8 by fastforce
+  have B10:"\<forall>i \<in> I. (U(i)) \<in> (EF(i))"  using A0 U_def \<open>a \<in> EF j \<and> j \<in> I\<close> lem1 by fastforce
+  show "a \<in> ?R" using B10 B9 by blast
+qed
+
+
 end
