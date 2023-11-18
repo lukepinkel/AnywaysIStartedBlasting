@@ -232,6 +232,31 @@ lemma lem2:
   "isfilter F \<longleftrightarrow> (fcsystem F \<and>  upclosed F \<and>  (UNIV \<in>  F))"
   using finite_intersections_in_set_app lem1 by auto
 
- 
+lemma lem3:
+  "isfilter F \<longleftrightarrow> (fcsystem F \<and> upclosed F \<and> inhabited F)"
+proof-
+  let ?lhs="isfilter F" let ?rhs="(fcsystem F \<and> upclosed F \<and> inhabited F)"
+  have LtR:"?lhs \<longrightarrow> ?rhs"
+  proof
+    assume A0:"?lhs"
+    have B0:"fcsystem F \<and> upclosed F" using A0 lem2 by auto
+    have B1:"UNIV \<in> F" using A0 lem1 by auto
+    have B2:"F \<noteq> {}" using B1 by auto
+    show "?rhs" by (simp add: B0 B2 inhabited_def)
+  qed
+  have RtL:"?rhs \<longrightarrow> ?lhs"
+  proof
+    assume A1:"?rhs"
+    have B0:"fcsystem F \<and> upclosed F \<and> F \<noteq> {}" using A1 lem2 inhabited_def by auto
+    have B1:"\<exists>x. x \<in> F" using B0 by auto
+    obtain x where A2:"x \<in> F" using B1 by auto
+    have B2:"x \<subseteq> UNIV"  by simp
+    have B3:"UNIV \<in> F" using A1 A2 B2 upclosed_def by blast
+    show "?lhs" by (simp add: A1 B3 lem2)
+  qed
+  with LtR RtL show ?thesis by blast
+qed
+
+
 
 end
