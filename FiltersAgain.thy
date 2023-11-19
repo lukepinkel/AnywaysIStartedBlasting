@@ -26,7 +26,6 @@ definition filspace::"'X set set set" where "filspace = {F. isfilter F}"
 definition properfilspace::"'X set set set" where "properfilspace = {F. isproperfilter F}"
 
 
-
 no_notation Cons (infixr "#" 65)
 
 definition meshes::"('X set set) \<Rightarrow> ('X set set) \<Rightarrow> bool"  (infixl "#" 50) 
@@ -44,6 +43,9 @@ definition cl_fmeet2::"'X set set \<Rightarrow> 'X set set" where
 definition upclosure::"'X::order set \<Rightarrow> 'X::order set" where
     "upclosure A = {x. \<exists>a \<in> A. a \<le> x}"
 
+
+definition filgenerated::"'X set set set \<Rightarrow> 'X set set" where
+  "filgenerated A = upclosure(cl_fmeet1(\<Union>A))"
 
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
@@ -439,6 +441,35 @@ proof-
   with Eq show ?thesis by simp
 qed
 
+
+lemma fil_inter4_app:
+  assumes A0:"\<forall>F \<in> \<F>. (isfilter F)" and A1:"\<F> \<noteq> {} \<and> \<F> \<noteq> {{}}"
+  shows "Inf \<F>  = {H. \<exists>U. (H=(\<Union>U)) \<and> (\<forall>F \<in> \<F>. \<exists>u \<in> U. u \<in> F)}"
+proof-
+  let ?L="Inf \<F>" let ?R=" {H. \<exists>U. (H=(\<Union>U)) \<and> (\<forall>F \<in> \<F>. \<exists>u \<in> U. u \<in> F)}"
+  have LtR:"?L \<subseteq> ?R"
+  proof
+    fix a assume A2:"a \<in> ?L"
+    define U where A3:"U = {a}" 
+    have B0:"\<forall>F \<in> \<F>. a \<in> F" using A2 by auto
+    have B1: "a = \<Union>U" using A1 A3 by auto
+    have B2:"\<forall>F \<in> \<F>. \<exists>u \<in> U. u \<in> F"
+      by (simp add: A3 B0)
+    show "a \<in> ?R" using B1 B2 by blast
+  qed
+  have RtL:"?R \<subseteq> ?L"
+  proof
+    fix a assume A4:"a \<in> ?R"
+    have B3:"\<forall>F \<in> \<F>. \<exists>f \<in> F. f \<subseteq> a" using A4 by blast
+    have B4:"\<forall>F \<in> \<F>. a \<in> F" by (meson A0 B3 lem2 upclosed_def)
+    show "a \<in> ?L" using B4 by blast
+  qed
+  from LtR RtL have Eq:"?R = ?L" by blast
+  with Eq show ?thesis by simp
+qed
+
+    
+
 declare [[show_types]]
 
 lemma fil_inter5:
@@ -463,6 +494,8 @@ proof-
   with A0 A1 B4 show ?thesis by (smt (verit, ccfv_SIG) B1 B2 Inf_greatest glb_then_inf1)
 qed
   
+
+
 lemma filter_un1:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"EF \<noteq> {} \<and> EF \<noteq> {{}}"
   shows "(upclosed (\<Union>EF)) \<and> (UNIV \<in> (\<Union>EF))"
@@ -579,10 +612,24 @@ proof-
   with B1 show ?thesis by simp
 qed
 
+      
+
 lemma fil_union5:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
   shows "isfilter (upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
   using A0 A1 fil_union4 filter_base_gen_filter by blast
+
+lemma fil_union5b:
+  assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
+  shows "isfilter (filgenerated( EF`I ))"
+  by (metis A0 A1 fil_union5 filgenerated_def)
+
+lemma fil_union5c:
+  fixes \<F>::"'X set set set"
+  assumes A0:"\<forall>F \<in> \<F>. isfilter F" and A1:"\<F> \<noteq> {} \<and> \<F> \<noteq> {{}}"
+  shows "isfilter (filgenerated(\<F> ))"
+  by (metis A0 A1 Sup_insert all_not_in_conv empty_subsetI filgenerated_def filter_base_gen_filter inhabited_def insert_absorb isfilter_def lem_clfm2b lem_clfm6 lem_clfm7 subset_antisym sup_bot.right_neutral)
+
 
 lemma fil_union6:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
@@ -615,7 +662,10 @@ proof
   qed
 qed
 
+
+
     
+
 lemma fil_sup1:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
   shows "IsSup2 (upclosure( cl_fmeet1 (Sup (EF`(I))))) (EF`(I)) filspace "
@@ -664,6 +714,10 @@ proof-
   with B4 B5 show ?thesis by simp
 qed
 
+
+
+  
+  
 
 lemma mesh_lem1:
   assumes A0:"{a}# F" and A1:"a \<subseteq> b"
@@ -784,22 +838,151 @@ proof-
   have A4:"fcsystem G" using A2 isproperfilter_def lem2 by auto
   have RtL:"?R\<longrightarrow>?L" by (metis Inf_lower2 mesh_lem6b)
   have LtR:"\<not>?R \<longrightarrow> \<not>?L"
-  proof-
-    have B0:"\<not>(\<exists>F \<in> EF. G#F) \<longleftrightarrow> (\<forall>F \<in> EF. \<not>(G#F))" by simp
-    have B1:"...             \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. \<not>(G#{f})) " by (metis meshes_def singletonD singletonI)
-    have B2:"\<dots>              \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. f \<notin> grill G)" by (simp add: mesh_lem6b)
-    have B3:"...             \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. (UNIV-f) \<in> G)" by (simp add: A3 mesh_lem7c)
-    obtain u where A5:"u=(\<lambda>F. SOME f. (f \<in> F \<and> (UNIV-f)\<in>G))" by simp
-    have B4:"(\<forall>F \<in> EF. \<exists>f \<in> F. (UNIV-f) \<in> G) \<longrightarrow> (\<forall>F \<in> EF. (UNIV-(u(F))) \<in> G)"  by (metis (no_types, lifting) A5 someI)
-    let ?H="u`EF"
-    let ?HC="{b. \<exists>h \<in>?H. b=UNIV-h}"
+  proof
+    assume NR:"\<not>(?R)"
+    have B0:"(\<forall>F \<in> EF. \<not>(G#F))"  using NR by blast
+    have B1:"(\<forall>F \<in> EF. \<exists>f \<in> F. \<not>(G#{f}))"  by (meson NR insertI1 meshes_def)
+    have B2:"(\<forall>F \<in> EF. \<exists>f \<in> F. f \<notin> grill G)" by (meson NR mesh_lem6b subsetI)
+    have B3:"(\<forall>F \<in> EF. \<exists>f \<in> F. (UNIV-f) \<in> G)" by (simp add: A3 B2 mesh_lem7c)
+    obtain u where A5:"u=(\<lambda>F. SOME f. (f \<in> F \<and> (UNIV-f)\<in>G ) )" by simp
+    have B4:" (\<forall>F \<in> EF. (UNIV-(u(F))) \<in> G)"  by (metis (no_types, lifting) A5 B3 someI)
+    let ?H="u`EF"  let ?HC="{b. \<exists>h \<in>?H. b=UNIV-h}"
     have B5:"finite ?H" by (simp add: A1)
     have B6:"finite ?HC"  by (metis B5 finite_imageI image_def)
-    have B7:"(\<forall>F \<in> EF. (UNIV-(u(F))) \<in> G) \<longrightarrow> (\<forall>hc \<in> ?HC. hc \<in> G)" by blast
-    have B8:"... \<longrightarrow> \<Inter>?HC \<in> G"
-      by (metis (no_types, lifting) A2 B6 Inf_empty fcsystem_def isproperfilter_def lem2 subset_eq)
-    have B9:"(UNIV - (\<Inter>?HC)) = \<Union>(u`(EF))"  by blast
-    have B10:" \<Inter>?HC \<in> G  \<longrightarrow> \<Union>(u`(EF)) \<notin> grill G" using A3 B9 mesh_lem7a by fastforce
-    have B11:" \<Union>(u`(EF)) \<in> (\<Inter>EF)" using fil_inter4
+    have B7:"(\<forall>hc \<in> ?HC. hc \<in> G)" using B4 by blast
+    have B8:"\<Inter>?HC \<in> G"
+      by (metis (no_types, lifting) A2 B6 B7 Inf_empty fcsystem_def isproperfilter_def lem2 subsetI)
+    have B9:"(UNIV - (\<Inter>?HC)) = \<Union>(?H)" by blast
+    have B10:" \<Inter>?HC \<in> G  \<longrightarrow> \<Union>(?H) \<notin> grill G" using A3 B9 mesh_lem7a by fastforce
+    have B11:"\<forall>h \<in> ?H. \<exists>F \<in> EF. h=u(F)" by blast
+    have B12:"\<forall>F \<in> EF. (u(F) \<in> F)"  by (metis (mono_tags, lifting) A5 B3 someI_ex)
+    have B13:"\<forall>F \<in> EF. \<exists>u \<in> ?H. u \<in> F" using B12 by blast
+    have B14:"\<Union>(?H) \<in> ?INF"
+      by (meson A0 B13 InterI Union_upper isproperfilter_def lem2 upclosed_def)
+    show "\<not>(?L)"  using B10 B14 B8 mesh_lem6b by blast
+  qed
+  with LtR RtL show ?thesis by blast 
+qed
+
+lemma rev_grill1:
+  "A \<subseteq> B \<longrightarrow> grill B \<subseteq> grill A"
+  by (meson dual_order.trans mesh_lem6c order_refl)
+
+lemma rev_grill2:
+  assumes A0:"upclosed A \<and> upclosed B"
+  shows " grill B \<subseteq> grill A \<longrightarrow> A \<subseteq> B "
+  using A0 mesh_lem7a by blast
+
+
+lemma its_grillin_time:
+  assumes "A \<noteq> {}"
+  shows "upclosed (grill A)"
+  by (simp add: grill_def mesh_lem1 upclosed_def)
+
+lemma its_grill_time2:
+  assumes "A \<noteq> {}"
+  shows "grill A = grill (upclosure A)"
+proof-
+  have B0:"A \<subseteq> upclosure A" using lem_upcl2 by blast
+  have B1:"grill (upclosure A) \<subseteq> grill A" by (simp add: B0 rev_grill1)
+  have B2:"grill A \<subseteq> grill (upclosure A)"
+  proof
+    fix a assume B2_A0:"a \<in> (grill A)"
+    have B2_B1:"\<forall>b \<in> A. a \<inter> b \<noteq> {}"
+      by (metis B2_A0 inf.commute mesh_lem6b meshes_def order_refl)
+    show "a \<in> grill (upclosure A)"
+    proof-
+      have B2_B3:"\<forall>c \<in> upclosure A. a \<inter> c \<noteq> {}"
+      proof
+        fix c assume B2_A1:"c \<in> upclosure A"
+        have B2_B4:"\<exists>b \<in> A. c \<supseteq> b"  by (simp add: B2_A1 in_upclosure_imp)
+        obtain b where B2_A2:"b \<in> A \<and> c \<supseteq> b" using B2_B4 by blast
+        have B2_B5:"a \<inter> c \<supseteq> a \<inter> b" by (simp add: B2_A2 inf.coboundedI2)
+        have B2_B6:"... \<noteq> {}" using B2_A2 B2_B1 by fastforce
+        show "a \<inter> c \<noteq> {}" using B2_B6 by blast
+      qed
+      show ?thesis
+        by (meson B2_B3 Diff_disjoint lem_upcl5 mesh_lem7c)
+     qed
+  qed
+  with B1 B2 show ?thesis by blast
+qed
+      
+lemma double_bacon:
+  "grill (grill A) = upclosure A"
+  by (metis (no_types, opaque_lifting) dual_order.eq_iff ex_in_conv in_upclosure_imp its_grill_time2 lem_upcl2 lem_upcl5 mesh_lem6c rev_grill2)
+
+lemma double_baconator:
+  "grill (grill A) = A \<longleftrightarrow> upclosed A"
+  by (metis double_bacon lem_upcl2 lem_upcl5 rev_grill2 subset_antisym)
+
+
+definition isfiltergrill::"'X set set \<Rightarrow> bool" where
+  "isfiltergrill A \<equiv> (\<exists>F::('X set set). (isfilter F) \<and> (A = grill F))"
+
+definition ischumba::"'X set set \<Rightarrow> bool" where
+  "ischumba A \<equiv> (\<forall>a. \<forall>b. a \<union> b \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
+
+
+lemma mainline_mcdonalds_fries1:
+  assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and A1:"upclosed A" and A2:"ischumba A"
+  shows "\<exists>F. pisystem F \<and> upclosed F \<and> (A = grill F)" 
+proof-
+  have P3:"grill(grill (A)) = A" by (simp add: A1 double_baconator)
+  let ?B="grill A"
+  have P4:"\<forall>a \<in> ?B. \<forall>b \<in> ?B. a \<inter> b \<in> ?B"
+  proof
+    fix a assume P4A0:"a \<in> ?B" show "\<forall>b \<in> ?B.  a \<inter> b \<in> ?B"
+    proof
+        fix b assume P4A1:"b \<in> ?B" 
+        have P4B0:"(UNIV-a) \<notin> A"  by (simp add: P4A0 A1 mesh_lem7c)
+        have P4B1:"(UNIV-b) \<notin> A"  by (simp add: P4A1 A1 mesh_lem7c)
+        have P4B2:"(UNIV-a) \<union> (UNIV-b) \<notin> A" using A2 P4B0 P4B1 ischumba_def by blast
+        have P4B3:"a \<inter> b \<in> ?B"  by (metis Diff_Int P4B2 A1 mesh_lem7c)
+        show " a \<inter> b \<in> ?B"
+        by (simp add: P4B3)
+      qed
+  qed
+  have P5:"pisystem ?B" by (simp add: P4 pisystem_def)
+  have P6:"upclosed ?B"  by (simp add: A0 its_grillin_time)
+  show ?thesis using P3 P5 P6 by auto
+qed
+
+lemma mainline_mcdonalds_fries2:
+ assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and A1:"A=grill F" and A2:"isfilter F"
+ shows "upclosed A \<and> ischumba A"
+proof-
+  have P0:"upclosed A"  using A1 A2 its_grillin_time lem1 by auto
+  have P1:"\<forall>a. \<forall>b. (a \<notin> A \<and>  b \<notin>  A)\<longrightarrow>  a \<union> b \<notin> A"
+  proof-
+    fix a b
+    have P10:"(a \<notin> A \<and>  b \<notin>  A)\<longrightarrow>  a \<union> b \<notin> A"
+    proof
+      assume  P1A0:" (a \<notin> A \<and>  b \<notin>  A)"
+      obtain f where P1A1:"f \<in> F \<and> f \<inter> a = {}"
+        using A1 A2 P1A0 isfilter_def mesh_lem7c by fastforce
+      obtain g where P1A2:"g \<in> F \<and> g \<inter> b = {}"
+        by (metis A1 A2 Compl_disjoint2 Compl_eq_Diff_UNIV P1A0 isfilter_def mesh_lem7c)
+      have P1B1:"f \<inter> g \<in> F"
+        using A2 P1A1 P1A2 isfilter_def pisystem_def by blast
+      have P1B2:"(a \<union> b) \<inter> (f \<inter> g) = {}"
+        using P1A1 P1A2 by blast
+      have P1B3:"\<exists>h \<in> F. (a \<union> b) \<inter> h = {}"
+        using P1B1 P1B2 by auto
+      have P1B4:"(a \<union> b) \<notin> (grill F)"
+        by (meson P1B1 P1B2 mesh_lem6a meshes_def subsetI)
+      show " a \<union> b \<notin>  A"
+        by (simp add: P1B4 assms)
+     qed
+     with P10 show ?thesis
+       by (metis A1 A2 Diff_Un isfilter_def mesh_lem7c pisystem_def)
+  qed
+  have P2:"\<forall>a. \<forall>b.  a \<union> b \<in> A  \<longrightarrow>  (a \<in> A \<or>  b \<in>  A)"  using P1 by auto
+  have P3:"ischumba A" using P1 ischumba_def by blast
+  show ?thesis  by (simp add: P0 P3)
+qed
+
+
+
 end
 
