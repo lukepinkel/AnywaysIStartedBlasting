@@ -17,8 +17,23 @@ definition upclosed::"'X::order set \<Rightarrow> bool" where "upclosed X \<equi
 
 definition isfilter::"'X set set \<Rightarrow> bool" where "isfilter F \<equiv> (pisystem F \<and> upclosed F \<and> inhabited F)"
 
+definition isproper::"'X set set \<Rightarrow> bool" where "isproper F \<equiv> {} \<notin> F"
+
+definition isproperfilter::"'X set set \<Rightarrow> bool" where "isproperfilter F \<equiv> isfilter F \<and> isproper F"
+
 definition filspace::"'X set set set" where "filspace = {F. isfilter F}"
 
+definition properfilspace::"'X set set set" where "properfilspace = {F. isproperfilter F}"
+
+
+
+no_notation Cons (infixr "#" 65)
+
+definition meshes::"('X set set) \<Rightarrow> ('X set set) \<Rightarrow> bool"  (infixl "#" 50) 
+  where "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  (a\<inter>b \<noteq> {}))"
+
+definition grill::"'X set set \<Rightarrow> 'X set set" where
+  "grill A = {x::('X set). {x}#A}"  
 
 definition cl_fmeet1::"'X set set \<Rightarrow> 'X set set" where
     "cl_fmeet1 A = {a. \<exists>f\<in>Pow(A). finite f \<and>  f \<noteq> {} \<and>  \<Inter>f=a}"
@@ -618,4 +633,173 @@ proof-
   with B0 B1 show ?thesis  by (simp add: IsSup2_def)
 qed
 
+lemma chumbuwumba1:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"HasASup1 A B"
+  shows "Sup1 A X \<le> Sup1 A B"
+  by (metis A0 A1 A2 PowD equals0D subsetD sup1_apply_ub sup1_in_space sup_in_sub)
+
+
+lemma chumbuwumba2:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"Sup1 A X \<in> B"
+  shows "HasASup1 A B \<and>   Sup1 A B = Sup1 A X"
+proof-
+  have B0:"Sup1 A X \<in> UpperBoundsIn A B" by (simp add: A1 A2 sup1_is_ub upper_bounds_are_upper_bounds)
+  have B1:"\<forall>u \<in> UpperBoundsIn A B. Sup1 A X \<le> u" by (metis A0 A1 UnionI Union_Pow_eq sup1_apply_ub upper_bounds_are_upper_bounds2)
+  have B2:"IsSup2 (Sup1 A X) A B" by (meson B0 B1 IsSup2_def upper_bounds_are_upper_bounds2)
+  have B3:"HasASup1 A B" by (meson B0 B1 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def)
+  have B4:" Sup1 A B = Sup1 A X"  by (metis B0 B1 Sup1_def minimum_is_least)
+  with B3 B4 show ?thesis by simp
+qed
+
+lemma chumbuwumba3:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasAnInf1 A X" and A2:"Inf1 A X \<in> B"
+  shows "HasAnInf1 A B \<and>   Inf1 A B = Inf1 A X"
+proof-
+  have B0:"Inf1 A X \<in> LowerBoundsIn A B" by (simp add: A1 A2 inf1_is_lb lower_bounds_are_lower_bounds)
+  have B1:"\<forall>l \<in> LowerBoundsIn A B. l \<le> Inf1 A X"  by (metis A0 A1 UnionI Union_Pow_eq inf1_apply_lb lower_bounds_are_lower_bounds2)
+  have B2:"IsInf2 (Inf1 A X) A B" by (meson B0 B1 IsInf2_def lower_bounds_are_lower_bounds2)
+  have B3:"HasAnInf2 A B" using B2 HasAnInf2_def by blast
+  have B4:"HasAnInf1 A B" by (meson B0 B1 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def)
+  have B5:" Inf1 A B = Inf1 A X" by (metis B0 B1 Inf1_def element_ub_is_greatest_alt)
+  with B4 B5 show ?thesis by simp
+qed
+
+
+lemma mesh_lem1:
+  assumes A0:"{a}# F" and A1:"a \<subseteq> b"
+  shows "{b}#F"
+proof-
+  have B0:"\<forall>f \<in> F. ((a \<inter> f) \<noteq> {})" by (meson A0 insertI1 meshes_def)
+  have B1:"\<forall>f \<in> F. ((a \<inter> f) \<subseteq> (b \<inter> f))" by (simp add: A1 inf.coboundedI1)
+  have B2:"\<forall>f \<in> F. (b \<inter> f \<noteq> {})"  using B0 B1 by fastforce
+  with B2 show ?thesis by (simp add: meshes_def)
+qed
+
+lemma mesh_lem2:
+  assumes "upclosed F"
+  shows "(a \<in> F \<longrightarrow> \<not>({(UNIV - a)}#F))"
+  by (metis Diff_disjoint Int_commute meshes_def singletonI)
+
+lemma mesh_lem3:
+  assumes A0:"F \<in> properfilspace \<and> G \<in> properfilspace" 
+  shows "F \<subseteq> G \<longrightarrow> F#G"
+proof
+  assume A1:"F \<subseteq> G"
+  show "F#G"
+  proof-
+    have P0:"\<forall>f \<in>F. \<forall>g \<in> G. f \<inter> g \<noteq> {}"
+    proof
+      fix f assume B0:"f \<in> F"
+      show "\<forall>g \<in> G. f \<inter> g \<noteq> {}"
+      proof
+        fix g assume B1:"g \<in> G"
+        have B2:"f \<in> G" using A1 B0 by auto
+        have B3:"isproperfilter G" using assms properfilspace_def by auto 
+        have B4:"pisystem G" using B3 isfilter_def isproperfilter_def by auto
+        have B5:"f \<inter> g \<in> G" using B1 B2 B4 pisystem_def by auto
+        have B6:"{} \<notin> G"  using B3 isproper_def isproperfilter_def by auto       
+        show "f \<inter> g \<noteq> {}"  using B5 B6 by fastforce
+      qed
+    qed
+    show ?thesis by (simp add: P0 meshes_def)
+  qed
+qed
+  
+lemma mesh_lem5a:
+  assumes "upclosed A"
+  shows "(x \<notin> A) \<longleftrightarrow> {(UNIV - x)}#A"
+proof-
+  let ?cx="UNIV-x" let ?S="{?cx}"
+  let ?L="x \<notin> A" let ?R="?S#A"
+  have LtR:"?L \<longrightarrow> ?R"  by (metis Diff_eq_empty_iff Int_Diff Int_commute assms inf_top.right_neutral meshes_def singletonD upclosed_def)
+  have RtL:"?R \<longrightarrow> ?L" using assms mesh_lem2 by blast
+  with LtR RtL show ?thesis by blast
+qed
+    
+lemma mesh_lem5b:
+  assumes "upclosed A"
+  shows "(x \<in> A) \<longleftrightarrow> \<not>({(UNIV - x)}#A)"
+  using assms mesh_lem5a by auto
+
+lemma mesh_lem5c:
+  assumes "upclosed A"
+  shows "((UNIV-x) \<notin> A) \<longleftrightarrow> {x}#A"
+  by (simp add: assms double_diff mesh_lem5a)
+
+lemma mesh_lem5d:
+  assumes "upclosed A"
+  shows "((UNIV-x) \<in> A) \<longleftrightarrow> \<not>({x}#A)"
+  using assms mesh_lem5c by auto
+
+
+lemma mesh_lem6a:
+   "A#B \<longleftrightarrow> A \<subseteq> grill B"
+proof-
+  have Eq0:"A#B \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<inter> b \<noteq> {})" by (simp add: meshes_def)
+  have Eq1:"... \<longleftrightarrow> (\<forall>a \<in> A. {a}#B)" by (simp add: meshes_def)
+  have Eq2:"... \<longleftrightarrow> (\<forall>a \<in> A. a \<in> grill B)" by (simp add: grill_def)
+  have Eq3:"... \<longleftrightarrow> A \<subseteq> grill B " by blast
+  show ?thesis using Eq0 Eq1 Eq2 Eq3 by presburger
+qed
+
+lemma mesh_lem0:
+  "A#B \<longleftrightarrow> B#A" by (metis Int_commute meshes_def)
+
+lemma mesh_lem6b:
+   "A#B \<longleftrightarrow> B \<subseteq> grill A"  using mesh_lem0 mesh_lem6a by blast
+
+
+lemma mesh_lem6c:
+   "A \<subseteq> grill B \<longleftrightarrow> B \<subseteq> grill A"
+  using mesh_lem6a mesh_lem6b by auto 
+
+lemma mesh_lem7a:
+  assumes "upclosed A"
+  shows "x \<in> A \<longleftrightarrow> (UNIV - x) \<notin> grill A"
+  using assms grill_def mesh_lem5a by auto
+
+
+lemma mesh_lem7b:
+  assumes "upclosed A"
+  shows "x \<notin> A \<longleftrightarrow> (UNIV - x) \<in>  grill A"
+  by (simp add: assms mesh_lem7a)
+
+
+lemma mesh_lem7c:
+  assumes "upclosed A"
+  shows "(UNIV - x) \<in> A \<longleftrightarrow> x \<notin> grill A"
+  using assms grill_def mesh_lem5c by auto
+
+lemma mesh_lem7d:
+  assumes "upclosed A"
+  shows "(UNIV - x) \<notin>  A \<longleftrightarrow> x \<in> grill A"
+  using assms grill_def mesh_lem7c by auto
+
+lemma mesh_lem8:
+  assumes A0:"\<forall>F \<in> EF. isproperfilter F" and A1:"finite EF" and A2:"isproperfilter G" and A0b:"EF \<noteq> {} \<and> EF \<noteq> {{}}"
+  shows "G#(\<Inter>EF) \<longleftrightarrow> (\<exists>F \<in> EF. G#F)"
+proof-
+  let ?INF="\<Inter>EF" let ?L="G#?INF" let ?R=" (\<exists>F \<in> EF. G#F)"
+  have A3:"upclosed G"  using A2 isfilter_def isproperfilter_def by blast
+  have A4:"fcsystem G" using A2 isproperfilter_def lem2 by auto
+  have RtL:"?R\<longrightarrow>?L" by (metis Inf_lower2 mesh_lem6b)
+  have LtR:"\<not>?R \<longrightarrow> \<not>?L"
+  proof-
+    have B0:"\<not>(\<exists>F \<in> EF. G#F) \<longleftrightarrow> (\<forall>F \<in> EF. \<not>(G#F))" by simp
+    have B1:"...             \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. \<not>(G#{f})) " by (metis meshes_def singletonD singletonI)
+    have B2:"\<dots>              \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. f \<notin> grill G)" by (simp add: mesh_lem6b)
+    have B3:"...             \<longleftrightarrow> (\<forall>F \<in> EF. \<exists>f \<in> F. (UNIV-f) \<in> G)" by (simp add: A3 mesh_lem7c)
+    obtain u where A5:"u=(\<lambda>F. SOME f. (f \<in> F \<and> (UNIV-f)\<in>G))" by simp
+    have B4:"(\<forall>F \<in> EF. \<exists>f \<in> F. (UNIV-f) \<in> G) \<longrightarrow> (\<forall>F \<in> EF. (UNIV-(u(F))) \<in> G)"  by (metis (no_types, lifting) A5 someI)
+    let ?H="u`EF"
+    let ?HC="{b. \<exists>h \<in>?H. b=UNIV-h}"
+    have B5:"finite ?H" by (simp add: A1)
+    have B6:"finite ?HC"  by (metis B5 finite_imageI image_def)
+    have B7:"(\<forall>F \<in> EF. (UNIV-(u(F))) \<in> G) \<longrightarrow> (\<forall>hc \<in> ?HC. hc \<in> G)" by blast
+    have B8:"... \<longrightarrow> \<Inter>?HC \<in> G"
+      by (metis (no_types, lifting) A2 B6 Inf_empty fcsystem_def isproperfilter_def lem2 subset_eq)
+    have B9:"(UNIV - (\<Inter>?HC)) = \<Union>(u`(EF))"  by blast
+    have B10:" \<Inter>?HC \<in> G  \<longrightarrow> \<Union>(u`(EF)) \<notin> grill G" using A3 B9 mesh_lem7a by fastforce
+    have B11:" \<Union>(u`(EF)) \<in> (\<Inter>EF)" using fil_inter4
 end
+
