@@ -3,6 +3,9 @@ theory FiltersAgain
 begin
 hide_type Filter.filter
 
+no_notation Cons (infixr "#" 65)
+declare [[show_types]]
+
 definition inhabited::"'X set  \<Rightarrow> bool" where "inhabited X \<equiv> X \<noteq> {}"
 
 definition pisystem::"'X set set \<Rightarrow> bool" where "pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> a \<inter> b  \<in> X)"
@@ -25,9 +28,6 @@ definition filspace::"'X set set set" where "filspace = {F. isfilter F}"
 
 definition properfilspace::"'X set set set" where "properfilspace = {F. isproperfilter F}"
 
-
-no_notation Cons (infixr "#" 65)
-
 definition meshes::"('X set set) \<Rightarrow> ('X set set) \<Rightarrow> bool"  (infixl "#" 50) 
   where "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  (a\<inter>b \<noteq> {}))"
 
@@ -43,9 +43,15 @@ definition cl_fmeet2::"'X set set \<Rightarrow> 'X set set" where
 definition upclosure::"'X::order set \<Rightarrow> 'X::order set" where
     "upclosure A = {x. \<exists>a \<in> A. a \<le> x}"
 
-
 definition filgenerated::"'X set set set \<Rightarrow> 'X set set" where
   "filgenerated A = upclosure(cl_fmeet1(\<Union>A))"
+
+definition isfiltergrill::"'X set set \<Rightarrow> bool" where
+  "isfiltergrill A \<equiv> (\<exists>F::('X set set). (isfilter F) \<and> (A = grill F))"
+
+definition ischumba::"'X set set \<Rightarrow> bool" where
+  "ischumba A \<equiv> (\<forall>a. \<forall>b. a \<union> b \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
+
 
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
@@ -197,6 +203,8 @@ lemma lem_upcl4:
 lemma lem_upcl5:
   "upclosed (upclosure A)"
   using lem_upcl3 upclosed_def upclosure_def by fastforce
+
+
 
 lemma finite_intersections_in_set:
   fixes X::"'X set"
@@ -917,22 +925,15 @@ lemma double_baconator:
   by (metis double_bacon lem_upcl2 lem_upcl5 rev_grill2 subset_antisym)
 
 
-definition isfiltergrill::"'X set set \<Rightarrow> bool" where
-  "isfiltergrill A \<equiv> (\<exists>F::('X set set). (isfilter F) \<and> (A = grill F))"
-
-definition ischumba::"'X set set \<Rightarrow> bool" where
-  "ischumba A \<equiv> (\<forall>a. \<forall>b. a \<union> b \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
-
-
 lemma mainline_mcdonalds_fries1:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and A1:"upclosed A" and A2:"ischumba A"
-  shows "\<exists>F. pisystem F \<and> upclosed F \<and> (A = grill F)" 
+  shows "\<exists>F. ((pisystem F) \<and> (upclosed F) \<and> (A = grill F))" 
 proof-
-  have P3:"grill(grill (A)) = A" by (simp add: A1 double_baconator)
+  have P3:"grill( grill (A) ) = A" by (simp add: A1 double_baconator)
   let ?B="grill A"
-  have P4:"\<forall>a \<in> ?B. \<forall>b \<in> ?B. a \<inter> b \<in> ?B"
+  have P4:"\<forall>a \<in> ?B. (\<forall>b \<in> ?B. (a \<inter> b \<in> ?B))"
   proof
-    fix a assume P4A0:"a \<in> ?B" show "\<forall>b \<in> ?B.  a \<inter> b \<in> ?B"
+    fix a assume P4A0:"a \<in> ?B" show "\<forall>b \<in> ?B.  (a \<inter> b \<in> ?B)"
     proof
         fix b assume P4A1:"b \<in> ?B" 
         have P4B0:"(UNIV-a) \<notin> A"  by (simp add: P4A0 A1 mesh_lem7c)
@@ -948,38 +949,30 @@ proof-
   show ?thesis using P3 P5 P6 by auto
 qed
 
-lemma mainline_mcdonalds_fries2:
+lemma grilling_chumbawumba:
  assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and A1:"A=grill F" and A2:"isfilter F"
  shows "upclosed A \<and> ischumba A"
 proof-
-  have P0:"upclosed A"  using A1 A2 its_grillin_time lem1 by auto
-  have P1:"\<forall>a. \<forall>b. (a \<notin> A \<and>  b \<notin>  A)\<longrightarrow>  a \<union> b \<notin> A"
+  have P0:"upclosed A" using A1 A2 its_grillin_time lem1 by auto
+  have P1:"\<forall>a. \<forall>b. (a\<notin>A\<and>b\<notin>A) \<longrightarrow> a\<union>b\<notin>A"
   proof-
     fix a b
     have P10:"(a \<notin> A \<and>  b \<notin>  A)\<longrightarrow>  a \<union> b \<notin> A"
     proof
-      assume  P1A0:" (a \<notin> A \<and>  b \<notin>  A)"
-      obtain f where P1A1:"f \<in> F \<and> f \<inter> a = {}"
-        using A1 A2 P1A0 isfilter_def mesh_lem7c by fastforce
-      obtain g where P1A2:"g \<in> F \<and> g \<inter> b = {}"
-        by (metis A1 A2 Compl_disjoint2 Compl_eq_Diff_UNIV P1A0 isfilter_def mesh_lem7c)
-      have P1B1:"f \<inter> g \<in> F"
-        using A2 P1A1 P1A2 isfilter_def pisystem_def by blast
-      have P1B2:"(a \<union> b) \<inter> (f \<inter> g) = {}"
-        using P1A1 P1A2 by blast
-      have P1B3:"\<exists>h \<in> F. (a \<union> b) \<inter> h = {}"
-        using P1B1 P1B2 by auto
-      have P1B4:"(a \<union> b) \<notin> (grill F)"
-        by (meson P1B1 P1B2 mesh_lem6a meshes_def subsetI)
-      show " a \<union> b \<notin>  A"
-        by (simp add: P1B4 assms)
+      assume P1A0:" (a \<notin> A \<and>  b \<notin>  A)"
+      obtain f where P1A1:"f \<in> F \<and> f \<inter> a = {}" using A1 A2 P1A0 isfilter_def mesh_lem7c by fastforce
+      obtain g where P1A2:"g \<in> F \<and> g \<inter> b = {}" by (metis A1 A2 Compl_disjoint2 Compl_eq_Diff_UNIV P1A0 isfilter_def mesh_lem7c)
+      have P1B1:"(f \<inter> g) \<in> F" using A2 P1A1 P1A2 isfilter_def pisystem_def by blast
+      have P1B2:"(a \<union> b) \<inter> (f \<inter> g) = {}" using P1A1 P1A2 by blast
+      have P1B3:"\<exists>h \<in> F. (a \<union> b) \<inter> h = {}" using P1B1 P1B2 by auto
+      have P1B4:"(a\<union>b)\<notin>(grill F)" by (meson P1B1 P1B2 mesh_lem6a meshes_def subsetI)
+      show "a\<union>b\<notin>A" by (simp add: P1B4 assms)
      qed
-     with P10 show ?thesis
-       by (metis A1 A2 Diff_Un isfilter_def mesh_lem7c pisystem_def)
+     with P10 show ?thesis by (metis A1 A2 Diff_Un isfilter_def mesh_lem7c pisystem_def)
   qed
-  have P2:"\<forall>a. \<forall>b.  a \<union> b \<in> A  \<longrightarrow>  (a \<in> A \<or>  b \<in>  A)"  using P1 by auto
+  have P2:"\<forall>a. \<forall>b. a\<union>b\<in>A  \<longrightarrow>  (a\<in>A\<or>b\<in>A)"  using P1 by auto
   have P3:"ischumba A" using P1 ischumba_def by blast
-  show ?thesis  by (simp add: P0 P3)
+  show ?thesis by (simp add: P0 P3)
 qed
 
 
