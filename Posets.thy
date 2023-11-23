@@ -1930,6 +1930,7 @@ proof-
 qed
 
 
+
 lemma mongochumba_inf:
   assumes A0:"HasAnInf1 F X" and A2:"HasAnInf1 {x, Inf1 F X} X"
   shows "HasAnInf1 (insert x F) X"
@@ -2056,4 +2057,81 @@ proof-
   qed
 qed
 
+lemma finite_sup_in_set:
+  fixes C::"'X::semilattice_sup set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (HasASup1 {a1, a2} C \<and> (Sup1 {a1, a2} C) \<in> C)" and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C" 
+  shows "(HasASup1 E C)"
+proof-
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x) with assms show ?case
+      by fastforce
+    next case (insert x F)
+    then have "(Sup1 (insert x F) C) \<in> C" using assms
+    proof-
+      have P0: "x \<in> C" using insert.prems by auto
+      have P1: "F \<subseteq> C" using insert.prems by auto
+      have P2: "HasASup1 F C" by (simp add: P1 insert.hyps(4))
+      have P3: "(Sup1 F C) \<in> C" by (simp add: P2 sup1_in_space)
+      have P4: "HasASup1 {x, Sup1 F C} C"  using A2 P0 P3 by blast
+      have P5: "Sup1 (insert x F) C = Sup1 {x, Sup1 F C} C" using P2 P4 mongochumbawumba_thesqueakuel_sup by blast
+      have P6: "Sup1 {x, Sup1 F C} C \<in> C"
+        by (simp add: P4 sup1_in_space)
+      have P7: "(Sup1 (insert x F) C) \<in> C"
+        by (simp add: P5 P6)
+      show ?thesis
+        using P7 by blast
+    qed
+    show ?case
+      by (meson A2 sup1_in_space insert.hyps(4) insert.prems insert_subset mongochumba_sup)
+  qed
+qed
+
+lemma finite_inf_in_set2:
+  fixes C::"'X::semilattice_inf set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (HasAnInf1 {a1, a2} C \<and> (Inf1 {a1, a2} C) \<in> C)" and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C" 
+  shows "(HasAnInf1 E C) \<and> ((Inf1 E C) \<in> C)"
+  by (metis A2 A3 A4 A5 finite_inf_in_set inf1_in_space)
+
+lemma finite_sup_in_set2:
+  fixes C::"'X::semilattice_sup set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (HasASup1 {a1, a2} C \<and> (Sup1 {a1, a2} C) \<in> C)" and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C" 
+  shows "(HasASup1 E C) \<and> (Sup1 E C) \<in> C"
+  by (metis A2 A3 A4 A5 finite_sup_in_set sup1_in_space)
+
+
+lemma chumba_semilat_inf:
+  shows "\<forall>(x1::('X::semilattice_inf)). \<forall>(x2::('X::semilattice_inf)).  HasAnInf1 {x1, x2} UNIV"
+proof-
+  fix x1::"'X::semilattice_inf" fix x2::"'X::semilattice_inf"
+  have B0:"((inf x1 x2) \<le> x1) \<and>  ((inf x1 x2) \<le> x2)"
+    by simp
+  have B1:"(inf x1 x2) \<in> LowerBoundsIn {x1, x2} UNIV "
+    by (simp add: lower_bounds_are_lower_bounds2)
+  have B2:"\<forall>l \<in> (LowerBoundsIn {x1, x2} UNIV). (inf x1 x2) \<ge> l"
+    by (simp add: lower_bounds_are_lower_bounds2)
+  have B3:"(inf x1 x2) = Greatest(LowerBoundsIn {x1, x2} UNIV)"
+    using B1 B2 maximum_is_greatest by blast
+  show ?thesis
+    by (meson HasAnInf1_def UNIV_I inf1_eq_inf_chumbawumba)
+qed
+
+lemma chumba_semilat_sup:
+  shows "\<forall>(x1::('X::semilattice_sup)). \<forall>(x2::('X::semilattice_sup)).  HasASup1 {x1, x2} UNIV"
+proof-
+  fix x1::"'X::semilattice_sup" fix x2::"'X::semilattice_sup"
+  have B0: "((sup x1 x2) \<ge> x1) \<and> ((sup x1 x2) \<ge> x2)"
+    by simp
+  have B1: "(sup x1 x2) \<in> UpperBoundsIn {x1, x2} UNIV "
+    by (simp add: upper_bounds_are_upper_bounds2)
+  have B2: "\<forall>u \<in> (UpperBoundsIn {x1, x2} UNIV). (sup x1 x2) \<le> u"
+    by (simp add: upper_bounds_are_upper_bounds2)
+  have B3: "(sup x1 x2) = Least(UpperBoundsIn {x1, x2} UNIV)"
+    using B1 B2 minimum_is_least by blast
+  show ?thesis
+    by (meson HasASup1_def UNIV_I sup1_eq_sup_chumbawumba)
+qed
 end
