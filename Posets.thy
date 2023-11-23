@@ -1791,4 +1791,269 @@ proof-
     using HasLeast_def by blast
 qed
 
+lemma greatest_is_greatest:
+  assumes A0:"M=Greatest A" and A1:"HasGreatest A"
+  shows "IsGreatest M A"
+  by (simp add: A0 A1 IsGreatest_def IsUpperBound_def greatest_is_maximum)
+
+
+lemma least_is_leastt:
+  assumes A0:"m=Least A" and A1:"HasLeast A"
+  shows "IsLeast m A"
+  by (simp add: A0 A1 IsLeast_def IsLowerBound_def least_is_minimum)
+
+lemma inf1_eq_inf_chumbawumba:
+  fixes A::"'X::semilattice_inf set"
+  assumes A0:"x \<in> A \<and> y \<in> A"
+  shows "HasGreatest (LowerBoundsIn {x, y} UNIV)"
+proof-
+  let ?S="{x, y}" let ?LB="LowerBoundsIn ?S UNIV" let ?I="Inf1 ?S UNIV"
+  let ?i="inf x y"
+  have R_B1_B0:"\<forall>x \<in>  LowerBoundsIn ?S UNIV. x \<le> ?i"
+    by (simp add: lower_bounds_are_lower_bounds2)
+  have R_B1_B1:"\<forall>x \<in> ?S. ?i \<le> x"  by simp
+  have R_B1_B2:"?i \<in>  LowerBoundsIn ?S UNIV"  by (simp add: lower_bounds_are_lower_bounds2)
+  have R_B1_B3:"?i \<in> ?LB"  by (simp add: R_B1_B2)
+  have R_B1_B4:"\<forall>x \<in> ?LB. x \<le> ?i" using R_B1_B0 by auto 
+  have R_B1_B5:"IsGreatest ?i ?LB"
+    using IsGreatest_def IsUpperBound_def R_B1_B3 R_B1_B4 by blast
+  show ?thesis using HasGreatest_def R_B1_B5 by auto
+qed
+
+
+lemma sup1_eq_sup_chumbawumba:
+  fixes A::"'X::semilattice_sup set"
+  assumes A0:"x \<in> A \<and> y \<in> A"
+  shows "HasLeast (UpperBoundsIn {x, y} UNIV)"
+proof-
+  let ?S="{x, y}" let ?UB="UpperBoundsIn ?S UNIV" let ?I="Sup1 ?S UNIV"
+  let ?s="sup x y"
+  have R_B1_B0:"\<forall>x \<in>  UpperBoundsIn ?S UNIV. ?s \<le> x"
+    by (simp add: upper_bounds_are_upper_bounds2)
+  have R_B1_B1:"\<forall>x \<in> ?S. x \<le> ?s"  by simp
+  have R_B1_B2:"?s \<in>  UpperBoundsIn ?S UNIV"  by (simp add: upper_bounds_are_upper_bounds2)
+  have R_B1_B3:"?s \<in> ?UB"  by (simp add: R_B1_B2)
+  have R_B1_B4:"\<forall>x \<in> ?UB. ?s \<le> x" using R_B1_B0 by auto 
+  have R_B1_B5:"IsLeast ?s ?UB"
+    using IsLeast_def IsLowerBound_def R_B1_B3 R_B1_B4 by blast
+  show ?thesis using HasLeast_def R_B1_B5 by auto
+qed
+
+lemma inf1_eq_inf:
+  fixes A::"'X::semilattice_inf set" 
+  shows "\<forall>x \<in> A. \<forall>y \<in> A. (Inf1{x, y} UNIV ) = (inf x y)"
+proof-
+  have L:"\<forall>x \<in> A. \<forall>y \<in> A. (Inf1{x, y} UNIV ) \<ge> (inf x y)"
+  proof
+    fix x assume L_A0:"x \<in> A"
+    show "\<forall>y \<in> A. (Inf1{x, y} UNIV ) \<ge> (inf x y)"
+    proof
+      fix y assume L_A1:"y \<in> A"
+      show  "(Inf1{x, y} UNIV ) \<ge> (inf x y)"
+      proof-
+          have L_B0:"inf x y \<le> x \<and> inf x y \<le> y" by simp
+          have L_B1:"(inf x y) \<in> (LowerBoundsIn {x, y} UNIV)" by (simp add: lower_bounds_are_lower_bounds2)
+          with L_B1 show ?thesis
+            by (smt (verit, del_insts) Inf1_def Pow_UNIV UNIV_I inf.bounded_iff inf2_req_imp_glb insert_iff insert_not_empty order_class.order_eq_iff)
+       qed
+    qed
+  qed
+  have R:"\<forall>x \<in> A. \<forall>y \<in> A. (Inf1{x, y} UNIV ) \<le> (inf x y)"
+  proof
+     fix x assume R_A0:"x \<in> A"
+     show "\<forall>y \<in> A. (Inf1{x, y} UNIV ) \<le> (inf x y)"
+     proof
+        fix y assume R_A1:"y \<in> A"
+        show "(Inf1{x, y} UNIV ) \<le> (inf x y)"
+        proof-
+          let ?S="{x, y}" let ?LB="LowerBoundsIn ?S UNIV" let ?I="Inf1 ?S UNIV"
+          have R_B0:"?I= (Greatest ?LB)" by (simp add: Inf1_def)
+          have R_B1:"HasGreatest ?LB"
+            using inf1_eq_inf_chumbawumba by auto
+          from R_B0 have R_B1:"IsGreatest ?I ?LB" by (simp add: R_B1 greatest_is_greatest)
+          have R_B2:"(Inf1 {x, y} UNIV) \<in> (LowerBoundsIn {x, y} UNIV)"
+            using IsGreatest_def R_B1 by auto
+          have R_B3:" (Inf1{x, y} UNIV) \<le> x \<and> (Inf1{x, y} UNIV) \<le> y"
+            by (meson R_B2 insert_iff lower_bounds_are_lower_bounds2)
+          have R_B4:"(inf x y) \<in> (LowerBoundsIn {x, y} UNIV)" by (simp add: lower_bounds_are_lower_bounds2)
+          with R_B4 show ?thesis by (simp add: R_B3)
+        qed
+     qed
+  qed
+  show ?thesis
+    using L R dual_order.eq_iff by blast
+qed
+
+
+lemma sup1_eq_sup:
+  fixes A::"'X::semilattice_sup set" 
+  shows "\<forall>x \<in> A. \<forall>y \<in> A. (Sup1{x, y} UNIV) = (sup x y)"
+proof-
+  have L:"\<forall>x \<in> A. \<forall>y \<in> A. (Sup1{x, y} UNIV) \<le> (sup x y)"
+  proof
+    fix x assume L_A0:"x \<in> A"
+    show "\<forall>y \<in> A. (Sup1{x, y} UNIV) \<le> (sup x y)"
+    proof
+      fix y assume L_A1:"y \<in> A"
+      show "(Sup1{x, y} UNIV) \<le> (sup x y)"
+      proof-
+        have L_B0:"x \<le> sup x y \<and> y \<le> sup x y" by simp
+        have L_B1:"(sup x y) \<in> (UpperBoundsIn {x, y} UNIV)" by (simp add: upper_bounds_are_upper_bounds2)
+        with L_B1 show ?thesis
+          by (smt (verit, del_insts) Sup1_def Pow_UNIV UNIV_I sup.bounded_iff sup2_req_imp_lub insert_iff insert_not_empty order_class.order_eq_iff)
+      qed
+    qed
+  qed
+  have R:"\<forall>x \<in> A. \<forall>y \<in> A. (Sup1{x, y} UNIV) \<ge> (sup x y)"
+  proof
+    fix x assume R_A0:"x \<in> A"
+    show "\<forall>y \<in> A. (Sup1{x, y} UNIV) \<ge> (sup x y)"
+    proof
+      fix y assume R_A1:"y \<in> A"
+      show "(Sup1{x, y} UNIV) \<ge> (sup x y)"
+      proof-
+        let ?S="{x, y}" let ?UB="UpperBoundsIn ?S UNIV" let ?I="Sup1 ?S UNIV"
+        have R_B0:"?I = (Least ?UB)" by (simp add: Sup1_def)
+        have R_B1:"HasLeast ?UB"  using sup1_eq_sup_chumbawumba by auto
+        from R_B0 have R_B1:"IsLeast ?I ?UB"  by (simp add: R_B1 least_is_leastt) 
+        have R_B2:"(Sup1 {x, y} UNIV) \<in> (UpperBoundsIn {x, y} UNIV)"
+          using IsLeast_def R_B1 by auto
+        have R_B3:" (Sup1{x, y} UNIV) \<ge> x \<and> (Sup1{x, y} UNIV) \<ge> y"
+          by (meson R_B2 insert_iff upper_bounds_are_upper_bounds2)
+        have R_B4:"(sup x y) \<in> (UpperBoundsIn {x, y} UNIV)" by (simp add: upper_bounds_are_upper_bounds2)
+        with R_B4 show ?thesis by (simp add: R_B3)
+      qed
+    qed
+  qed
+  show ?thesis
+    using L R dual_order.eq_iff by blast
+qed
+
+
+lemma mongochumba_inf:
+  assumes A0:"HasAnInf1 F X" and A2:"HasAnInf1 {x, Inf1 F X} X"
+  shows "HasAnInf1 (insert x F) X"
+proof-
+  let ?xF="insert x F" let ?IF="Inf1 F X"  let ?D="{x, ?IF}"
+  let ?IxF="Inf1 ?xF X"  let ?IxIxF="Inf1 ?D X"
+  have B0:"?IxIxF \<in> LowerBoundsIn ?xF X"
+    by (smt (verit, del_insts) A0 A2 IsLowerBound_def dual_order.trans inf1_in_space inf1_is_lb insert_iff lower_bounds_are_lower_bounds2)
+  have B1:"\<forall>l \<in> LowerBoundsIn ?xF X. ?IxIxF \<ge> l"
+    by (simp add: A0 A2 inf1_apply_lb lower_bounds_are_lower_bounds2)
+  have B2:" ?IxIxF = Greatest (LowerBoundsIn ?xF X) "
+    using B0 B1 maximum_is_greatest by blast
+  have B3:"HasAnInf1 ?xF X"
+    by (meson B0 B1 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def)
+  show ?thesis using B3 by blast
+qed
+
+
+lemma mongochumba_sup:
+  assumes A0:"HasASup1 F X" and A2:"HasASup1 {x, Sup1 F X} X"
+  shows "HasASup1 (insert x F) X"
+proof-
+  let ?xF="insert x F" let ?SF="Sup1 F X"  let ?D="{x, ?SF}"
+  let ?SxF="Inf1 ?xF X"  let ?SxSxF="Sup1 ?D X"
+  have B0:"?SxSxF \<in> UpperBoundsIn ?xF X"
+    by (smt (verit, del_insts) A0 A2 IsUpperBound_def dual_order.trans sup1_in_space sup1_is_ub insert_iff upper_bounds_are_upper_bounds2)
+  have B1:"\<forall>u \<in> UpperBoundsIn ?xF X. ?SxSxF \<le> u"
+    by (simp add: A0 A2 sup1_apply_ub upper_bounds_are_upper_bounds2)
+  have B2:" ?SxSxF = Least (UpperBoundsIn ?xF X) "
+    using B0 B1 minimum_is_least by blast
+  have B3:"HasASup1 ?xF X"
+    by (meson B0 B1 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def)
+  show ?thesis using B3 by blast
+qed
+
+
+lemma mongochumbawumba_thesqueakuel_inf:
+  assumes A0:"HasAnInf1 F X" and A2:"HasAnInf1 {x, Inf1 F X} X"
+  shows "(Inf1 (insert x F) X)=Inf1 {x, Inf1 F X} X"
+proof-
+  let ?xF="insert x F" let ?IF="Inf1 F X"  let ?D="{x, ?IF}"
+  let ?IxF="Inf1 ?xF X"  let ?IxIxF="Inf1 ?D X"
+  have A1:"HasAnInf1 (insert x F) X"
+    using A0 A2 mongochumba_inf by blast
+  have B0:"?IxIxF \<in> LowerBoundsIn ?D X"
+    by (simp add: A2 inf1_in_space inf1_is_lb lower_bounds_are_lower_bounds)
+  have B1:"\<forall>d \<in> ?D. ?IxIxF \<le> d"
+    by (meson B0 lower_bounds_are_lower_bounds2)
+  have B2:"?IxF \<le>  ?IF"
+    by (meson A0 A1 IsLowerBound_def inf1_apply_lb inf1_in_space inf1_is_lb subset_eq subset_insertI)
+  have B3:"\<forall>f \<in> F. ?IxF \<le> f"
+    by (meson A0 B2 IsLowerBound_def dual_order.trans inf1_is_lb)
+  have B4:"\<forall>d \<in> ?xF. ?IxIxF \<le> d"
+    by (metis A0 B1 IsLowerBound_def dual_order.trans inf1_is_lb insert_iff)
+  have B5:"?IxIxF \<ge> ?IxF"
+    by (smt (verit, ccfv_SIG) A1 A2 B2 HasAnInf1_def IsLowerBound_def empty_not_insert inf1_in_space inf1_is_lb inf_lt_lowerbound insertE insertI1 singleton_iff)
+  have B6:"\<forall>d \<in> ?D. ?IxF \<le> d "
+    using B1 B5 dual_order.trans by blast
+  have B7:"?IxIxF \<le> ?IxF"
+    by (simp add: A1 A2 B4 inf1_apply_lb inf1_in_space)
+  show ?thesis
+    by (simp add: B5 B7 dual_order.eq_iff)
+qed
+
+lemma mongochumbawumba_thesqueakuel_sup:
+  assumes A0: "HasASup1 F X" and A2: "HasASup1 {x, Sup1 F X} X"
+  shows "(Sup1 (insert x F) X) = Sup1 {x, Sup1 F X} X"
+proof-
+  let ?xF = "insert x F"
+  let ?SF = "Sup1 F X"
+  let ?D = "{x, ?SF}"
+  let ?SxF = "Sup1 ?xF X"
+  let ?SxSxF = "Sup1 ?D X"
+  have A1: "HasASup1 (insert x F) X"
+    using A0 A2 mongochumba_sup by blast
+  have B0: "?SxSxF \<in> UpperBoundsIn ?D X"
+    by (simp add: A2 sup1_in_space sup1_is_ub upper_bounds_are_upper_bounds)
+  have B1: "\<forall>d \<in> ?D. ?SxSxF \<ge> d"
+    by (meson B0 upper_bounds_are_upper_bounds2)
+  have B2: "?SxF \<ge> ?SF"
+    by (meson A0 A1 IsUpperBound_def sup1_apply_ub sup1_in_space sup1_is_ub subset_eq subset_insertI)
+  have B3: "\<forall>f \<in> F. ?SxF \<ge> f"
+    by (meson A0 B2 IsUpperBound_def dual_order.trans sup1_is_ub)
+  have B4: "\<forall>d \<in> ?xF. ?SxSxF \<ge> d"
+    by (metis A0 B1 IsUpperBound_def dual_order.trans sup1_is_ub insert_iff)
+  have B5: "?SxSxF \<le> ?SxF"
+    by (smt (verit, ccfv_SIG) A1 A2 B2 HasASup1_def IsUpperBound_def empty_not_insert sup1_in_space sup1_is_ub sup_lt_upperbound insertE insertI1 singleton_iff)
+  have B6: "\<forall>d \<in> ?D. ?SxF \<ge> d "
+    using B1 B5 dual_order.trans by blast
+  have B7: "?SxSxF \<ge> ?SxF"
+    by (simp add: A1 A2 B4 sup1_apply_ub sup1_in_space)
+  show ?thesis
+    by (simp add: B5 B7 dual_order.antisym)
+qed
+
+lemma finite_inf_in_set:
+  fixes C::"'X::semilattice_inf set"
+  assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (HasAnInf1 {a1, a2} C \<and> (Inf1 {a1, a2} C) \<in> C)" and 
+          A3:"finite E" and A4:"E \<noteq> {}" and A5:"E \<subseteq> C" 
+  shows "(HasAnInf1 E C)"
+proof-
+  from A3 A4 A5 show ?thesis
+  proof (induct E rule: finite_ne_induct)
+    case (singleton x) with assms show ?case
+      by fastforce
+    next case (insert x F)
+    then have "(Inf1 (insert x F) C) \<in> C" using assms
+    proof-
+      have P0:"x \<in> C" using insert.prems by auto
+      have P1:"F \<subseteq> C" using insert.prems by auto
+      have P2:"HasAnInf1 F C" by (simp add: P1 insert.hyps(4))
+      have P3:"(Inf1 F C) \<in> C" by (simp add: P2 inf1_in_space)
+      have P4:"HasAnInf1 {x, Inf1 F C} C"  using A2 P0 P3 by blast
+      have P5:"Inf1 (insert x F) C = Inf1 {x, Inf1 F C} C" using P2 P4 mongochumbawumba_thesqueakuel_inf by blast
+      have P6:"Inf1 {x, Inf1 F C} C  \<in> C"
+        by (simp add: P4 inf1_in_space)
+      have P7: "(Inf1 (insert x F) C) \<in> C"
+        by (simp add: P5 P6)
+      show ?thesis
+        using P7 by blast
+    qed
+    show ?case
+      by (meson A2 inf1_in_space insert.hyps(4) insert.prems insert_subset mongochumba_inf)
+  qed
+qed
+
 end
