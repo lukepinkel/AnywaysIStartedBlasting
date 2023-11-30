@@ -507,6 +507,10 @@ proof-
   with B0 B1 show ?thesis by auto
 qed
 
+lemma not_maximal:  
+  "(\<exists>m2 \<in> X. m1 < m2) \<longrightarrow> \<not>(IsMaximal2 m1 X)"
+  by (meson IsMaximal2_def)
+
 
 lemma greatest_then_unique_maxima:
   assumes A0: "HasGreatest X"
@@ -1791,6 +1795,8 @@ proof-
     using HasLeast_def by blast
 qed
 
+subsection RelativizationOfDefinition
+subsubsection Inf1EquivFiniteInf
 lemma greatest_is_greatest:
   assumes A0:"M=Greatest A" and A1:"HasGreatest A"
   shows "IsGreatest M A"
@@ -1930,7 +1936,7 @@ proof-
 qed
 
 
-
+subsubsection InfSup1Associativity
 lemma mongochumba_inf:
   assumes A0:"HasAnInf1 F X" and A2:"HasAnInf1 {x, Inf1 F X} X"
   shows "HasAnInf1 (insert x F) X"
@@ -2026,6 +2032,7 @@ proof-
     by (simp add: B5 B7 dual_order.antisym)
 qed
 
+subsubsection InfSup1FiniteSets
 lemma finite_inf_in_set:
   fixes C::"'X::semilattice_inf set"
   assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (HasAnInf1 {a1, a2} C \<and> (Inf1 {a1, a2} C) \<in> C)" and 
@@ -2102,7 +2109,7 @@ lemma finite_sup_in_set2:
   shows "(HasASup1 E C) \<and> (Sup1 E C) \<in> C"
   by (metis A2 A3 A4 A5 finite_sup_in_set sup1_in_space)
 
-
+subsubsection InfSup1OnSemilattices
 lemma chumba_semilat_inf:
   shows "\<forall>(x1::('X::semilattice_inf)). \<forall>(x2::('X::semilattice_inf)).  HasAnInf1 {x1, x2} UNIV"
 proof-
@@ -2134,4 +2141,329 @@ proof-
   show ?thesis
     by (meson HasASup1_def UNIV_I sup1_eq_sup_chumbawumba)
 qed
+
+lemma chumba_wumba1_inf:
+  "\<And>x. x \<in> X \<Longrightarrow> ((\<And>a. a \<in> A \<Longrightarrow> x \<le> a) \<Longrightarrow> (\<And>a. (\<And>b. b \<in> A \<Longrightarrow> a \<le> b) \<Longrightarrow> a \<le> x) \<Longrightarrow> Inf1 A X = x)"
+  by (metis Inf1_def element_ub_is_greatest_alt lower_bounds_are_lower_bounds2)
+
+lemma chumba_wumba1_sup:
+  "\<And>x. x \<in> X \<Longrightarrow> ((\<And>a. a \<in> A \<Longrightarrow> a \<le> x) \<Longrightarrow> (\<And>a. (\<And>b. b \<in> A \<Longrightarrow> b \<le> a) \<Longrightarrow> x \<le> a) \<Longrightarrow> Sup1 A X = x)"
+  by (metis Sup1_def element_lb_is_least_alt upper_bounds_are_upper_bounds2)
+
+(*semilattice_inf start*)
+subsubsection SemilatticeInf
+context semilattice_inf
+begin
+
+lemma semilat_has_inf:
+  "\<And>(x::('X::semilattice_inf)) (y::('X::semilattice_inf)). (HasAnInf1 {x, y} UNIV)"
+  using chumba_semilat_inf by blast
+
+
+
+(*semilattice_inf\<longrightarrow>fixed x y z x1 x2 y1 y2 z1 z2 start*)
+context
+  fixes x::"('X::semilattice_inf)" and y::"('X::semilattice_inf)" and z::"('X::semilattice_inf)" and
+        x1::"('X::semilattice_inf)" and  y1::"('X::semilattice_inf)" and  z1::"('X::semilattice_inf)" and
+        x2::"('X::semilattice_inf)" and  y2::"('X::semilattice_inf)" and  z2::"('X::semilattice_inf)"
+begin
+  
+lemma semilat_assoc:
+  "Inf1 {Inf1 {x, y} UNIV, z} UNIV = Inf1 {x, Inf1 {y, z} UNIV} UNIV"
+  by (smt (verit, ccfv_threshold) chumba_semilat_inf insert_commute mongochumbawumba_thesqueakuel_inf)
+
+lemma semilat_commn:
+  "Inf1 {x, y} UNIV = Inf1 {y, x} UNIV"
+  by (simp add: insert_commute)
+
+lemma semilat_idemp:
+  "Inf1 {x, x} UNIV = x"
+  using inf1_eq_inf by fastforce
+
+lemma semilat_chumbawumba0:
+  "x \<le> y \<longleftrightarrow> Inf1 {x, y} UNIV = x"
+  by (metis UNIV_I inf1_eq_inf semilat_commn semilattice_inf_class.inf.absorb_iff2)
+
+
+lemma semilat_chumbawumba1:
+  "x \<le> y \<longrightarrow>  Inf1 {x, z} UNIV \<le> Inf1 {y, z} UNIV"
+  by (metis semilat_assoc semilattice_inf_class.semilat_assoc semilattice_inf_class.semilat_chumbawumba0 semilattice_inf_class.semilat_idemp)
+
+
+lemma semilat_chumbawumba2:
+  "x1 \<le> y1 \<and> x2 \<le> y2 \<longrightarrow>  Inf1 {x1, x2} UNIV \<le> Inf1 {y1, y2} UNIV"
+  by (metis UNIV_I inf1_eq_inf semilattice_inf_class.inf_mono)
+
+end
+(*semilattice_inf\<longrightarrow>fixed x y z x1 x2 y1 y2 z1 z2 start end*)
+(*semilattice_inf*)
+
+lemma semilattice_inf_assoc:
+  "\<And>(x::('X::semilattice_inf)) (y::('X::semilattice_inf)). Inf1 {Inf1 {x, y} UNIV, z} UNIV = Inf1 {x, Inf1 {y, z} UNIV} UNIV"
+  by (simp add: semilat_assoc)
+
+
+lemma semilattice_inf_commn:
+  "\<And>(x::('X::semilattice_inf)) (y::('X::semilattice_inf)). Inf1 {x, y} UNIV = Inf1 {y, x} UNIV"
+  by (simp add: semilat_commn)
+
+lemma semilattice_inf_idemp:
+  "\<And>(x::('X::semilattice_inf)). Inf1 {x, x} UNIV = x"
+  using semilat_idemp by blast
+
+
+lemma semilattice_inf_chumbawumba0:
+  "\<And>(x::('X::semilattice_inf)) (y::('X::semilattice_inf)). x \<le> y \<longleftrightarrow> Inf1 {x, y} UNIV = x"
+  by (simp add: semilat_chumbawumba0)
+
+
+lemma semilattice_inf_chumbawumba1:
+  "\<And>(x::('X::semilattice_inf)) (y::('X::semilattice_inf))  (z::('X::semilattice_inf)). x \<le> y \<longrightarrow>  Inf1 {x, z} UNIV \<le> Inf1 {y, z} UNIV"
+  by (simp add: semilat_chumbawumba1)
+
+
+lemma semilattice_inf_chumbawumba2:
+  "\<And>(x1::('X::semilattice_inf)) (y1::('X::semilattice_inf)) (x2::('X::semilattice_inf)) (y2::('X::semilattice_inf)).
+      x1 \<le> y1 \<and> x2 \<le> y2 \<longrightarrow>  Inf1 {x1, x2} UNIV \<le> Inf1 {y1, y2} UNIV"
+  by (simp add: semilat_chumbawumba2)
+
+(*semilattice_inf end*)
+end
+
+
+subsubsection SemilatticeSup
+(*semilattice_sup start*)
+context semilattice_sup
+begin
+
+lemma semilat_has_sup:
+  "\<And>(x::('X::semilattice_sup)) (y::('X::semilattice_sup)). (HasASup1 {x, y} UNIV)"
+  using chumba_semilat_sup by blast
+
+(*semilattice_sup\<longrightarrow>fixes x y z x1 x2 y1 y2 z1 z2 start*)
+context
+  fixes x:: "('X::semilattice_sup)" and y:: "('X::semilattice_sup)" and z:: "('X::semilattice_sup)" and
+        x1::"('X::semilattice_sup)" and  y1::"('X::semilattice_sup)" and  z1::"('X::semilattice_sup)" and
+        x2::"('X::semilattice_sup)" and  y2::"('X::semilattice_sup)" and  z2::"('X::semilattice_sup)"
+begin
+  
+lemma semilat_sup_assoc:
+  "Sup1 {Sup1 {x, y} UNIV, z} UNIV = Sup1 {x, Sup1 {y, z} UNIV} UNIV"
+  by (smt (verit, ccfv_threshold) insert_commute mongochumbawumba_thesqueakuel_sup semilat_has_sup)
+
+lemma semilat_sup_commn:
+  "Sup1 {x, y} UNIV = Sup1 {y, x} UNIV"
+  by (simp add: insert_commute)
+
+lemma semilat_idemp:
+  "Sup1 {x, x} UNIV = x"
+  using sup1_eq_sup by fastforce
+
+lemma semilat_sup_chumbawumba0:
+  "x \<le> y \<longleftrightarrow> Sup1 {x, y} UNIV = y"
+  by (metis UNIV_I semilattice_sup_class.le_iff_sup sup1_eq_sup)
+
+lemma semilat_sup_chumbawumba1:
+  "x \<le> y \<longrightarrow>  Sup1 {x, z} UNIV \<le> Sup1 {y, z} UNIV"
+  by (metis UNIV_I order_le_less semilattice_sup_class.sup_mono sup1_eq_sup)
+
+
+lemma semilat_sup_chumbawumba2:
+  "x1 \<le> y1 \<and> x2 \<le> y2 \<longrightarrow>  Sup1 {x1, x2} UNIV \<le> Sup1 {y1, y2} UNIV"
+  by (metis UNIV_I sup1_eq_sup semilattice_sup_class.sup_mono)
+
+end
+(*semilattice_sup\<longrightarrow>fixes x y z x1 x2 y1 y2 z1 z2 end*)
+(*semilattice_sup*)
+
+lemma semilattice_sup_assoc:
+  "\<And>(x::('X::semilattice_sup)) (y::('X::semilattice_sup)). Sup1 {Sup1 {x, y} UNIV, z} UNIV = Sup1 {x, Sup1 {y, z} UNIV} UNIV"
+  by (simp add: semilat_sup_assoc)
+
+
+lemma semilattice_sup_commn:
+  "\<And>(x::('X::semilattice_sup)) (y::('X::semilattice_sup)). Sup1 {x, y} UNIV = Sup1 {y, x} UNIV"
+  by (simp add: semilat_sup_commn)
+
+lemma semilattice_sup_idemp:
+  "\<And>(x::('X::semilattice_sup)). Sup1 {x, x} UNIV = x"
+  using semilat_idemp by blast
+
+
+lemma semilattice_inf_chumbawumba0:
+  "\<And>(x::('X::semilattice_sup)) (y::('X::semilattice_sup)). x \<le> y \<longleftrightarrow> Sup1 {x, y} UNIV = y"
+  by (simp add: semilat_sup_chumbawumba0)
+
+
+lemma semilattice_sup_chumbawumba1:
+  "\<And>(x::('X::semilattice_sup)) (y::('X::semilattice_sup))
+     (z::('X::semilattice_sup)).
+     x \<le> y \<longrightarrow>  Sup1 {x, z} UNIV \<le> Sup1 {y, z} UNIV"
+  by (simp add: semilat_sup_chumbawumba1)
+
+
+lemma semilattice_sup_chumbawumba2:
+  "\<And>(x1::('X::semilattice_sup)) (y1::('X::semilattice_sup)) 
+     (x2::('X::semilattice_sup)) (y2::('X::semilattice_sup)).
+      x1 \<le> y1 \<and> x2 \<le> y2 \<longrightarrow>  Sup1 {x1, x2} UNIV \<le> Sup1 {y1, y2} UNIV"
+  by (simp add: semilat_sup_chumbawumba2)
+
+(*semilattice_sup end*)
+end
+
+
+
+class complete_semilattice_inf = semilattice_inf + Inf+
+    assumes Inf_lower: "x \<in> A \<Longrightarrow> Inf A \<le> x"
+    and Inf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
+  
+class complete_semilattice_sup = semilattice_sup + Sup +
+   assumes Sup_upper: "x \<in> A \<Longrightarrow> x \<le>  Sup A"
+    and Sup_least: "(\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
+
+
+subsubsection CompleteSemilatticeInf
+
+(*complete_semilattice_inf start*)
+context complete_semilattice_inf
+begin
+
+lemma complete_semilat_inf_ex:
+  "\<forall>(A::('X::complete_semilattice_inf set)). (HasAnInf1 A UNIV)"
+proof-
+  have T:"\<forall>(A::('X::complete_semilattice_inf set)). (HasAnInf1 A UNIV)" 
+    proof
+      fix A::"('X::complete_semilattice_inf set)"
+      let ?i="Inf A"
+      have B0:"\<forall>a \<in> A. ?i \<le> a"
+        by (simp add: complete_semilattice_inf_class.Inf_lower)
+      have B1:"?i \<in> LowerBoundsIn A UNIV"
+        by (simp add: B0 lower_bounds_are_lower_bounds2)
+      have B2:"\<forall>l \<in> LowerBoundsIn A UNIV. l \<le> ?i"
+        by (simp add: complete_semilattice_inf_class.Inf_greatest lower_bounds_are_lower_bounds2)
+      have B3:"HasAnInf1 A UNIV"
+        by (meson B1 B2 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def)
+      show "HasAnInf1 A UNIV"
+        using B3 by force
+    qed
+  show ?thesis
+    by (simp add: T)
+qed
+  
+(*complete_semilattice_inf\<longrightarrow>fixed A start*)
+context
+   fixes A::"('X::complete_semilattice_inf set)"
+begin
+lemma complete_semilat_inf_ex2:
+  shows "HasUpperBound1 A UNIV \<longrightarrow>  HasASup1 A UNIV"
+proof
+  assume A0:"HasUpperBound1 A UNIV"
+  have B0:"HasAnInf1 A UNIV"
+    by (simp add: complete_semilat_inf_ex)
+  have B1:"UpperBoundsIn A UNIV \<noteq> {}"
+    using A0 HasUpperBound1_def by blast
+  let ?i="Inf (UpperBoundsIn A UNIV)"
+  have B2:"?i \<in> (UpperBoundsIn A UNIV)"
+    by (meson UNIV_I complete_semilattice_inf_class.Inf_greatest upper_bounds_are_upper_bounds2)
+  have B3:"\<forall>u \<in> (UpperBoundsIn A UNIV). ?i \<le> u"
+    by (simp add: complete_semilattice_inf_class.Inf_lower)
+  have B4:"?i = Least (UpperBoundsIn A UNIV)"
+    by (simp add: B2 B3 minimum_is_least)
+  have B5:"HasASup1 A UNIV"
+    by (meson B2 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def complete_semilattice_inf_class.Inf_lower)
+  show "HasASup1 A UNIV"
+    by (simp add: B5)
+qed
+end
+(*complete_semilattice_inf\<longrightarrow>fixed A end*)
+(*complete_semilattice_inf*)
+
+lemma complete_semilat_inf_ex3:
+  "\<And>(A::('X::complete_semilattice_inf set)). HasUpperBound1 A UNIV \<Longrightarrow>  HasASup1 A UNIV"
+  by (simp add: complete_semilat_inf_ex2)
+
+end
+(*complete_semilattice_inf end*)
+
+
+subsubsection CompleteSemilatticeSup
+
+
+(*complete_semilattice_inf start*)
+context complete_semilattice_sup
+begin
+
+lemma complete_semilat_sup_ex:
+  "\<forall>(A::('X::complete_semilattice_sup set)). (HasASup1 A UNIV)"
+proof-
+  have T:"\<forall>(A::('X::complete_semilattice_sup set)). (HasASup1 A UNIV)"
+  proof
+    fix A::"('X::complete_semilattice_sup set)"
+    let ?s="Sup A"
+    have B0:"\<forall>a \<in> A. a \<le> ?s"
+      by (simp add: complete_semilattice_sup_class.Sup_upper)
+    have B1:"?s \<in> UpperBoundsIn A UNIV"
+      by (simp add: B0 upper_bounds_are_upper_bounds2)
+    have B2:"\<forall>u \<in> UpperBoundsIn A UNIV. ?s \<le> u"
+      by (simp add: complete_semilattice_sup_class.Sup_least upper_bounds_are_upper_bounds2)
+    have B3:"HasASup1 A UNIV"
+      by (meson B1 B2 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def)
+    show "HasASup1 A UNIV"
+      using B3 by force
+  qed
+  show ?thesis
+    by (simp add: T)
+qed
+(*complete_semilattice_sup \<longrightarrow> fixed A start*)
+
+context
+  fixes A::"('X::complete_semilattice_sup set)"
+begin
+
+lemma complete_semilat_sup_ex2:
+  shows "HasLowerBound1 A UNIV \<longrightarrow>  HasAnInf1 A UNIV"
+proof
+  assume A0:"HasLowerBound1 A UNIV"
+  have B0:"HasASup1 A UNIV"
+    by (simp add: complete_semilat_sup_ex)
+  have B1:"LowerBoundsIn A UNIV \<noteq> {}"
+    using A0 HasLowerBound1_def by blast
+  let ?s="Sup (LowerBoundsIn A UNIV)"
+  have B2:"?s \<in> (LowerBoundsIn A UNIV)"
+    by (meson UNIV_I complete_semilattice_sup_class.Sup_least lower_bounds_are_lower_bounds2)
+  have B3:"\<forall>l \<in> (LowerBoundsIn A UNIV). l \<le> ?s"
+    by (simp add: complete_semilattice_sup_class.Sup_upper)
+  have B4:"?s = Greatest (LowerBoundsIn A UNIV)"
+    by (simp add: B2 B3 maximum_is_greatest)
+  have B5:"HasAnInf1 A UNIV"
+    by (meson B2 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def complete_semilattice_sup_class.Sup_upper)
+  show "HasAnInf1 A UNIV"
+    by (simp add: B5)
+qed
+end
+(*complete_semilattice_sup \<longrightarrow> fixed A end*)
+(*complete_semilattice_sup *)
+lemma complete_semilat_sup_ex3:
+  "\<And>(A::('X::complete_semilattice_sup set)). HasLowerBound1 A UNIV \<Longrightarrow>  HasAnInf1 A UNIV"
+  by (simp add: complete_semilat_sup_ex2)
+end
+(*complete_semilattice_sup end*)
+
+
+class complete_lattice_from_semi_sup = complete_semilattice_sup + bot
+class complete_lattice_from_semi_inf = complete_semilattice_inf + top
+
+definition inf1::"'X::semilattice_inf \<Rightarrow> 'X::semilattice_inf \<Rightarrow> 'X::semilattice_inf" where
+  "inf1 x y = Inf1 {x, y} UNIV"
+
+definition sup1::"'X::semilattice_sup \<Rightarrow> 'X::semilattice_sup \<Rightarrow> 'X::semilattice_sup" where
+  "sup1 x y = Sup1 {x, y} UNIV"
+
+definition Inf4::"'X::semilattice_inf set  \<Rightarrow>'X::semilattice_inf" where
+  "Inf4 A = Inf1 A  UNIV"
+
+definition Sup4::"'X::semilattice_sup set \<Rightarrow> 'X::semilattice_sup" where
+  "Sup4 A  = Sup1 A UNIV"
+
+
 end
