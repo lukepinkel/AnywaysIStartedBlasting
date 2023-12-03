@@ -1038,6 +1038,153 @@ proof-
     by (simp add: F1 F2 F3 isfilter_def)
 qed
 
+lemma union_fchain_is_filter2:
+  assumes A0:"\<forall>i \<in> I. (isproperfilter (EF(i)))" and A1:"is_chain (EF`(I))" and A2:"EF`(I) \<noteq> {}"
+  shows "isproperfilter (Sup (EF`(I)))"
+proof-
+  let ?F="Sup (EF`(I))"
+  have F1:"upclosed ?F"
+  proof-
+    have F1_0:"\<And>a b. (a \<in> ?F \<and> a \<le> b) \<longrightarrow> b \<in> ?F"
+    proof
+      fix a b assume A3:"a \<in> ?F \<and> a \<le> b"
+      obtain Fi where B0:"Fi \<in> EF`(I) \<and> a \<in> Fi"
+      using A3 by auto
+      have B1:"b \<in> Fi"
+        by (metis A0 A3 B0 image_iff isproperfilter_def lem1 upclosed_def)
+      show B4:"b \<in> ?F"
+        using B0 B1 by blast
+      qed
+    show ?thesis
+      by (meson F1_0 upclosed_def)
+  qed
+  have F2:"pisystem ?F"
+  proof-
+    have F2_0:"\<And>f1 f2. (f1 \<in> ?F \<and> f2 \<in> ?F) \<longrightarrow> ((f1 \<inter> f2) \<in> ?F)"
+    proof
+      fix f1 f2 assume A4:"f1 \<in> ?F \<and> f2 \<in> ?F"
+      let ?f12="f1 \<inter> f2"
+      obtain Fi where B0:"Fi \<in> EF`(I) \<and> f1 \<in> Fi"
+        using A4 by blast
+      obtain Fj where B1:"Fj\<in> EF`(I) \<and> f2 \<in> Fj"
+        using A4 by blast
+      have B2:"is_chain (EF`(I))"
+        using A1 by auto
+      from B2 have B3:"(Fi \<subseteq> Fj) \<or> (Fj \<subseteq> Fi)"
+        by (meson B0 B1 is_chain_def)
+      from B3 have B4:"(f1 \<in> Fi \<and> f2 \<in> Fi) \<or> (f1 \<in>Fj \<and> f2 \<in> Fj)"
+        using B0 B1 by blast
+      from B4 have B5:"(?f12 \<in> Fi) \<or> (?f12 \<in> Fj)"
+        by (metis A0 B0 B1 image_iff isproperfilter_def lem1 pisystem_def)
+      show "((f1 \<inter> f2) \<in> ?F)"
+        using B0 B1 B5 by blast
+    qed
+    show ?thesis
+      by (meson F2_0 pisystem_def)
+  qed
+  have F3:"inhabited ?F"
+    using A0 A2 inhabited_def isfilter_def isproperfilter_def by fastforce
+  show ?thesis
+    by (metis (mono_tags, opaque_lifting) A0 F1 F2 F3 UnionE image_iff isfilter_def isproper_def isproperfilter_def)
+qed
+
+
+lemma union_fchain_is_filter3:
+  assumes A0: "\<forall>F \<in> EF. isproperfilter F" 
+      and A1: "is_chain(EF)" 
+      and A2: "EF \<noteq> {}"
+  shows "isproperfilter (Sup (EF))"
+proof -
+  let ?F = "Sup (EF)"
+  have F1: "upclosed ?F"
+  proof -
+    have F1_0: "\<And>a b. (a \<in> ?F \<and> a \<le> b) \<longrightarrow> b \<in> ?F"
+    proof
+      fix a b assume A3: "a \<in> ?F \<and> a \<le> b"
+      then obtain F where B0: "F \<in> EF \<and> a \<in> F"
+        using SUP_upper by blast
+      then have "b \<in> F"
+        using A0 A3 isfilter_def isproperfilter_def upclosed_def by blast
+      thus "b \<in> ?F"
+        using B0 SUP_upper by blast
+    qed
+    show ?thesis
+      by (meson F1_0 upclosed_def)
+  qed
+  have F2: "pisystem ?F"
+  proof -
+    have F2_0: "\<And>f1 f2. (f1 \<in> ?F \<and> f2 \<in> ?F) \<longrightarrow> (f1 \<inter> f2) \<in> ?F"
+    proof
+      fix f1 f2 assume A4: "f1 \<in> ?F \<and> f2 \<in> ?F"
+      then obtain F1 where B0: "F1 \<in> EF \<and> f1 \<in> F1"
+        by blast 
+      then obtain F2 where B1: "F2 \<in> EF \<and> f2 \<in> F2"
+        using A4 by blast 
+      from A1 have "F1 \<subseteq> F2 \<or> F2 \<subseteq> F1"
+        by (simp add: B0 B1 is_chain_def)
+      then have "f1 \<inter> f2 \<in> F1 \<or> f1 \<inter> f2 \<in> F2"
+        using A0 B0 B1 isfilter_def isproperfilter_def pisystem_def by blast
+      thus "(f1 \<inter> f2) \<in> ?F"
+        using B0 B1 by blast
+    qed
+    show ?thesis
+      by (meson F2_0 pisystem_def)
+  qed
+  have F3: "inhabited ?F"
+    using A0 A2 inhabited_def isfilter_def isproperfilter_def by fastforce
+  show ?thesis
+    by (meson A0 F1 F2 F3 UnionE isfilter_def isproper_def isproperfilter_def)
+qed
+
+
+lemma union_fchain_is_filter4:
+  assumes A0: "\<forall>F \<in> EF. isfilter F" 
+      and A1: "is_chain(EF)" 
+      and A2: "EF \<noteq> {}"
+  shows "isfilter (Sup (EF))"
+proof -
+  let ?F = "Sup (EF)"
+  have F1: "upclosed ?F"
+  proof -
+    have F1_0: "\<And>a b. (a \<in> ?F \<and> a \<le> b) \<longrightarrow> b \<in> ?F"
+    proof
+      fix a b assume A3: "a \<in> ?F \<and> a \<le> b"
+      then obtain F where B0: "F \<in> EF \<and> a \<in> F"
+        using SUP_upper by blast
+      then have "b \<in> F"
+        using A0 A3 isfilter_def isproperfilter_def upclosed_def by blast
+      thus "b \<in> ?F"
+        using B0 SUP_upper by blast
+    qed
+    show ?thesis
+      by (meson F1_0 upclosed_def)
+  qed
+  have F2: "pisystem ?F"
+  proof -
+    have F2_0: "\<And>f1 f2. (f1 \<in> ?F \<and> f2 \<in> ?F) \<longrightarrow> (f1 \<inter> f2) \<in> ?F"
+    proof
+      fix f1 f2 assume A4: "f1 \<in> ?F \<and> f2 \<in> ?F"
+      then obtain F1 where B0: "F1 \<in> EF \<and> f1 \<in> F1"
+        by blast 
+      then obtain F2 where B1: "F2 \<in> EF \<and> f2 \<in> F2"
+        using A4 by blast 
+      from A1 have "F1 \<subseteq> F2 \<or> F2 \<subseteq> F1"
+        by (simp add: B0 B1 is_chain_def)
+      then have "f1 \<inter> f2 \<in> F1 \<or> f1 \<inter> f2 \<in> F2"
+        using A0 B0 B1 isfilter_def isproperfilter_def pisystem_def by blast
+      thus "(f1 \<inter> f2) \<in> ?F"
+        using B0 B1 by blast
+    qed
+    show ?thesis
+      by (meson F2_0 pisystem_def)
+  qed
+  have F3: "inhabited ?F"
+    using A0 A2 inhabited_def isfilter_def isproperfilter_def by fastforce
+  show ?thesis
+    by (simp add: F1 F2 F3 isfilter_def)
+qed
+
+
 lemma ultrachumba0:
   assumes A0:"isultrafilter U"
   shows "(\<exists>F \<in> properfilspace. U \<subset> F) \<longrightarrow> \<not>(IsMaximal2 U properfilspace)"
@@ -1232,6 +1379,91 @@ proof-
     by (simp add: B2)
   with B3 show ?thesis
     by blast
+qed
+
+lemma ultrachumba_existence0:
+  "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> properfilspace \<and>  is_chain C) \<longrightarrow> (\<exists>U \<in>properfilspace. \<forall>c \<in>C. c \<subseteq> U)"
+proof
+  fix C::"('X set set set)" assume A00:"(C \<noteq> {} \<and> C \<subseteq> properfilspace \<and> is_chain C)"
+  have A1:"\<forall>c \<in> C. isproperfilter c"
+    using A00 properfilspace_def by blast
+  have A2:"is_chain C"
+    using A00 by auto
+  have A3:"C \<noteq> {}"
+    by (simp add: A00)
+  let ?S="Sup(C)"
+  have A4:"\<forall>c \<in> C. c \<subseteq> ?S"
+    by (simp add: complete_lattice_class.Sup_upper)
+  have A5:"isproperfilter(?S)"
+    by (simp add: A00 A1 union_fchain_is_filter3)
+  show "(\<exists>U \<in>properfilspace. \<forall>c \<in>C. c \<subseteq> U)"
+    using A4 A5 properfilspace_def by auto
+qed
+  (*"\<forall>i \<in> I. (isproperfilter (EF(i)))" and A1:"is_chain (EF`(I))" and A2:"EF`(I) \<noteq> {}"*)
+
+lemma ultrachumba_existence1:
+  "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> filspace \<and>  is_chain C) \<longrightarrow> (\<exists>U \<in>filspace. \<forall>c \<in>C. c \<subseteq> U)"
+proof
+  fix C::"('X set set set)" assume A00:"(C \<noteq> {} \<and> C \<subseteq> filspace \<and> is_chain C)"
+  have A1:"\<forall>c \<in> C. isfilter c"
+    using A00 filspace_def by auto
+  have A2:"is_chain C"
+    using A00 by auto
+  have A3:"C \<noteq> {}"
+    by (simp add: A00)
+  let ?S="Sup(C)"
+  have A4:"\<forall>c \<in> C. c \<subseteq> ?S"
+    by (simp add: complete_lattice_class.Sup_upper)
+  have A5:"isfilter(?S)"
+    by (simp add: A1 A2 A3 union_fchain_is_filter4)
+  show "(\<exists>U \<in>filspace. \<forall>c \<in>C. c \<subseteq> U)"
+    using A4 A5 filspace_def by auto
+qed
+
+lemma ultrachumba_existence2:
+  "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> properfilspace \<and>  is_chain C) \<longrightarrow> ( \<Union>C \<in> properfilspace)"
+  by (simp add: Ball_Collect properfilspace_def union_fchain_is_filter3)
+
+lemma ultrachumba_existence3:
+  "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> filspace \<and>  is_chain C) \<longrightarrow> ( \<Union>C \<in> filspace)"
+  by (simp add: Ball_Collect filspace_def union_fchain_is_filter4)
+
+
+lemma ultrachumba_existence4:
+  assumes "properfilspace \<noteq> {}"
+  shows "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain properfilspace C\<rbrakk> \<Longrightarrow> \<Union>C \<in> properfilspace"
+  by (simp add: is_chain_def subset_chain_def ultrachumba_existence2)
+
+
+lemma ultrachumba_existence5:
+  assumes "filspace \<noteq> {}"
+  shows "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain filspace C\<rbrakk> \<Longrightarrow> \<Union>C \<in> filspace"
+  by (simp add: is_chain_def subset_chain_def ultrachumba_existence3)
+
+
+lemma ultra_chumba_existence6:
+  assumes "filspace \<noteq> {}" and ch: "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain filspace C\<rbrakk> \<Longrightarrow> \<Union>C \<in> filspace"
+  shows "\<exists>M\<in>filspace. \<forall>X\<in>filspace. M \<subseteq> X \<longrightarrow> X = M"
+proof -
+  have "\<And>C. subset.chain filspace C \<Longrightarrow> \<exists>U\<in>filspace. \<forall>X\<in>C. X \<subseteq> U"
+    using fil_inter1 filspace_def by auto
+  then have "\<exists>M\<in>filspace. \<forall>X\<in>filspace. M \<subseteq> X \<longrightarrow> X = M"
+    using subset_Zorn_nonempty[of filspace] assms(1)
+    by (metis empty_iff subset.chain_empty ultrachumba_existence5)
+  thus ?thesis by blast
+qed
+
+
+lemma ultra_chumba_existence7:
+  assumes "properfilspace \<noteq> {}" and ch: "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain properfilspace C\<rbrakk> \<Longrightarrow> \<Union>C \<in> properfilspace"
+  shows "\<exists>M\<in>properfilspace. \<forall>X\<in>properfilspace. M \<subseteq> X \<longrightarrow> X = M"
+proof -
+  have "\<And>C. subset.chain properfilspace C \<Longrightarrow> \<exists>U\<in>properfilspace. \<forall>X\<in>C. X \<subseteq> U"
+    using fil_inter1 filspace_def by auto
+  then have "\<exists>M\<in>filspace. \<forall>X\<in>filspace. M \<subseteq> X \<longrightarrow> X = M"
+    using subset_Zorn_nonempty[of filspace] assms(1)
+    by (metis empty_iff subset.chain_empty ultrachumba_existence5)
+  thus ?thesis by blast
 qed
 
 end
