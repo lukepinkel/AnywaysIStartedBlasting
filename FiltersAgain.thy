@@ -66,6 +66,9 @@ definition ultrafilspace::"'X set set set" where "ultrafilspace = {U. isultrafil
 definition ischumba_alt::"'X set set \<Rightarrow> bool" where
   "ischumba_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
     
+definition finer_ultrafilters::"'X set set \<Rightarrow> 'X set set set" where
+  "finer_ultrafilters F = {U \<in> ultrafilspace. F \<subseteq> U}"
+
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
 proof-
@@ -1453,18 +1456,38 @@ proof -
   thus ?thesis by blast
 qed
 
-
-lemma ultra_chumba_existence7:
-  assumes "properfilspace \<noteq> {}" and ch: "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain properfilspace C\<rbrakk> \<Longrightarrow> \<Union>C \<in> properfilspace"
-  shows "\<exists>M\<in>properfilspace. \<forall>X\<in>properfilspace. M \<subseteq> X \<longrightarrow> X = M"
-proof -
-  have "\<And>C. subset.chain properfilspace C \<Longrightarrow> \<exists>U\<in>properfilspace. \<forall>X\<in>C. X \<subseteq> U"
-    using fil_inter1 filspace_def by auto
-  then have "\<exists>M\<in>filspace. \<forall>X\<in>filspace. M \<subseteq> X \<longrightarrow> X = M"
-    using subset_Zorn_nonempty[of filspace] assms(1)
-    by (metis empty_iff subset.chain_empty ultrachumba_existence5)
-  thus ?thesis by blast
+lemma finer_chumba:
+  assumes A0:"isfilter F" and A1:"\<forall>f \<in> F. a \<inter> f \<noteq> {}"
+  shows "\<exists>G. isfilter G \<and> F \<subseteq> G"
+proof-
+  let ?G="filgenerated({F}\<union>{{a}})"
+  have B0:"isfilter ?G"
+    by (metis Sup_insert Un_empty empty_subsetI filgenerated_def filter_base_gen_filter insert_is_Un insert_not_empty lem_clfm2b lem_clfm6 lem_clfm7 subset_antisym)
+  have B1:"F \<subseteq> ?G"
+    by (metis Sup_le_iff dual_order.trans filgenerated_def insertI1 insert_is_Un lem_clfm2b lem_upcl2)
+  show ?thesis
+    using B0 B1 by blast
 qed
+
+lemma ultra_chumba_existence6:
+  fixes \<F>::"'X set set" assumes A0:"isfilter \<F>"
+  shows "\<F> = \<Inter>(finer_ultrafilters \<F>)"
+proof-
+  let ?\<UU>="finer_ultrafilters \<F>"
+  let ?\<G>="\<Inter>?\<UU>"
+  have B0:"\<forall>\<U> \<in> ?\<UU>. \<F> \<subseteq>\<U>"
+    by (simp add: finer_ultrafilters_def)
+  have B1:"\<F> \<subseteq> ?\<G>"
+    by (simp add: B0 Inter_greatest)
+  have B2:"\<And>A. A \<notin> \<F> \<longrightarrow> A \<notin> ?\<G>"
+  proof
+    fix A assume B2_A0:"A \<notin> \<F>"
+    have B20:"\<forall>F \<in> \<F>. \<not>(F \<subseteq> A)"
+      using B2_A0 assms isfilter_def upclosed_def by auto
+    have B21:"\<forall>F \<in> \<F>. F \<inter> (UNIV - A) \<noteq> {}"
+      using B20 by fastforce
+    show "A \<notin> ?\<G>"
+  
 
 end
 
