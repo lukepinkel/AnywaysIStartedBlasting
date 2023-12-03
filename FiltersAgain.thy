@@ -58,6 +58,14 @@ definition isgrillage::"'X set set \<Rightarrow> bool" where
 definition is_chain::"'X::ord set \<Rightarrow> bool" where
   "is_chain A \<equiv> (\<forall>a1 \<in> A. \<forall>a2 \<in> A. (a1 \<le> a2 \<or> a2 \<le> a1))"
 
+definition isultrafilter::"'X set set \<Rightarrow> bool" where
+  "isultrafilter U \<equiv> (isproperfilter U \<and> IsMaximal2 U properfilspace)"
+    
+definition ultrafilspace::"'X set set set" where "ultrafilspace = {U. isultrafilter U}"
+
+definition ischumba_alt::"'X set set \<Rightarrow> bool" where
+  "ischumba_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
+    
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
 proof-
@@ -91,7 +99,6 @@ proof-
   with B0 B1 show ?thesis by (smt (verit, del_insts) CollectI cl_fmeet1_def subsetI)
 qed
 
-
 lemma lem_clfm3:
   "A \<subseteq> B \<longrightarrow> cl_fmeet2 A \<subseteq> cl_fmeet2 B"
   by (smt (verit) Pow_iff cl_fmeet2_def mem_Collect_eq subset_eq)
@@ -100,7 +107,6 @@ lemma lem_clfm3b:
   "A \<subseteq> B \<longrightarrow> cl_fmeet1 A \<subseteq> cl_fmeet1 B"
   by (smt (verit) CollectD CollectI PowD PowI cl_fmeet1_def order_trans subsetI)
   
-
 lemma lem_clfm4:
   "cl_fmeet2 A = cl_fmeet2 (cl_fmeet2 A)"
 proof-
@@ -182,8 +188,6 @@ proof-
   with P2 P3 show ?thesis by (simp add: closure_def)
 qed
 
-
-
 lemma lem_upcl1:
   "A \<subseteq> B \<longrightarrow> upclosure A \<subseteq> upclosure B"
   by (smt (verit, best) Collect_mono subsetD upclosure_def)
@@ -209,8 +213,6 @@ lemma lem_upcl5:
   "upclosed (upclosure A)"
   using lem_upcl3 upclosed_def upclosure_def by fastforce
 
-
-
 lemma finite_intersections_in_set:
   fixes X::"'X set"
   assumes A2: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> a1 \<inter> a2 \<in> C"and 
@@ -234,7 +236,6 @@ proof -
       using \<open>\<Inter> (insert x F) \<in> C\<close> by auto
   qed
 qed
-
 
 lemma finite_intersections_base:
   fixes X::"'X set"
@@ -289,7 +290,6 @@ lemma unfold_double:
   shows "\<forall>x y. (P x \<and> Q y) \<longrightarrow>  R x y"
   by (simp add: assms)
 
-
 lemma finite_intersections_in_set_app:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" shows "pisystem A \<longleftrightarrow> fcsystem A"
 proof-
@@ -310,7 +310,6 @@ proof-
   qed
   with RiL LiR show ?thesis by blast
 qed
-
 
 lemma finite_intersections_base_app:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" shows "pi_base A \<longleftrightarrow> fc_base A"
@@ -348,23 +347,19 @@ proof-
   with RiL LiR show ?thesis by blast
 qed
  
-
 lemma lem_clfm6:
   "fcsystem (cl_fmeet1 A)"
   by (metis (mono_tags, lifting) Pow_iff cl_fmeet1_def fcsystem_def lem_clfm4d mem_Collect_eq)
-
 
 lemma lem_clfm7:
   assumes "A \<noteq> {}"
   shows "fcsystem A \<longrightarrow> fc_base A"
   by (metis assms complete_lattice_class.Inf_empty fc_base_def fcsystem_def subset_antisym subset_eq top_greatest)
 
-
 lemma lem_clfm7b:
   assumes "A \<noteq> {}"
   shows "pisystem A \<longrightarrow> pi_base A"
   by (metis assms empty_subsetI finite_intersections_base_app finite_intersections_in_set_app insertI1 lem_clfm7 pi_base_def)
-
 
 lemma lem1:
   "isfilter F \<longleftrightarrow>  (pisystem F \<and> upclosed F \<and>  (UNIV \<in>  F))"
@@ -399,12 +394,10 @@ proof-
   with LtR RtL show ?thesis by blast
 qed
 
-
 lemma lem4:
   assumes A0:"isfilter F1 \<and> isfilter F2"
   shows "F1 \<subseteq> F2 \<longleftrightarrow> (\<forall>f1 \<in> F1. \<exists>f2 \<in> F2. f1 \<supseteq> f2)"
   by (meson assms in_mono lem3 subsetI upclosed_def)
-
 
 lemma fil_inter1:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)"
@@ -419,7 +412,6 @@ proof-
   with P0 P1 P2 show ?thesis  by (simp add: lem1)
 qed
 
-
 lemma fil_inter2:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"\<forall>F \<in> EF. G \<subseteq> F"
   shows "G \<subseteq> (\<Inter>EF)" by (simp add: A1 Inter_greatest)
@@ -427,7 +419,6 @@ lemma fil_inter2:
 lemma fil_inter3:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)"
   shows "Inf EF = \<Inter>EF" by simp
-
 
 lemma fil_inter4:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
@@ -453,7 +444,6 @@ proof-
   from LtR RtL have Eq:"?R = ?L" by blast
   with Eq show ?thesis by simp
 qed
-
 
 lemma fil_inter4_app:
   assumes A0:"\<forall>F \<in> \<F>. (isfilter F)" and A1:"\<F> \<noteq> {} \<and> \<F> \<noteq> {{}}"
@@ -481,8 +471,6 @@ proof-
   with Eq show ?thesis by simp
 qed
 
-    
-
 declare [[show_types]]
 
 lemma fil_inter5:
@@ -507,8 +495,6 @@ proof-
   with A0 A1 B4 show ?thesis
     by (simp add: B2 Inter_lower chumba_wumba1_inf complete_lattice_class.Inf_greatest)
 qed
-  
-
 
 lemma filter_un1:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"EF \<noteq> {} \<and> EF \<noteq> {{}}"
@@ -559,7 +545,6 @@ lemma imp_in_upclosure:
 
 lemma in_upclosure_imp:
   "\<And>a. a \<in> (upclosure A) \<longrightarrow>(\<exists>b \<in> A. a \<supseteq> b )" by (simp add: upclosure_def)
-
 
 lemma fc_base_lem1:
   assumes A0:"fc_base B"
@@ -626,8 +611,6 @@ proof-
   with B1 show ?thesis by simp
 qed
 
-      
-
 lemma fil_union5:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
   shows "isfilter (upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
@@ -644,12 +627,11 @@ lemma fil_union5c:
   shows "isfilter (filgenerated(\<F> ))"
   by (metis A0 A1 Sup_insert all_not_in_conv empty_subsetI filgenerated_def filter_base_gen_filter inhabited_def insert_absorb isfilter_def lem_clfm2b lem_clfm6 lem_clfm7 subset_antisym sup_bot.right_neutral)
 
-
 lemma fil_union6:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
   shows "\<forall>i \<in> I. ((EF(i)) \<subseteq> upclosure( cl_fmeet1 (Sup (EF`(I))) ))"
   using lem_clfm2b lem_upcl2 by fastforce
-  
+
 lemma fil_union7:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}" and A2:"isfilter G"
   shows "(\<forall>i \<in> I. ((EF(i)) \<subseteq> G)) \<longrightarrow> ( upclosure( cl_fmeet1 (Sup (EF`(I))))  \<subseteq> G)"
@@ -676,10 +658,6 @@ proof
   qed
 qed
 
-
-
-    
-
 lemma fil_sup1:
   assumes A0:"\<forall>i \<in> I. (isfilter (EF(i)))" and A1:"EF`I \<noteq> {} \<and> EF`I \<noteq> {{}}"
   shows "IsSup2 (upclosure( cl_fmeet1 (Sup (EF`(I))))) (EF`(I)) filspace "
@@ -701,7 +679,6 @@ lemma chumbuwumba1:
   assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"HasASup1 A B"
   shows "Sup1 A X \<le> Sup1 A B"
   by (metis A0 A1 A2 PowD equals0D subsetD sup1_apply_ub sup1_in_space sup_in_sub)
-
 
 lemma chumbuwumba2:
   assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"Sup1 A X \<in> B"
@@ -727,11 +704,6 @@ proof-
   have B5:" Inf1 A B = Inf1 A X" by (metis B0 B1 Inf1_def element_ub_is_greatest_alt)
   with B4 B5 show ?thesis by simp
 qed
-
-
-
-  
-  
 
 lemma mesh_lem1:
   assumes A0:"{a}# F" and A1:"a \<subseteq> b"
@@ -772,7 +744,7 @@ proof
     show ?thesis by (simp add: P0 meshes_def)
   qed
 qed
-  
+
 lemma mesh_lem5a:
   assumes "upclosed A"
   shows "(x \<notin> A) \<longleftrightarrow> {(UNIV - x)}#A"
@@ -783,7 +755,7 @@ proof-
   have RtL:"?R \<longrightarrow> ?L" using assms mesh_lem2 by blast
   with LtR RtL show ?thesis by blast
 qed
-    
+  
 lemma mesh_lem5b:
   assumes "upclosed A"
   shows "(x \<in> A) \<longleftrightarrow> \<not>({(UNIV - x)}#A)"
@@ -798,7 +770,6 @@ lemma mesh_lem5d:
   assumes "upclosed A"
   shows "((UNIV-x) \<in> A) \<longleftrightarrow> \<not>({x}#A)"
   using assms mesh_lem5c by auto
-
 
 lemma mesh_lem6a:
    "A#B \<longleftrightarrow> A \<subseteq> grill B"
@@ -816,7 +787,6 @@ lemma mesh_lem0:
 lemma mesh_lem6b:
    "A#B \<longleftrightarrow> B \<subseteq> grill A"  using mesh_lem0 mesh_lem6a by blast
 
-
 lemma mesh_lem6c:
    "A \<subseteq> grill B \<longleftrightarrow> B \<subseteq> grill A"
   using mesh_lem6a mesh_lem6b by auto 
@@ -826,12 +796,10 @@ lemma mesh_lem7a:
   shows "x \<in> A \<longleftrightarrow> (UNIV - x) \<notin> grill A"
   using assms grill_def mesh_lem5a by auto
 
-
 lemma mesh_lem7b:
   assumes "upclosed A"
   shows "x \<notin> A \<longleftrightarrow> (UNIV - x) \<in>  grill A"
   by (simp add: assms mesh_lem7a)
-
 
 lemma mesh_lem7c:
   assumes "upclosed A"
@@ -886,7 +854,6 @@ lemma rev_grill2:
   shows " grill B \<subseteq> grill A \<longrightarrow> A \<subseteq> B "
   using A0 mesh_lem7a by blast
 
-
 lemma its_grillin_time:
   assumes "A \<noteq> {}"
   shows "upclosed (grill A)"
@@ -920,7 +887,7 @@ proof-
   qed
   with B1 B2 show ?thesis by blast
 qed
-      
+     
 lemma double_bacon:
   "grill (grill A) = upclosure A"
   by (metis (no_types, opaque_lifting) dual_order.eq_iff ex_in_conv in_upclosure_imp its_grill_time2 lem_upcl2 lem_upcl5 mesh_lem6c rev_grill2)
@@ -928,7 +895,6 @@ lemma double_bacon:
 lemma double_baconator:
   "grill (grill A) = A \<longleftrightarrow> upclosed A"
   by (metis double_bacon lem_upcl2 lem_upcl5 rev_grill2 subset_antisym)
-
 
 lemma mainline_mcdonalds_fries1:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and A1:"upclosed A" and A2:"ischumba A"
@@ -989,7 +955,6 @@ lemma chumba_fucking_wumba1:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}}" and  A1:"isfiltergrill A"
   shows "upclosed A \<and> ischumba A"
   by (metis A0 A1 grilling_chumbawumba isfiltergrill_def)
-
 
 lemma chumba_fucking_wumba2:
   assumes "isproperfilter F" shows "isfiltergrill (grill F)"
@@ -1073,15 +1038,6 @@ proof-
     by (simp add: F1 F2 F3 isfilter_def)
 qed
 
-definition isultrafilter::"'X set set \<Rightarrow> bool" where
-  "isultrafilter U \<equiv> (isproperfilter U \<and> IsMaximal2 U properfilspace)"
-    
-definition ultrafilspace::"'X set set set" where "ultrafilspace = {U. isultrafilter U}"
-
-definition ischumba_alt::"'X set set \<Rightarrow> bool" where
-  "ischumba_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
-    
-
 lemma ultrachumba0:
   assumes A0:"isultrafilter U"
   shows "(\<exists>F \<in> properfilspace. U \<subset> F) \<longrightarrow> \<not>(IsMaximal2 U properfilspace)"
@@ -1090,7 +1046,6 @@ lemma ultrachumba0:
 lemma ultrachumba1:
   assumes A0:"isultrafilter U"
   shows "\<exists>a1. \<exists>a2. a1 \<union> a2 \<in> U \<and> (a1 \<notin> U \<and> a2 \<notin> U) \<longrightarrow> (\<exists>F \<in> properfilspace. U  \<subset> F) " by blast
-
 
 lemma ultrachumba4:
   fixes a1 a2
@@ -1207,13 +1162,61 @@ proof
       by (simp add: \<open>IsMaximal2 (U::'a set set) properfilspace\<close> assms isultrafilter_def)
   qed
 qed
-     
+
+lemma chumba_fucking_irene_wumba0:
+  "\<forall>U \<in> ultrafilspace. u \<notin> (grill U) \<longrightarrow> (u \<notin> U)"
+  using chumba_fucking_monotone_wumba isultrafilter_def properfilspace_def ultrafilspace_def by fastforce
+
+lemma chumba_fucking_irene_wumba1:
+  "\<forall>U \<in> ultrafilspace. (grill U) \<subseteq> U"
+  by (metis chumba_fucking_monotone_wumba chumba_fucking_wumba0 chumba_fucking_wumba4 double_baconator inhabited_def ischumba_def isfilter_def isproper_def isproperfilter_def isultrafilter_def mem_Collect_eq properfilspace_def ultrachumba4 ultrafilspace_def)
+
 lemma chumba_fucking_irene_wumba:
   "\<forall>U \<in> ultrafilspace. (grill U) = U"
-by (smt (verit, del_insts) bspec chumba_fucking_monotone_wumba chumba_fucking_wumba0 chumba_fucking_wumba4 double_bacon double_baconator inhabited_def ischumba_def isfilter_def isproper_def isproperfilter_def isultrafilter_def mem_Collect_eq properfilspace_def rev_grill1 subset_antisym ultrachumba4 ultrafilspace_def) 
+  by (simp add: IsMaximal2_def chumba_fucking_irene_wumba1 chumba_fucking_monotone_wumba isultrafilter_def subset_antisym ultrafilspace_def)
 
+(* voll vereinigungsdualer operator*)
 
-  
+lemma chumba_fucking_wumba_the_sqeakuel1:
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (upclosed (EF(i)))"
+  shows "grill ( \<Inter>i \<in> I. EF(i) ) = (\<Union>i \<in> I. grill (EF(i)))"
+proof-
+  have B0:"\<forall>i \<in> I. ( \<Inter>i \<in> I. EF(i) ) \<subseteq> (EF(i))" 
+     by (simp add: INT_lower)
+  have B1:"\<forall>i \<in> I. grill (EF(i)) \<subseteq> grill ( \<Inter>i \<in> I. EF(i) )"
+    by (simp add: B0 rev_grill1)
+  have B2:"(\<Union>i \<in> I. grill (EF(i))) \<subseteq>  grill ( \<Inter>i \<in> I. EF(i))"
+    using B1 by blast
+  have B3:"\<forall>a. a \<notin> (\<Union>i \<in> I. grill (EF(i))) \<longrightarrow> (\<forall>i \<in> I. \<exists>fi \<in> (EF(i)). fi \<inter> a = {})"
+    using A1 Int_commute mesh_lem7c by fastforce
+  have B12:"\<And>a. (a \<notin> (\<Union>i \<in> I. grill (EF(i)))) \<longrightarrow> (a \<notin> grill(( \<Inter>i \<in> I. EF(i))))"
+  proof
+  fix a assume A2:"a \<notin> (\<Union>i \<in> I. grill (EF(i)))"
+  have B4:"\<forall>i \<in> I. \<exists>fi \<in> (EF(i)). fi \<inter> a = {}"
+    by (meson A2 B3)
+  obtain f where A3:"f=(\<lambda>i. SOME fi. fi \<in> (EF(i)) \<and>  (fi \<inter> a = {}) )"
+    by simp
+  have B5:"\<forall>i \<in> I. (f i) \<inter> a = {}"
+    by (smt (verit, best) A3 B4 someI)
+  have B6:"a \<inter> (\<Union>i \<in> I. (f i)) = {}"
+    using B5 by blast
+  have B7:"\<forall>i \<in> I. (f i) \<in> (EF(i))"
+    by (smt (verit, del_insts) A3 B4 someI_ex)
+  have B8:"\<forall>i \<in> I. (f i)\<subseteq> (\<Union>i \<in> I. (f i))" by blast
+  have B9:"\<forall>i \<in> I. (\<Union>i \<in> I. (f i)) \<in> (EF(i))"
+    by (meson A1 B7 B8 upclosed_def)
+  have B10:"(\<Union>i \<in> I. (f i)) \<in>  ( \<Inter>i \<in> I. EF(i))"
+    using B9 by blast
+  have B11:"a \<notin> grill(( \<Inter>i \<in> I. EF(i)))"
+    by (meson B10 B6 mesh_lem6a meshes_def order_refl)
+  show "a \<notin> grill(( \<Inter>i \<in> I. EF(i)))"
+    using B11 by blast
+  qed
+  from B12 have B13:"(\<Union>i \<in> I. grill (EF(i))) \<supseteq>  grill ( \<Inter>i \<in> I. EF(i))" by blast
+  with B2 B13 show ?thesis
+    by blast
+qed
+
 
 end
 
