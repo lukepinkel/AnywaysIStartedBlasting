@@ -1218,5 +1218,21 @@ proof-
 qed
 
 
+lemma chumba_fucking_wumba_the_sqeakuel2:
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (upclosed (EF(i)))"
+  shows "grill ( \<Union>i \<in> I. EF(i) ) = (\<Inter>i \<in> I. grill (EF(i)))"
+proof-
+  have B0:"\<forall>a. a \<in> grill ( \<Union>i \<in> I. EF(i) ) \<longleftrightarrow> (\<forall>i \<in> I. \<forall>fi \<in> (EF(i)). a \<inter> fi \<noteq> {})"
+    by (smt (verit, ccfv_threshold) A1 Diff_disjoint UN_iff grill_def insert_subset mem_Collect_eq mesh_lem7c meshes_def order_refl)
+  have B1:"\<forall>a. (\<forall>i \<in> I. \<forall>fi \<in> (EF(i)). a \<inter> fi \<noteq> {})  \<longleftrightarrow> (\<forall>i \<in> I. a \<in> grill (EF(i)))"
+    by (meson A1 Diff_disjoint mesh_lem6a mesh_lem7c meshes_def subsetI)
+  have B2:"\<forall>a. a \<in> grill ( \<Union>i \<in> I. EF(i) ) \<longleftrightarrow>  (\<forall>i \<in> I. a \<in> grill (EF(i)))"
+    using B0 B1 by presburger
+  have B3:"\<forall>a. a \<in> grill ( \<Union>i \<in> I. EF(i) ) \<longleftrightarrow>  a \<in>  (\<Inter>i \<in> I. grill (EF(i)))"
+    by (simp add: B2)
+  with B3 show ?thesis
+    by blast
+qed
+
 end
 
