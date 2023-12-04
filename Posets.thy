@@ -2466,4 +2466,35 @@ definition Sup4::"'X::semilattice_sup set \<Rightarrow> 'X::semilattice_sup" whe
   "Sup4 A  = Sup1 A UNIV"
 
 
+
+lemma chumbuwumba1:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"HasASup1 A B"
+  shows "Sup1 A X \<le> Sup1 A B"
+  by (metis A0 A1 A2 PowD equals0D subsetD sup1_apply_ub sup1_in_space sup_in_sub)
+
+lemma chumbuwumba2:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"Sup1 A X \<in> B"
+  shows "HasASup1 A B \<and>   Sup1 A B = Sup1 A X"
+proof-
+  have B0:"Sup1 A X \<in> UpperBoundsIn A B" by (simp add: A1 A2 sup1_is_ub upper_bounds_are_upper_bounds)
+  have B1:"\<forall>u \<in> UpperBoundsIn A B. Sup1 A X \<le> u" by (metis A0 A1 UnionI Union_Pow_eq sup1_apply_ub upper_bounds_are_upper_bounds2)
+  have B2:"IsSup2 (Sup1 A X) A B" by (meson B0 B1 IsSup2_def upper_bounds_are_upper_bounds2)
+  have B3:"HasASup1 A B" by (meson B0 B1 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def)
+  have B4:" Sup1 A B = Sup1 A X"  by (metis B0 B1 Sup1_def minimum_is_least)
+  with B3 B4 show ?thesis by simp
+qed
+
+lemma chumbuwumba3:
+  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasAnInf1 A X" and A2:"Inf1 A X \<in> B"
+  shows "HasAnInf1 A B \<and>   Inf1 A B = Inf1 A X"
+proof-
+  have B0:"Inf1 A X \<in> LowerBoundsIn A B" by (simp add: A1 A2 inf1_is_lb lower_bounds_are_lower_bounds)
+  have B1:"\<forall>l \<in> LowerBoundsIn A B. l \<le> Inf1 A X"  by (metis A0 A1 UnionI Union_Pow_eq inf1_apply_lb lower_bounds_are_lower_bounds2)
+  have B2:"IsInf2 (Inf1 A X) A B" by (meson B0 B1 IsInf2_def lower_bounds_are_lower_bounds2)
+  have B3:"HasAnInf2 A B" using B2 HasAnInf2_def by blast
+  have B4:"HasAnInf1 A B" by (meson B0 B1 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def)
+  have B5:" Inf1 A B = Inf1 A X" by (metis B0 B1 Inf1_def element_ub_is_greatest_alt)
+  with B4 B5 show ?thesis by simp
+qed
+
 end
