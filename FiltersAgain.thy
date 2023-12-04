@@ -60,14 +60,26 @@ definition is_chain::"'X::ord set \<Rightarrow> bool" where
 
 definition isultrafilter::"'X set set \<Rightarrow> bool" where
   "isultrafilter U \<equiv> (isproperfilter U \<and> IsMaximal2 U properfilspace)"
-    
+
+definition is_ultra_filter::"'X set set \<Rightarrow> bool" where
+  "is_ultra_filter U \<equiv> (isfilter U \<and> IsMaximal2 U filspace)"
+        
 definition ultrafilspace::"'X set set set" where "ultrafilspace = {U. isultrafilter U}"
+
+definition ultra_filspace::"'X set set set" where "ultra_filspace = {U. is_ultra_filter U}"
 
 definition ischumba_alt::"'X set set \<Rightarrow> bool" where
   "ischumba_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
     
 definition finer_ultrafilters::"'X set set \<Rightarrow> 'X set set set" where
   "finer_ultrafilters F = {U \<in> ultrafilspace. F \<subseteq> U}"
+
+definition finer_filters::"'X set set \<Rightarrow> 'X set set set" where
+  "finer_filters F = {U \<in> filspace. F \<subseteq> U}"
+
+definition finer_properfilters::"'X set set \<Rightarrow> 'X set set set" where
+  "finer_properfilters F = {U \<in> properfilspace. F \<subseteq> U}\<union>{{}} "
+
 
 lemma lem_clfm1:
   "(cl_fmeet1 A) \<union> {UNIV} = cl_fmeet2 A" 
@@ -415,6 +427,36 @@ proof-
   with P0 P1 P2 show ?thesis  by (simp add: lem1)
 qed
 
+lemma fil_inter1b:
+  assumes A0:"\<forall>F \<in> EF. (isproperfilter F)"
+  shows "isproperfilter (\<Inter>EF) \<or> ((\<Inter>EF)=Pow UNIV)"
+proof-
+  let ?I="\<Inter>EF"
+  have B0:"\<forall>F \<in> EF. (fcsystem F \<and> upclosed F \<and> inhabited F \<and> F \<noteq> {} \<and> pisystem F \<and> UNIV \<in> F)"
+    by (metis assms empty_iff isproperfilter_def lem1 lem3)
+  have P0:"UNIV \<in> ?I" by (simp add: B0)
+  have P1:"pisystem ?I" by (meson B0 Inter_iff pisystem_def)
+  have P2:"upclosed ?I" by (meson B0 Inter_iff upclosed_def)
+  have CA:"{} \<in> (\<Inter>EF) \<or> {} \<notin>  (\<Inter>EF) " by blast
+  show ?thesis
+  proof cases
+    assume "{} \<in> (\<Inter>EF)"
+    have "(\<Inter>EF)=Pow UNIV" using Pow_UNIV \<open>{} \<in> \<Inter> (EF::'a set set set)\<close> assms isproper_def isproperfilter_def by fastforce
+    show "isproperfilter (\<Inter>EF) \<or> ((\<Inter>EF)=Pow UNIV)"
+      using \<open>\<Inter> (EF::'a set set set) = Pow UNIV\<close> by blast
+  next 
+    assume "{} \<notin> (\<Inter>EF)"
+    show "isproperfilter (\<Inter>EF) \<or> ((\<Inter>EF)=Pow UNIV)"
+      by (meson P0 P1 P2 \<open>{} \<notin> \<Inter> (EF::'a set set set)\<close> isproper_def isproperfilter_def lem1)
+  qed
+qed
+
+
+lemma fil_inter1c:
+  assumes A0:"\<forall>F \<in> EF. (isproperfilter F)"
+  shows "\<not>((\<Inter>EF)=Pow UNIV) \<longrightarrow> isproperfilter (\<Inter>EF)"
+  using assms fil_inter1b by auto
+
 lemma fil_inter2:
   assumes A0:"\<forall>F \<in> EF. (isfilter F)" and A1:"\<forall>F \<in> EF. G \<subseteq> F"
   shows "G \<subseteq> (\<Inter>EF)" by (simp add: A1 Inter_greatest)
@@ -678,35 +720,6 @@ proof-
   with B0 B1 show ?thesis  by (simp add: IsSup2_def)
 qed
 
-lemma chumbuwumba1:
-  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"HasASup1 A B"
-  shows "Sup1 A X \<le> Sup1 A B"
-  by (metis A0 A1 A2 PowD equals0D subsetD sup1_apply_ub sup1_in_space sup_in_sub)
-
-lemma chumbuwumba2:
-  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasASup1 A X" and A2:"Sup1 A X \<in> B"
-  shows "HasASup1 A B \<and>   Sup1 A B = Sup1 A X"
-proof-
-  have B0:"Sup1 A X \<in> UpperBoundsIn A B" by (simp add: A1 A2 sup1_is_ub upper_bounds_are_upper_bounds)
-  have B1:"\<forall>u \<in> UpperBoundsIn A B. Sup1 A X \<le> u" by (metis A0 A1 UnionI Union_Pow_eq sup1_apply_ub upper_bounds_are_upper_bounds2)
-  have B2:"IsSup2 (Sup1 A X) A B" by (meson B0 B1 IsSup2_def upper_bounds_are_upper_bounds2)
-  have B3:"HasASup1 A B" by (meson B0 B1 HasASup1_def HasLeast_def IsLeast_def IsLowerBound_def)
-  have B4:" Sup1 A B = Sup1 A X"  by (metis B0 B1 Sup1_def minimum_is_least)
-  with B3 B4 show ?thesis by simp
-qed
-
-lemma chumbuwumba3:
-  assumes A0:"(A \<in> (Pow X)) \<and> (B \<in> (Pow X)) \<and> (A \<subseteq> B)" and A1:"HasAnInf1 A X" and A2:"Inf1 A X \<in> B"
-  shows "HasAnInf1 A B \<and>   Inf1 A B = Inf1 A X"
-proof-
-  have B0:"Inf1 A X \<in> LowerBoundsIn A B" by (simp add: A1 A2 inf1_is_lb lower_bounds_are_lower_bounds)
-  have B1:"\<forall>l \<in> LowerBoundsIn A B. l \<le> Inf1 A X"  by (metis A0 A1 UnionI Union_Pow_eq inf1_apply_lb lower_bounds_are_lower_bounds2)
-  have B2:"IsInf2 (Inf1 A X) A B" by (meson B0 B1 IsInf2_def lower_bounds_are_lower_bounds2)
-  have B3:"HasAnInf2 A B" using B2 HasAnInf2_def by blast
-  have B4:"HasAnInf1 A B" by (meson B0 B1 HasAnInf1_def HasGreatest_def IsGreatest_def IsUpperBound_def)
-  have B5:" Inf1 A B = Inf1 A X" by (metis B0 B1 Inf1_def element_ub_is_greatest_alt)
-  with B4 B5 show ?thesis by simp
-qed
 
 lemma mesh_lem1:
   assumes A0:"{a}# F" and A1:"a \<subseteq> b"
@@ -1193,8 +1206,17 @@ lemma ultrachumba0:
   shows "(\<exists>F \<in> properfilspace. U \<subset> F) \<longrightarrow> \<not>(IsMaximal2 U properfilspace)"
   by (metis not_maximal)
 
+lemma ultrachumba0b:
+  assumes A0:"is_ultra_filter U"
+  shows "(\<exists>F \<in> properfilspace. U \<subset> F) \<longrightarrow> \<not>(IsMaximal2 U properfilspace)"
+  by (metis not_maximal)
+
 lemma ultrachumba1:
   assumes A0:"isultrafilter U"
+  shows "\<exists>a1. \<exists>a2. a1 \<union> a2 \<in> U \<and> (a1 \<notin> U \<and> a2 \<notin> U) \<longrightarrow> (\<exists>F \<in> properfilspace. U  \<subset> F) " by blast
+
+lemma ultrachumba1b:
+  assumes A0:"is_ultra_filter U"
   shows "\<exists>a1. \<exists>a2. a1 \<union> a2 \<in> U \<and> (a1 \<notin> U \<and> a2 \<notin> U) \<longrightarrow> (\<exists>F \<in> properfilspace. U  \<subset> F) " by blast
 
 lemma ultrachumba4:
@@ -1274,10 +1296,95 @@ lemma ultrachumba4:
     using A1 P by auto
 qed
 
+
+lemma ultrachumba4b:
+  fixes a1 a2
+  assumes A0:"is_ultra_filter U" and A1:"\<not>(a1 \<union> a2 \<in> U \<longrightarrow> (a1 \<in> U) \<or> (a2 \<in> U))"
+  shows "False"
+  proof-
+    have P:"(a1 \<union> a2 \<in> U) \<and> \<not>(a1 \<in> U \<or> a2 \<in> U) \<longrightarrow> False"
+    proof
+    assume A0b:"(a1 \<union> a2 \<in> U) \<and> \<not>(a1 \<in> U \<or> a2 \<in> U)" 
+    have A1:"a1 \<union> a2 \<in> U \<and> (a1 \<notin> U \<and> a2 \<notin> U)" using A0 A0b by auto
+    let ?S="{x. (a1 \<union> x) \<in> U}"
+    have P2:"U \<subset> ?S"
+      proof-
+        have P20:"a1 \<union> a2 \<in> U" using A1 by auto
+        have P21:"\<forall>u \<in> U. u \<subseteq> a1 \<union> u" by simp
+        have P22:"upclosed U" using assms isfilter_def isproperfilter_def is_ultra_filter_def by blast
+        have P23:"\<forall>u \<in> U. ((a1 \<union> u) \<in> U)" by (metis P22 Un_upper2 upclosed_def)
+        have P24:"\<forall>u \<in> U. u \<in> ?S" by (simp add: P23)
+        have P25:"U \<subseteq> ?S" using P24 by auto
+        have P26:"a2 \<in> ?S \<and> \<not>(a2 \<in> U)" by (simp add: A1)
+        have P27:"U \<subset> ?S" using P25 P26 by blast
+        with P27 show ?thesis by simp
+     qed
+    have P3:"isproperfilter ?S"
+      proof-
+        have F1:"upclosed ?S"
+          proof-
+            have F1_0:"\<And>a b. (a \<in> ?S \<and> a \<le> b) \<longrightarrow> b \<in> ?S"
+              proof
+            fix a b assume A1_0:"(a \<in> ?S \<and> a \<subseteq>  b)"
+            have F1_1:"a1 \<union> a \<in> U"
+              using A1_0 by auto
+            have F1_2:"a1 \<union> a \<subseteq> a1 \<union> b"
+              by (simp add: A1_0 sup.coboundedI2)
+            have F1_3:"upclosed U"
+              using assms isfilter_def isproperfilter_def is_ultra_filter_def by blast
+            have F1_4:"a1 \<union> b \<in> U"
+              using F1_1 F1_2 F1_3 upclosed_def by blast
+            show "b \<in> ?S"
+              by (simp add: F1_4)
+          qed
+         show ?thesis using F1_0 upclosed_def by blast
+       qed
+       have F2:"pisystem ?S"
+        proof-
+          have F2_0:"\<And>f1 f2. (f1 \<in> ?S \<and> f2 \<in> ?S) \<longrightarrow> ((f1 \<inter> f2) \<in> ?S)"
+            proof
+              fix f1 f2 assume A4:"f1 \<in> ?S \<and> f2 \<in> ?S"
+              let ?f12="f1 \<inter> f2"
+              have F2_1:"a1 \<union> f1 \<in> U \<and> a1 \<union> f2 \<in> U"
+                using A4 by auto
+               have F2_2:"(a1 \<union> f1) \<inter> (a1 \<union> f2) \<in> U"
+                 using F2_1 assms isfilter_def isproperfilter_def is_ultra_filter_def pisystem_def by blast
+               have F2_3:"(a1 \<union> f1) \<inter> (a1 \<union> f2) = a1 \<union>(f1 \<inter> f2)"
+                 by (simp add: sup_inf_distrib1)
+               have F2_4:"a1 \<union>(f1 \<inter> f2) \<in> U"
+                 using F2_2 F2_3 by auto
+               show "?f12 \<in> ?S"
+                 by (simp add: F2_4)
+           qed
+           show ?thesis using F2_0 pisystem_def by blast
+         qed
+      have F3:"inhabited ?S"
+        using A1 inhabited_def by auto
+      have F4:"isproper ?S"
+        by (simp add: A1 isproper_def)
+      show ?thesis
+        by (simp add: F1 F2 F3 F4 isfilter_def isproperfilter_def)
+      qed
+    have P4:"\<not>(is_ultra_filter U)"
+      by (metis IsMaximal2_def P2 P3 filspace_def is_ultra_filter_def isproperfilter_def mem_Collect_eq)
+    show "False"
+      using P4 assms by blast
+   qed
+  show "False"
+    using A1 P by auto
+qed
+
+
 lemma ultrachumba3:
   assumes A0:"isultrafilter U"
   shows "\<And>a1 a2. a1 \<union> a2 \<in> U \<longrightarrow> (a1 \<in> U) \<or> (a2 \<in> U)"
   using assms ultrachumba4 by auto
+ 
+
+lemma ultrachumba3b:
+  assumes A0:"is_ultra_filter U"
+  shows "\<And>a1 a2. a1 \<union> a2 \<in> U \<longrightarrow> (a1 \<in> U) \<or> (a2 \<in> U)"
+  using assms ultrachumba4b by auto
  
 
 lemma ultrachumba5:
@@ -1312,6 +1419,7 @@ proof
       by (simp add: \<open>IsMaximal2 (U::'a set set) properfilspace\<close> assms isultrafilter_def)
   qed
 qed
+
 
 lemma chumba_fucking_irene_wumba0:
   "\<forall>U \<in> ultrafilspace. u \<notin> (grill U) \<longrightarrow> (u \<notin> U)"
@@ -1456,21 +1564,101 @@ proof -
   thus ?thesis by blast
 qed
 
+
+
+
+lemma ultra_chumba_existence7:
+  assumes "finer_filters F \<noteq> {}" and ch: "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain (finer_filters F) C\<rbrakk> \<Longrightarrow> \<Union>C \<in> (finer_filters F)"
+  shows "\<exists>M\<in>(finer_filters F). \<forall>X\<in>(filspace). M \<subseteq> X \<longrightarrow> X = M"
+  by (metis (no_types, lifting) Inf_empty empty_iff fil_inter1 filspace_def finer_filters_def mem_Collect_eq top.extremum_uniqueI top_greatest)
+
+
 lemma finer_chumba:
   assumes A0:"isfilter F" and A1:"\<forall>f \<in> F. a \<inter> f \<noteq> {}"
-  shows "\<exists>G. isfilter G \<and> F \<subseteq> G"
+  shows "\<exists>G. isfilter G \<and> F \<subseteq> G \<and> a \<in> G"
 proof-
   let ?G="filgenerated({F}\<union>{{a}})"
   have B0:"isfilter ?G"
     by (metis Sup_insert Un_empty empty_subsetI filgenerated_def filter_base_gen_filter insert_is_Un insert_not_empty lem_clfm2b lem_clfm6 lem_clfm7 subset_antisym)
   have B1:"F \<subseteq> ?G"
     by (metis Sup_le_iff dual_order.trans filgenerated_def insertI1 insert_is_Un lem_clfm2b lem_upcl2)
+  have B2:"a \<in> ?G"
+    by (metis Sup_insert Un_insert_right filgenerated_def in_mono insertI1 insert_is_Un lem_clfm2b lem_upcl2)
   show ?thesis
-    using B0 B1 by blast
+    using B0 B1 B2 by blast
 qed
 
-lemma ultra_chumba_existence6:
-  fixes \<F>::"'X set set" assumes A0:"isfilter \<F>"
+lemma finer_chumba2:
+  assumes A0:"isproperfilter F" and A1:"\<forall>f \<in> F. a \<inter> f \<noteq> {}"
+  shows "\<exists>G. isproperfilter G \<and> F \<subseteq> G \<and> a \<in> G"
+proof-
+  let ?FA="{F}\<union>{{a}}"
+  let ?GA="\<Union>?FA"
+  let ?G="filgenerated(?FA)"
+  have B00:"filgenerated(?FA) = upclosure(cl_fmeet1(?GA))"
+    by (simp add: filgenerated_def)
+  have B0:"isfilter ?G"
+    by (metis Sup_insert Un_empty empty_subsetI filgenerated_def filter_base_gen_filter insert_is_Un insert_not_empty lem_clfm2b lem_clfm6 lem_clfm7 subset_antisym)
+  have B1:"F \<subseteq> ?G"
+    by (metis Sup_le_iff dual_order.trans filgenerated_def insertI1 insert_is_Un lem_clfm2b lem_upcl2)
+  have B2:"a \<in> ?G"
+    by (metis Sup_insert Un_insert_right filgenerated_def in_mono insertI1 insert_is_Un lem_clfm2b lem_upcl2)
+  have B3:"{} \<notin> F"
+    using A0 isproper_def isproperfilter_def by blast
+  have B4:"{} \<notin> cl_fmeet1(F)"
+    by (smt (verit) A0 B3 Pow_iff cl_fmeet1_def fcsystem_def isproperfilter_def lem2 mem_Collect_eq)
+  have B5:"{} \<notin> {a}"
+    using A0 A1 isproperfilter_def lem2 by auto
+  have B6:"{} \<notin> (cl_fmeet1(?GA))"
+  proof (rule ccontr)
+    assume B60:"\<not>({} \<notin> cl_fmeet1(?GA))"
+    have B61:"{} \<in> cl_fmeet1(?GA)" using B60 by blast
+    have B62:"a \<in> cl_fmeet1(?GA) \<longleftrightarrow> (\<exists>E \<in> Pow(?GA). E \<noteq> {} \<and> finite E \<and> \<Inter>E=a)"
+      using cl_fmeet1_def by auto
+    obtain E where B62:"E \<in> Pow(?GA) \<and> E \<noteq> {} \<and> finite E \<and> \<Inter>E={}"
+      by (smt (verit, best) B61 cl_fmeet1_def mem_Collect_eq)
+    let ?E0="E-{a}"
+    have B63:"finite ?E0"
+      by (simp add: B62)
+    have B64:"?E0 \<subseteq> F"
+      using B62 by blast
+    have B63:"(\<Inter>?E0) \<in> F"
+      by (metis A0 B63 B64 Inf_empty fcsystem_def isproperfilter_def lem2)
+    have B64:"(\<Inter>?E0)\<inter>a \<noteq> {}"
+      by (simp add: A1 B63 Int_commute)
+    have B65:"(\<Inter>?E0)\<inter>a = \<Inter>E"
+      using B62 by auto
+    show "False"
+      using B62 B64 B65 by presburger
+  qed
+  have B7:"{} \<notin> upclosure(cl_fmeet1(?GA))"
+    using B6 in_upclosure_imp by force
+  have B8:"{}\<notin> ?G"
+    using B7 filgenerated_def by blast
+  have B8:"isproperfilter ?G"
+    using B0 B8 isproper_def isproperfilter_def by blast
+  show ?thesis
+    using B1 B2 B8 by auto
+qed
+
+lemma isultrafilter2:
+  "isultrafilter U \<longleftrightarrow> (isproperfilter U \<and> IsMaximal1 U properfilspace)"
+  by (simp add: isultrafilter_def max1_equiv_max2)
+
+
+lemma isultrafilter3:
+  "isultrafilter U \<longleftrightarrow> (isproperfilter U \<and> (\<forall>F. isproperfilter F \<and> U \<subseteq> F \<longrightarrow> U=F))"
+  by (metis IsMaximal2_def isultrafilter_def mem_Collect_eq properfilspace_def psubsetE psubsetI)
+
+lemma improper_broslice:
+  assumes A0:"isfilter F"
+  shows "\<not>(isproper F) \<longleftrightarrow>  F=(Pow UNIV)"
+  by (metis Pow_UNIV UNIV_I UNIV_eq_I assms empty_subsetI isproper_def lem1 upclosed_def)
+
+(*
+
+lemma ultra_chumba_existence9:
+  fixes \<F>::"'X set set" assumes A0:"isproperfilter \<F>"
   shows "\<F> = \<Inter>(finer_ultrafilters \<F>)"
 proof-
   let ?\<UU>="finer_ultrafilters \<F>"
@@ -1483,11 +1671,21 @@ proof-
   proof
     fix A assume B2_A0:"A \<notin> \<F>"
     have B20:"\<forall>F \<in> \<F>. \<not>(F \<subseteq> A)"
-      using B2_A0 assms isfilter_def upclosed_def by auto
+      using B2_A0 assms isfilter_def isproperfilter_def upclosed_def by blast
     have B21:"\<forall>F \<in> \<F>. F \<inter> (UNIV - A) \<noteq> {}"
       using B20 by fastforce
+    have B22:"\<exists>G. (isproperfilter G) \<and> (\<F> \<subseteq> G)"
+      using assms isproperfilter_def by auto
+    obtain G where B23:"isproperfilter G \<and> \<F> \<subseteq> G \<and> (UNIV-A) \<in> G "
+      by (metis B21 assms finer_chumba2 inf.commute)
+    obtain Ug where B24:"isultrafilter Ug \<and> G \<subseteq> Ug"
+      by (metis CollectI Inf_empty IsMaximal2_def empty_iff fil_inter1 filspace_def is_ultra_filter_def less_le_not_le top_greatest)
+    let ?Ac="UNIV-A"
+    have "?Ac \<in> Ug"
+      using B23 B24 by blast
+    have "A \<notin> Ug"
     show "A \<notin> ?\<G>"
-  
+  *)
 
 end
 
