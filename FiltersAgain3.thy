@@ -1378,27 +1378,26 @@ lemma filter_then_prime_imp_grillid:
   shows "grill F = F"
   by (simp add: A0 A1 chumba_fucking_irene_wumba filter_is_ultra_iff_prime_alt)
 
-lemma filter_is_ultrafilter_iff:
+lemma filter_is_ultrafilter_iff1:
   assumes  A0:"is_properfilter F"
-  shows "(IsMaximal2 F proper_filterset) \<longrightarrow> (is_prime_alt F) \<longrightarrow> (grill F= F) \<longrightarrow>  (IsMaximal2 F proper_filterset)" 
-proof-
-  have B0:"(IsMaximal2 F proper_filterset) \<longleftrightarrow> is_ultrafilter F"
-    by (simp add: assms is_ultrafilter_def)
-  have B1:"is_ultrafilter F \<longrightarrow>is_prime_alt F "
-    by (simp add: assms filter_is_ultra_iff_prime_alt)
-  have B2:" is_prime_alt F \<longrightarrow> (grill F= F)"
-    by (simp add: assms filter_then_prime_imp_grillid)
-  have B3:" (grill F= F) \<longrightarrow> (IsMaximal2 F proper_filterset)"
-    by (metis B0 assms filter_is_ultra_iff_prime_alt grill_involutory_in_upsets is_prime_alt_def mesh_prop13)
-  have B4:"(IsMaximal2 F proper_filterset) \<longrightarrow> is_prime_alt F \<longrightarrow> (grill F= F) \<longrightarrow> (IsMaximal2 F proper_filterset) "
-    by simp
-  have B5:"(IsMaximal2 F proper_filterset) \<longleftrightarrow> (is_prime_alt F)"
-    using B0 B1 B2 B3 by blast
-  have B6:"(is_prime_alt F) \<longleftrightarrow> (grill F= F)"
-    using B2 B3 B5 by blast
-  show ?thesis
-    using B2 B3 B5 by blast
-qed
+  shows "(IsMaximal2 F proper_filterset) \<longleftrightarrow> (is_prime_alt F)"
+  using assms filter_is_ultra_iff_prime_alt is_ultrafilter_def by auto 
+
+lemma filter_is_ultrafilter_iff2:
+  assumes  A0:"is_properfilter F"
+  shows "(IsMaximal2 F proper_filterset) \<longleftrightarrow> (is_prime F)"
+  by (smt (verit, ccfv_threshold) CollectI Diff_empty Pow_bottom UNIV_witness assms bex_empty
+      chumba_fucking_irene_wumba filter_iff_pisystem_with_univ filter_is_ultrafilter_iff1
+      filtergrill_then_upclosed_prime grill_extensive grill_involutory_in_upsets is_prime_alt_def 
+      is_proper_def is_properfilter_def is_ultrafilter_def mesh_prop15 proper_filterset_def
+      prime_upset_is_grill_of_filter singletonI subset_antisym)
+
+lemma filter_is_ultrafilter_iff3:
+  assumes  A0:"is_properfilter F"
+  shows "(IsMaximal2 F proper_filterset) \<longleftrightarrow> (grill F = F)"
+  by (metis Pow_UNIV assms chumba_fucking_irene_wumba degenerate_grill2 empty_not_UNIV 
+      filter_is_ultrafilter_iff2 filtergrill_then_upclosed_prime is_proper_def is_properfilter_def
+       is_ultrafilter_def singletonI)
 
 
 (* voll vereinigungsdualer operator*)
