@@ -1324,7 +1324,7 @@ lemma ultrachumba4:
     using A1 P by auto
 qed
 
-lemma ultrachumba5:
+lemma filter_is_ultra_iff_prime_alt:
   assumes A0:"is_properfilter U"
   shows "is_ultrafilter U \<longleftrightarrow> is_prime_alt U"
 proof
@@ -1361,17 +1361,45 @@ qed
 lemma chumba_fucking_irene_wumba0:
   assumes "is_ultrafilter U"
   shows "\<forall>u.  u \<notin> (grill U) \<longrightarrow> (u \<notin> U)"
-  by (metis assms filter_iff_fcsystem_with_univ is_prime_alt_def is_properfilter_def is_ultrafilter_def mesh_prop14 ultrachumba5)
+  by (metis assms filter_iff_fcsystem_with_univ is_prime_alt_def is_properfilter_def is_ultrafilter_def mesh_prop14 filter_is_ultra_iff_prime_alt)
 
 
 lemma chumba_fucking_irene_wumba1:
   assumes "is_ultrafilter U"
   shows "(grill U) \<subseteq> U"
-  by (meson assms filter_iff_fcsystem_with_univ is_prime_alt_def is_properfilter_def is_ultrafilter_def mesh_prop14 subsetI ultrachumba5)
+  by (meson assms filter_iff_fcsystem_with_univ is_prime_alt_def is_properfilter_def is_ultrafilter_def mesh_prop14 subsetI filter_is_ultra_iff_prime_alt)
 
 lemma chumba_fucking_irene_wumba:
   "\<forall>U. is_ultrafilter U \<longrightarrow> (grill U) = U"
   by (simp add: IsMaximal2_def chumba_fucking_irene_wumba1 grill_extensive is_ultrafilter_def subset_antisym)
+
+lemma filter_then_prime_imp_grillid:
+  assumes A0:"is_properfilter F" and A1:"is_prime_alt F"
+  shows "grill F = F"
+  by (simp add: A0 A1 chumba_fucking_irene_wumba filter_is_ultra_iff_prime_alt)
+
+lemma filter_is_ultrafilter_iff:
+  assumes  A0:"is_properfilter F"
+  shows "(IsMaximal2 F proper_filterset) \<longrightarrow> (is_prime_alt F) \<longrightarrow> (grill F= F) \<longrightarrow>  (IsMaximal2 F proper_filterset)" 
+proof-
+  have B0:"(IsMaximal2 F proper_filterset) \<longleftrightarrow> is_ultrafilter F"
+    by (simp add: assms is_ultrafilter_def)
+  have B1:"is_ultrafilter F \<longrightarrow>is_prime_alt F "
+    by (simp add: assms filter_is_ultra_iff_prime_alt)
+  have B2:" is_prime_alt F \<longrightarrow> (grill F= F)"
+    by (simp add: assms filter_then_prime_imp_grillid)
+  have B3:" (grill F= F) \<longrightarrow> (IsMaximal2 F proper_filterset)"
+    by (metis B0 assms filter_is_ultra_iff_prime_alt grill_involutory_in_upsets is_prime_alt_def mesh_prop13)
+  have B4:"(IsMaximal2 F proper_filterset) \<longrightarrow> is_prime_alt F \<longrightarrow> (grill F= F) \<longrightarrow> (IsMaximal2 F proper_filterset) "
+    by simp
+  have B5:"(IsMaximal2 F proper_filterset) \<longleftrightarrow> (is_prime_alt F)"
+    using B0 B1 B2 B3 by blast
+  have B6:"(is_prime_alt F) \<longleftrightarrow> (grill F= F)"
+    using B2 B3 B5 by blast
+  show ?thesis
+    using B2 B3 B5 by blast
+qed
+
 
 (* voll vereinigungsdualer operator*)
 
@@ -1523,21 +1551,6 @@ proof-
     by (metis empty_iff subset.chain_empty ultrachumba_existence5)
   thus ?thesis by blast
 qed
-(*
-lemma ultra_chumba_existence6c:
-  assumes "is_properfilter F" and
-          "(finer_filters F) \<noteq> {}" and
-          "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain (finer_filters F) C\<rbrakk> \<Longrightarrow> \<Union>C \<in> filter_set"
-  shows "\<exists>M\<in>(finer_filters F). \<forall>X\<in>proper_filterset. M \<subseteq> X \<longrightarrow> X = M"
-proof-
-  have "\<And>C. subset.chain (finer_filters F) C \<Longrightarrow> \<exists>U\<in>(finer_filters F). \<forall>X\<in>C. X \<subseteq> U"
-    by (metis Union_upper all_not_in_conv assms(1) assms(2) ultrachumba_existence4c)
-  then have "\<exists>M\<in>(finer_filters F). \<forall>X\<in>proper_filterset. M \<subseteq> X \<longrightarrow> X = M"
-    using subset_Zorn_nonempty[of "(finer_filters F)"]
-  thus ?thesis by blast
-qed
-*)
-
 
 
 lemma finer_chumba:
