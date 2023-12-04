@@ -1644,10 +1644,6 @@ proof
   qed
 qed
 
-
-  
-
-
 lemma fully_eshreked1:
   assumes A0:"is_properfilter (F::('X set set))"
     shows "\<exists>G . is_ultrafilter G \<and> F \<subseteq> G"
