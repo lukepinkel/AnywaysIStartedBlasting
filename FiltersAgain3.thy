@@ -77,6 +77,15 @@ definition is_prime_alt::"'X set set \<Rightarrow> bool" where
 definition finer_filters::"'X set set \<Rightarrow> 'X set set set" where
   "finer_filters F = {U. is_properfilter U \<and> (F \<subseteq> U)}"
     
+
+definition finer_ultrafilters::"'X set set \<Rightarrow> 'X set set set" where
+  "finer_ultrafilters F = {U. is_ultrafilter U \<and> (F \<subseteq> U)}"
+    
+
+definition coarser_ultrafilters::"'X set set \<Rightarrow> 'X set set set" where
+  "coarser_ultrafilters F = {U. is_ultrafilter U \<and> (U \<subseteq> F)}"
+    
+
 abbreviation fmc::"'X set set \<Rightarrow> 'X set set" where
   "fmc A \<equiv> finite_meet_closure A"
 
@@ -1661,6 +1670,53 @@ proof-
   show ?thesis
     by (metis B2 B4 CollectD finer_filters_def isultrafilter3 order_trans)
 qed
+
+lemma finer_ultrafilters_notempty:
+  "\<And>(F::('X set set)). is_properfilter F \<Longrightarrow> (finer_ultrafilters F) \<noteq> {}"
+  by (simp add: finer_ultrafilters_def fully_eshreked1)
+
+lemma filter_is_finerultra_inter:
+  fixes F::"('X set set)"
+  assumes A0:"is_properfilter F"
+  shows "(F= \<Inter>(finer_ultrafilters F))"
+proof-
+  have "(finer_ultrafilters F) \<noteq> {}"
+    by (simp add: A0 finer_ultrafilters_notempty)
+  let ?I=" \<Inter>(finer_ultrafilters F)"
+  have L:"F \<subseteq>?I"
+    by (smt (verit) Inter_greatest finer_ultrafilters_def mem_Collect_eq)
+  have R:"F \<supseteq>?I"
+  proof (rule ccontr)
+    assume RA0:"\<not>(F \<supseteq> ?I)"
+    obtain a where RA1:"a \<in> ?I \<and> a \<notin> F" using RA0 by blast
+    let ?b="UNIV-a"
+    have RB1:"?b \<in> grill F"
+      by (meson A0 RA1 filter_iff_fcsystem_with_univ is_properfilter_def mesh_prop12)
+    have RB2:"\<forall>f \<in> F. ?b \<inter> f \<noteq> {}"
+      by (metis Int_commute RB1 grill_of_grill_is_upclosure mesh_prop8 meshes_def upc_extensive)
+    obtain G where RA2:"is_properfilter G \<and> F \<subseteq> G \<and> ?b \<in> G"
+      by (meson A0 RB2 finer_chumba2)
+    obtain U where RA3:"is_ultrafilter U \<and> G \<subseteq> U"
+      using RA2 fully_eshreked1 by blast
+    have RB3:"?b \<in> U \<and> U \<in>(finer_ultrafilters F)"
+      using RA2 RA3 finer_ultrafilters_def by auto
+    have RB4:"a \<notin> U"
+      using RA3 RB3 filter_is_ultra_iff_prime_alt is_prime_alt_def isultrafilter2 by blast
+    show "False"
+      using RA1 RB3 RB4 by blast
+  qed
+  have T:"F = \<Inter>(finer_ultrafilters F)"
+    by (simp add: L R subset_antisym)
+  show ?thesis
+    using T by blast
+qed
+   
+
+lemma filtergrill_is_coarserultra_union:
+  fixes G::"('X set set)"
+  assumes A0:"is_prime_alt G \<and> is_properfilter G"
+  shows "(G= \<Union>(coarser_ultrafilters G))"
+  using assms cSup_eq_maximum coarser_ultrafilters_def filter_is_ultra_iff_prime_alt by fastforce
 
 
 end
