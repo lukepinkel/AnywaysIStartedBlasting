@@ -1514,55 +1514,55 @@ proof
 qed
 
 
-lemma ultrachumba_existence0c:
+lemma supremum_of_finer_filters_chain:
   assumes "is_properfilter F"
   shows "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> (finer_filters F) \<and> is_chain C) \<longrightarrow> Sup(C) \<in> (finer_filters F)"
   by (smt (verit, ccfv_threshold) Ball_Collect CollectI Union_upper finer_filters_def in_mono subsetI subset_empty union_fchain_is_filter3)
 
 
-lemma ultrachumba_existence2:
+lemma union_of_proper_filter_chaim:
   "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> proper_filterset \<and>  is_chain C) \<longrightarrow> ( \<Union>C \<in> proper_filterset)"
   by (simp add: Ball_Collect proper_filterset_def union_fchain_is_filter3)
 
-lemma ultrachumba_existence3:
+lemma union_of_filter_chain:
   "\<And>(C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq> filter_set \<and>  is_chain C) \<longrightarrow> ( \<Union>C \<in> filter_set)"
   by (simp add: Ball_Collect filter_set_def union_fchain_is_filter4)
 
-lemma ultrachumba_existence3c:
+lemma union_of_finer_filter_chain:
   "\<And>(F::('X set set)) (C::('X set set set)). (C \<noteq> {} \<and> C \<subseteq>  (finer_filters F) \<and>  is_chain C) \<longrightarrow> ( \<Union>C \<in> (finer_filters F))"
   by (smt (verit, del_insts) CollectD CollectI Sup_upper2 ex_in_conv finer_filters_def subsetD union_fchain_is_filter3)
 
-lemma ultrachumba_existence4:
+lemma existence_of_union_in_proper_filter_set:
   assumes "proper_filterset \<noteq> {}"
   shows "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain proper_filterset C\<rbrakk> \<Longrightarrow> \<Union>C \<in> proper_filterset"
-  by (simp add: is_chain_def subset_chain_def ultrachumba_existence2)
+  by (simp add: is_chain_def subset_chain_def union_of_proper_filter_chaim)
 
-lemma ultrachumba_existence4c:
+lemma existence_of_union_in_finer_filters_set:
   assumes "is_properfilter F" and "(finer_filters F) \<noteq> {}"
   shows "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain (finer_filters F) C\<rbrakk> \<Longrightarrow> \<Union>C \<in> (finer_filters F)"
-  by (simp add: is_chain_def subset_chain_def ultrachumba_existence3c)
+  by (simp add: is_chain_def subset_chain_def union_of_finer_filter_chain)
 
 
-lemma ultrachumba_existence5:
+lemma existence_of_union_in_filter_set:
   assumes "filter_set \<noteq> {}"
   shows "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain filter_set C\<rbrakk> \<Longrightarrow> \<Union>C \<in> filter_set"
-  by (simp add: is_chain_def subset_chain_def ultrachumba_existence3)
+  by (simp add: is_chain_def subset_chain_def union_of_filter_chain)
 
 
-lemma ultra_chumba_existence6:
+lemma maximal_element_in_filter_set:
   assumes "filter_set \<noteq> {}" and ch: "\<And>C. \<lbrakk>C\<noteq>{}; subset.chain filter_set C\<rbrakk> \<Longrightarrow> \<Union>C \<in> filter_set"
   shows "\<exists>M\<in>filter_set. \<forall>X\<in>filter_set. M \<subseteq> X \<longrightarrow> X = M"
 proof-
   have "\<And>C. subset.chain filter_set C \<Longrightarrow> \<exists>U\<in>filter_set. \<forall>X\<in>C. X \<subseteq> U"
-    by (metis Union_upper empty_iff filter_intersection_is_filter filter_set_def mem_Collect_eq ultrachumba_existence5)
+    by (metis Union_upper empty_iff filter_intersection_is_filter filter_set_def mem_Collect_eq existence_of_union_in_filter_set)
   then have "\<exists>M\<in>filter_set. \<forall>X\<in>filter_set. M \<subseteq> X \<longrightarrow> X = M"
     using subset_Zorn_nonempty[of filter_set] assms(1)
-    by (metis empty_iff subset.chain_empty ultrachumba_existence5)
+    by (metis empty_iff subset.chain_empty existence_of_union_in_filter_set)
   thus ?thesis by blast
 qed
 
 
-lemma finer_chumba:
+lemma finer_filter_from_mesh:
   assumes A0:"is_filter F" and A1:"\<forall>f \<in> F. a \<inter> f \<noteq> {}"
   shows "\<exists>G. is_filter G \<and> F \<subseteq> G \<and> a \<in> G"
 proof-
@@ -1577,7 +1577,7 @@ proof-
     using B0 B1 B2 by blast
 qed
 
-lemma finer_chumba2:
+lemma finer_proper_filter_from_mesh:
   assumes A0:"is_properfilter F" and A1:"\<forall>f \<in> F. a \<inter> f \<noteq> {}"
   shows "\<exists>G. is_properfilter G \<and> F \<subseteq> G \<and> a \<in> G"
 proof-
@@ -1630,17 +1630,17 @@ proof-
     using B1 B2 B8 by auto
 qed
 
-lemma isultrafilter2:
+lemma ultrafilter_maximality_biconditional:
   "is_ultrafilter U \<longleftrightarrow> (is_properfilter U \<and> IsMaximal1 U proper_filterset)"
   by (simp add: is_ultrafilter_def max1_equiv_max2)
 
 
-lemma isultrafilter3:
+lemma ultrafilter_characterization_by_superset:
   "is_ultrafilter U \<longleftrightarrow> (is_properfilter U \<and> (\<forall>F. is_properfilter F \<and> U \<subseteq> F \<longrightarrow> U=F))"
   by (metis IsMaximal2_def is_ultrafilter_def mem_Collect_eq proper_filterset_def psubsetE psubsetI)
 
 
-lemma fully_eshreked0:
+lemma superset_ultrafilter_existence:
   assumes A0:"is_properfilter (F::('X set set))"
     shows "\<forall>C \<in> chains(finer_filters F).  C \<noteq> {} \<longrightarrow> \<Union>C \<in> (finer_filters F)"
 proof
@@ -1650,33 +1650,33 @@ proof
   proof
     assume A2:"C \<noteq> {} "
     show "\<Union>C \<in> (finer_filters F)"
-      by (meson A1 A2 chainsD chainsD2 is_chain_def ultrachumba_existence3c)
+      by (meson A1 A2 chainsD chainsD2 is_chain_def union_of_finer_filter_chain)
   qed
 qed
 
-lemma fully_eshreked1:
+lemma exists_finer_ultrafilter:
   assumes A0:"is_properfilter (F::('X set set))"
     shows "\<exists>G . is_ultrafilter G \<and> F \<subseteq> G"
 proof-
   let ?U="finer_filters F"
   have B0:"\<forall>C \<in> chains ?U .C \<noteq> {} \<longrightarrow> \<Union>C \<in> ?U"
-    by (simp add: assms fully_eshreked0)
+    by (simp add: assms superset_ultrafilter_existence)
   have B1:"\<exists>S\<in>?U . \<forall>X\<in>?U . S \<subseteq> X \<longrightarrow> X = S"
-    by (smt (verit, del_insts) assms empty_Collect_eq finer_filters_def order_refl subset_Zorn_nonempty ultrachumba_existence4c)
+    by (smt (verit, del_insts) assms empty_Collect_eq finer_filters_def order_refl subset_Zorn_nonempty existence_of_union_in_finer_filters_set)
   obtain S where B2:"S \<in> ?U \<and> (\<forall>X\<in>?U . S \<subseteq> X \<longrightarrow> X = S)" using B1 by blast
   have B3:"S \<noteq> {}"
     using B2 FiltersAgain3.is_filter_def finer_filters_def is_inhabited_def is_properfilter_def by fastforce
   have B4:"\<And>G. (is_properfilter G) \<and> (S \<subseteq> G) \<Longrightarrow> F \<subseteq> G \<Longrightarrow> S = G"
     by (metis B2 CollectI finer_filters_def)
   show ?thesis
-    by (metis B2 B4 CollectD finer_filters_def isultrafilter3 order_trans)
+    by (metis B2 B4 CollectD finer_filters_def ultrafilter_characterization_by_superset order_trans)
 qed
 
 lemma finer_ultrafilters_notempty:
   "\<And>(F::('X set set)). is_properfilter F \<Longrightarrow> (finer_ultrafilters F) \<noteq> {}"
-  by (simp add: finer_ultrafilters_def fully_eshreked1)
+  by (simp add: finer_ultrafilters_def exists_finer_ultrafilter)
 
-lemma filter_is_finerultra_inter:
+lemma filter_is_finer_ultra_inter:
   fixes F::"('X set set)"
   assumes A0:"is_properfilter F"
   shows "(F= \<Inter>(finer_ultrafilters F))"
@@ -1696,13 +1696,13 @@ proof-
     have RB2:"\<forall>f \<in> F. ?b \<inter> f \<noteq> {}"
       by (metis Int_commute RB1 grill_of_grill_is_upclosure mesh_prop8 meshes_def upc_extensive)
     obtain G where RA2:"is_properfilter G \<and> F \<subseteq> G \<and> ?b \<in> G"
-      by (meson A0 RB2 finer_chumba2)
+      by (meson A0 RB2 finer_proper_filter_from_mesh)
     obtain U where RA3:"is_ultrafilter U \<and> G \<subseteq> U"
-      using RA2 fully_eshreked1 by blast
+      using RA2 exists_finer_ultrafilter by blast
     have RB3:"?b \<in> U \<and> U \<in>(finer_ultrafilters F)"
       using RA2 RA3 finer_ultrafilters_def by auto
     have RB4:"a \<notin> U"
-      using RA3 RB3 filter_is_ultra_iff_prime_alt is_prime_alt_def isultrafilter2 by blast
+      using RA3 RB3 filter_is_ultra_iff_prime_alt is_prime_alt_def ultrafilter_maximality_biconditional by blast
     show "False"
       using RA1 RB3 RB4 by blast
   qed
@@ -1713,7 +1713,7 @@ proof-
 qed
    
 
-lemma filtergrill_is_coarserultra_union:
+lemma filtergrill_is_coarser_ultra_union:
   fixes G::"('X set set)"
   assumes A0:"is_prime_alt G \<and> is_properfilter G"
   shows "(G= \<Union>(coarser_ultrafilters G))"
