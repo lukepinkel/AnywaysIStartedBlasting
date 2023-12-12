@@ -237,6 +237,30 @@ proof-
     using LtR RtL by auto
 qed
 
+lemma gc_double_comp:
+  assumes A0:"is_gc2 f g"
+  shows "(f \<circ> g \<circ> f = f) \<and> (g \<circ> f \<circ> g = g)"
+proof-
+  have B0:"\<forall>x. (f x) \<le> f ( g (f (x)))"
+    using A0 gc2_iff_gc4 is_gc4_def by blast
+  have B1:"\<forall>x. x \<le> g (f (x))"
+    using A0 comp_extensive_def is_gc2_def by blast
+  have B2:"\<forall>x. f ( g (f (x))) \<le> (f x)"
+    using B1 antitone_def assms is_gc2_def by blast
+  have B3:"\<forall>x. (f x) = f ( g (f (x)))"
+    by (simp add: B0 B2 order_antisym)
+  have B4:"\<forall>y. (g y) \<le> g ( f (g (y)))"
+    using A0 gc2_iff_gc4 is_gc4_def by blast
+  have B5:"\<forall>y. y \<le> f (g (y))"
+    using A0 comp_extensive_def is_gc2_def by blast
+  have B6:"\<forall>y. g ( f (g (y))) \<le> (g y)"
+    using B5 antitone_def assms is_gc2_def by blast
+  have B7:"\<forall>y. (g y) = g ( f (g (y)))"
+    by (simp add: B4 B6 order_antisym)
+  show ?thesis
+    using B3 B7 by fastforce
+qed
+
 
 
 end
