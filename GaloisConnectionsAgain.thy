@@ -3,12 +3,17 @@ theory GaloisConnectionsAgain
 begin
 declare [[show_types]]
 
-
 definition relation_to_fgc::"('X \<times> 'Y) set \<Rightarrow> (('X set) \<Rightarrow> ('Y set))" where
   "relation_to_fgc R = (\<lambda>(A::('X set)). {(y::'Y). \<forall>x \<in> A. (x, y) \<in> R}) "
 
 definition relation_to_ggc::"('X \<times> 'Y) set \<Rightarrow> (('Y set) \<Rightarrow> ('X set))" where
   "relation_to_ggc R = (\<lambda>(B::('Y set)). {(x::'X). \<forall>y \<in> B. (x, y) \<in> R}) "
+
+definition fgc_to_relation::"(('X set) \<Rightarrow> ('Y set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "fgc_to_relation f = {(x, y). y \<in> f({x}) }"
+
+definition ggc_to_relation::"(('Y set) \<Rightarrow> ('X set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "ggc_to_relation g = {(x, y). x \<in> g({y}) }"
 
 definition is_gc2::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
   "is_gc2 f g \<equiv> (comp_extensive f g) \<and> (antitone f) \<and> (antitone g)"
@@ -159,6 +164,79 @@ proof-
     by (simp add: B4 B5 is_gc2_def)
 qed
       
+lemma relation_to_gc2:
+  "is_gc2 (relation_to_fgc R) (relation_to_ggc R)"
+  by (simp add: antitone_def comp_extensive_def is_gc2_def relation_to_fgc_def relation_to_ggc_def subset_eq)
+
+lemma gc2_to_relation1:
+  assumes "is_gc2 f g"
+  shows "fgc_to_relation f = ggc_to_relation g"
+proof-
+  have B0:"\<forall>x. \<forall>y. x \<in> (g {y}) \<longrightarrow> y \<in> (f {x})"
+    by (meson assms empty_subsetI gc2_iff_gc4 insert_subset is_gc4_def)
+  have B1:"\<forall>x. \<forall>y. y \<in> (f {x}) \<longrightarrow> x \<in> (g {y})"
+    by (meson assms empty_subsetI gc2_iff_gc4 insert_subset is_gc4_def)
+  have B2:"\<forall>x. \<forall>y. y \<in> (f {x}) \<longleftrightarrow>  x \<in> (g {y})"
+     using B0 B1 by blast
+  have B3:"\<forall>x. \<forall>y. (x, y) \<in>(fgc_to_relation f) \<longleftrightarrow> (x, y) \<in> (ggc_to_relation g)"
+    by (simp add: B2 fgc_to_relation_def ggc_to_relation_def)
+  show ?thesis
+    by (simp add: B3 set_eq_iff)
+qed
+
+lemma gc2_to_relation2:
+  assumes A0:"is_gc2 f g"
+  shows "(relation_to_fgc (fgc_to_relation f)) = f"
+proof-
+  let ?Rf="fgc_to_relation f"
+  let ?f1="relation_to_fgc ?Rf"
+  have B0:"is_join_dual f"
+    using assms gc2_imp_join_dual by auto
+  have B11:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. (a, y) \<in> ?Rf)"
+    by (simp add: relation_to_fgc_def)
+  have B12:"\<And>A y. y \<in> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. y \<in> (f {a}))"
+    by (simp add: fgc_to_relation_def relation_to_fgc_def)
+  have B13:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. {y} \<subseteq> (f {a}))"
+    by (simp add: B12)
+  have B14:"\<And>A y.{y} \<subseteq> ?f1(A) \<longleftrightarrow> ({y} \<subseteq> (\<Inter>a \<in> A. f {a}))"
+    by (simp add: B12)
+  have B15:"\<And>A. (\<Inter>a \<in> A. f {a}) = (f (\<Union>a \<in> A. {a}))"
+    by (metis B0 INT_extend_simps(10) is_join_dual_def)
+  have B16:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> ({y} \<subseteq> (f (\<Union>a \<in> A. {a})))"
+    using B14 B15 by force
+  have B17:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> {y} \<subseteq> (f A)"
+    using B16 by auto
+  have B18:"\<And>A y. y \<in> ?f1(A) \<longleftrightarrow> y \<in> (f A)"
+    using B17 by auto
+  have B19:"\<And>A.   ?f1(A) = (f A)"
+    by (simp add: B18 set_eq_iff)
+  show ?thesis
+    using B19 by auto
+qed
+
+lemma gc2_to_relation3:
+  "fgc_to_relation (relation_to_fgc R) = R"
+proof-
+  let ?f1="relation_to_fgc R"
+  let ?R1="fgc_to_relation ?f1"
+  have LtR:"\<And>x y. (x, y) \<in> ?R1 \<longrightarrow> (x, y) \<in> R"
+  proof
+    fix x y assume A0:"(x, y) \<in> ?R1"
+    have B0:"y \<in> ?f1({x})"
+      by (metis (no_types, lifting) A0 CollectD Pair_inject case_prodE fgc_to_relation_def)
+    show "(x, y) \<in> R"
+      by (metis (no_types, lifting) B0 CollectD relation_to_fgc_def singletonI)
+  qed
+  have RtL:"\<And>x y. (x, y) \<in> R \<longrightarrow> (x, y) \<in> ?R1"
+  proof
+    fix x y assume A0:"(x, y) \<in>R"
+    show "(x, y) \<in> ?R1"
+      by (simp add: A0 fgc_to_relation_def relation_to_fgc_def)
+  qed
+  show ?thesis
+    using LtR RtL by auto
+qed
+
 
 
 end
