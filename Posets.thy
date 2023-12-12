@@ -78,6 +78,9 @@ definition IsMinimal2:: "'X::order \<Rightarrow> 'X::order set \<Rightarrow> boo
 subsection Suprema
 subsubsection Sup1
 
+definition IsSup1::"'X::order\<Rightarrow> 'X::order set \<Rightarrow> 'X::order set \<Rightarrow> bool" where
+  "IsSup1 s A X \<equiv> IsLeast s (UpperBoundsIn A X)"
+
 definition Sup1 :: "'X::order set \<Rightarrow> 'X::order set  \<Rightarrow> 'X::order" where
   "Sup1 A X =  (Least  (UpperBoundsIn A X)) "
 
@@ -113,12 +116,15 @@ subsection Infima
 
 subsubsection Inf1
 
+
+definition IsInf1::"'X::order\<Rightarrow> 'X::order set \<Rightarrow> 'X::order set \<Rightarrow> bool" where
+  "IsInf1 i A X \<equiv> IsGreatest i (LowerBoundsIn A X)"
+
 definition Inf1 :: "'X::order set \<Rightarrow> 'X::order set  \<Rightarrow> 'X::order" where
   "Inf1 A X =  (Greatest  (LowerBoundsIn A X)) "
 
 definition HasAnInf1:: "'X::order set \<Rightarrow> 'X::order set \<Rightarrow> bool" where
   "HasAnInf1 A X  = HasGreatest (LowerBoundsIn A X)"
-
 
 
 subsubsection Inf2
@@ -2497,4 +2503,162 @@ proof-
   with B4 B5 show ?thesis by simp
 qed
 
+
+definition is_moore_collection::"'X set set \<Rightarrow> bool" where
+  "is_moore_collection C \<equiv> (\<forall>(S::('X set set)). (\<Inter>S)\<in>C)"
+
+definition moore_collection_to_closure::"'X set set \<Rightarrow> ('X set \<Rightarrow> 'X set)" where
+  "moore_collection_to_closure C = (\<lambda>a. \<Inter>{c \<in> C. a \<subseteq> c})"
+
+definition moore_closure_to_collection::" ('X set \<Rightarrow> 'X set) \<Rightarrow> 'X set set" where
+  "moore_closure_to_collection f = {c::('X set). \<exists>(a::('X set)). c=(f a)}"
+
+lemma moore_collection_topped:
+  assumes A0:"is_moore_collection C"
+  shows "UNIV \<in> C"
+proof-
+  have B0:"(\<Inter>{}) = UNIV" by simp
+  with B0 show ?thesis
+    by (metis assms is_moore_collection_def) 
+qed
+
+lemma moore_collection_inf:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "Inf1 S C = \<Inter>S"
+  by (meson A0 Inter_lower chumba_wumba1_inf complete_lattice_class.Inf_greatest is_moore_collection_def)
+
+lemma moore_collection_inf0:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "HasAnInf1 S C"
+proof (cases "S = {}")
+  case True
+  have B0:"C=LowerBoundsIn {} C"
+    using lower_bounds_are_lower_bounds2 by auto
+  have B1:"UNIV \<in> C"
+    by (simp add: A0 moore_collection_topped)
+  have B2:"IsGreatest UNIV (LowerBoundsIn {} C)"
+    by (metis B0 B1 IsGreatest_def IsUpperBound_def top_greatest)
+  have B3:"IsInf1 UNIV S C"
+    by (simp add: B2 IsInf1_def True)
+  then show ?thesis
+    using B2 HasAnInf1_def HasGreatest_def True by blast
+  next
+    case False
+    have B4:"IsInf1 (\<Inter>S) S C"
+      by (meson A0 IsGreatest_def IsInf1_def IsUpperBound_def equalityD2 is_moore_collection_def le_Inf_iff lower_bounds_are_lower_bounds2)
+    then show ?thesis
+      using HasAnInf1_def HasGreatest_def IsInf1_def by blast
+qed
+
+lemma moore_collection_sup0:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "(HasASup1 S C) \<and> (Sup1 S C = Inf1 (UpperBoundsIn S C) C)"
+proof-
+  let ?U="UpperBoundsIn S C"
+  have B0:"UNIV \<in> ?U"
+    by (simp add: A0 moore_collection_topped upper_bounds_are_upper_bounds2)
+  have B1:"?U \<subseteq> C"
+    by (simp add: subset_iff upper_bounds_are_upper_bounds)
+  have B2:"HasAnInf1 ?U C"
+    by (simp add: A0 B1 moore_collection_inf0)
+  obtain i where B3: "IsInf1 i ?U C"
+    using B2 HasAnInf1_def HasGreatest_def IsInf1_def by blast
+  have B4:"\<forall>u \<in> ?U. i \<le> u"
+    by (meson B3 IsGreatest_def IsInf1_def lower_bounds_are_lower_bounds2)
+  have B5:"\<forall>s \<in> S. s \<in> LowerBoundsIn ?U C"
+    by (meson A1 in_mono lower_bounds_are_lower_bounds2 upper_bounds_are_upper_bounds2)
+  have B6:"IsGreatest i (LowerBoundsIn ?U C)"
+    using B3 IsInf1_def by auto
+  have B7:"\<forall>s \<in> S. s \<le> i"
+    by (meson B5 B6 IsGreatest_def IsUpperBound_def)
+  have B8:"i \<in> C"
+    by (meson B6 IsGreatest_def lower_bounds_are_lower_bounds)
+  have B9:"i \<in> UpperBoundsIn S C"
+    by (simp add: B7 B8 upper_bounds_are_upper_bounds2)
+  have B10:"IsLeast i ?U"
+    by (simp add: B4 B9 IsLeast_def IsLowerBound_def)
+  have B11:"IsSup1 i S C"
+    using B10 IsSup1_def by auto
+  show ?thesis
+    by (metis B1 B10 B9 HasASup1_def HasLeast_def PowI Sup1_def empty_iff least_then_inf1)
+qed
+
+lemma moore_collection_sup:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "Sup1 S C = \<Inter>{a \<in> C. (\<Union>S) \<subseteq> a}"
+proof-
+  let ?U="{a \<in> C. \<Union>S \<subseteq> a}"
+  let ?s="\<Inter>?U"
+  have B0:"?s \<in> C"
+    using A0 is_moore_collection_def by blast
+  have B1:"IsLeast ?s ?U"
+    by (simp add: B0 Inter_lower IsLeast_def IsLowerBound_def le_Inf_iff)
+  have B2:"(HasASup1 S C) \<and> (Sup1 S C = Inf1 (UpperBoundsIn S C) C)"
+    by (simp add: A0 A1 moore_collection_sup0)
+  have B3:"Sup1 S C = Inf1 (UpperBoundsIn S C) C"
+    by (simp add: B2)
+  have B4:"... = \<Inter>(UpperBoundsIn S C)"
+    by (simp add: A0 moore_collection_inf subset_iff upper_bounds_are_upper_bounds2)
+  have B5:"... = \<Inter>{a \<in> C. \<forall>s \<in> S. s \<le> a}"
+    by (simp add: UpperBoundsIn_def)
+  have B6:"... = \<Inter>{a \<in> C. (\<Union>S) \<subseteq> a}"
+    by (simp add: Sup_le_iff)
+  show ?thesis
+    by (simp add: B2 B4 B5 B6)
+qed
+  
+
+lemma moore_col_closure_is_closure:
+  fixes C::"'X set set"
+  assumes A0:"is_moore_collection C"
+  shows "closure (moore_collection_to_closure C)"
+proof-
+  let ?f="moore_collection_to_closure C"
+  have P0:"isotone ?f"
+  proof-
+    have Iso:"\<And>x1 x2. (x1 \<le> x2) \<longrightarrow> (?f x1) \<le> (?f x2)"
+    proof
+      fix x1 x2 assume A1:"(x1::('X set)) \<le> (x2::('X set))"
+      have B0:"{c \<in> C. x2 \<subseteq> c} \<subseteq> {c \<in> C. x1 \<subseteq> c}"
+        using A1 by blast
+      have B1:"\<Inter>{c \<in> C. x1 \<subseteq> c} \<subseteq> \<Inter>{c \<in> C. x2 \<subseteq> c}"
+        by (simp add: B0 Inf_superset_mono)
+      show "(?f x1) \<le> (?f x2)"
+        by (simp add: B1 moore_collection_to_closure_def)
+    qed
+    show ?thesis
+      by (simp add: Iso isotone_def)
+  qed
+  have P1:"extensive ?f"
+  proof-
+    have ext:" \<forall>x . x \<le> ?f x"
+      by (simp add: le_Inf_iff moore_collection_to_closure_def)
+    show ?thesis
+      by (simp add: extensive_def ext)
+  qed
+  have P2:"idempotent ?f"
+  proof-
+    have idem:"(\<forall>x. ?f (?f x) = ?f x)"
+    proof
+      fix x 
+      have idemB0:"(?f x) \<in> C"
+        by (metis assms cInf_singleton is_moore_collection_def)
+      have idemB1:"(?f x) = \<Inter>{c \<in> C. (?f x) \<subseteq> c}"
+        using idemB0 by blast
+      have idemB2:"... = ?f (?f x)"
+        by (simp add: moore_collection_to_closure_def)
+      show "?f (?f x) = (?f x)"
+        using idemB1 idemB2 by presburger
+    qed
+    show ?thesis
+      by (simp add: idem idempotent_def)
+  qed
+  show ?thesis
+    by (simp add: P0 P1 P2 closure_unfold)
+qed
+    
 end
