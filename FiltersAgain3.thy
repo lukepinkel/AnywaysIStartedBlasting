@@ -1728,4 +1728,107 @@ lemma grill_is_galois_connection:
   by (simp add: antitone_def grill_is_antitone grill_is_compextensive is_gc2_def)
 
 
+
+definition is_moore_collection::"'X set set \<Rightarrow> bool" where
+  "is_moore_collection C \<equiv> (\<forall>(S::('X set set)). (\<Inter>S)\<in>C)"
+
+lemma moore_collection_topped:
+  assumes A0:"is_moore_collection C"
+  shows "UNIV \<in> C"
+proof-
+  have B0:"(\<Inter>{}) = UNIV" by simp
+  with B0 show ?thesis
+    by (metis assms is_moore_collection_def) 
+qed
+
+lemma moore_collection_inf:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "Inf1 S C = \<Inter>S"
+  by (meson A0 Inter_lower chumba_wumba1_inf complete_lattice_class.Inf_greatest is_moore_collection_def)
+
+lemma moore_collection_inf0:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "HasAnInf1 S C"
+proof (cases "S = {}")
+  case True
+  have B0:"C=LowerBoundsIn {} C"
+    using lower_bounds_are_lower_bounds2 by auto
+  have B1:"UNIV \<in> C"
+    by (simp add: A0 moore_collection_topped)
+  have B2:"IsGreatest UNIV (LowerBoundsIn {} C)"
+    by (metis B0 B1 IsGreatest_def IsUpperBound_def top_greatest)
+  have B3:"IsInf1 UNIV S C"
+    by (simp add: B2 IsInf1_def True)
+  then show ?thesis
+    using B2 HasAnInf1_def HasGreatest_def True by blast
+  next
+    case False
+    have B4:"IsInf1 (\<Inter>S) S C"
+      by (meson A0 IsGreatest_def IsInf1_def IsUpperBound_def equalityD2 is_moore_collection_def le_Inf_iff lower_bounds_are_lower_bounds2)
+    then show ?thesis
+      using HasAnInf1_def HasGreatest_def IsInf1_def by blast
+qed
+
+lemma moore_collection_sup0:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "(HasASup1 S C) \<and> (Sup1 S C = Inf1 (UpperBoundsIn S C) C)"
+proof-
+  let ?U="UpperBoundsIn S C"
+  have B0:"UNIV \<in> ?U"
+    by (simp add: A0 moore_collection_topped upper_bounds_are_upper_bounds2)
+  have B1:"?U \<subseteq> C"
+    by (simp add: subset_iff upper_bounds_are_upper_bounds)
+  have B2:"HasAnInf1 ?U C"
+    by (simp add: A0 B1 moore_collection_inf0)
+  obtain i where B3: "IsInf1 i ?U C"
+    using B2 HasAnInf1_def HasGreatest_def IsInf1_def by blast
+  have B4:"\<forall>u \<in> ?U. i \<le> u"
+    by (meson B3 IsGreatest_def IsInf1_def lower_bounds_are_lower_bounds2)
+  have B5:"\<forall>s \<in> S. s \<in> LowerBoundsIn ?U C"
+    by (meson A1 in_mono lower_bounds_are_lower_bounds2 upper_bounds_are_upper_bounds2)
+  have B6:"IsGreatest i (LowerBoundsIn ?U C)"
+    using B3 IsInf1_def by auto
+  have B7:"\<forall>s \<in> S. s \<le> i"
+    by (meson B5 B6 IsGreatest_def IsUpperBound_def)
+  have B8:"i \<in> C"
+    by (meson B6 IsGreatest_def lower_bounds_are_lower_bounds)
+  have B9:"i \<in> UpperBoundsIn S C"
+    by (simp add: B7 B8 upper_bounds_are_upper_bounds2)
+  have B10:"IsLeast i ?U"
+    by (simp add: B4 B9 IsLeast_def IsLowerBound_def)
+  have B11:"IsSup1 i S C"
+    using B10 IsSup1_def by auto
+  show ?thesis
+    by (metis B1 B10 B9 HasASup1_def HasLeast_def PowI Sup1_def empty_iff least_then_inf1)
+qed
+
+lemma moore_collection_sup:
+  assumes A0:"is_moore_collection C" and
+          A1:"S \<subseteq> C"
+  shows "Sup1 S C = \<Inter>{a \<in> C. (\<Union>S) \<subseteq> a}"
+proof-
+  let ?U="{a \<in> C. \<Union>S \<subseteq> a}"
+  let ?s="\<Inter>?U"
+  have B0:"?s \<in> C"
+    using A0 is_moore_collection_def by blast
+  have B1:"IsLeast ?s ?U"
+    by (simp add: B0 Inter_lower IsLeast_def IsLowerBound_def le_Inf_iff)
+  have B2:"(HasASup1 S C) \<and> (Sup1 S C = Inf1 (UpperBoundsIn S C) C)"
+    by (simp add: A0 A1 moore_collection_sup0)
+  have B3:"Sup1 S C = Inf1 (UpperBoundsIn S C) C"
+    by (simp add: B2)
+  have B4:"... = \<Inter>(UpperBoundsIn S C)"
+    by (simp add: A0 moore_collection_inf subset_iff upper_bounds_are_upper_bounds2)
+  have B5:"... = \<Inter>{a \<in> C. \<forall>s \<in> S. s \<le> a}"
+    by (simp add: UpperBoundsIn_def)
+  have B6:"... = \<Inter>{a \<in> C. (\<Union>S) \<subseteq> a}"
+    by (simp add: Sup_le_iff)
+  show ?thesis
+    by (simp add: B2 B4 B5 B6)
+qed
+  
+
 end
