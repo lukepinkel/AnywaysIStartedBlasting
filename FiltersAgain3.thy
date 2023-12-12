@@ -1,5 +1,5 @@
 theory FiltersAgain3
-  imports Main "./Posets"
+  imports Main "./Posets" "./GaloisConnectionsAgain"
 begin
 hide_type Filter.filter
 no_notation Cons (infixr "#" 65)
@@ -1718,6 +1718,14 @@ lemma filtergrill_is_coarser_ultra_union:
   assumes A0:"is_prime_alt G \<and> is_properfilter G"
   shows "(G= \<Union>(coarser_ultrafilters G))"
   using assms cSup_eq_maximum coarser_ultrafilters_def filter_is_ultra_iff_prime_alt by fastforce
+
+lemma grill_is_compextensive:
+  "comp_extensive grill grill"
+  by (simp add: comp_extensive_def grill_of_grill_is_upclosure upc_extensive)
+
+lemma grill_is_galois_connection:
+  "is_gc2 grill grill"
+  by (simp add: antitone_def grill_is_antitone grill_is_compextensive is_gc2_def)
 
 
 end
