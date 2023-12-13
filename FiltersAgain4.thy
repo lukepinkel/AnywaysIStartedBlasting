@@ -287,7 +287,7 @@ qed
 
 
 
-lemma finite_join_in_set:
+lemma finite_meet_in_set:
   fixes C::"'X::{semilattice_inf,Inf} set"
   assumes Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf}) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
           Inf_grlow:"\<And>z A. (\<And>(x::'X::{semilattice_inf,Inf}). x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A" and
@@ -365,8 +365,11 @@ proof
     using A5 by blast
   have B1:"... \<subseteq> H"
     by (simp add: A3 Sup_le_iff)
-  
+  have B2:"Inf Ex \<in> H"
+    by (smt (verit) A2 A5 B0 B1 FiltersAgain4.is_filter_def Inf_grlow dual_order.trans finite_meet_in_set is_pisystem_def local.Inf_lower)
   show "x \<in> H"
+    using A2 A5 B2 FiltersAgain4.is_filter_def is_upclosed_def by blast
+qed
 
 (*
 locale filter_of_sets = 
