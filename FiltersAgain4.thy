@@ -11,13 +11,13 @@ definition is_downdir::"'X::ord set \<Rightarrow> bool" where
 definition is_upclosed::"'X::ord set \<Rightarrow> bool" where
    "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
 
-definition is_pisystem::"'X::semilattice_inf set \<Rightarrow> bool" where
+definition is_pisystem::"'X::{ord,inf} set \<Rightarrow> bool" where
    "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (inf a b)  \<in> X)"
 
-definition is_filter::"'X::semilattice_inf set \<Rightarrow> bool" where 
+definition is_filter::"'X::{ord,inf} set \<Rightarrow> bool" where 
   "is_filter F \<equiv> (is_pisystem F \<and> is_upclosed F \<and> is_inhabited F)"
 
-definition filter_set::"'X::semilattice_inf set set" where
+definition filter_set::"'X::{ord,inf} set set" where
    "filter_set = {F. is_filter F}"
 
 definition fmc::"'X::semilattice_inf set \<Rightarrow> 'X::semilattice_inf set \<Rightarrow> 'X::semilattice_inf set" where
@@ -28,6 +28,17 @@ definition fgn::"'X::{semilattice_inf,Inf} set \<Rightarrow> 'X::{semilattice_in
 
 definition filsup::"'X::{semilattice_inf,Inf} set set \<Rightarrow> 'X::{semilattice_inf,Inf} set" where
    "filsup EF \<equiv> fgn (\<Union>EF)"
+
+definition fil_lsup::"'X::{semilattice_inf,Inf} set \<Rightarrow> 'X::{semilattice_inf,Inf} set \<Rightarrow>  'X::{semilattice_inf,Inf} set" where
+  "fil_lsup F1 F2 = filsup {F1, F2}"
+
+
+definition fil_linf::"'X::{semilattice_inf,Inf} set \<Rightarrow> 'X::{semilattice_inf,Inf} set \<Rightarrow>  'X::{semilattice_inf,Inf} set" where
+  "fil_linf F1 F2 = \<Inter> {F1, F2}"
+
+
+definition fil_Sup::"'X::{semilattice_inf,Inf,order_top} set set \<Rightarrow> 'X::{semilattice_inf,Inf,order_top} set" where
+   "fil_Sup EF \<equiv> (if EF={} then {top} else fgn (\<Union>EF))"
 
 
 lemma fmc_iff:
@@ -98,6 +109,7 @@ proof
     by (meson A0 A1 A2 FiltersAgain4.is_filter_def fmc_iff is_pisystem_def is_upclosed_def subsetD)
 qed
 
+
 lemma semilatt_inf_filter_sup2:
   fixes F1::"('X::semilattice_inf set)" and
         F2::"('X::semilattice_inf set)"
@@ -158,7 +170,7 @@ lemma filter_topped:
   shows "top \<in> F"
 proof-
   have B0:"is_inhabited F"
-    using FiltersAgain4.is_filter_def assms by blast
+    using is_filter_def A0 by blast
   obtain x where A1:"x \<in> F"
     using B0 is_inhabited_def by fastforce
   have B1:"x \<le> top" 
@@ -261,6 +273,16 @@ proof-
    show ?thesis
      by (simp add: FiltersAgain4.is_filter_def P0 P1 P2)
 qed
+
+
+lemma fil_Sup_is_filter:
+  fixes EF::"'X::{semilattice_inf,Inf,order_top} set set"
+  assumes A0:"\<forall>F \<in> EF. is_filter F" and
+          A1:"EF \<noteq> {}" and
+          Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf,order_top}) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
+          Inf_grlow:"\<And>z A. (\<And>(x::'X::{semilattice_inf,Inf,order_top}). x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A" 
+  shows "is_filter (fil_Sup EF)"
+  by (metis A0 A1 Inf_grlow fil_Sup_def filsup_def filter_sup_is_filter local.Inf_lower)
     
 lemma filter_sup_is_upper:
   fixes EF::"'X::{semilattice_inf,Inf} set set"
@@ -285,6 +307,14 @@ proof
   qed
 qed
 
+lemma fil_Sup_is_upper:
+  fixes EF::"'X::{semilattice_inf,Inf,order_top} set set"
+  assumes A0:"\<forall>F \<in> EF. is_filter F" and
+          A1:"EF \<noteq> {}" and
+          Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf,order_top}) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
+          Inf_grlow:"\<And>z A. (\<And>(x::'X::{semilattice_inf,Inf,order_top}). x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A" 
+  shows "\<forall>F \<in> EF. F \<subseteq> fil_Sup EF"
+  by (metis A0 A1 Inf_grlow fil_Sup_def filsup_def filter_sup_is_upper local.Inf_lower)
 
 
 lemma finite_meet_in_set:
@@ -351,7 +381,7 @@ lemma filter_sup_is_least_upper:
   fixes EF::"'X::{semilattice_inf,Inf} set set" and
          H::"'X::{semilattice_inf,Inf} set"
   assumes A0:"\<forall>F \<in> EF. is_filter F" and
-          A1:"EF \<noteq> {}" and
+          A1:"EF \<noteq> {}" and    
           A2:"is_filter H" and
           A3:"\<forall>F \<in> EF. F \<subseteq> H" and
           Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf}) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
@@ -370,6 +400,218 @@ proof
   show "x \<in> H"
     using A2 A5 B2 FiltersAgain4.is_filter_def is_upclosed_def by blast
 qed
+
+lemma fil_lsup_is_least_upper:
+  fixes F1::"'X::{semilattice_inf,Inf} set" and
+        F2::"'X::{semilattice_inf,Inf} set" and
+         H::"'X::{semilattice_inf,Inf} set"
+  assumes A0:"is_filter F1 \<and>  is_filter F2 \<and> is_filter H" and
+          A3:"F1 \<subseteq> H \<and> F2 \<subseteq> H" and
+          Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf}) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
+          Inf_grlow:"\<And>z A. (\<And>(x::'X::{semilattice_inf,Inf}). x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"        
+  shows "fil_lsup F1 F2 \<le> H"
+proof-
+  define EF where "EF={F1, F2}"
+  have A0:"\<forall>F \<in> EF. is_filter F"
+    using A0 EF_def by blast
+   have A1:"EF \<noteq> {}"
+     by (simp add: EF_def)
+   have A3:"\<forall>F \<in> EF. F \<subseteq> H"
+     using A3 EF_def by blast
+   show ?thesis
+     by (simp add: A3 EF_def Inf_grlow assms(1) fil_lsup_def filter_sup_is_least_upper local.Inf_lower)
+qed    
+
+         
+  
+
+lemma fil_lsup_le:
+  fixes F1::"('X::{semilattice_inf,Inf,order_top} set)" and
+        F2::"('X::{semilattice_inf,Inf,order_top} set)"
+  assumes A0:"is_filter F1 \<and> is_filter F2" and
+          Inf_lower:"\<And>(x::'X::{semilattice_inf,Inf,order_top}) A. x \<in> A \<Longrightarrow> Inf A \<le> x"  and
+          Inf_grlow:"\<And>z A. (\<And>(x::'X::{semilattice_inf,Inf,order_top}). x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
+  shows "F1 \<le>  fil_lsup F1 F2"
+proof
+  let ?S="fil_lsup F1 F2"
+  fix x assume "x \<in> F1"
+  have "x \<le> x"
+    by simp
+  have "finite {x} \<and> {x} \<in> Pow(\<Union>{F1, F2}) \<and> {x} \<noteq> {}"
+    by (simp add: \<open>(x::'X) \<in> (F1::'X set)\<close>)
+  have "Inf {x} \<le>  x"
+     by (simp add: local.Inf_lower)
+   have "?S= fgn (\<Union>{F1, F2})"
+     by (simp add: fil_lsup_def filsup_def)
+   have "\<forall>y. y \<in> ?S \<longleftrightarrow> (\<exists>S\<in>Pow(\<Union>{F1, F2}). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> y )"
+      by (simp add: \<open>fil_lsup (F1::'X set) (F2::'X set) = fgn (\<Union> {F1, F2})\<close> fgn_def)
+   show "x \<in> ?S"
+     by (meson \<open>Inf {x::'X} \<le> x\<close> \<open>\<forall>y::'X. (y \<in> fil_lsup (F1::'X set) (F2::'X set)) = (\<exists>S::'X set\<in>Pow (\<Union> {F1, F2}). finite S \<and> S \<noteq> {} \<and> Inf S \<le> y)\<close> \<open>finite {x::'X} \<and> {x} \<in> Pow (\<Union> {F1::'X set, F2::'X set}) \<and> {x} \<noteq> {}\<close>)
+qed
+
+typedef (overloaded) 'a filter = "{ F::'a::{order, inf} set . is_filter F }"
+proof -
+  have "is_pisystem (UNIV::'a set)"
+    by (simp add: is_pisystem_def)
+  then show ?thesis
+    by (metis (no_types) Collect_empty_eq FiltersAgain4.is_filter_def UNIV_I empty_not_UNIV equals0I is_inhabited_def is_upclosed_def)
+qed
+
+lemma simp_filter [simp]:
+  "is_filter (Rep_filter x)"
+  using Rep_filter by simp
+
+
+
+setup_lifting type_definition_filter
+
+
+instantiation filter :: (complete_lattice) complete_lattice
+begin
+
+lift_definition top_filter :: "'a filter" is UNIV
+  by (simp add: FiltersAgain4.is_filter_def is_inhabited_def is_pisystem_def is_upclosed_def)
+
+lift_definition bot_filter :: "'a filter" is "{top}"
+  using is_filter_def is_inhabited_def is_pisystem_def is_upclosed_def top.extremum_unique by fastforce
+
+lift_definition sup_filter :: "'a filter \<Rightarrow> 'a filter \<Rightarrow> 'a filter" is fil_lsup
+  by (simp add: complete_lattice_class.Inf_greatest complete_lattice_class.Inf_lower fil_lsup_def filter_sup_is_filter)
+
+lift_definition inf_filter :: "'a filter \<Rightarrow> 'a filter \<Rightarrow> 'a filter" is fil_linf
+  by (metis fil_linf_def filter_inf_is_filter insert_iff singletonD)
+
+lift_definition Inf_filter::"'a filter set \<Rightarrow> 'a filter" is Inter
+  by (simp add: filter_inf_is_filter)
+  
+lift_definition Sup_filter::"'a filter set \<Rightarrow> 'a filter" is fil_Sup
+  by (smt (verit) bot_filter.rep_eq complete_lattice_class.Inf_greatest complete_lattice_class.Inf_lower fil_Sup_def fil_Sup_is_filter simp_filter)
+  
+lift_definition less_eq_filter :: "'a filter \<Rightarrow> 'a filter \<Rightarrow> bool" is subset_eq .
+
+lift_definition less_filter :: "'a filter \<Rightarrow> 'a filter \<Rightarrow> bool" is subset .
+
+lemma rep_sup:
+  fixes x::"'a filter" and  y::"'a filter"
+  shows "filter.Rep_filter x \<subseteq> filter.Rep_filter (sup x y)"
+  proof
+    fix a assume "a \<in> filter.Rep_filter x "
+     have "finite {a} \<and> {a} \<in> Pow(\<Union>{filter.Rep_filter x, filter.Rep_filter y}) \<and> {a} \<noteq> {}"
+        by (simp add: \<open>(a::'a) \<in> filter.Rep_filter (x::'a FiltersAgain4.filter)\<close>)
+      have "Inf {a} \<le>  a" by simp
+      have "(fil_lsup (filter.Rep_filter x) (filter.Rep_filter y)) = filsup {(filter.Rep_filter x), (filter.Rep_filter y)}"
+        by (simp add: fil_lsup_def)
+      have "fil_lsup (filter.Rep_filter x) (filter.Rep_filter y) = fgn (\<Union>{(filter.Rep_filter x), (filter.Rep_filter y)})"
+        by (simp add: fil_lsup_def filsup_def)
+      have "\<forall>z. z \<in> (fil_lsup (filter.Rep_filter x) (filter.Rep_filter y)) \<longleftrightarrow> (\<exists>S\<in>Pow(\<Union>{(filter.Rep_filter x), (filter.Rep_filter y)}). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> z )"
+        by (simp add: \<open>fil_lsup (FiltersAgain4.filter.Rep_filter (x::'a FiltersAgain4.filter)) (FiltersAgain4.filter.Rep_filter (y::'a FiltersAgain4.filter)) = fgn (\<Union> {FiltersAgain4.filter.Rep_filter x, FiltersAgain4.filter.Rep_filter y})\<close> fgn_def)
+    show "a \<in> FiltersAgain4.filter.Rep_filter (sup x y)" 
+        by (metis \<open>Inf {a::'a} \<le> a\<close> \<open>\<forall>z::'a. (z \<in> fil_lsup (FiltersAgain4.filter.Rep_filter (x::'a FiltersAgain4.filter)) (FiltersAgain4.filter.Rep_filter (y::'a FiltersAgain4.filter))) = (\<exists>S::'a set \<in>Pow (\<Union> {FiltersAgain4.filter.Rep_filter x, FiltersAgain4.filter.Rep_filter y}). finite S \<and> S \<noteq> {} \<and> Inf S \<le> z)\<close> \<open>finite {a::'a} \<and> {a} \<in> Pow (\<Union> {FiltersAgain4.filter.Rep_filter (x::'a FiltersAgain4.filter), FiltersAgain4.filter.Rep_filter (y::'a FiltersAgain4.filter)}) \<and> {a} \<noteq> {}\<close> sup_filter.rep_eq)
+qed
+  
+
+
+lemma rep_sup_asym:
+  fixes x::"'a filter" and  y::"'a filter"
+  shows " filter.Rep_filter (sup x y) = filter.Rep_filter (sup y x)"
+  by (simp add: fil_lsup_def insert_commute sup_filter.rep_eq)
+
+lemma rep_sup_ub:
+  fixes y::"'a filter" and x::"'a filter" and z::"'a filter"
+  assumes "filter.Rep_filter(y) \<le> filter.Rep_filter(x) \<and> filter.Rep_filter(z) \<le> filter.Rep_filter(x)"
+  shows "filter.Rep_filter(sup y z) \<le> filter.Rep_filter(x)"
+proof-
+ have A0:"is_filter (filter.Rep_filter y) \<and> is_filter (filter.Rep_filter z) \<and> is_filter (filter.Rep_filter x)"
+   by simp
+  have A1:"filter.Rep_filter(y) \<le> filter.Rep_filter(x) \<and> filter.Rep_filter(z) \<le> filter.Rep_filter(x)"
+    by (simp add: assms)
+  have A2:"fil_lsup (filter.Rep_filter(y)) (filter.Rep_filter(z)) \<le> (filter.Rep_filter x)"
+    by (simp add: assms complete_lattice_class.Inf_greatest complete_lattice_class.Inf_lower fil_lsup_is_least_upper)
+  show ?thesis
+    by (simp add: A2 sup_filter.rep_eq)
+qed
+ 
+lemma rep_fil_Sup_is_upper:
+  fixes x::"'a filter" and 
+        A::"'a filter set"
+  shows "x \<in> A \<longrightarrow> x \<le> Sup A"
+proof
+  fix x assume "x \<in> A"
+  have "\<forall>a \<in> A. is_filter (filter.Rep_filter a)"
+    by simp
+  have "A \<noteq> {}"
+    using \<open>(x::'a FiltersAgain4.filter) \<in> (A::'a FiltersAgain4.filter set)\<close> by auto
+  have "\<forall>a \<in> A. (filter.Rep_filter a) \<subseteq> fil_Sup {b. \<exists>c \<in> A. b=filter.Rep_filter c }"
+    by (smt (z3) bex_empty complete_lattice_class.Inf_greatest complete_lattice_class.Inf_lower fil_Sup_def filsup_def filter_sup_is_upper mem_Collect_eq simp_filter)
+  have " {b. \<exists>c \<in> A. b=filter.Rep_filter c } =  (filter.Rep_filter`A)"
+    by (simp add: image_def)
+  have "(filter.Rep_filter (Sup A)) =  fil_Sup (filter.Rep_filter`A)"
+    using Sup_filter.rep_eq by auto
+  have "filter.Rep_filter x \<le> (filter.Rep_filter (Sup A))"
+    using \<open>(x::'a FiltersAgain4.filter) \<in> (A::'a FiltersAgain4.filter set)\<close> \<open>FiltersAgain4.filter.Rep_filter (Sup (A::'a FiltersAgain4.filter set)) = fil_Sup (FiltersAgain4.filter.Rep_filter ` A)\<close> \<open>\<forall>a::'a FiltersAgain4.filter\<in>A::'a FiltersAgain4.filter set. FiltersAgain4.filter.Rep_filter a \<subseteq> fil_Sup {b::'a set. \<exists>c::'a FiltersAgain4.filter\<in>A. b = FiltersAgain4.filter.Rep_filter c}\<close> \<open>{b::'a set. \<exists>c::'a FiltersAgain4.filter\<in>A::'a FiltersAgain4.filter set. b = FiltersAgain4.filter.Rep_filter c} = FiltersAgain4.filter.Rep_filter ` A\<close> by fastforce
+  show "x \<le> Sup A"
+    using FiltersAgain4.less_eq_filter.rep_eq \<open>FiltersAgain4.filter.Rep_filter (x::'a FiltersAgain4.filter) \<subseteq> FiltersAgain4.filter.Rep_filter (Sup (A::'a FiltersAgain4.filter set))\<close> by blast
+qed
+
+lemma rep_filter_sup_is_least_upper:
+  fixes EF::"'a filter set" and
+         H::"'a filter"
+  assumes A0:"\<forall>F \<in> EF. F \<le>  H"
+  shows "(Sup EF) \<le>  H"
+proof-
+  have "(filter.Rep_filter (Sup EF)) =  fil_Sup (filter.Rep_filter`EF)"
+    using Sup_filter.rep_eq by blast
+  have "\<forall>F \<in> (filter.Rep_filter`EF). is_filter F"
+    using FiltersAgain4.filter.Rep_filter by blast
+  have "is_filter (filter.Rep_filter(H))"
+    by simp
+  have "\<forall>F \<in> (filter.Rep_filter`EF). F \<subseteq> (filter.Rep_filter H)"
+    using assms less_eq_filter.rep_eq by fastforce
+  have "fil_Sup (filter.Rep_filter`EF) \<subseteq>  (filter.Rep_filter H)"
+  proof (cases "(filter.Rep_filter`EF) = {}")
+    case True
+    then show ?thesis
+      by (simp add: fil_Sup_def filter_topped)
+  next
+    case False
+    have "fil_Sup (filter.Rep_filter`EF)  = filsup (filter.Rep_filter`EF)"
+      by (metis False fil_Sup_def filsup_def)
+    have "filsup (filter.Rep_filter`EF) \<subseteq>  (filter.Rep_filter H)"
+      by (metis False \<open>FiltersAgain4.is_filter (FiltersAgain4.filter.Rep_filter (H::'a FiltersAgain4.filter))\<close> \<open>\<forall>F::'a set \<in>FiltersAgain4.filter.Rep_filter ` (EF::'a FiltersAgain4.filter set). F \<subseteq> FiltersAgain4.filter.Rep_filter (H::'a FiltersAgain4.filter)\<close> \<open>\<forall>F::'a set \<in>FiltersAgain4.filter.Rep_filter ` (EF::'a FiltersAgain4.filter set). FiltersAgain4.is_filter F\<close> complete_lattice_class.Inf_greatest complete_lattice_class.Inf_lower filter_sup_is_least_upper)
+    then show ?thesis
+      using \<open>fil_Sup (FiltersAgain4.filter.Rep_filter ` (EF::'a FiltersAgain4.filter set)) = filsup (FiltersAgain4.filter.Rep_filter ` EF)\<close> by blast 
+  qed
+  show ?thesis
+    by (simp add: FiltersAgain4.less_eq_filter.rep_eq \<open>FiltersAgain4.filter.Rep_filter (Sup (EF::'a FiltersAgain4.filter set)) = fil_Sup (FiltersAgain4.filter.Rep_filter ` EF)\<close> \<open>fil_Sup (FiltersAgain4.filter.Rep_filter ` (EF::'a FiltersAgain4.filter set)) \<subseteq> FiltersAgain4.filter.Rep_filter (H::'a FiltersAgain4.filter)\<close>)
+qed
+
+
+instance
+  apply intro_classes
+  apply (simp add: less_eq_filter.rep_eq less_filter.rep_eq subset_not_subset_eq)
+  apply (simp add: less_eq_filter.rep_eq)
+  using less_eq_filter.rep_eq apply fastforce
+  apply (simp add: FiltersAgain4.filter.Rep_filter_inject FiltersAgain4.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain4.inf_filter.rep_eq FiltersAgain4.less_eq_filter.rep_eq fil_linf_def)
+  apply (simp add: FiltersAgain4.inf_filter.rep_eq FiltersAgain4.less_eq_filter.rep_eq fil_linf_def)
+  apply (simp add: FiltersAgain4.inf_filter.rep_eq FiltersAgain4.less_eq_filter.rep_eq fil_linf_def)
+  apply (simp add: FiltersAgain4.filter.Rep_filter_inject FiltersAgain4.less_eq_filter.rep_eq)
+  apply (simp add: rep_sup)
+  apply (simp add: less_eq_filter.rep_eq rep_sup rep_sup_asym)
+  apply (simp add: FiltersAgain4.less_eq_filter.rep_eq rep_sup_ub)
+  apply (simp add: FiltersAgain4.less_eq_filter.rep_eq INF_lower Inf_filter.rep_eq)
+  apply (simp add: FiltersAgain4.Inf_filter.rep_eq FiltersAgain4.less_eq_filter.rep_eq le_Inf_iff)
+  apply (simp add: rep_fil_Sup_is_upper)
+  apply (simp add: FiltersAgain4.rep_filter_sup_is_least_upper)
+  apply (simp add: FiltersAgain4.top_filter_def local.Inf_filter_def)
+  by (smt (verit, ccfv_SIG) FiltersAgain4.filter.Rep_filter_inverse Sup_filter.rep_eq bot_filter.rep_eq fil_Sup_def image_empty)
+end
+  
+  
+  
+
+  
+ 
 
 (*
 locale filter_of_sets = 
