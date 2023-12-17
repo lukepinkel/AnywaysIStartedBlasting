@@ -1,5 +1,5 @@
 theory GaloisConnectionsAgain
-  imports Main "./Posets" 
+  imports Main "./Closures" "./Posets"
 begin
 declare [[show_types]]
 
@@ -259,6 +259,35 @@ proof-
     by (simp add: B4 B6 order_antisym)
   show ?thesis
     using B3 B7 by fastforce
+qed
+
+lemma gc_composed_idempotent1:
+  assumes A0:"is_gc2 f g"
+  shows "(f \<circ> g) \<circ> (f \<circ> g) = (f \<circ> g)"
+  by (simp add: assms fun.map_comp gc_double_comp)
+
+lemma gc_composed_idempotent2:
+  assumes A0:"is_gc2 f g"
+  shows "(g \<circ> f) \<circ> (g \<circ> f) = (g \<circ> f)"
+  by (simp add: assms gc_double_comp o_assoc)
+
+lemma gc_closure:
+  assumes A0:"is_gc2 f g"
+  shows "is_closure (f \<circ> g) \<and> is_closure (g \<circ> f)"
+proof-
+  let ?h1="f \<circ> g" and ?h2="g \<circ> f"
+  have C0:"is_extensive ?h1 \<and> is_extensive ?h2"
+    by (metis assms comp_apply comp_extensive_def is_extensive_def is_gc2_def)
+  have C1:"is_isotone ?h1 \<and> is_isotone ?h2"
+    by (metis (mono_tags, lifting) antitone_def assms comp_apply is_gc2_def is_isotone_def)
+  have C20:"?h1 \<circ> ?h1 = ?h1"
+    by (simp add: assms gc_composed_idempotent1)
+  have C21:"?h2 \<circ> ?h2 = ?h2"
+    by (simp add: assms gc_composed_idempotent2)
+  have C2:"is_idempotent ?h1 \<and> is_idempotent ?h2"
+    by (simp add: C20 C21 idempotent_req)
+  show ?thesis
+    by (simp add: C0 C1 C2 is_closure_def)
 qed
 
 
