@@ -384,8 +384,33 @@ qed
 definition filter_sup::"'X::complete_semilattice_inf set set \<Rightarrow> 'X::complete_semilattice_inf set" where
   "filter_sup EF \<equiv> filter_closure(Sup(EF))"
 
-
-
+lemma filters_in_filter_cl_range:
+  fixes F::"'X::complete_semilattice_inf set"
+  assumes A0:"is_filter F"
+  shows "filter_closure F = F"
+proof-
+  have B0:"filter_closure F \<subseteq> F"
+  proof-
+    have B00:"filter_closure F = {a. \<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> a}"
+      by (simp add: filter_closure_def)
+    have B01:"\<And>a. (\<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> a) \<longrightarrow> a \<in> F"
+    proof
+      fix a assume B01A0:"(\<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> a)"
+      obtain S where B01A1:"S \<in> Pow(F) \<and> finite S \<and> S \<noteq> {} \<and> (Inf S) \<le> a"
+        using B01A0 by force
+      have B01B0:"Inf S \<in> F"
+        by (meson B01A1 FiltersAgain6.is_filter_def PowD assms downdir_inf finite_meet_in_set)
+      show "a \<in> F"
+        using B01A1 B01B0 is_filter_def assms is_upclosed_imp by blast
+    qed
+    show ?thesis
+      by (meson B01 filter_closure_obtains0 subsetI)
+  qed
+  have B1:"F \<subseteq> filter_closure F"
+    by (simp add: filter_closure_extensive)
+  show ?thesis
+    by (simp add: B0 B1 subset_antisym)
+qed
 
     
 
