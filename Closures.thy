@@ -29,6 +29,11 @@ definition is_isotone::"('X::ord \<Rightarrow> 'Y::ord) \<Rightarrow> bool" wher
 definition is_idempotent::"('X::ord \<Rightarrow> 'X::ord) \<Rightarrow> bool" where
   "is_idempotent f \<equiv> (\<forall>x.  (f x)= f (f x))"
 
+lemma idempotent_req:
+  assumes "f \<circ> f = f"
+  shows "is_idempotent f"
+  by (metis assms comp_apply is_idempotent_def)
+
 definition is_closure::"('X::ord \<Rightarrow> 'X::ord) \<Rightarrow> bool" where
   "is_closure f \<equiv> (is_extensive f) \<and> (is_isotone f) \<and> (is_idempotent f)"
 
