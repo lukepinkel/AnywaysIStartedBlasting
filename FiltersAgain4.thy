@@ -40,6 +40,9 @@ definition fil_linf::"'X::{semilattice_inf,Inf} set \<Rightarrow> 'X::{semilatti
 definition fil_Sup::"'X::{semilattice_inf,Inf,order_top} set set \<Rightarrow> 'X::{semilattice_inf,Inf,order_top} set" where
    "fil_Sup EF \<equiv> (if EF={} then {top} else fgn (\<Union>EF))"
 
+lemma fgn_iff3:
+  "\<And>x. x \<in> fgn A \<longleftrightarrow> (\<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> x)"
+  by (simp add: fgn_def)
 
 lemma fmc_iff:
   "\<forall>x. x \<in> fmc A B \<longleftrightarrow> (\<exists>a \<in> A. \<exists>b \<in> B. (inf a b) \<le> x)"
@@ -72,9 +75,9 @@ proof-
   proof
     fix x assume A1:"x \<in> F1"
     have B0:"is_inhabited F2"
-      using A0 FiltersAgain4.is_filter_def by auto
+      using A0 is_filter_def by auto
     obtain y where A2:"y \<in> F2"
-      using A0 FiltersAgain4.is_filter_def is_inhabited_def by fastforce
+      using A0 is_filter_def is_inhabited_def by fastforce
     have B1:"inf x y \<le> x"
       by simp
     show "x \<in> fmc F1 F2"
@@ -84,9 +87,9 @@ proof-
   proof
     fix x assume A3:"x \<in> F2"
     have B0:"is_inhabited F1"
-      using A0 FiltersAgain4.is_filter_def by auto
+      using A0 is_filter_def by auto
     obtain y where A2:"y \<in> F1"
-      using A0 FiltersAgain4.is_filter_def is_inhabited_def by fastforce
+      using A0 is_filter_def is_inhabited_def by fastforce
     have B1:"inf x y \<le> x"
       by simp
     show "x \<in> fmc F1 F2"
@@ -106,7 +109,7 @@ lemma semilatt_inf_filter_sup1:
 proof
   fix x assume A2:"x \<in> fmc F1 F2"
   show "x \<in> F3"
-    by (meson A0 A1 A2 FiltersAgain4.is_filter_def fmc_iff is_pisystem_def is_upclosed_def subsetD)
+    by (meson A0 A1 A2 is_filter_def fmc_iff is_pisystem_def is_upclosed_def subsetD)
 qed
 
 
@@ -120,7 +123,7 @@ proof-
   have P0:"is_inhabited ?F"
   proof-
     have B0:"is_inhabited F1 \<and> is_inhabited F2"
-      using FiltersAgain4.is_filter_def assms by auto
+      using is_filter_def assms by auto
     obtain x y where B1:"x \<in> F1 \<and> y \<in> F2"
       using B0 is_inhabited_def by fastforce
     have B2:"inf x y \<in> ?F"
@@ -142,7 +145,7 @@ proof-
       have B5:"... = inf (inf a1 b1) (inf a2 b2)"
         by (simp add: inf_assoc)
       have B6:"(inf a1 b1) \<in> F1 \<and> (inf a2 b2) \<in> F2 \<and>  inf (inf a1 b1) (inf a2 b2) \<le> inf a b "
-        by (metis A2 A3 B4 B5 FiltersAgain4.is_filter_def assms inf_mono is_pisystem_def)
+        by (metis A2 A3 B4 B5 is_filter_def assms inf_mono is_pisystem_def)
       show "(inf a b) \<in> ?F"
         using B6 fmc_iff by blast
      qed
@@ -161,7 +164,7 @@ proof-
       using P2B0 is_upclosed_def by blast
   qed
   show ?thesis
-    by (simp add: FiltersAgain4.is_filter_def P0 P1 P2)
+    by (simp add: is_filter_def P0 P1 P2)
 qed
 
 lemma filter_topped:
@@ -176,7 +179,7 @@ proof-
   have B1:"x \<le> top" 
     by simp
   show ?thesis
-    using A1 B1 FiltersAgain4.is_filter_def assms is_upclosed_def by blast
+    using A1 B1 is_filter_def assms is_upclosed_def by blast
 qed
   
 
@@ -192,11 +195,11 @@ proof-
   have P0:"is_inhabited ?I"
     using B0 is_inhabited_def by fastforce
   have P1:"is_pisystem ?I"
-    by (meson FiltersAgain4.is_filter_def Inter_iff assms is_pisystem_def)
+    by (meson is_filter_def Inter_iff assms is_pisystem_def)
   have P2:"is_upclosed ?I"
-    by (meson FiltersAgain4.is_filter_def Inter_iff assms is_upclosed_def)
+    by (meson is_filter_def Inter_iff assms is_upclosed_def)
   show ?thesis
-    by (simp add: FiltersAgain4.is_filter_def P0 P1 P2)
+    by (simp add: is_filter_def P0 P1 P2)
 qed
 
 
@@ -228,11 +231,11 @@ proof-
   have P0:"is_inhabited ?S"
   proof-
     have P00:"\<forall>F \<in> EF. is_inhabited F"
-      using A0 FiltersAgain4.is_filter_def by auto
+      using A0 is_filter_def by auto
     obtain F where P0A0:"F \<in> EF"
       using A1 by auto
     obtain x where P0A1:"x \<in> F"
-      using A0 FiltersAgain4.is_filter_def P0A0 is_inhabited_def by fastforce
+      using A0 is_filter_def P0A0 is_inhabited_def by fastforce
     have P0B0:"Inf {x} \<le> x"
       by (simp add: local.Inf_lower)
     have P0B1:"{x} \<in> Pow((\<Union>EF))"
@@ -250,9 +253,9 @@ proof-
     proof
       fix a b assume B3A0:"a \<in> ?S \<and>  b \<in> ?S"
       obtain Ea where B3A1:"Ea \<in> Pow(?U) \<and> Ea \<noteq> {} \<and> finite Ea \<and> (Inf Ea) \<le> a"
-        by (smt (verit) B3A0 fgn_def filsup_def mem_Collect_eq)
+        by (metis B3A0 fgn_iff3 filsup_def)
       obtain Eb where B3A2:"Eb \<in> Pow(?U) \<and> Eb \<noteq> {} \<and> finite Eb \<and> (Inf Eb) \<le> b"
-        by (smt (verit) B3A0 fgn_def filsup_def mem_Collect_eq)
+        by (metis B3A0 fgn_iff3 filsup_def)
       have B30:"Inf (Ea \<union> Eb) \<le> a"
         by (meson B3A1 Inf_grlow UnI1 dual_order.trans local.Inf_lower)
       have B31:"Inf (Ea \<union> Eb) \<le> b"
@@ -263,15 +266,27 @@ proof-
       have B33:"?Ec \<in> Pow(?U) \<and> ?Ec \<noteq> {} \<and> finite ?Ec \<and> (Inf ?Ec) \<le> (inf a b)"
         using B32 B3A1 B3A2 by blast
       show "(inf a b) \<in> ?S"
-        by (smt (verit) B33 fgn_def filsup_def mem_Collect_eq)
+        by (metis B33 fgn_iff3 filsup_def)
     qed
     show ?thesis
       by (simp add: B3 is_pisystem_def)
    qed
    have P2:"is_upclosed ?S"
-     by (smt (verit, del_insts) dual_order.trans fgn_def filsup_def is_upclosed_def mem_Collect_eq)
+   proof-
+     have P20:"(\<And>a b. (a \<le> b \<and>  a \<in> ?S) \<longrightarrow>  b \<in> ?S)"
+     proof
+      fix a b assume P2A0:"a \<le> b \<and> a \<in> ?S"
+      obtain Ea where P2A1:"Ea \<in> Pow(?U) \<and> Ea \<noteq> {} \<and> finite Ea \<and> (Inf Ea) \<le> a"
+        by (metis P2A0 fgn_iff3 filsup_def)
+      have P2B0:"Inf Ea \<le> b"
+        using P2A1 P2A0 by auto
+      show "b \<in> ?S"
+        by (metis P2A1 P2B0 fgn_iff3 filsup_def)
+      qed
+      show ?thesis by (meson P20 is_upclosed_def)
+    qed
    show ?thesis
-     by (simp add: FiltersAgain4.is_filter_def P0 P1 P2)
+     by (simp add: is_filter_def P0 P1 P2)
 qed
 
 
@@ -303,7 +318,7 @@ proof
     have B0B2:"finite {x}"
       by simp
     show "x \<in> filsup EF"
-      by (smt (verit) B0B2 P0B0 P0B1 empty_iff fgn_def filsup_def mem_Collect_eq singletonI)
+      by (metis B0B2 P0B0 P0B1 empty_not_insert fgn_iff3 filsup_def)
   qed
 qed
 
@@ -376,6 +391,11 @@ proof -
   qed
 qed
 
+lemma filsup_obtains0:
+  fixes EF::"'X::{semilattice_inf, Inf} set set" 
+  assumes "EF \<noteq> {}"
+  shows  "\<And>x. x \<in> (filsup EF) \<Longrightarrow>  (\<exists>Ex. Ex \<in> Pow(\<Union>EF) \<and> Ex \<noteq> {} \<and> finite Ex \<and> (Inf Ex) \<le> x)"
+  by (metis fgn_iff3 filsup_def)
 
 lemma filter_sup_is_least_upper:
   fixes EF::"'X::{semilattice_inf,Inf} set set" and
@@ -390,15 +410,17 @@ lemma filter_sup_is_least_upper:
 proof
   fix x assume A4:"x \<in> filsup EF" 
   obtain Ex where A5:"Ex \<in> Pow(\<Union>EF) \<and> Ex \<noteq> {} \<and> finite Ex \<and> (Inf Ex) \<le> x"
-    by (smt (verit) A4 fgn_def filsup_def mem_Collect_eq) 
+    by (meson A1 A4 filsup_obtains0)
   have B0:"Ex \<subseteq> \<Union>EF"
     using A5 by blast
   have B1:"... \<subseteq> H"
     by (simp add: A3 Sup_le_iff)
-  have B2:"Inf Ex \<in> H"
-    by (smt (verit) A2 A5 B0 B1 FiltersAgain4.is_filter_def Inf_grlow dual_order.trans finite_meet_in_set is_pisystem_def local.Inf_lower)
-  show "x \<in> H"
-    using A2 A5 B2 FiltersAgain4.is_filter_def is_upclosed_def by blast
+  have B2:"Ex \<subseteq> H \<and> finite Ex \<and> Ex \<noteq> {}"
+    using A5 B0 B1 by auto
+  have B3:"Inf Ex \<in> H"
+    by (metis A2 B2 is_filter_def Inf_grlow finite_meet_in_set is_pisystem_def local.Inf_lower)
+     show "x \<in> H"
+    using A2 A5 B3 is_filter_def is_upclosed_def by blast
 qed
 
 lemma fil_lsup_is_least_upper:
@@ -454,7 +476,7 @@ proof -
   have "is_pisystem (UNIV::'a set)"
     by (simp add: is_pisystem_def)
   then show ?thesis
-    by (metis (no_types) Collect_empty_eq FiltersAgain4.is_filter_def UNIV_I empty_not_UNIV equals0I is_inhabited_def is_upclosed_def)
+    by (metis (no_types) Collect_empty_eq is_filter_def UNIV_I empty_not_UNIV equals0I is_inhabited_def is_upclosed_def)
 qed
 
 lemma simp_filter [simp]:
@@ -470,7 +492,7 @@ instantiation filter :: (complete_lattice) complete_lattice
 begin
 
 lift_definition top_filter :: "'a filter" is UNIV
-  by (simp add: FiltersAgain4.is_filter_def is_inhabited_def is_pisystem_def is_upclosed_def)
+  by (simp add: is_filter_def is_inhabited_def is_pisystem_def is_upclosed_def)
 
 lift_definition bot_filter :: "'a filter" is "{top}"
   using is_filter_def is_inhabited_def is_pisystem_def is_upclosed_def top.extremum_unique by fastforce
@@ -607,129 +629,5 @@ instance
   by (smt (verit, ccfv_SIG) FiltersAgain4.filter.Rep_filter_inverse Sup_filter.rep_eq bot_filter.rep_eq fil_Sup_def image_empty)
 end
   
-  
-  
-
-  
  
-
-(*
-locale filter_of_sets = 
-  fixes EF::"'X set set set"
-  assumes "\<forall>F \<in> EF. is_filter F"
-begin
-
-definition Inf::"'X set set set \<Rightarrow> 'X set set"
-  where "Inf ES = (\<Inter>ES)"
-
-definition Sup::"'X set set set \<Rightarrow> 'X set set"
-  where "Sup ES = (fgenby ES)"
-
-definition inf::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set set" where
-  "inf F1 F2 = Inf {F1, F2}"
-
-definition sup::"'X set set \<Rightarrow> 'X set set \<Rightarrow> 'X set set" where
-  "sup F1 F2 = Sup {F1, F2}"
-
-definition top::"'X set set" where
-  "top = Pow UNIV"
-
-definition bot::"'X set set" where
-  "bot = {UNIV}"
-
-lemma sup_gt:
-  assumes "\<forall>F \<in> ES. is_filter F"
-  shows "\<forall>F \<in> ES. F \<subseteq> (fgenby ES)"
-  by (metis Sup_le_iff filter_generated_by_def order_trans pfmc_extensive upc_extensive)
-
-lemma inf_eq:
-  "inf F1 F2 = F1 \<inter> F2"
-  by (simp add: Inf_def inf_def)
-
-lemma fgen_extensive:
-  "\<forall>ES. \<forall>F \<in> ES. F \<subseteq> fgenby ES"
-  by (metis Sup_le_iff filter_generated_by_def order_trans pfmc_extensive upc_extensive)
-
-lemma fgen_sup:
-  fixes ES
-  assumes A0:"is_filter G" and A1:"\<forall>F \<in> ES. is_filter F" and A2:"(\<forall>F \<in> ES. F \<subseteq> G)"
-  shows "(fgenby ES) \<subseteq> G"
-proof(cases " ES \<noteq> {} \<and> ES \<noteq> {{}}")
-  case True
-  then show ?thesis
-  proof-
-  have th:"\<forall>a \<in> (fgenby ES). a \<in> G"
-  proof
-  let ?UN="(\<Union>ES)"
-  fix a assume LtR_A0:"a \<in> (fgenby ES)"
-  have LtR_A00:"a \<in> upclosure(pfmc ?UN)"
-    using LtR_A0 filter_generated_by_def by blast
-  obtain b where LtR_A1:"b \<in> (pfmc ?UN) \<and> a \<supseteq> b "
-    by (metis LtR_A0 filter_generated_by_def in_upclosure_imp)
-  obtain F where LtR_A2:"(F \<in> Pow(?UN)) \<and> (finite F) \<and> b=(\<Inter>F)"
-    by (smt (verit, ccfv_threshold) CollectD LtR_A1 proper_finite_meet_closure_def)
-  have LtR_B0:"F \<subseteq> ?UN" using LtR_A2 by blast
-  have LtR_B1:"\<forall>f \<in> F. \<exists>E \<in> ES. f \<in> E"
-    using LtR_B0 by auto
-  have LtR_B2:"\<forall>f \<in> F.  f \<in> G"
-    using A2 LtR_B1 by fastforce
-  have LtR_B3:"F \<subseteq> G"
-    by (simp add: LtR_B2 subsetI)
-  have LtR_B4:"(\<Inter>F) \<in> G"
-    by (metis A0 Inter_empty LtR_A2 LtR_B3 filter_iff_pisystem_with_univ finite_intersections_in_set is_pisystem_def)
-  have LtR_B5:"(\<Inter>F) =b"
-    by (simp add: LtR_A2)
-  have LtR_B6:"... \<subseteq> a" 
-    by (simp add: LtR_A1)
-  show "a \<in> G"
-    using A0 FiltersAgain3.is_filter_def LtR_B4 LtR_B5 LtR_B6 is_upclosed_def by blast
-  qed
-  show ?thesis
-    by (simp add: subsetI th)
-  qed
-next
-  case False
-  then show ?thesis
-    by (smt (verit) A1 CollectD FiltersAgain3.is_filter_def Union_Pow_eq all_not_in_conv empty_Union_conv empty_subsetI filter_generated_by_def insertI1 is_inhabited_def proper_finite_meet_closure_def upclosure_def)
-qed
-
-lemma fgen_sup2:
-  assumes A0:"is_filter G \<and> is_filter F1 \<and> is_filter F2" and A1:"F1 \<subseteq> G \<and> F2 \<subseteq> G"
-  shows "(fgenby {F1, F2}) \<subseteq> G"
-  by (simp add: A0 A1 fgen_sup)
-
-lemma fgen_sup3:
-  assumes A0:"is_filter G \<and> is_filter F1 \<and> is_filter F2" and A1:"F1 \<subseteq> G \<and> F2 \<subseteq> G"
-  shows "(sup F1 F2) \<subseteq> G"
-  by (simp add: A0 A1 Sup_def fgen_sup2 sup_def)
-                    
-
-
-
-end
-
-sublocale filter_of_sets \<subseteq> complete_lattice filter_of_sets.Inf
-                                             filter_of_sets.Sup
-                                             filter_of_sets.inf
-                                             "(\<subseteq>)" "(\<subset>)"
-                                             filter_of_sets.sup
-                                             filter_of_sets.bot
-                                             filter_of_sets.top
-proof unfold_locales
-fix x::"'a set set" fix y::"'a set set"
-show "filter_of_sets.inf x y \<subseteq> x"
-  by (metis Inter_lower equals0D filter_of_sets.Inf_def filter_of_sets.inf_def filter_of_sets.intro insertI1)
-show "filter_of_sets.inf x y \<subseteq> y"
-  by (metis Inter_lower empty_iff filter_of_sets.Inf_def filter_of_sets.inf_def filter_of_sets.intro insert_iff)
-show "x \<subseteq> filter_of_sets.sup x y"
-  by (metis Sup_insert Un_subset_iff empty_iff filter_generated_by_def filter_of_sets.Sup_def filter_of_sets.intro filter_of_sets.sup_def pfmc_extensive sup.orderE upc_extensive)
-show "y \<subseteq> filter_of_sets.sup x y"
-  by (metis (no_types, opaque_lifting) Sup_insert Un_subset_iff empty_iff filter_generated_by_def filter_of_sets.Sup_def filter_of_sets.intro filter_of_sets.sup_def pfmc_extensive sup.orderE upc_extensive)
-fix z::"'a set set"
-show "x \<subseteq> y \<Longrightarrow> x \<subseteq> z \<Longrightarrow> x \<subseteq> filter_of_sets.inf y z"
-  by (metis Int_subset_iff empty_iff filter_of_sets.inf_eq filter_of_sets.intro)
-show "y \<subseteq> x \<Longrightarrow> z \<subseteq> x \<Longrightarrow> filter_of_sets.sup y z \<subseteq> x"
-
-end
-*)
 end
