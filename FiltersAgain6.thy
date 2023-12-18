@@ -138,6 +138,7 @@ definition binary_filter_sup::"'X::{ord, inf} set \<Rightarrow> 'X::{ord, inf} s
 definition filter_closure::"'X::complete_semilattice_inf set \<Rightarrow> 'X::complete_semilattice_inf set" where
   "filter_closure A \<equiv> {a. \<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> a}"
 
+
 definition up_closure::"'X::order set \<Rightarrow> 'X::order set" where
   "up_closure A \<equiv> {x. \<exists>a \<in> A. a \<le> x}"
 
@@ -517,6 +518,142 @@ proof-
     by (simp add: B0 B1 subset_antisym)
 qed
 
+
+lemma filter_closure_is_filter:
+  fixes E::"'X::complete_semilattice_inf set"
+  assumes A0:"E \<noteq> {}"
+  shows "is_filter (filter_closure E)"
+proof-
+  let ?F="(filter_closure E)"
+  have B0:"is_downdir ?F"
+  proof-
+    have B01:"(\<And>a b.  (a \<in> ?F \<and> b \<in> ?F) \<longrightarrow> (\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)))"
+    proof
+      fix a b assume B0A0:"a \<in> ?F \<and> b \<in> ?F"
+      obtain Sa where B0A1:"Sa \<in> Pow(E) \<and> finite Sa \<and> Sa \<noteq> {} \<and> (Inf Sa) \<le> a"
+        by (meson B0A0 filter_closure_obtains0)
+      obtain Sb where B0A2:"Sb \<in> Pow(E) \<and> finite Sb \<and> Sb \<noteq> {} \<and> (Inf Sb) \<le> b"
+        by (meson B0A0 filter_closure_obtains0) 
+      define Sc where B0A3:"Sc=Sa \<union> Sb"
+      have B0B2:"Sc \<in> Pow(E) \<and> finite Sc \<and> Sc \<noteq> {}"
+        using B0A1 B0A2 B0A3 by auto
+      have B0B3:"(Inf Sc) \<le> (Inf Sa) \<and> (Inf Sc) \<le>(Inf Sb)"
+        by (simp add: B0A3 complete_semilattice_inf_class.Inf_greatest complete_semilattice_inf_class.Inf_lower)
+      have B0B4:"(Inf Sc) \<le> a \<and> (Inf Sc) \<le> b"
+        using B0A1 B0A2 B0B3 dual_order.trans by blast
+      show "\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)"
+        by (meson B0B2 B0B4 dual_order.refl filter_closure_obtains0)
+      qed
+    show ?thesis
+      by (simp add: B01 is_downdir_def)
+  qed
+  have B1:"is_upclosed ?F"
+  proof-
+    have B10:"\<And>a b. (a \<le> b \<and>  a \<in> ?F) \<longrightarrow>  b \<in> ?F"
+    proof 
+      fix a b assume B1A0:"(a \<le> b \<and>  a \<in> ?F)" 
+      obtain Sa where B1A1:"Sa \<in> Pow(E) \<and> finite Sa \<and> Sa \<noteq> {} \<and> (Inf Sa) \<le> a"
+        by (meson B1A0 filter_closure_obtains0)
+      have B1B1:"(Inf Sa) \<le> b"
+        using B1A0 B1A1 dual_order.trans by blast
+      show "b \<in> ?F"
+        using B1A1 B1B1 filter_closure_obtains0 by blast
+    qed
+    show ?thesis
+      by (meson B10 is_upclosed_def)
+  qed
+  have "is_inhabited ?F"
+    using assms filter_closure_extensive is_inhabited_def by blast
+  show ?thesis
+    by (simp add: B0 B1 FiltersAgain6.is_filter_def \<open>is_inhabited (filter_closure (E::'X set))\<close>)
+qed
+
+lemma filter_closure_is_smallest:
+  fixes E::"'X::complete_semilattice_inf set"
+  assumes A0:"E \<noteq> {}"
+  shows "\<And>F. (is_filter F \<and> E \<subseteq> F) \<longrightarrow> (filter_closure E) \<subseteq> F"
+proof
+  fix F assume "(is_filter F \<and> E \<subseteq> F)"
+  show "(filter_closure E) \<subseteq> F"
+  proof
+    fix x assume "x \<in> filter_closure E"
+    show "x \<in> F"
+      using \<open>(x::'X) \<in> filter_closure (E::'X set)\<close> \<open>is_filter (F::'X set) \<and> (E::'X set) \<subseteq> F\<close> filter_closure_isotone filters_in_filter_cl_range by blast
+    qed
+qed
+
+class csemilattice_inftop = complete_semilattice_inf+top+
+    assumes top_largest: "\<And>x. x \<le> top"
+  
+lemma smallest_filter1:
+  "is_filter {top::('X::csemilattice_inftop)}"
+proof-
+    let ?S="{top::('X::csemilattice_inftop)}"
+    have B0:"is_upclosed ?S"
+      by (simp add: is_upclosed_def order_antisym top_largest)
+    have B1:"is_downdir ?S"
+      using is_downdir_def by blast
+    have B2:"is_inhabited ?S"
+      by (simp add: is_inhabited_def)
+    show ?thesis
+      by (simp add: B0 B1 B2 is_filter_def)
+qed
+
+
+lemma smallest_filter2:
+  "\<forall>(F::('X::csemilattice_inftop set)). is_filter F \<longrightarrow>  {top::('X::csemilattice_inftop)} \<subseteq> F"
+  by (metis FiltersAgain6.is_filter_def empty_subsetI equals0I filter_in_semilattice_inf_iff inf.orderE insert_subset is_inhabited_def top_largest)
+
+lemma filter_moore_family:
+  "is_moore_family {F::('X::csemilattice_inftop set). is_filter F}"
+proof-
+  let ?EF="{F::('X::csemilattice_inftop set). is_filter F}"
+  have B0:"is_filter (top::('X::csemilattice_inftop set))"
+    by (simp add: filter_in_semilattice_inf_iff)
+  have B1:"(top::('X::csemilattice_inftop set)) \<in> ?EF"
+    by (simp add: B0)
+  have B2:"\<And>(G::'X::csemilattice_inftop set). G \<noteq> {} \<longrightarrow> (\<exists>F \<in> (principal_filter_in G ?EF).
+        (\<forall>H \<in> (principal_filter_in G ?EF). F \<le> H))"
+  proof
+    fix G::"'X::csemilattice_inftop set" assume B2A0:"G \<noteq> {}"
+    have B20:"G \<subseteq> filter_closure G"
+      by (simp add: filter_closure_extensive)
+    have B21:"is_filter (filter_closure G)"
+      by (simp add: B2A0 filter_closure_is_filter)
+    have B22:" (filter_closure G) \<in> principal_filter_in G ?EF"
+      by (simp add: B20 B21 principal_filter_def principal_filter_in_def)
+    have B23:"(\<forall>H \<in> (principal_filter_in G ?EF). is_filter H \<and> G \<subseteq> H)"
+      by (simp add: principal_filter_def principal_filter_in_def)
+    have B24:"\<forall>H \<in> (principal_filter_in G ?EF). (filter_closure G) \<subseteq> H"
+      by (meson B23 B2A0 filter_closure_is_smallest)
+    obtain F where B25:"F \<in> (principal_filter_in G ?EF) \<and>  (\<forall>H \<in> (principal_filter_in G ?EF). F \<le> H)"
+      using B22 B24 by blast
+    show "(\<exists>F \<in> (principal_filter_in G ?EF). (\<forall>H \<in> (principal_filter_in G ?EF). F \<le> H))"
+      using B25 by blast
+  qed
+  have B3:"?EF \<noteq> {}"
+    using B1 by auto
+  have B4:"(\<forall>(a::(('X::csemilattice_inftop set))). (\<exists>m \<in> (principal_filter_in a ?EF). (\<forall>x \<in> (principal_filter_in a ?EF). m \<le> x)))"
+  proof
+     fix a
+     show "(\<exists>m \<in> (principal_filter_in a ?EF). (\<forall>x \<in> (principal_filter_in a ?EF). m \<le> x))"
+     proof(cases "a = {}")
+       case True
+        have "is_filter {top::('X::csemilattice_inftop)}"
+          by (simp add: smallest_filter1)
+        have " (\<forall>x \<in> (principal_filter_in a ?EF). {top::('X::csemilattice_inftop)} \<le> x)"
+          by (metis Int_iff mem_Collect_eq principal_filter_in_def smallest_filter2)
+       then show ?thesis
+         by (metis True UNIV_eq_I \<open>FiltersAgain6.is_filter {top}\<close> empty_subsetI inf_top.right_neutral mem_Collect_eq principal_filter_def principal_filter_in_def)
+     next
+       case False
+       then show ?thesis
+         by (simp add: B2)
+     qed
+  qed
+  show ?thesis
+    using B3 B4 is_moore_family_def by blast
+qed
 
 definition meshes::"('X set set) \<Rightarrow> ('X set set) \<Rightarrow> bool"  (infixl "#" 50)  where
    "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  (a\<inter>b \<noteq> {}))"
@@ -1200,6 +1337,10 @@ qed
 definition finer_pfilters::"'X::order_bot set \<Rightarrow> 'X::order_bot set set" where
   "finer_pfilters F = {U. is_pfilter U \<and> (F \<subseteq> U)}"
     
+definition finer_ultrafilters::"'X::order_bot set \<Rightarrow> 'X::order_bot set set" where
+  "finer_ultrafilters F = {U. is_ultrafilter U \<and> (F \<subseteq> U)}"
+
+
 lemma union_of_finer_filter_chain:
   fixes F::"'X::order_bot set" and
         C::"('X::order_bot set set)" 
@@ -1264,6 +1405,15 @@ proof-
   show ?thesis
     by (metis B2 B4 CollectD finer_pfilters_def is_ultrafilter_def order_trans)
 qed
+
+
+lemma finer_ultrafilters_notempty:
+  fixes F::"'X::order_bot set"
+  assumes "is_pfilter F"
+  shows "\<exists>U. (is_ultrafilter U) \<and> (F \<subseteq> U)"
+  by (simp add: assms exists_finer_ultrafilter)
+
+
 
 
 end
