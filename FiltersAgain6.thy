@@ -4,12 +4,34 @@ begin
 
 (*6th times the charm*)
 
+(*
+TODO: The upclosed set of a topped  poset form a moore collection (dually for ideals)
+
+DONE: upsets_moore_family
+
+TODO: The filters on a topped semilattice inf form a moore collection (dually for ideals)
+
+DONE: filter_moore_family
+
+The filters on a lattice form a lattice and a complete semilattice sup (and dually for ya bois) where
+  - the finite sup is just finite intersection of filters whose elements are finite joins
+  - the arbitrary sup is the upclosure of finite meets for all finite collections  of the union
+modularity and distributivity is inherited and in fact the filter lattice is modular iff the 
+underlying lattice is and ditto for distributivity
+distributivity  means 
+  -finite sups are meets of elements from each filter
+  -arbitrary sups are  the infs of finitely many elements from the union
+  - ultrafilters are prime filters
+*)
+
+
 hide_const(open) List.list.Nil
 no_notation List.list.Nil ("[]")  
 no_notation Cons (infixr "#" 65)
 
 declare [[show_types]]
-
+declare [[show_sorts]]
+declare [[show_consts]]
 
 
 definition is_inhabited::"'X set  \<Rightarrow> bool" where
@@ -135,6 +157,8 @@ lemma set_filter_improper_iff:
 definition binary_filter_sup::"'X::{ord, inf} set \<Rightarrow> 'X::{ord, inf} set \<Rightarrow> 'X::{ord, inf} set" where
   "binary_filter_sup A B = {x. \<exists>a \<in> A. \<exists>b \<in> B. (inf a b) \<le> x}"
 
+
+(*this is valid even without top element which is only needed for the degenerate case*)
 definition filter_closure::"'X::complete_semilattice_inf set \<Rightarrow> 'X::complete_semilattice_inf set" where
   "filter_closure A \<equiv> {a. \<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  (Inf S) \<le> a}"
 
@@ -250,6 +274,13 @@ proof-
   show ?thesis
     using LtR RtL by blast
 qed
+
+end
+
+context bounded_semilattice_inf_top
+begin
+
+
 
 end
 
