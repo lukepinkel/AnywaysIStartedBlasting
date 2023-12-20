@@ -5,17 +5,26 @@ begin
 (*\strikethrough{6th}7th times the charm*)
 
 (*
-TODO: The upclosed set of a topped  poset form a moore collection (dually for ideals)
+TODO
 
-DONE: upsets_moore_family
+(1). The upclosed set of a topped poset
+   (1.1) form a moore collection (dually for ideals) DONE (upsets_moore_family)
+   (1.2) form a complete join subsemilattice in the powerset by inclusion - uncertain best way to
+         implement the whole "sub" part
+   (1.3) The upclosure of E is merely Union of principal filters for each x in E if E is nonempty or
+         the singleton containing the top otherwise DONE (up_closure_expression)
 
-TODO: The filters on a topped semilattice inf form a moore collection (dually for ideals)
 
-DONE: filter_moore_family
+(2). The filters on a topped semilattice inf form a moore collection 
+  DONE (filter_moore_family)
+(3). The filters on a lattice
+  (3.1) form a lattice 
+        DONE (instantiation filter:: (lattice) lattice)
+  (3.2)complete semilattice sup 
+      TODO
+  (3.3)the finite sup is just finite intersection of filters whose elements are finite joins
+  (3.4) the arbitrary sup is the upclosure of finite meets for all finite collections  of the union
 
-The filters on a lattice form a lattice and a complete semilattice sup (and dually for ya bois) where
-  - the finite sup is just finite intersection of filters whose elements are finite joins
-  - the arbitrary sup is the upclosure of finite meets for all finite collections  of the union
 modularity and distributivity is inherited and in fact the filter lattice is modular iff the 
 underlying lattice is and ditto for distributivity
 distributivity  means 
@@ -24,7 +33,7 @@ distributivity  means
   - ultrafilters are prime filters
 *)
 
-
+section Settings
 hide_const(open) List.list.Nil
 no_notation List.list.Nil ("[]")  
 no_notation Cons (infixr "#" 65)
@@ -33,7 +42,7 @@ declare [[show_types]]
 declare [[show_sorts]]
 declare [[show_consts]]
 
-
+section Definitions
 definition is_inhabited::"'a set  \<Rightarrow> bool" where
    "is_inhabited X \<equiv> (X \<noteq> {})"
 
@@ -60,8 +69,20 @@ definition is_lb_set::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool"
   this should work too lol
  *)
 class semilattice_inf_Inf=semilattice_inf+Inf+
-  assumes  Inf_lower: "\<And>x A. finite A \<Longrightarrow>  x \<in> A \<Longrightarrow> Inf A \<le> x" and
-           Inf_greatest: "\<And>z A. finite A \<Longrightarrow> ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A)"
+  assumes  Finite_Inf_lower: "\<And>x A. finite A \<Longrightarrow>  x \<in> A \<Longrightarrow> Inf A \<le> x" and
+           Finite_Inf_greatest: "\<And>z A. finite A \<Longrightarrow> ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A)"
+
+class bounded_semilattice_inf_top_Inf=semilattice_inf_Inf+order_top
+
+sublocale complete_semilattice_inf \<subseteq> semilattice_inf_Inf Inf inf "(\<le>)" "(<)"
+ apply  unfold_locales
+  apply (simp add: local.CInf_lower)
+  using local.CInf_greatest by blast
+
+sublocale complete_lattice \<subseteq> complete_semilattice_inf Inf inf "(\<le>)" "(<)"
+ apply  unfold_locales
+  apply (simp add: local.Inf_lower)
+  using local.le_Inf_iff by blast
 
 
 definition filter_closure::"'a::semilattice_inf_Inf set \<Rightarrow> 'a::semilattice_inf_Inf set" where
@@ -70,13 +91,12 @@ definition filter_closure::"'a::semilattice_inf_Inf set \<Rightarrow> 'a::semila
 definition up_closure::"'a::order set \<Rightarrow> 'a::order set" where
   "up_closure A \<equiv> {x. \<exists>a \<in> A. a \<le> x}"
 
-
 definition is_prime::"'a::{order, sup} set \<Rightarrow> bool" where
   "is_prime A \<equiv> (\<forall>a. \<forall>b. (sup a b) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
 
 
-definition binary_filter_sup::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
-  "binary_filter_sup A B = {x. \<exists>a \<in> A. \<exists>b \<in> B. a \<le> x \<and> b \<le> x}"
+definition binary_filter_sup::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
+  "binary_filter_sup A B = {x. \<exists>a \<in> A. \<exists>b \<in> B. inf a b \<le> x}"
 
 
 definition filter_sup::"'a::semilattice_inf_Inf set set \<Rightarrow> 'a::semilattice_inf_Inf set" where
@@ -119,6 +139,11 @@ definition finer_ultrafilters::"'a::order set \<Rightarrow> 'a::order set set" w
 definition finer_upsets::"'a::order set \<Rightarrow> 'a::order set set" where
   "finer_upsets A = {U. is_upclosed U \<and> (A \<subseteq> U)}"
 
+
+definition moore_upclosure::"'a::order_top set \<Rightarrow> 'a::order_top set" where
+  "moore_upclosure A = (if A={} then {top} else up_closure A)"
+
+
 definition is_chain::"'X::order set \<Rightarrow> bool" where
   "is_chain A \<equiv> (\<forall>a1 \<in> A. \<forall>a2 \<in> A. (a1 \<le> a2 \<or> a2 \<le> a1))"
 
@@ -132,8 +157,11 @@ definition grill::"'a set set \<Rightarrow> 'a set set" where
 definition is_prime_alt::"'a set set \<Rightarrow> bool" where
   "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
 
-                
+definition is_lb_of::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_lb_of l E \<equiv> (\<forall>x \<in> E. l \<le> x)"
 
+    
+section Simplifications
 lemma is_inhabited_imp:
   "\<And>X. is_inhabited X \<Longrightarrow> \<exists>x. x \<in> X"
   by (simp add: ex_in_conv is_inhabited_def)
@@ -153,7 +181,7 @@ lemma is_pisystem_imp:
   shows "\<And>a b. (a \<in> X \<and> b \<in> X) \<Longrightarrow> (inf a b) \<in> X"
   using assms is_pisystem_def by blast
 
-
+section PrincipalFiltersAndTops 
 context fixes F::"'a::order set"
 begin
 
@@ -163,6 +191,79 @@ lemma principal_filter_iso:
   by (metis assms is_upclosed_imp mem_Collect_eq order_refl principal_filter_def subset_eq)
 end
 
+lemma principal_filter_is_filter:
+  "\<forall>a::'a::order. is_filter(principal_filter a)"
+proof
+  fix a::"'a::order"
+  show "is_filter(principal_filter a)"
+  proof-
+    let ?F="principal_filter a"
+    have P0:"is_inhabited ?F"
+      using is_inhabited_def principal_filter_def by auto
+    have P1:"is_upclosed ?F"
+      using is_upclosed_def principal_filter_def principal_filter_imp by fastforce
+    have P2:"is_downdir ?F"
+      using is_downdir_def principal_filter_def by auto
+    show ?thesis
+      by (simp add: FiltersAgain7.is_filter_def P0 P1 P2)
+  qed
+qed
+
+
+lemma topped_iff:
+  "(\<forall>F::'a::{order,top} set \<in> (filters_in UNIV). top \<in> F) \<longleftrightarrow> (\<forall>x::'a::{order,top}. x \<le> top)"
+proof
+  assume A0:"\<forall>F::'a::{order,top} set \<in> (filters_in UNIV). top \<in> F"
+  show "(\<forall>x::'a::{order,top}. x \<le> top)" 
+  proof
+    fix x::"'a::{order, top}"
+    show "x \<le> top"
+    proof-
+      have B0:"principal_filter x \<in> filters_in UNIV"
+        by (simp add: filters_in_def principal_filter_is_filter)
+      have B1:"is_filter( principal_filter x)"
+         by (simp add: principal_filter_is_filter) 
+      have B2:"top \<in> (principal_filter x)"
+        by (simp add: A0 B0)
+      have B3:"x \<le> top"
+        by (simp add: B2 principal_filter_imp)
+      show ?thesis
+        by (simp add: B3)
+    qed
+  qed
+  next
+  assume A1:"\<forall>x::'a::{order,top}. x \<le> top"
+  show "\<forall>F::'a::{order,top} set \<in> (filters_in UNIV). top \<in> F"
+  proof
+    fix F::"'a::{order,top} set"
+    assume A2:"F \<in> (filters_in UNIV)"
+    have B0:"is_filter F"
+      using A2 filters_in_def by blast
+    obtain x where B1:"x \<in> F"
+      using B0 FiltersAgain7.is_filter_def is_inhabited_imp by blast
+    have B2:"x \<le> top"
+      by (simp add: A1)
+    show "top \<in> F"
+      using B0 B1 B2 FiltersAgain7.is_filter_def is_upclosed_imp by auto
+  qed
+qed
+
+lemma toped_iff2:
+  "(\<forall>F::'a::order_top set \<in> (filters_in UNIV). top \<in> F)"
+  by (simp add: topped_iff)
+
+
+section FilterTypeDef
+typedef (overloaded) 'a filter = "{F::('a::order set). is_filter F}"
+  using principal_filter_is_filter by auto
+
+lemma filter_simp [simp]:
+  "is_filter (Rep_filter F)"
+  using filter.Rep_filter by auto
+  
+setup_lifting type_definition_filter
+
+section Upsets
 context order_top
 begin
 
@@ -219,12 +320,72 @@ proof-
     using B1 B2 B3 is_upclosed_def by blast
 qed
 
+lemma upclosed_then_contains_smallest_filter:
+  assumes "is_upclosed (A::'X::order_top set)"
+  shows "A \<noteq> {} \<longrightarrow> {top} \<subseteq> A"
+  by (meson assms empty_subsetI insert_subset is_inhabited_def is_inhabited_imp 
+      is_upclosed_def order_top_class.top_greatest)
 
+lemma up_closure_expression:
+  "moore_upclosure = (\<lambda>(A::'X::order_top set). if A={} then {top} else (\<Union>x \<in> (A::'X::order_top set). principal_filter x))"
+proof-
+  define f where fdef:"f=(\<lambda>(A::'X::order_top set). if A={} then {top} else (\<Union>x \<in> A. principal_filter x))"
+  have T:"\<forall>(A::'X::order_top set). f(A) = (moore_upclosure A)"
+  proof
+    fix A::"'X::order_top set"
+    show " f(A) = (moore_upclosure A)"
+    proof(cases "A={}")
+      case True
+      have B0:"f(A) = {top}"
+        by (simp add: True fdef)
+      have B1:"moore_upclosure A = {top}"
+        by (simp add: True moore_upclosure_def)
+      then show ?thesis 
+        by (simp add: B0 B1)
+    next
+      case False
+      have "\<And>x. x \<in> f(A) \<longleftrightarrow> x \<in> (moore_upclosure A) "
+      proof
+        fix x::"'X::order_top"
+        assume A0:"x \<in> f(A)" 
+        obtain a where A1:"a \<in> A \<and> x \<in> principal_filter a"
+          using False A0 fdef by auto
+        have B0:"a \<le> x"
+          by (simp add: A1 principal_filter_imp)
+        show "x \<in> moore_upclosure A"
+          by (metis (mono_tags, lifting) False
+             \<open>\<And>thesis::bool. (\<And>a::'X::order_top. a \<in> (A::'X::order_top set) \<and> (x::'X::order_top) \<in> principal_filter a \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close>
+               mem_Collect_eq moore_upclosure_def principal_filter_imp up_closure_def)
+      next
+       fix x::"'X::order_top"
+       assume A0:"x \<in> moore_upclosure A" 
+       have B0:"A \<noteq> {}"
+          by (simp add: False) 
+       have B1:"moore_upclosure A = up_closure A"
+         by (simp add: False moore_upclosure_def)
+       obtain a where A1:"a \<in> A \<and> a \<le> x"
+         by (smt (verit, best) A0 B1 CollectD up_closure_def)
+        have B2:"x \<in> (principal_filter a) \<and> a \<in> A"
+          by (simp add: A1 principal_filter_def)
+        show "x \<in> f(A)"
+          using B2 fdef by auto
+      qed
+      then show ?thesis
+         by blast
+    qed
+  qed
+  show ?thesis
+    using T fdef by blast
+qed
+
+
+
+  
 end
 
 
 
-
+section FilterClosure
 
 lemma set_filter_topped:
   assumes A0:"is_filter F" shows "UNIV \<in> F"
@@ -266,7 +427,7 @@ proof-
   have B1:"\<forall>a \<in> A. {a} \<in> Pow(A) \<and> (finite {a}) \<and> ({a} \<noteq> {})"
     by simp
   have B2:"\<forall>a \<in> A. a \<in> (filter_closure A)"
-    by (meson B1 filter_closure_obtains0 semilattice_inf_Inf_class.Inf_lower singletonI)
+    by (meson B1 filter_closure_obtains0 semilattice_inf_Inf_class.Finite_Inf_lower singletonI)
   show ?thesis
     by (simp add: B2 subset_iff)
 qed
@@ -287,9 +448,6 @@ proof
   show "x \<in> (filter_closure B)"
     using A2 B0 filter_closure_obtains0 by auto
 qed
-
-definition is_lb_of::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_lb_of l E \<equiv> (\<forall>x \<in> E. l \<le> x)"
 
 
 lemma finite_lower_bound:
@@ -327,11 +485,10 @@ lemma finite_lower_bound:
       using A5 is_lb_of_def by blast
 qed
 
-
-context fixes X::"'X::semilattice_inf set"
-begin
+section FilterPiSystemInSemilatticeinf
 
 lemma downdir_inf:
+  fixes X::"'X::semilattice_inf set"
   assumes A0:"is_downdir X" and A1:"is_upclosed X"
   shows "\<And>(a::'X) b. (a \<in> X \<and> b \<in> X) \<longrightarrow> ((inf a b) \<in> X)"
 proof
@@ -345,6 +502,7 @@ proof
 qed
 
 lemma downdir_up_pisystem:
+  fixes X::"'X::semilattice_inf set"
   assumes "is_upclosed X"
   shows "(is_downdir X) \<longleftrightarrow> (is_pisystem X)"
 proof
@@ -373,6 +531,7 @@ proof
 qed
 
 lemma filter_in_semilattice_inf_iff:
+ fixes X::"'X::semilattice_inf set"
   assumes "X \<noteq> {}"
   shows "is_filter X \<longleftrightarrow> (\<forall>x y. (x \<in> X \<and> y \<in> X) \<longleftrightarrow> (inf x y) \<in> X)"
 proof-
@@ -399,22 +558,10 @@ proof-
     using LtR RtL by blast
 qed
 
-end
-
-
-context fixes X::"'X::lattice set"
-begin
-
-lemma upclosed_in_lattice_iff:
-  assumes "X \<noteq> {}"
-  shows "is_upclosed X \<longleftrightarrow> (\<forall>x z. x \<in> X \<longrightarrow> (sup x z) \<in> X)"
-  by (metis inf_sup_ord(3) is_upclosed_def sup.commute sup.orderE)
-  
-end
 
 
 
-
+section SemilatticeinfWithFinite
 context semilattice_inf_Inf
 begin
 
@@ -424,9 +571,9 @@ proof-
   let ?R=" Inf {x, Inf F}"
   let ?L="inf x (Inf F)"
   have B0:"?R \<le> x \<and> ?R \<le> Inf F"
-    by (simp add: local.Inf_lower)
+    by (simp add: local.Finite_Inf_lower)
   have B1:"?L \<le> ?R"
-    using local.Inf_greatest by fastforce
+    using local.Finite_Inf_greatest by fastforce
   have B2:"?L \<le> x \<and> ?L \<le> Inf F"
     by simp
   have B3:"?R \<le> ?L"
@@ -440,15 +587,15 @@ lemma infs_insert:
   shows "Inf {x, Inf F} = Inf (insert x F)"
 proof-
   have B0:"\<forall>y \<in> (insert x F). Inf {x, Inf F} \<le> y"
-    by (metis assms finite.emptyI finite.insertI infs_eq insert_iff local.Inf_lower local.inf.coboundedI2)
+    by (metis assms infs_eq insert_iff local.Finite_Inf_lower local.inf.coboundedI1 local.inf.coboundedI2 local.order.refl)
   have B1:"\<forall>y \<in>  (insert x F).  Inf (insert x F) \<le> y"
-    by (simp add: assms local.Inf_lower)
+    by (simp add: assms local.Finite_Inf_lower)
   have B2:"Inf {x, Inf F} \<le> Inf (insert x F)"
-    by (meson B0 assms finite.insertI local.Inf_greatest)
+    by (meson B0 assms finite.insertI local.Finite_Inf_greatest)
   have B3:"\<forall>y \<in> {x, Inf F}. (Inf (insert x F)) \<le> y"
-    by (simp add: B1 assms local.Inf_greatest)
+    by (simp add: B1 assms local.Finite_Inf_greatest)
   have B4:"Inf (insert x F) \<le> Inf {x, Inf F}"
-    using B3 local.Inf_greatest by force
+    using B3 local.Finite_Inf_greatest by force
   show ?thesis
     by (simp add: B2 B4 local.dual_order.eq_iff)
 qed
@@ -467,11 +614,11 @@ lemma finite_meet_in_set:
     then show ?case
     proof-
       have S0:"Inf {x} \<le> x"
-        by (simp add: local.Inf_lower)
+        by (simp add: local.Finite_Inf_lower)
       have S1:"x \<le> x"
         by simp
       have S2:"x \<le> Inf {x}"
-        using local.Inf_greatest by fastforce
+        using local.Finite_Inf_greatest by fastforce
       have S3:"Inf {x} = x"
         by (simp add: S0 S2 local.dual_order.eq_iff)
       show S4:"Inf {x} \<in> C"
@@ -493,92 +640,11 @@ qed
 
 end
 
-context 
-  fixes    C::"'X::{semilattice_inf, Inf} set"
-  assumes  Inf_lower: "\<And>(x::('X::{semilattice_inf, Inf})) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
-           Inf_greatest: "\<And>(z::('X::{semilattice_inf, Inf})) A. ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A)"
-begin
-lemma infs_eq:
-  fixes F::"'X::{semilattice_inf, Inf} set"
-  shows "inf x (Inf F) = Inf {x, Inf F}"
-proof-
-  let ?R=" Inf {x, Inf F}"
-  let ?L="inf x (Inf F)"
-  have B0:"?R \<le> x \<and> ?R \<le> Inf F"
-    by (simp add: local.Inf_lower)
-  have B1:"?L \<le> ?R"
-    using local.Inf_greatest by fastforce
-  have B2:"?L \<le> x \<and> ?L \<le> Inf F"
-    by simp
-  have B3:"?R \<le> ?L"
-    by (simp add: B0)
-  show ?thesis
-    using B1 B3 dual_order.eq_iff by blast
-qed
-
-lemma infs_insert:
-  fixes F::"'X::{semilattice_inf, Inf} set"
-  shows "Inf {x, Inf F} = Inf (insert x F)"
-proof-
-  have B0:"\<forall>y \<in> (insert x F). Inf {x, Inf F} \<le> y"
-    by (metis inf.coboundedI2 insert_iff local.Inf_lower local.infs_eq)
-  have B1:"\<forall>y \<in>  (insert x F).  Inf (insert x F) \<le> y"
-    by (simp add: local.Inf_lower)
-  have B2:"Inf {x, Inf F} \<le> Inf (insert x F)"
-    using B0 local.Inf_greatest by blast
-  have B3:"\<forall>y \<in> {x, Inf F}. (Inf (insert x F)) \<le> y"
-    by (simp add: local.Inf_greatest local.Inf_lower)
-  have B4:"Inf (insert x F) \<le> Inf {x, Inf F}"
-    using B3 local.Inf_greatest by blast
-  show ?thesis
-    by (simp add: B2 B4 dual_order.eq_iff)
-qed
-  
-
-lemma finite_meet_in_set:
-  assumes A0: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (inf a1 a2) \<in> C" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> C"
-  shows "(Inf E) \<in> C"
-  using A1 A2 A3 
-  proof (induct E rule: finite_ne_induct)
-    case (singleton x)
-    then show ?case
-    proof-
-      have S0:"Inf {x} \<le> x"
-        by (simp add: local.Inf_lower)
-      have S1:"x \<le> x"
-        by simp
-      have S2:"x \<le> Inf {x}"
-        using local.Inf_greatest by fastforce
-      have S3:"Inf {x} = x"
-        by (simp add: S0 S2 dual_order.eq_iff)
-      show S4:"Inf {x} \<in> C"
-        using S3 singleton by force
-    qed
-  next
-    case (insert x F)
-    have P0:"x \<in> C"
-      using insert.prems by auto
-    have P1: "F \<subseteq> C" 
-      using insert.prems by auto
-    have P2:"inf x (Inf F) \<in> C"
-      by (simp add: A0 P0 P1 insert.hyps(4))
-    have P4:"Inf (insert x F) = inf x (Inf F)"
-      by (simp add: infs_eq infs_insert)
-    then show ?case
-      by (simp add: P2 P4)
-qed
-
-end
 
 
 lemma pi_system_then_fc:
-  fixes X::"'X::{semilattice_inf,Inf} set"
-  assumes A0:"is_pisystem X" and
-          Inf_lower: "\<And>(x::('X::{semilattice_inf, Inf})) A. x \<in> A \<Longrightarrow> Inf A \<le> x" and
-          Inf_greatest: "\<And>(z::('X::{semilattice_inf, Inf})) A. ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A)"
+  fixes X::"'X::semilattice_inf_Inf set"
+  assumes A0:"is_pisystem X"
   shows "(\<forall>F. F \<noteq> {} \<longrightarrow> finite F \<longrightarrow> F  \<subseteq> X \<longrightarrow> (Inf F) \<in> X)"
 proof-
   have B0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (inf a1 a2) \<in> X"
@@ -587,11 +653,16 @@ proof-
   proof
     fix F assume A1:"(F \<noteq> {}) \<and> (finite F) \<and> (F \<subseteq> X) "
     show "(Inf F) \<in> X"
-      by (simp add: A1 B0 finite_meet_in_set local.Inf_greatest local.Inf_lower)
+      by (simp add: A1 B0 semilattice_inf_Inf_class.finite_meet_in_set)
   qed
   show ?thesis
     using B1 by presburger
 qed
+
+lemma filters_inf_closed:
+  assumes "is_filter (F::'X::semilattice_inf_Inf set)"
+  shows "\<And>E. finite E \<Longrightarrow> E \<noteq> {} \<Longrightarrow> E \<subseteq> F \<Longrightarrow> (Inf E \<in> F)"
+  using is_filter_def assms downdir_up_pisystem pi_system_then_fc by blast
 
 lemma filter_closure_idempotent:
   fixes A::"'X::semilattice_inf_Inf set"  
@@ -611,11 +682,11 @@ proof-
     have B3:"E \<in> Pow (A) \<and> finite E \<and> E \<noteq> {}"
       using A1 B2 E_def by auto
     have B4:"\<forall>y \<in> Ex. (Inf E) \<le> (Inf (g y))"
-      by (metis B2 B3 E_def UN_I semilattice_inf_Inf_class.Inf_greatest semilattice_inf_Inf_class.Inf_lower)
+      by (metis B2 B3 E_def UN_I semilattice_inf_Inf_class.Finite_Inf_greatest semilattice_inf_Inf_class.Finite_Inf_lower)
     have B5:"\<forall>y \<in> Ex. (Inf E) \<le> y"
       using B2 B4 order.trans by blast
     have B6:"(Inf E) \<le> (Inf Ex)"
-      by (simp add: A1 B5 semilattice_inf_Inf_class.Inf_greatest)
+      by (simp add: A1 B5 semilattice_inf_Inf_class.Finite_Inf_greatest)
     have B7:"(Inf E) \<le> x"
       using A1 B6 order.trans by blast
     show "x \<in> filter_closure A"
@@ -687,7 +758,7 @@ proof-
       have B0B2:"Sc \<in> Pow(E) \<and> finite Sc \<and> Sc \<noteq> {}"
         using B0A1 B0A2 B0A3 by auto
       have B0B3:"(Inf Sc) \<le> (Inf Sa) \<and> (Inf Sc) \<le>(Inf Sb)"
-        by (simp add: B0A1 B0A2 B0A3 semilattice_inf_Inf_class.Inf_greatest semilattice_inf_Inf_class.Inf_lower)
+        by (simp add: B0A1 B0A2 B0A3 semilattice_inf_Inf_class.Finite_Inf_greatest semilattice_inf_Inf_class.Finite_Inf_lower)
       have B0B4:"(Inf Sc) \<le> a \<and> (Inf Sc) \<le> b"
         using B0A1 B0A2 B0B3 dual_order.trans by blast
       show "\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)"
@@ -731,7 +802,6 @@ proof
     qed
 qed
 
-class bounded_semilattice_inf_top_Inf=semilattice_inf_Inf+order_top
 
 lemma smallest_filter1:
   "is_filter {top::('X::bounded_semilattice_inf_top_Inf)}"
@@ -806,6 +876,211 @@ proof-
 qed
 
 
+context fixes X::"'X::lattice set"
+begin
+
+lemma upclosed_in_lattice_iff:
+  assumes "X \<noteq> {}"
+  shows "is_upclosed X \<longleftrightarrow> (\<forall>x z. x \<in> X \<longrightarrow> (sup x z) \<in> X)"
+  by (metis inf_sup_ord(3) is_upclosed_def sup.commute sup.orderE)
+ 
+
+end
+
+section FilterOnLatticeInstance
+
+lemma filter_on_lattice_inf:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A2:"is_filter (F2::('X::lattice set))"
+  shows "is_filter (inf F1 F2)"
+proof-
+  let ?I="inf F1 F2"
+  have P0:"is_inhabited ?I"
+  proof-
+    have B00:"is_inhabited F1 \<and> is_inhabited F2"
+      using A0 A2 FiltersAgain7.is_filter_def by auto
+    obtain x1 x2 where A01:"x1 \<in> F1 \<and> x2 \<in> F2"
+      using B00 is_inhabited_imp by blast
+    define x where A02:"x=sup x1 x2"
+    have B01:"x1 \<le> x \<and> x2 \<le> x"
+      by (simp add: A02)
+    have B02:"x \<in> inf F1 F2"
+      using A0 A01 A2 B01 FiltersAgain7.is_filter_def is_upclosed_imp by auto
+    show ?thesis
+      using B02 is_inhabited_def by auto
+  qed
+  have P1:"is_downdir ?I"
+  proof-
+    have P10:"\<And>a b. (a \<in> ?I \<and> b \<in> ?I) \<longrightarrow> (\<exists>c  \<in> ?I. (c \<le> a) \<and>  (c \<le> b))"
+    proof
+      fix a b assume P1A0:"a \<in>?I \<and> b \<in> ?I"
+      show "\<exists>c \<in> ?I. c \<le> a \<and> c \<le> b"
+        by (metis A0 A2 is_filter_def Int_iff P1A0 downdir_inf inf_le1 inf_le2)
+    qed
+    show ?thesis
+      by (simp add: P10 is_downdir_def)
+  qed
+  have P3:"is_upclosed ?I"
+    by (metis A0 A2 is_filter_def IntD1 IntD2 IntI is_upclosed_def)
+  show ?thesis
+    by (simp add: is_filter_def P0 P1 P3)
+qed
+    
+
+
+lemma filter_inlattice_inf_closed:
+  assumes "is_filter (F::'X::lattice set)"
+  shows "\<And>x1 x2. (x1 \<in> F \<and> x2 \<in> F) \<Longrightarrow> (inf x1 x2 \<in> F)"
+  using FiltersAgain7.is_filter_def assms downdir_up_pisystem is_pisystem_imp by blast
+
+
+lemma filter_on_lattice_sup:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A2:"is_filter (F2::('X::lattice set))"
+  shows "is_filter (binary_filter_sup F1 F2)"
+proof-
+  let ?S="binary_filter_sup F1 F2"
+  have P0:"is_inhabited ?S"
+  proof-
+    have P00:"is_inhabited F1 \<and> is_inhabited F2"
+      using A0 A2 FiltersAgain7.is_filter_def by blast
+    have P01:"F1 \<noteq> {} \<and> F2 \<noteq> {}"
+      using P00 is_inhabited_def by auto
+    obtain x1 x2 where P0A1:"x1 \<in> F1 \<and> x2 \<in> F2"
+      by (meson P00 is_inhabited_imp)
+    have P02:"x1 \<le> sup x1 x2 \<and> x2 \<le> sup x1 x2"
+      by simp
+    show ?thesis
+      using P0A1 binary_filter_sup_def is_inhabited_def by fastforce
+   qed
+  have P1:"is_downdir ?S"
+  proof-
+     have P10:"\<And>a b. (a \<in> ?S \<and> b \<in> ?S) \<longrightarrow> (\<exists>c  \<in> ?S. (c \<le> a) \<and>  (c \<le> b))"
+      proof
+        fix a b assume P1A0:"a \<in>?S \<and> b \<in> ?S"
+        obtain a1 a2 where P1A1:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> inf a1 a2 \<le> a"
+          by (smt (verit, ccfv_threshold) P1A0 binary_filter_sup_def inf.coboundedI2 mem_Collect_eq)
+        obtain b1 b2 where P1A2:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> inf b1 b2 \<le> b"
+          by (smt (verit, ccfv_threshold) P1A0 binary_filter_sup_def inf.coboundedI2 mem_Collect_eq)
+        have P1B0:"inf (inf a1 b1) (inf a2 b2) \<le> a \<and> inf (inf a1 b1) (inf a2 b2) \<le> b"
+          by (meson P1A1 P1A2 dual_order.trans inf_le1 inf_le2 inf_mono)
+        obtain ab1 where P1A3:"ab1 \<in> F1 \<and> ab1 \<le> a1 \<and> ab1 \<le> b1"
+          by (meson A0 is_filter_def P1A1 P1A2 downdir_up_pisystem inf_le1 inf_le2 is_pisystem_imp)
+        obtain ab2 where P1A4:"ab2 \<in> F2 \<and> ab2 \<le> a2 \<and> ab2 \<le> b2"
+          by (meson A2 FiltersAgain7.is_filter_def P1A1 P1A2 downdir_up_pisystem inf_le1 inf_le2 is_pisystem_imp)  
+        have P1B1:"ab1 \<le> (inf a1 b1) \<and> ab2 \<le> (inf a2 b2)"
+          by (simp add: P1A3 P1A4)
+        have P1B2:"inf a1 b1 \<in> F1 \<and> inf a2 b2 \<in> F2"
+          using A0 A2 is_filter_def P1A1 P1A2 downdir_up_pisystem is_pisystem_imp by blast
+        have P1B3:"(inf (inf a1 b1) (inf a2 b2)) \<in> ?S"
+          using P1B2 binary_filter_sup_def by blast
+        show "\<exists>c \<in> ?S. c \<le> a \<and> c \<le> b"
+          using P1B0 P1B3 by auto
+      qed
+      show ?thesis
+        by (simp add: P10 is_downdir_def)
+    qed
+  have P2:"is_upclosed ?S"
+  proof-
+    have P20:"\<And>a b. (a \<le> b \<and>  a \<in> ?S) \<longrightarrow>  b \<in> ?S"
+    proof
+      fix a b assume P20A0:"a \<le> b \<and> a \<in> ?S"
+      obtain a1 a2 where P20A1:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> inf a1 a2 \<le> a"
+        by (smt (verit) P20A0 binary_filter_sup_def mem_Collect_eq)
+      have P20B1:"inf a1 a2 \<le> b"
+        using P20A0 P20A1 by auto
+      show "b \<in> ?S"
+        using P20A1 P20B1 binary_filter_sup_def by blast
+    qed
+    show ?thesis
+      by (meson P20 is_upclosed_def)
+  qed
+  show ?thesis
+    by (simp add: FiltersAgain7.is_filter_def P0 P1 P2)
+qed
+
+lemma filter_on_lattice_sup_greatest:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A1:"is_filter (F2::('X::lattice set))"
+  shows "F1 \<subseteq> (binary_filter_sup F1 F2) \<and> F2 \<subseteq> (binary_filter_sup F1 F2)"
+proof-
+  let ?S="binary_filter_sup F1 F2"
+  have B0:"\<And>x. x \<in> F1 \<Longrightarrow> x \<in> ?S"
+  proof-
+    fix x assume A2:"x \<in> F1"
+    obtain b where A3:"b \<in> F2"
+      using A1 FiltersAgain7.is_filter_def is_inhabited_imp by auto 
+    have B1:"inf x b \<le> x"
+      by simp
+    show "x \<in> ?S"
+      using A2 A3 B1 binary_filter_sup_def by blast
+  qed
+  have B2:"\<And>x. x \<in> F2 \<Longrightarrow> x \<in> ?S"
+    proof-
+    fix x assume A4:"x \<in> F2"
+    obtain b where A5:"b \<in> F1"
+      using A0 FiltersAgain7.is_filter_def is_inhabited_imp by auto 
+    have B3:"inf b x \<le> x"
+      by simp
+    show "x \<in> ?S"
+      using A4 A5 B3 binary_filter_sup_def by blast
+  qed
+  show ?thesis
+    by (simp add: B0 B2 subsetI)
+qed
+
+
+lemma filter_on_lattice_sup_least:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A1:"is_filter (F2::('X::lattice set))"
+  shows "\<And>F3. is_filter F3 \<and> F1 \<subseteq> F3 \<and> F2 \<subseteq> F3 \<longrightarrow> (binary_filter_sup F1 F2) \<subseteq> F3"
+proof
+  fix F3 assume A2:"is_filter F3 \<and> F1 \<subseteq> F3 \<and> F2 \<subseteq> F3"
+  let ?S="(binary_filter_sup F1 F2)"
+  show "?S \<subseteq> F3"
+  proof
+    fix x assume A3:"x \<in> ?S"
+    obtain x1 x2 where A4:"x1 \<in> F1 \<and> x2 \<in> F2 \<and> inf x1 x2 \<le> x"
+      by (smt (verit, best) A3 binary_filter_sup_def mem_Collect_eq)
+    have B0:"x1 \<in> F3 \<and> x2 \<in> F3"
+      using A2 A4 by blast
+    have B1:"inf x1 x2 \<in> F3"
+      by (simp add: A2 B0 filter_inlattice_inf_closed)
+    show "x \<in> F3"
+      using A2 A4 B1 FiltersAgain7.is_filter_def is_upclosed_imp by auto
+  qed
+qed
+
+ 
+
+instantiation filter:: (lattice) lattice
+begin
+
+lift_definition inf_filter::"'a::lattice filter \<Rightarrow> 'a::lattice filter \<Rightarrow> 'a::lattice filter" is inter
+  by (simp add: filter_on_lattice_inf)
+
+lift_definition sup_filter::"'a::lattice filter \<Rightarrow> 'a::lattice filter \<Rightarrow> 'a::lattice filter" is binary_filter_sup
+  by (simp add: filter_on_lattice_sup)
+
+lift_definition less_eq_filter::"'a::lattice filter \<Rightarrow> 'a::lattice filter \<Rightarrow> bool" is subset_eq .
+
+lift_definition less_filter::"'a::lattice filter \<Rightarrow> 'a::lattice filter \<Rightarrow> bool" is subset .
+
+instance
+  apply intro_classes
+  apply (simp add: less_eq_filter.rep_eq less_filter.rep_eq subset_not_subset_eq)
+  apply (simp add: FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain7.filter.Rep_filter_inject FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain7.inf_filter.rep_eq FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain7.inf_filter.rep_eq FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: FiltersAgain7.inf_filter.rep_eq FiltersAgain7.less_eq_filter.rep_eq)
+  apply (simp add: filter_on_lattice_sup_greatest less_eq_filter.rep_eq sup_filter.rep_eq)
+  apply (simp add: FiltersAgain7.less_eq_filter.rep_eq FiltersAgain7.sup_filter.rep_eq filter_on_lattice_sup_greatest)
+  by (simp add: FiltersAgain7.less_eq_filter.rep_eq FiltersAgain7.sup_filter.rep_eq filter_on_lattice_sup_least)
+end
+
+section Meshing
 lemma mesh_prop1:
   assumes A0:"{a}# F" and A1:"a \<subseteq> b"
   shows "{b}#F"
@@ -921,6 +1196,7 @@ lemma mesh_prop15:
 
 
 lemma mesh_prop16:
+  fixes EF::"'X set set set"
   assumes A0:"\<forall>F \<in> EF. (is_filter F) \<and> ({} \<notin> F)" and
           A1:"finite EF" and
           A2:"is_filter G \<and> {} \<notin> G" and
@@ -951,8 +1227,10 @@ proof-
       using B7 by blast
     have B10:"?HC \<noteq> {}"
       using A0b by blast
-    have B11:"(\<Inter>?HC) \<in> G"
-      by (metis (no_types, lifting) A2 B10 B6 B9 is_filter_def Inter_greatest Inter_lower downdir_up_pisystem pi_system_then_fc)
+    have B11:"?HC \<subseteq> G \<and> is_filter G \<and> ?HC \<noteq> {}"
+      using A2 B10 B9 by blast
+    have B11:"(Inf ?HC) \<in> G"
+      by (smt (verit) A2 B10 B6 B9 complete_lattice_class.finite_meet_in_set filter_in_semilattice_inf_iff insert_absorb insert_not_empty)
     have B12:"(UNIV - (\<Inter>?HC)) = \<Union>(?H)"
        by blast
     have B13:" \<Inter>?HC \<in> G  \<longrightarrow> \<Union>(?H) \<notin> grill G"
