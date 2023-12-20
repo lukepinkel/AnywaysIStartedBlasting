@@ -21,7 +21,12 @@ TODO
   (3.1) form a lattice 
         DONE (instantiation filter:: (lattice) lattice)
   (3.2)complete semilattice sup 
-      TODO
+      TODO - the issue is with the definition involving finitary inf for
+      arbitrary A
+      Sup A = {x. exists S in Pow A.  finite S and S neq {} and Inf S leq x }
+      So the finite Inf needed can maybe be constructed using Finite_Set.fold
+      or something - maybe extending semilattice_inf? 
+      Otherwise the bozo move is with the semilattice_inf_finiteInf defined below
   (3.3)the finite sup is just finite intersection of filters whose elements are finite joins
   (3.4) the arbitrary sup is the upclosure of finite meets for all finite collections  of the union
 
@@ -72,6 +77,8 @@ class semilattice_inf_Inf=semilattice_inf+Inf+
   assumes  Finite_Inf_lower: "\<And>x A. finite A \<Longrightarrow>  x \<in> A \<Longrightarrow> Inf A \<le> x" and
            Finite_Inf_greatest: "\<And>z A. finite A \<Longrightarrow> ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A)"
 
+ 
+
 class bounded_semilattice_inf_top_Inf=semilattice_inf_Inf+order_top
 
 sublocale complete_semilattice_inf \<subseteq> semilattice_inf_Inf Inf inf "(\<le>)" "(<)"
@@ -93,6 +100,7 @@ definition up_closure::"'a::order set \<Rightarrow> 'a::order set" where
 
 definition is_prime::"'a::{order, sup} set \<Rightarrow> bool" where
   "is_prime A \<equiv> (\<forall>a. \<forall>b. (sup a b) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
+
 
 
 definition binary_filter_sup::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
@@ -148,11 +156,11 @@ definition is_chain::"'X::order set \<Rightarrow> bool" where
   "is_chain A \<equiv> (\<forall>a1 \<in> A. \<forall>a2 \<in> A. (a1 \<le> a2 \<or> a2 \<le> a1))"
 
 
-definition meshes::"('a set set) \<Rightarrow> ('a set set) \<Rightarrow> bool"  (infixl "#" 50)  where
-   "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  (a\<inter>b \<noteq> {}))"
+definition meshes::"('a::{lattice,order_bot} set) \<Rightarrow> ('a::{lattice,order_bot} set) \<Rightarrow> bool"  (infixl "#" 50)  where
+   "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  ((inf a b) \<noteq> bot))"
 
-definition grill::"'a set set \<Rightarrow> 'a set set" where
-  "grill A = {x::('a set). {x}#A}"  
+definition grill::"'a::{lattice,order_bot} set \<Rightarrow> 'a::{lattice,order_bot} set" where
+  "grill A = {x::('a::{lattice,order_bot}). {x}#A}"  
 
 definition is_prime_alt::"'a set set \<Rightarrow> bool" where
   "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
@@ -262,6 +270,9 @@ lemma filter_simp [simp]:
   using filter.Rep_filter by auto
   
 setup_lifting type_definition_filter
+
+
+
 
 section Upsets
 context order_top
@@ -1055,6 +1066,7 @@ qed
 
 instantiation filter:: (lattice) lattice
 begin
+ 
 
 lift_definition inf_filter::"'a::lattice filter \<Rightarrow> 'a::lattice filter \<Rightarrow> 'a::lattice filter" is inter
   by (simp add: filter_on_lattice_inf)
@@ -1079,6 +1091,10 @@ instance
   apply (simp add: FiltersAgain7.less_eq_filter.rep_eq FiltersAgain7.sup_filter.rep_eq filter_on_lattice_sup_greatest)
   by (simp add: FiltersAgain7.less_eq_filter.rep_eq FiltersAgain7.sup_filter.rep_eq filter_on_lattice_sup_least)
 end
+
+ 
+
+
 
 section Meshing
 lemma mesh_prop1:
@@ -1155,7 +1171,7 @@ lemma mesh_prop7:
 lemma mesh_prop8:
    "A#B \<longleftrightarrow> A \<subseteq> grill B"
 proof-
-  have Eq0:"A#B \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<inter> b \<noteq> {})" by (simp add: meshes_def)
+  have Eq0:"A#B \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. inf a b \<noteq> bot)" by (simp add: meshes_def)
   have Eq1:"... \<longleftrightarrow> (\<forall>a \<in> A. {a}#B)" by (simp add: meshes_def)
   have Eq2:"... \<longleftrightarrow> (\<forall>a \<in> A. a \<in> grill B)" by (simp add: grill_def)
   have Eq3:"... \<longleftrightarrow> A \<subseteq> grill B " by blast
@@ -1163,7 +1179,8 @@ proof-
 qed
 
 lemma mesh_prop9:
-  "A#B \<longleftrightarrow> B#A" by (metis Int_commute meshes_def)
+  "A#B \<longleftrightarrow> B#A"
+  by (metis inf_commute meshes_def)
 
 lemma mesh_prop10:
    "A#B \<longleftrightarrow> B \<subseteq> grill A"
@@ -1254,13 +1271,13 @@ lemma grill_is_antitone:
   by (meson equalityD1 mesh_prop11 subset_trans)
 
 lemma grill_antitone_converse:
-  assumes A0:"is_upclosed A \<and> is_upclosed B"
+  assumes A0:"is_upclosed (A::'a set set) \<and> is_upclosed (B::'a set set)"
   shows " grill B \<subseteq> grill A \<longrightarrow> A \<subseteq> B "
   using assms mesh_prop13 by blast
 
 
 lemma grill_maps_to_upclosed_sets:
-  assumes "A \<noteq> {}"
+  assumes "(A::'a set set) \<noteq> {}"
   shows "is_upclosed (grill A)"
   by (simp add: grill_def mesh_prop1 is_upclosed_def)
 
@@ -1324,33 +1341,33 @@ proof-
   have B2:"grill A \<subseteq> grill (up_closure A)"
   proof
     fix a assume B2_A0:"a \<in> (grill A)"
-    have B2_B1:"\<forall>b \<in> A. a \<inter> b \<noteq> {}"
-      by (metis B2_A0 Int_commute mesh_prop10 meshes_def order_refl)
+    have B2_B1:"\<forall>b \<in> A. inf a b \<noteq> bot"
+      by (meson B2_A0 dual_order.refl mesh_prop8 meshes_def)
     show "a \<in> grill (up_closure A)"
     proof-
-      have B2_B3:"\<forall>c \<in> up_closure A. a \<inter> c \<noteq> {}"
+      have B2_B3:"\<forall>c \<in> up_closure A. inf a c \<noteq> bot"
       proof
         fix c assume B2_A1:"c \<in> up_closure A"
-        have B2_B4:"\<exists>b \<in> A. c \<supseteq> b"
+        have B2_B4:"\<exists>b \<in> A. c \<ge> b"
           using B2_A1 up_closure_def by auto
-        obtain b where B2_A2:"b \<in> A \<and> c \<supseteq> b" 
+        obtain b where B2_A2:"b \<in> A \<and> c \<ge> b" 
            using B2_B4 by blast
-        have B2_B5:"a \<inter> c \<supseteq> a \<inter> b" 
+        have B2_B5:"inf a c \<ge> inf a b" 
            by (simp add: B2_A2 inf.coboundedI2)
-        have B2_B6:"... \<noteq> {}"
-           using B2_A2 B2_B1 by fastforce
-        show "a \<inter> c \<noteq> {}" 
+        have B2_B6:"... \<noteq> bot"
+          using B2_A2 B2_B1 B2_B5 bot.extremum_uniqueI by fastforce
+        show "inf a c \<noteq> bot" 
           using B2_B6 by blast
       qed
       show ?thesis
-        using B2_B3 mesh_prop15 upclosure_is_upclosed by auto
+        by (simp add: B2_B3 grill_def meshes_def)
      qed
   qed
   with B1 B2 show ?thesis by blast
 qed
      
 lemma grill_of_grill_is_upclosure:
-  "grill (grill A) = up_closure A"
+  "grill (grill (A::'a set set)) = up_closure A"
 proof-
   let ?U="up_closure A" and ?G="grill (grill A)"
   have L:"?G \<subseteq> ?U"
@@ -1376,7 +1393,7 @@ proof-
 qed  
 
 lemma grill_involutory_in_upsets:
-  "grill (grill A) = A \<longleftrightarrow> is_upclosed A"
+  "grill (grill (A::'a set set)) = A \<longleftrightarrow> is_upclosed A"
   by (metis dual_order.refl grill_antitone_converse grill_of_grill_is_upclosure mesh_prop11 subset_antisym upclosure_is_upclosed)
 
 lemma degenerate_grill1:
@@ -1387,7 +1404,24 @@ lemma degenerate_grill2:
   "grill ({}) = Pow UNIV"
   by (metis Pow_UNIV UNIV_I degenerate_grill1 grill_involutory_in_upsets is_upclosed_def)
 
+lemma grill_grill_is_extensive:
+  "is_extensive (\<lambda>A. (grill (grill A)))"
+  using is_extensive_def mesh_prop11 by auto
+
+lemma grill_grill_is_isotone:
+  "is_isotone (\<lambda>A. (grill (grill A)))"
+  by (simp add: grill_is_antitone is_isotone_def)
+ 
+
+lemma grill_grill_is_idempotent:
+  "is_idempotent (\<lambda>A. (grill (grill A)))"
+  by (metis (no_types, lifting) grill_grill_is_extensive grill_is_antitone is_extensive_def is_idempotent_def subset_antisym)
+  
      
+lemma grill_grill_is_closure:
+  "is_closure  (\<lambda>A. (grill (grill A)))"
+  by (simp add: grill_grill_is_extensive grill_grill_is_idempotent grill_grill_is_isotone is_closure_def)
+
 lemma prime_upset_is_grill_of_filter:
   assumes A0:"A \<noteq> {} \<and> A \<noteq> {{}} \<and> (A \<noteq>  Pow UNIV)" and A1:"is_upclosed A" and A2:"is_prime A"
   shows "\<exists>F. (is_filter F) \<and> (A=grill F)" 
@@ -1464,7 +1498,7 @@ lemma grill_extensive:
   assumes A0:"is_filter F" and
           A1:"bot \<notin> F"
   shows "F \<subseteq> (grill F)"
-  using A0 A1 mesh_prop10 mesh_prop3 by blast
+  by (metis A0 A1 filter_inlattice_inf_closed mesh_prop8 meshes_def)
 
 
 lemma proper_filter_iff:
@@ -1605,7 +1639,7 @@ lemma not_in_grill_not_in_ultrafilter:
 
 
 lemma grill_of_ultrafilter_subset:
-  assumes A0:"is_ultrafilter U"
+  assumes A0:"is_ultrafilter (U::'a set set)"
   shows "(grill U) \<subseteq> U"
 proof
   fix a assume A1:"a \<in> grill U"
@@ -1616,7 +1650,7 @@ proof
 qed
 
 lemma ultrafilters_grill_fixpoints:
-  "\<forall>U. is_ultrafilter U \<longrightarrow> (grill U) = U"
+  "\<forall>U. is_ultrafilter  (U::'a set set) \<longrightarrow> (grill U) = U"
   by (meson grill_extensive grill_of_ultrafilter_subset is_pfilter_def is_ultrafilter_def proper_filter_iff subset_antisym)
 
 
@@ -1630,7 +1664,7 @@ lemma filter_then_prime_imp_grillid:
 (* voll vereinigungsdualer operator*)
 
 lemma grill_intersection_union_dual:
-  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (is_upclosed (EF(i)))"
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (is_upclosed (EF(i)::'a set set))"
   shows "grill ( \<Inter>i \<in> I. EF(i) ) = (\<Union>i \<in> I. grill (EF(i)))"
 proof-
   have B0:"\<forall>i \<in> I. ( \<Inter>i \<in> I. EF(i) ) \<subseteq> (EF(i))" 
@@ -1671,7 +1705,7 @@ qed
 
 
 lemma grill_union_intersection_dual:
-  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (is_upclosed (EF(i)))"
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (is_upclosed (EF(i)::'a set set))"
   shows "grill ( \<Union>i \<in> I. EF(i) ) = (\<Inter>i \<in> I. grill (EF(i)))"
 proof-
   have B0:"\<forall>a. a \<in> grill ( \<Union>i \<in> I. EF(i) ) \<longleftrightarrow> (\<forall>i \<in> I. \<forall>fi \<in> (EF(i)). a \<inter> fi \<noteq> {})"
@@ -1814,5 +1848,302 @@ lemma finer_ultrafilters_notempty:
 
 
 
+definition antitone :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
+"antitone f \<longleftrightarrow> (\<forall>x y. x \<le> y \<longrightarrow> f y \<le> f x)"
 
+definition comp_extensive :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+"comp_extensive f g \<longleftrightarrow> (\<forall>x. x \<le> g (f x)) \<and> (\<forall>y. y \<le> f (g y))"
+
+definition relation_to_fgc::"('X \<times> 'Y) set \<Rightarrow> (('X set) \<Rightarrow> ('Y set))" where
+  "relation_to_fgc R = (\<lambda>(A::('X set)). {(y::'Y). \<forall>x \<in> A. (x, y) \<in> R}) "
+
+definition relation_to_ggc::"('X \<times> 'Y) set \<Rightarrow> (('Y set) \<Rightarrow> ('X set))" where
+  "relation_to_ggc R = (\<lambda>(B::('Y set)). {(x::'X). \<forall>y \<in> B. (x, y) \<in> R}) "
+
+definition fgc_to_relation::"(('X set) \<Rightarrow> ('Y set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "fgc_to_relation f = {(x, y). y \<in> f({x}) }"
+
+definition ggc_to_relation::"(('Y set) \<Rightarrow> ('X set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "ggc_to_relation g = {(x, y). x \<in> g({y}) }"
+
+definition is_gc2::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+  "is_gc2 f g \<equiv> (comp_extensive f g) \<and> (antitone f) \<and> (antitone g)"
+
+definition is_join_dual::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> bool" where
+  "is_join_dual f \<equiv> (\<forall>A. ( (f (Sup A)) = (Inf (f`(A))) ))"
+
+definition join_dual_partner::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> ('Y::{Inf,order} \<Rightarrow> 'X::{Sup,order})" where
+  "join_dual_partner f = (\<lambda>y::('Y::{Inf,order}). Sup {x::('X::{Sup,order}). y \<le> (f x)})"
+
+definition is_gc4::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+  "is_gc4 f g \<equiv> \<forall>(x::('X::order)). \<forall>(y::('Y::order)). y \<le> (f x) \<longleftrightarrow> x \<le> (g y)"
+
+
+lemma finite_ne_subset_induct[consumes 3, case_names singleton insert]:
+  assumes "finite F"
+      and "F \<noteq> {}"
+      and "F \<subseteq> X"
+      and singleton: "\<And>x . P {x}"
+      and insert: "\<And>x E . finite E \<Longrightarrow> E \<noteq> {} \<Longrightarrow> E \<subseteq> X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<notin> E \<Longrightarrow> P E \<Longrightarrow> P (insert x E)"
+    shows "P F"
+  using assms(1-3)
+  apply (induct rule: finite_ne_induct)
+  apply (simp add: singleton)
+  by (simp add: insert)
+
+
+lemma gc2_iff_gc4:
+  "is_gc2 f g \<longleftrightarrow> is_gc4 f g"
+proof-
+  have LtR:"is_gc2 f g \<longrightarrow> is_gc4 f g"
+  proof
+    assume A0:"is_gc2 f g "
+    have LR:"\<And>x y.  y \<le> (f x) \<longrightarrow> x \<le> (g y)"
+    proof
+      fix x y assume A1:"y \<le> f x"
+      have B0:"(g (f x)) \<le> g y"
+        using A0 A1 antitone_def is_gc2_def by auto
+      have B1:"x \<le> (g (f x))"
+        using A0 comp_extensive_def is_gc2_def by blast
+      have B2:"... \<le> g y"
+        by (simp add: B0)
+      show "x \<le> g y"
+        using B1 B2 by auto
+    qed
+    have RL:"\<And>x y.  x \<le> (g y) \<longrightarrow> y \<le> (f x)"
+    proof
+      fix x y assume A2:"x \<le> g y"
+      have B3:"(f (g y)) \<le> f x"
+        using A0 A2 antitone_def is_gc2_def by auto
+      have B4:"y \<le> (f (g y))"
+        using A0 comp_extensive_def is_gc2_def by blast
+      have B5:"... \<le> f x"
+        by (simp add: B3)
+      show "y \<le> f x"
+        using B4 B5 by auto
+    qed
+    show "is_gc4 f g"
+      by (metis LR RL is_gc4_def)
+  qed
+  have RtL:"is_gc4 f g \<longrightarrow> is_gc2 f g"
+  proof
+    assume A3:"is_gc4 f g"
+    have B6:"\<forall>x. x \<le> (g (f x))"
+      using A3 is_gc4_def by blast
+    have B7:"\<forall>y. y \<le> (f (g y))"
+      using A3 is_gc4_def by auto
+    have B8:"\<And>x1 x2. x1 \<le> x2 \<longrightarrow> (f x2) \<le> (f x1)"
+      by (meson B6 A3 dual_order.trans is_gc4_def)
+    have B9:"\<And>y1 y2. y1 \<le> y2 \<longrightarrow> (g y2) \<le> (g y1)"
+      by (meson B7 A3 dual_order.trans is_gc4_def)
+    show "is_gc2 f g"
+      by (simp add: B6 B7 B8 B9 antitone_def comp_extensive_def is_gc2_def)
+  qed
+  show ?thesis
+    using LtR RtL by blast
+qed
+
+lemma gc2_imp_join_dual:
+  fixes f::"('X::complete_lattice \<Rightarrow> 'Y::complete_lattice)"
+  fixes g::"('Y::complete_lattice \<Rightarrow> 'X::complete_lattice)"
+  assumes A0:"is_gc2 f g"
+  shows "is_join_dual f"
+proof-
+  have B0:"is_gc4 f g" using assms gc2_iff_gc4 by blast 
+  have B1:"\<forall>A. (\<forall>a \<in> A. (f (Sup(A))) \<le> (f a))"
+    by (meson antitone_def assms complete_lattice_class.Sup_upper is_gc2_def)
+  have B2:"\<forall>A. (\<forall>a \<in> A. (f (Sup(A))) \<le> (Inf (f`A)))"
+    by (simp add: B1 INF_greatest)
+  have B3:"\<And>y A. y \<le> Inf(f`(A)) \<longleftrightarrow> (\<forall>a \<in> A. (y \<le> (f a)))"
+    by (simp add: le_INF_iff)
+  have B4:"\<And>y A. y \<le> Inf(f`(A)) \<longleftrightarrow> (\<forall>a \<in> A. (a \<le> (g y)))"
+    by (meson B0 B3 is_gc4_def)
+  have B5:"\<And>y A. y \<le> Inf(f`(A)) \<longleftrightarrow> ((Sup A) \<le> (g y))"
+    by (simp add: B4 Sup_le_iff)
+  have B6:"\<And>y A. y \<le> Inf(f`(A)) \<longleftrightarrow> (y \<le> (f (Sup A)))"
+    using B0 B5 is_gc4_def by blast
+  show ?thesis
+    by (meson B6 antisym dual_order.refl is_join_dual_def)
+qed
+
+lemma join_dual_imp_gc2:
+  fixes f::"('X::complete_lattice \<Rightarrow> 'Y::complete_lattice)"
+  fixes g::"('Y::complete_lattice \<Rightarrow> 'X::complete_lattice)"
+  assumes A0:"is_join_dual f"
+  shows "is_gc2 f (join_dual_partner f)"
+proof-
+  let ?g="(join_dual_partner f)"
+  have B0:"\<And>x1 x2. (x1 \<le> x2) \<longrightarrow> (f x2) \<le> (f x1)"
+  proof
+    fix x1 x2 assume A1:"(x1::('X::complete_lattice)) \<le> (x2::('X::complete_lattice))"
+    have B00:"Sup {x1, x2} = x2"
+      using A1 le_iff_sup by auto
+    have B01:"(f x2) = (f (Sup {x1, x2}))"
+      using B00 by auto
+    have B01:"... = (Inf {(f x1), (f x2)})"
+      by (metis (mono_tags, lifting) assms image_insert image_is_empty is_join_dual_def)
+    have B02:"... \<le> (f x1)"
+      by simp
+    show "(f x2) \<le> (f x1)"
+      using B00 B01 B02 by auto
+  qed
+  have B1:"\<And>y1 y2. (y1 \<le> y2) \<longrightarrow> (?g y2) \<le> (?g y1)"
+  proof
+    fix y1 y2 assume A2:"(y1::('Y::complete_lattice)) \<le> (y2::('Y::complete_lattice))" 
+    let ?B2="{x::('X::complete_lattice). y2 \<le> (f x)}"
+    let ?B1="{x::('X::complete_lattice). y1 \<le> (f x)}"
+    have B10:"(?g y2) = Sup ?B2"
+      by (simp add: join_dual_partner_def)   
+    have B11:"(?g y1) = Sup ?B1"
+      by (simp add: join_dual_partner_def)   
+    have B12:"?B2 \<subseteq> ?B1"
+      using A2 by force
+    have B13:"(?g y2) \<le> (?g y1)"
+      by (simp add: B10 B11 B12 Sup_subset_mono)
+    show "(?g y2) \<le> (?g y1)"
+      by (simp add: B13)
+  qed
+  have B2:"\<And>(y::('Y::complete_lattice)). y \<le> (f (?g y))"
+    by (metis assms is_join_dual_def join_dual_partner_def le_INF_iff mem_Collect_eq)
+  have B3:"\<And>(x::('X::complete_lattice)). x \<le> (?g (f x))"
+    by (simp add: complete_lattice_class.Sup_upper join_dual_partner_def)
+  have B4:"(comp_extensive f ?g)"
+    by (simp add: B2 B3 comp_extensive_def)
+  have B5:"(antitone f) \<and> (antitone ?g)"
+    by (simp add: B0 B1 antitone_def)
+  show ?thesis
+    by (simp add: B4 B5 is_gc2_def)
+qed
+      
+lemma relation_to_gc2:
+  "is_gc2 (relation_to_fgc R) (relation_to_ggc R)"
+  by (simp add: antitone_def comp_extensive_def is_gc2_def relation_to_fgc_def relation_to_ggc_def subset_eq)
+
+lemma gc2_to_relation1:
+  assumes "is_gc2 f g"
+  shows "fgc_to_relation f = ggc_to_relation g"
+proof-
+  have B0:"\<forall>x. \<forall>y. x \<in> (g {y}) \<longrightarrow> y \<in> (f {x})"
+    by (meson assms empty_subsetI gc2_iff_gc4 insert_subset is_gc4_def)
+  have B1:"\<forall>x. \<forall>y. y \<in> (f {x}) \<longrightarrow> x \<in> (g {y})"
+    by (meson assms empty_subsetI gc2_iff_gc4 insert_subset is_gc4_def)
+  have B2:"\<forall>x. \<forall>y. y \<in> (f {x}) \<longleftrightarrow>  x \<in> (g {y})"
+     using B0 B1 by blast
+  have B3:"\<forall>x. \<forall>y. (x, y) \<in>(fgc_to_relation f) \<longleftrightarrow> (x, y) \<in> (ggc_to_relation g)"
+    by (simp add: B2 fgc_to_relation_def ggc_to_relation_def)
+  show ?thesis
+    by (simp add: B3 set_eq_iff)
+qed
+
+lemma gc2_to_relation2:
+  assumes A0:"is_gc2 f g"
+  shows "(relation_to_fgc (fgc_to_relation f)) = f"
+proof-
+  let ?Rf="fgc_to_relation f"
+  let ?f1="relation_to_fgc ?Rf"
+  have B0:"is_join_dual f"
+    using assms gc2_imp_join_dual by auto
+  have B11:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. (a, y) \<in> ?Rf)"
+    by (simp add: relation_to_fgc_def)
+  have B12:"\<And>A y. y \<in> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. y \<in> (f {a}))"
+    by (simp add: fgc_to_relation_def relation_to_fgc_def)
+  have B13:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> (\<forall>a \<in> A. {y} \<subseteq> (f {a}))"
+    by (simp add: B12)
+  have B14:"\<And>A y.{y} \<subseteq> ?f1(A) \<longleftrightarrow> ({y} \<subseteq> (\<Inter>a \<in> A. f {a}))"
+    by (simp add: B12)
+  have B15:"\<And>A. (\<Inter>a \<in> A. f {a}) = (f (\<Union>a \<in> A. {a}))"
+    by (metis B0 INT_extend_simps(10) is_join_dual_def)
+  have B16:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> ({y} \<subseteq> (f (\<Union>a \<in> A. {a})))"
+    using B14 B15 by force
+  have B17:"\<And>A y. {y} \<subseteq> ?f1(A) \<longleftrightarrow> {y} \<subseteq> (f A)"
+    using B16 by auto
+  have B18:"\<And>A y. y \<in> ?f1(A) \<longleftrightarrow> y \<in> (f A)"
+    using B17 by auto
+  have B19:"\<And>A.   ?f1(A) = (f A)"
+    by (simp add: B18 set_eq_iff)
+  show ?thesis
+    using B19 by auto
+qed
+
+lemma gc2_to_relation3:
+  "fgc_to_relation (relation_to_fgc R) = R"
+proof-
+  let ?f1="relation_to_fgc R"
+  let ?R1="fgc_to_relation ?f1"
+  have LtR:"\<And>x y. (x, y) \<in> ?R1 \<longrightarrow> (x, y) \<in> R"
+  proof
+    fix x y assume A0:"(x, y) \<in> ?R1"
+    have B0:"y \<in> ?f1({x})"
+      by (metis (no_types, lifting) A0 CollectD Pair_inject case_prodE fgc_to_relation_def)
+    show "(x, y) \<in> R"
+      by (metis (no_types, lifting) B0 CollectD relation_to_fgc_def singletonI)
+  qed
+  have RtL:"\<And>x y. (x, y) \<in> R \<longrightarrow> (x, y) \<in> ?R1"
+  proof
+    fix x y assume A0:"(x, y) \<in>R"
+    show "(x, y) \<in> ?R1"
+      by (simp add: A0 fgc_to_relation_def relation_to_fgc_def)
+  qed
+  show ?thesis
+    using LtR RtL by auto
+qed
+
+lemma gc_double_comp:
+  assumes A0:"is_gc2 f g"
+  shows "(f \<circ> g \<circ> f = f) \<and> (g \<circ> f \<circ> g = g)"
+proof-
+  have B0:"\<forall>x. (f x) \<le> f ( g (f (x)))"
+    using A0 gc2_iff_gc4 is_gc4_def by blast
+  have B1:"\<forall>x. x \<le> g (f (x))"
+    using A0 comp_extensive_def is_gc2_def by blast
+  have B2:"\<forall>x. f ( g (f (x))) \<le> (f x)"
+    using B1 antitone_def assms is_gc2_def by blast
+  have B3:"\<forall>x. (f x) = f ( g (f (x)))"
+    by (simp add: B0 B2 order_antisym)
+  have B4:"\<forall>y. (g y) \<le> g ( f (g (y)))"
+    using A0 gc2_iff_gc4 is_gc4_def by blast
+  have B5:"\<forall>y. y \<le> f (g (y))"
+    using A0 comp_extensive_def is_gc2_def by blast
+  have B6:"\<forall>y. g ( f (g (y))) \<le> (g y)"
+    using B5 antitone_def assms is_gc2_def by blast
+  have B7:"\<forall>y. (g y) = g ( f (g (y)))"
+    by (simp add: B4 B6 order_antisym)
+  show ?thesis
+    using B3 B7 by fastforce
+qed
+
+lemma gc_composed_idempotent1:
+  assumes A0:"is_gc2 f g"
+  shows "(f \<circ> g) \<circ> (f \<circ> g) = (f \<circ> g)"
+  by (simp add: assms fun.map_comp gc_double_comp)
+
+lemma gc_composed_idempotent2:
+  assumes A0:"is_gc2 f g"
+  shows "(g \<circ> f) \<circ> (g \<circ> f) = (g \<circ> f)"
+  by (simp add: assms gc_double_comp o_assoc)
+
+lemma gc_closure:
+  assumes A0:"is_gc2 f g"
+  shows "is_closure (f \<circ> g) \<and> is_closure (g \<circ> f)"
+proof-
+  let ?h1="f \<circ> g" and ?h2="g \<circ> f"
+  have C0:"is_extensive ?h1 \<and> is_extensive ?h2"
+    by (metis assms comp_apply comp_extensive_def is_extensive_def is_gc2_def)
+  have C1:"is_isotone ?h1 \<and> is_isotone ?h2"
+    by (metis (mono_tags, lifting) antitone_def assms comp_apply is_gc2_def is_isotone_def)
+  have C20:"?h1 \<circ> ?h1 = ?h1"
+    by (simp add: assms gc_composed_idempotent1)
+  have C21:"?h2 \<circ> ?h2 = ?h2"
+    by (simp add: assms gc_composed_idempotent2)
+  have C2:"is_idempotent ?h1 \<and> is_idempotent ?h2"
+    by (simp add: C20 C21 idempotent_req)
+  show ?thesis
+    by (simp add: C0 C1 C2 is_closure_def)
+qed
+
+
+lemma grill_is_galois:
+  "is_gc2 grill grill"
+  by (simp add: gc2_iff_gc4 is_gc4_def mesh_prop11)
+     
 end
