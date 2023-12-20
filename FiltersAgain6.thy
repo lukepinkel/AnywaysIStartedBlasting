@@ -175,7 +175,7 @@ lemma filter_closure_extensive:
   shows " A \<subseteq> filter_closure A"
 proof-
   have B0:"\<forall>a \<in> A. Inf {a} \<le> a"
-    by (simp add: complete_semilattice_inf_class.Inf_lower)
+    by (simp add: CInf_lower)
   have B1:"\<forall>a \<in> A. {a} \<in> Pow(A) \<and> (finite {a}) \<and> ({a} \<noteq> {})"
     by simp
   have B2:"\<forall>a \<in> A. a \<in> (filter_closure A)"
@@ -304,9 +304,9 @@ proof-
   let ?R=" Inf {x, Inf F}"
   let ?L="inf x (Inf F)"
   have B0:"?R \<le> x \<and> ?R \<le> Inf F"
-    by (simp add: local.Inf_lower)
+    by (simp add: local.CInf_lower)
   have B1:"?L \<le> ?R"
-    using local.Inf_greatest by fastforce
+    using local.CInf_greatest by fastforce
   have B2:"?L \<le> x \<and> ?L \<le> Inf F"
     by simp
   have B3:"?R \<le> ?L"
@@ -319,15 +319,15 @@ lemma infs_insert:
   "Inf {x, Inf F} = Inf (insert x F)"
 proof-
   have B0:"\<forall>y \<in> (insert x F). Inf {x, Inf F} \<le> y"
-    by (metis infs_eq insertCI insertE local.Inf_lower local.inf.coboundedI2)
+    by (metis infs_eq insert_iff local.CInf_lower local.inf.coboundedI2)
   have B1:"\<forall>y \<in>  (insert x F).  Inf (insert x F) \<le> y"
-    by (simp add: local.Inf_lower)
+    by (simp add: CInf_lower)
   have B2:"Inf {x, Inf F} \<le> Inf (insert x F)"
-    using B0 local.Inf_greatest by blast
+    using B0 CInf_greatest by blast
   have B3:"\<forall>y \<in> {x, Inf F}. (Inf (insert x F)) \<le> y"
-    by (simp add: local.Inf_greatest local.Inf_lower)
+    by (simp add: local.CInf_greatest local.CInf_lower)
   have B4:"Inf (insert x F) \<le> Inf {x, Inf F}"
-    using B3 local.Inf_greatest by blast
+    using B3 local.CInf_greatest by blast
   show ?thesis
     by (simp add: B2 B4 local.dual_order.eq_iff)
 qed
@@ -346,11 +346,11 @@ lemma finite_meet_in_set:
     then show ?case
     proof-
       have S0:"Inf {x} \<le> x"
-        by (simp add: local.Inf_lower)
+        by (simp add: local.CInf_lower)
       have S1:"x \<le> x"
         by simp
       have S2:"x \<le> Inf {x}"
-        using local.Inf_greatest by fastforce
+        using local.CInf_greatest by fastforce
       have S3:"Inf {x} = x"
         by (simp add: S0 S2 local.dual_order.eq_iff)
       show S4:"Inf {x} \<in> C"
@@ -491,11 +491,12 @@ proof-
     have B3:"E \<in> Pow (A) \<and> finite E \<and> E \<noteq> {}"
       using A1 B2 E_def by auto
     have B4:"\<forall>y \<in> Ex. (Inf E) \<le> (Inf (g y))"
-      by (metis E_def UnionI Union_Pow_eq complete_semilattice_inf_class.Inf_greatest complete_semilattice_inf_class.Inf_lower image_subset_iff subset_Pow_Union)
+      by (metis E_def UnionI Union_Pow_eq complete_semilattice_inf_class.CInf_greatest 
+          complete_semilattice_inf_class.CInf_lower image_subset_iff subset_Pow_Union)
     have B5:"\<forall>y \<in> Ex. (Inf E) \<le> y"
       using B2 B4 order.trans by blast
     have B6:"(Inf E) \<le> (Inf Ex)"
-      by (simp add: B5 complete_semilattice_inf_class.Inf_greatest)
+      by (simp add: B5 complete_semilattice_inf_class.CInf_greatest)
     have B7:"(Inf E) \<le> x"
       using A1 B6 order.trans by blast
     show "x \<in> filter_closure A"
@@ -569,7 +570,8 @@ proof-
       have B0B2:"Sc \<in> Pow(E) \<and> finite Sc \<and> Sc \<noteq> {}"
         using B0A1 B0A2 B0A3 by auto
       have B0B3:"(Inf Sc) \<le> (Inf Sa) \<and> (Inf Sc) \<le>(Inf Sb)"
-        by (simp add: B0A3 complete_semilattice_inf_class.Inf_greatest complete_semilattice_inf_class.Inf_lower)
+        by (simp add: B0A3 complete_semilattice_inf_class.CInf_greatest
+             complete_semilattice_inf_class.CInf_lower)
       have B0B4:"(Inf Sc) \<le> a \<and> (Inf Sc) \<le> b"
         using B0A1 B0A2 B0B3 dual_order.trans by blast
       show "\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)"
