@@ -10,23 +10,23 @@ declare [[show_types]]
 
 
 class complete_semilattice_inf = semilattice_inf + Inf +
-    assumes Inf_lower: "x \<in> A \<Longrightarrow> Inf A \<le> x"
-    and Inf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
+    assumes CInf_lower: "x \<in> A \<Longrightarrow> Inf A \<le> x"
+    and CInf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
 
   
 class complete_semilattice_sup = semilattice_sup + Sup +
-   assumes Sup_upper: "x \<in> A \<Longrightarrow> x \<le>  Sup A"
-    and Sup_least: "(\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
+   assumes CSup_upper: "x \<in> A \<Longrightarrow> x \<le>  Sup A"
+    and CSup_least: "(\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
 
 
 
-definition is_extensive::"('X::ord \<Rightarrow> 'X::ord) \<Rightarrow> bool" where
+definition is_extensive::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
   "is_extensive f \<equiv> (\<forall>x. (x \<le> (f x)))"
 
-definition is_isotone::"('X::ord \<Rightarrow> 'Y::ord) \<Rightarrow> bool" where
+definition is_isotone::"('a::ord \<Rightarrow> 'b::ord) \<Rightarrow> bool" where
   "is_isotone f \<equiv> (\<forall>x1 x2. x1 \<le> x2 \<longrightarrow> (f x1) \<le> (f x2))"
 
-definition is_idempotent::"('X::ord \<Rightarrow> 'X::ord) \<Rightarrow> bool" where
+definition is_idempotent::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
   "is_idempotent f \<equiv> (\<forall>x.  (f x)= f (f x))"
 
 lemma idempotent_req:
@@ -34,7 +34,7 @@ lemma idempotent_req:
   shows "is_idempotent f"
   by (metis assms comp_apply is_idempotent_def)
 
-definition is_closure::"('X::ord \<Rightarrow> 'X::ord) \<Rightarrow> bool" where
+definition is_closure::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
   "is_closure f \<equiv> (is_extensive f) \<and> (is_isotone f) \<and> (is_idempotent f)"
 
 context order
@@ -136,11 +136,11 @@ proof-
   have B1:"\<forall>a. Inf(principal_filter_in a C) \<in> C"
     using B0 assms by auto
   have B2:"\<forall>a. Inf(principal_filter_in a C) \<in> (principal_filter_in a C)"
-    by (metis B1 IntI Inf_greatest mem_Collect_eq principal_filter_def principal_filter_in_def principal_filter_in_imp)
+    by (metis B1 IntI CInf_greatest mem_Collect_eq principal_filter_def principal_filter_in_def principal_filter_in_imp)
   have B3:"\<forall>a. (\<forall>x \<in> (principal_filter_in a C).  Inf(principal_filter_in a C) \<le> x)"
-    by (simp add: complete_semilattice_inf_class.Inf_lower)
+    by (simp add: complete_semilattice_inf_class.CInf_lower)
   show ?thesis
-    by (metis B1 B2 Inf_lower empty_iff is_moore_family_def)
+    by (metis B1 B2 CInf_lower empty_iff is_moore_family_def)
 qed  
 
 
@@ -168,7 +168,7 @@ proof-
   have B0:"?i \<le> f ?i"
     using A0 is_closure_def is_extensive_def by blast
   have B1:"\<forall>x \<in> E. ?i \<le> x"
-    using complete_semilattice_inf_class.Inf_lower by blast
+    using complete_semilattice_inf_class.CInf_lower by blast
   have B2:"\<forall>x \<in> E. f ?i \<le> f x"
     using A0 B1 is_closure_def is_isotone_def by blast
   have B3:"\<forall>x \<in> E. f x = x"
@@ -176,7 +176,7 @@ proof-
   have B4:"\<forall>x \<in> E. f ?i \<le> x"
     using B2 B3 by fastforce
   have B5:"f ?i \<le> ?i"
-    by (simp add: B4 complete_semilattice_inf_class.Inf_greatest)
+    by (simp add: B4 complete_semilattice_inf_class.CInf_greatest)
   have B6:"f ?i = ?i"
     by (simp add: B0 B5 dual_order.antisym)
   show ?thesis 
@@ -193,7 +193,7 @@ lemma moore_closure_imp2:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C"
   shows "\<forall>x. ((moore_to_closure C) x) \<in> (principal_filter_in x C)"
-  by (metis A0 Inf_greatest Inf_lower is_moore_family_def moore_to_closure_def order_class.order_eq_iff)
+  by (metis A0 CInf_greatest CInf_lower is_moore_family_def moore_to_closure_def order_class.order_eq_iff)
 
 
 lemma moore_to_closure_iscl:
@@ -215,7 +215,7 @@ proof-
       obtain m where C0B2:"m \<in> ?Px \<and> (\<forall>x \<in>?Px. m \<le> x)"
         using C0B0 by blast
       have C0B3:"m= Inf(?Px)"
-        by (simp add: C0B2 Inf_greatest Inf_lower dual_order.antisym)
+        by (simp add: C0B2 CInf_greatest CInf_lower dual_order.antisym)
       have C0B4:"?f x \<in> principal_filter_in x C"
         using C0B1 C0B2 C0B3 by fastforce
       show "x \<le> ?f x"
@@ -233,7 +233,7 @@ proof-
       have C10B0:"?Px2 \<subseteq>?Px1"
         by (simp add: C10A0 principal_filter_in_order_iso)
       have C10B1:"Inf ?Px1 \<le> Inf ?Px2"
-        by (meson C10B0 Inf_greatest Inf_lower subset_eq)
+        by (meson C10B0 CInf_greatest CInf_lower subset_eq)
       show "(?f x1) \<le> (?f x2)"
         by (simp add: C10B1 moore_to_closure_def)
       qed
@@ -258,7 +258,7 @@ proof-
       have C2B4:"\<forall>z \<in> ?Pfx. ?y1 \<le> z"
         using principal_filter_in_imp by blast
       have C2B3:"?y1 = Inf ?Pfx"
-        by (metis C0 C2B3 Inf_lower dual_order.antisym is_extensive_def moore_to_closure_def)
+        by (metis C0 C2B3 CInf_lower dual_order.antisym is_extensive_def moore_to_closure_def)
       show "?f x = ?f (?f x)"
         by (metis C2B3 moore_to_closure_def)
       qed
@@ -350,7 +350,7 @@ proof
   have A1:"\<forall>y \<in> principal_filter x. x \<le> y"
     by (simp add: principal_filter_imp)
   show "x=(Inf(principal_filter x))"
-    by (simp add: A0 A1 Inf_greatest Inf_lower dual_order.eq_iff)
+    by (simp add: A0 A1 CInf_greatest CInf_lower dual_order.eq_iff)
 qed
 
 
@@ -368,7 +368,7 @@ proof-
   have B3:"\<forall>y \<in> principal_filter_in x C. x \<le> y"
     by (simp add: principal_filter_in_imp)
   show ?thesis
-    by (simp add: B2 B3 Inf_greatest Inf_lower dual_order.antisym)
+    by (simp add: B2 B3 CInf_greatest CInf_lower dual_order.antisym)
 qed  
 
 lemma moore_cl_iso_inv1:
@@ -389,7 +389,7 @@ proof-
     have A3:"\<forall>y \<in> principal_filter_in a (range f). f(a) \<le> y"
       using assms cl_range_inf1 by blast
     have A4:"f(a) = Inf(principal_filter_in a (range f))"
-      by (simp add: A2 A3 complete_semilattice_inf_class.Inf_greatest complete_semilattice_inf_class.Inf_lower order_antisym)
+      by (simp add: A2 A3 complete_semilattice_inf_class.CInf_greatest complete_semilattice_inf_class.CInf_lower order_antisym)
     have B1:"principal_filter_in a (range f) = (range f) \<inter> {y. a \<le> y}"
       by (simp add: principal_filter_def principal_filter_in_def)
     have B2:"(moore_to_closure (range f))(a) = Inf(principal_filter_in a (range f))"
@@ -478,7 +478,7 @@ proof-
   have B2:"\<forall>x. principal_filter_in x ?G2 \<subseteq>  principal_filter_in x ?G1"
     by (metis B1 principal_filter_in_def)
   have B3:"\<forall>x. Inf( principal_filter_in x ?G1) \<le> Inf( principal_filter_in x ?G2)"
-    by (meson B2 Inf_greatest Inf_lower in_mono)
+    by (meson B2 CInf_greatest CInf_lower in_mono)
   have B3:"\<forall>x. f1 x \<le> f2 x"
     by (metis A1 B0 in_cl_range_idempotent is_closure_def is_extensive_def isotone_idempotent_imp_extensive range_subsetD)
   show ?thesis
