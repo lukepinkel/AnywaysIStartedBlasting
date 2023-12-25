@@ -24,16 +24,12 @@ TODO
   (2.3) The infimum is described in filter_inf_is_filter
 (3). The filters on a lattice
   (3.1) form a lattice 
-        DONE (instantiation filter:: (lattice) lattice)
-  (3.2)complete semilattice sup 
-      TODO - the issue is with the definition involving finitary inf for
-      arbitrary A
-      Sup A = {x. exists S in Pow A.  finite S and S neq {} and Inf S leq x }
-      So the finite Inf needed can maybe be constructed using Finite_Set.fold
-      or something - maybe extending semilattice_inf? 
-      Otherwise the bozo move is with the semilattice_inf_finiteInf defined below
-  (3.3)the finite sup is just finite intersection of filters whose elements are finite joins
-  (3.4) the arbitrary sup is the upclosure of finite meets for all finite collections  of the union
+        DONE (filter_on_lattice_binf filter_inlattice_binf_closed filter_on_lattice_bsup
+              filter_on_Lattice_bsup_greatest filter_on_lattice_bsup_least)
+  (3.2)complete semilattice sup. the finite sup is just finite intersection of filters whose
+       elements are finite joins the arbitrary sup is the upclosure of finite meets
+        for all finite collections  of the union
+      DONE (filter_on_lattice_sup, filter_on_lattice_sup_greater, filter_on_lattice_sup_least_upper)
 
 modularity and distributivity is inherited and in fact the filter lattice is modular iff the 
 underlying lattice is and ditto for distributivity
@@ -888,6 +884,9 @@ definition finer_pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
 definition finer_ultrafilters::"'a::order set \<Rightarrow> 'a::order set set" where
   "finer_ultrafilters F = {U. is_ultrafilter U \<and> (F \<subseteq> U)}"
 
+definition coarser_ultrafilters::"'a::order set \<Rightarrow> 'a::order set set" where
+  "coarser_ultrafilters F = {U. is_ultrafilter U \<and> (F \<supseteq> U)}"
+
 
 definition finer_upsets::"'a::order set \<Rightarrow> 'a::order set set" where
   "finer_upsets A = {U. is_upclosed U \<and> (A \<subseteq> U)}"
@@ -907,8 +906,8 @@ definition meshes::"('a::{lattice,order_bot} set) \<Rightarrow> ('a::{lattice,or
 definition grill::"'a::{lattice,order_bot} set \<Rightarrow> 'a::{lattice,order_bot} set" where
   "grill A = {x::('a::{lattice,order_bot}). {x}#A}"  
 
-definition is_prime_alt::"'a set set \<Rightarrow> bool" where
-  "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((UNIV-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((UNIV-a) \<in> U)))"
+definition is_prime_alt::"'a::{boolean_algebra,order_bot} set \<Rightarrow> bool" where
+  "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((-a) \<in> U)))"
 
 definition is_lb_of::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_lb_of l E \<equiv> (\<forall>x \<in> E. l \<le> x)"
@@ -1698,7 +1697,7 @@ lemma upclosed_in_lattice_iff:
 
 end
 
-section FilterOnLatticeInstance
+section FilterOnLattice
 
 lemma filter_on_lattice_inf:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
@@ -1745,7 +1744,7 @@ lemma filter_inlattice_inf_closed:
   using is_filter_def assms downdir_up_pisystem is_pisystem_imp by blast
 
 
-lemma filter_on_lattice_sup:
+lemma filter_on_lattice_bsup:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
           A2:"is_filter (F2::('X::lattice set))"
   shows "is_filter (binary_filter_sup F1 F2)"
@@ -1810,7 +1809,7 @@ proof-
     by (simp add: is_filter_def P0 P1 P2)
 qed
 
-lemma filter_on_lattice_sup_greatest:
+lemma filter_on_lattice_bsup_greatest:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
           A1:"is_filter (F2::('X::lattice set))"
   shows "F1 \<subseteq> (binary_filter_sup F1 F2) \<and> F2 \<subseteq> (binary_filter_sup F1 F2)"
@@ -1841,7 +1840,7 @@ proof-
 qed
 
 
-lemma filter_on_lattice_sup_least:
+lemma filter_on_lattice_bsup_least:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
           A1:"is_filter (F2::('X::lattice set))"
   shows "\<And>F3. is_filter F3 \<and> F1 \<subseteq> F3 \<and> F2 \<subseteq> F3 \<longrightarrow> (binary_filter_sup F1 F2) \<subseteq> F3"
@@ -1862,6 +1861,39 @@ proof
   qed
 qed
 
+lemma filter_on_lattice_sup:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "is_filter (filter_sup(EF))"
+proof-
+  let ?S="filter_sup(EF)"
+  have P0:"is_inhabited ?S"
+    by (metis A0 A1 is_filter_def empty_Union_conv ex_in_conv filter_closure_is_filter
+         filter_sup_def is_inhabited_def)
+  have P1:"is_downdir ?S"
+    by (metis is_filter_def P0 filter_closure_idempotent filter_closure_is_filter filter_sup_def is_inhabited_def)
+  have P2:"is_upclosed ?S"
+    by (metis is_filter_def P0 filter_closure_idempotent filter_closure_is_filter filter_sup_def is_inhabited_def)
+  show ?thesis
+    by (simp add: FiltersAgain9.is_filter_def P0 P1 P2)
+qed
+
+lemma filter_on_lattice_sup_greater:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "\<forall>F \<in> EF. F \<le> filter_sup(EF)"
+  by (simp add: A0 A1 filter_sup_is_ub)
+
+
+lemma filter_on_lattice_sup_least_upper:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "\<And>G. (is_filter G \<and>  (\<forall>F \<in> EF. F \<le> G))\<longrightarrow>  filter_sup(EF) \<le> G"
+  by (simp add: A0 A1 filter_sup_is_lub)
+
+
+
+    
 section Meshing
 lemma mesh_prop1:
   assumes A0:"{a}# F" and A1:"a \<le> b"
@@ -2405,16 +2437,17 @@ lemma ultrafilter_notprime_contradiction:
 qed
 
 lemma filter_is_ultra_iff_prime_alt:
+  fixes U::"'a::{boolean_algebra, order_bot} set"
   assumes A0:"is_pfilter U"
   shows "is_ultrafilter U \<longleftrightarrow> is_prime_alt U"
 proof
   assume A1:"is_ultrafilter U"
   show "is_prime_alt U"
   proof-
-    have B0:"\<forall>a. (a \<in> U) \<or> (UNIV-a) \<in> U"
-      by (metis A1 Diff_Diff_Int Sup_UNIV Un_Diff_Int assms bot.extremum complete_lattice_class.Sup_upper double_diff is_pfilter_def iso_tuple_UNIV_I set_filter_topped ultrafilter_notprime_contradiction)
+    have B0:"\<forall>a. (a \<in> U) \<or> (-a) \<in> U"
+      by (metis A1 assms bot_least compl_sup_top filter_topped is_pfilter_def ultrafilter_notprime_contradiction)
     show ?thesis
-      by (metis B0 Diff_disjoint assms filter_inlattice_inf_closed is_pfilter_def is_prime_alt_def proper_filter_iff)
+      by (metis B0 assms boolean_algebra.conj_cancel_right filter_inlattice_inf_closed is_pfilter_def is_prime_alt_def proper_filter_iff)
   qed
   next
   assume A2:"is_prime_alt U"
@@ -2427,10 +2460,10 @@ proof
         using A3 by blast
       obtain a where A5:"a\<in> F \<and> a \<notin> U"
         using A4 by blast
-      have B2:"(UNIV-a) \<in> U"
+      have B2:"(-a) \<in> U"
         using A2 A5 is_prime_alt_def by blast
       show "False"
-        by (metis A4 A5 B2 Diff_disjoint is_filter_def downdir_inf is_pfilter_def proper_filter_iff psubsetD)
+        by (metis A4 A5 B2 boolean_algebra.conj_cancel_right filter_inlattice_inf_closed is_pfilter_def proper_filter_iff psubsetD)
     qed
     show ?thesis
       by (simp add: B1 assms is_ultrafilter_def)
@@ -2445,18 +2478,18 @@ lemma not_in_grill_not_in_ultrafilter:
 
 
 lemma grill_of_ultrafilter_subset:
-  assumes A0:"is_ultrafilter (U::'a set set)"
+  assumes A0:"is_ultrafilter (U::'a::{boolean_algebra, order_bot} set)"
   shows "(grill U) \<subseteq> U"
 proof
   fix a assume A1:"a \<in> grill U"
   have B0:"\<forall>x \<in> U. inf a x \<noteq> bot"
     by (meson A1 dual_order.refl mesh_prop8 meshes_def)
   show "a \<in> U"
-    by (meson B0 Diff_disjoint assms filter_is_ultra_iff_prime_alt is_prime_alt_def is_ultrafilter_def)
+    using B0 assms boolean_algebra.conj_cancel_right filter_is_ultra_iff_prime_alt is_prime_alt_def is_ultrafilter_def by blast
 qed
 
 lemma ultrafilters_grill_fixpoints:
-  "\<forall>U. is_ultrafilter  (U::'a set set) \<longrightarrow> (grill U) = U"
+  "\<forall>U. is_ultrafilter  (U::'a::{boolean_algebra, order_bot} set) \<longrightarrow> (grill U) = U"
   by (meson grill_extensive grill_of_ultrafilter_subset is_pfilter_def is_ultrafilter_def proper_filter_iff subset_antisym)
 
 
@@ -2652,6 +2685,122 @@ lemma finer_ultrafilters_notempty:
   shows "\<exists>U. (is_ultrafilter U) \<and> (F \<subseteq> U)"
   by (simp add: assms exists_finer_ultrafilter)
 
+lemma exists_finer_filter_iff:
+  fixes F::"'X::{boolean_algebra,order_bot} set" and 
+        a::"'X::{boolean_algebra,order_bot}"
+  assumes A0:"is_pfilter F" and A1:"\<forall>f \<in> F. inf f a \<noteq> bot"
+  shows "is_pfilter (filter_closure (\<Union>{F, {a}})) \<and> a \<in> (filter_closure (\<Union>{F, {a}})) \<and>  F \<subseteq> (filter_closure (\<Union>{F, {a}}))"
+proof-
+  define Fa where "Fa=\<Union>{F, {a}}"
+  define G where "G=filter_closure Fa"
+  have B0:"is_pfilter G"
+  proof-
+    have A01:"is_filter G"
+      by (simp add: G_def Fa_def filter_closure_is_filter)
+    have A02:"bot \<notin> G"
+    proof-
+      have A020:"a \<noteq> bot"
+        using A0 A1 boolean_algebra.conj_zero_right filter_topped is_pfilter_def by blast
+      have A021:"bot \<notin> F"
+        using A1 inf_bot_left by blast
+      have A022:"bot \<notin> Fa"
+        using Fa_def A020 A021 by blast
+      have A024:"\<forall>S \<in> Pow(F). finite S \<and> S \<noteq> {} \<longrightarrow> fInf S \<noteq> bot"
+        by (metis A0 A021 Pow_iff filters_inf_closed is_pfilter_def)
+      have A025:"\<And>S. S \<in> Pow(Fa) \<and> finite S \<and> S \<noteq> {} \<longrightarrow> fInf S \<noteq> bot"
+      proof
+        fix S assume A0250:"S \<in> Pow(Fa) \<and> finite S \<and> S \<noteq> {} "
+        show "fInf S \<noteq> bot"
+        proof(cases "a \<in> S")
+          case True
+          have A0251:"fInf S = (if (S-{a}={}) then a else (inf a (fInf(S - {a}))))"
+            using A0250 True semilattice_inf_class.remove by blast
+          have "fInf S \<noteq> bot"
+          proof(cases "S-{a}={}")
+            case True
+            then show ?thesis
+              using A020 A0251 by presburger
+          next
+            case False
+            have A0252:"(finite (S - {a})) \<and> ((S - {a}) \<noteq> {}) \<and> ((S - {a}) \<subseteq> F)"
+              using A0250 Fa_def False by blast
+            have A0253:"fInf(S - {a}) \<noteq> bot"
+              by (meson A024 A0252 PowI)
+            have A0254:"(inf (fInf(S - {a})) a) \<noteq> bot"
+              by (meson A0 A0252 A1 filters_inf_closed is_pfilter_def)
+            then show ?thesis
+              by (metis A0251 False inf_commute)
+          qed
+          then show ?thesis 
+            by simp
+        next
+          case False
+          then show ?thesis
+            by (metis A0 A021 A0250 Fa_def PowD Sup_insert Un_insert_right ccpo_Sup_singleton
+                filters_inf_closed is_pfilter_def subset_insert_iff sup_bot.right_neutral)
+          qed
+        qed
+      show ?thesis
+        by (metis A025 G_def bot.extremum_uniqueI filter_closure_obtains0)
+      qed
+    show ?thesis
+      by (simp add: A01 A02 is_pfilter_def proper_filter_iff)
+  qed
+  have B1:"F \<subseteq> G"
+    using Fa_def G_def filter_closure_extensive by force
+  have B2:"a \<in> G"
+    using Fa_def G_def filter_closure_extensive by fastforce
+  show ?thesis
+    using B0 B1 B2 Fa_def G_def by fastforce
+qed
+
+lemma filter_is_ultrafilter_inter:
+  fixes F::"'X::{boolean_algebra,order_bot} set"
+  assumes A0:"is_pfilter F"
+  shows "F = \<Inter>(finer_ultrafilters F)"
+proof-
+  define UF where "UF=finer_ultrafilters F" 
+  define I where"I=\<Inter>UF"
+  have B0:"\<forall>U. U \<in> UF \<longleftrightarrow> (is_ultrafilter U \<and> F \<subseteq> U)"
+    by (simp add: UF_def finer_ultrafilters_def)
+  have L:"F \<subseteq> I"
+    using B0 I_def by blast
+  have R:"I \<subseteq> F"
+  proof (rule ccontr)
+    assume RA0:"\<not>(F \<supseteq> I)"
+    obtain a where RA1:"a \<in> I \<and> a \<notin> F"
+      using RA0 by blast
+    have RB1:"(-a) \<in> grill F"
+      using is_filter_def RA1 assms is_pfilter_def mesh_prop12 by blast
+    have RB2:"\<forall>f \<in> F. inf (-a) f \<noteq> bot"
+      by (metis RB1 dual_order.refl inf_commute mesh_prop10 meshes_def)
+    define G where "G=(filter_closure (\<Union>{F, {-a}}))"
+    have RB2:"is_pfilter G \<and> F \<subseteq> G \<and> (-a) \<in> G"
+      by (metis G_def RB2 assms exists_finer_filter_iff inf_commute)
+    obtain U where RA3:"is_ultrafilter U \<and> G \<subseteq> U"
+      using RB2 finer_ultrafilters_notempty by blast
+    have RB3:"(-a) \<in> U \<and> U \<in>(finer_ultrafilters F)"
+      using B0 RA3 RB2 UF_def by blast
+    have RB4:"a \<notin> U"
+      by (metis is_filter_def RA3 RB3 is_pfilter_def is_ultrafilter_def mesh_prop15 not_in_grill_not_in_ultrafilter)
+    show "False"
+      using I_def RA1 RB3 RB4 UF_def by blast
+  qed
+  show ?thesis
+    using I_def L R UF_def by auto
+qed
+
+
+lemma filtergrill_is_coarser_ultra_union:
+  fixes G::"'X::{boolean_algebra,order_bot} set"
+  assumes A0:"is_prime_alt G \<and> is_pfilter G"
+  shows "(G= \<Union>(coarser_ultrafilters G))"
+proof-
+  have "G = \<Union> {X. is_ultrafilter X \<and> X \<subseteq> G}"
+    using assms filter_is_ultra_iff_prime_alt by auto
+  then show ?thesis
+    by (simp add: coarser_ultrafilters_def)
+qed
 
 
 definition antitone :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
