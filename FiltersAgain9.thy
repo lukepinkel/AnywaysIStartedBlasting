@@ -54,6 +54,7 @@ declare [[show_sorts]]
 declare [[show_consts]]
 
 section Definitions
+subsection CompleteSemilattices
 
 class complete_semilattice_inf = semilattice_inf + Inf +
     assumes CInf_lower: "x \<in> A \<Longrightarrow> Inf A \<le> x"
@@ -74,6 +75,7 @@ sublocale complete_boolean_algebra  \<subseteq> semilattice_inf inf  "(\<le>)" "
 sublocale complete_boolean_algebra  \<subseteq> semilattice_sup sup "(\<le>)" "(<)" ..
 
 
+subsection FunctionsOnPosets
 definition is_extensive::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
   "is_extensive f \<equiv> (\<forall>x. (x \<le> (f x)))"
 
@@ -83,19 +85,210 @@ definition is_isotone::"('a::ord \<Rightarrow> 'b::ord) \<Rightarrow> bool" wher
 definition is_idempotent::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
   "is_idempotent f \<equiv> (\<forall>x.  (f x)= f (f x))"
 
+definition is_closure::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
+  "is_closure f \<equiv> (is_extensive f) \<and> (is_isotone f) \<and> (is_idempotent f)"
+
+definition pointwise_less_eq::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow>('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
+  "pointwise_less_eq f g \<equiv> (\<forall>x. (f x) \<le> (g x))"
+
+definition pointwise_less::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow>('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
+  "pointwise_less f g \<equiv> (pointwise_less_eq f g) \<and> (f \<noteq> g)"
+
+
+definition antitone :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
+"antitone f \<longleftrightarrow> (\<forall>x y. x \<le> y \<longrightarrow> f y \<le> f x)"
+
+definition comp_extensive :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+"comp_extensive f g \<longleftrightarrow> (\<forall>x. x \<le> g (f x)) \<and> (\<forall>y. y \<le> f (g y))"
+
+definition relation_to_fgc::"('X \<times> 'Y) set \<Rightarrow> (('X set) \<Rightarrow> ('Y set))" where
+  "relation_to_fgc R = (\<lambda>(A::('X set)). {(y::'Y). \<forall>x \<in> A. (x, y) \<in> R}) "
+
+definition relation_to_ggc::"('X \<times> 'Y) set \<Rightarrow> (('Y set) \<Rightarrow> ('X set))" where
+  "relation_to_ggc R = (\<lambda>(B::('Y set)). {(x::'X). \<forall>y \<in> B. (x, y) \<in> R}) "
+
+definition fgc_to_relation::"(('X set) \<Rightarrow> ('Y set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "fgc_to_relation f = {(x, y). y \<in> f({x}) }"
+
+definition ggc_to_relation::"(('Y set) \<Rightarrow> ('X set)) \<Rightarrow> ('X \<times> 'Y) set" where
+  "ggc_to_relation g = {(x, y). x \<in> g({y}) }"
+
+definition is_gc2::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+  "is_gc2 f g \<equiv> (comp_extensive f g) \<and> (antitone f) \<and> (antitone g)"
+
+definition is_join_dual::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> bool" where
+  "is_join_dual f \<equiv> (\<forall>A. ( (f (Sup A)) = (Inf (f`(A))) ))"
+
+definition join_dual_partner::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> ('Y::{Inf,order} \<Rightarrow> 'X::{Sup,order})" where
+  "join_dual_partner f = (\<lambda>y::('Y::{Inf,order}). Sup {x::('X::{Sup,order}). y \<le> (f x)})"
+
+definition is_gc4::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
+  "is_gc4 f g \<equiv> \<forall>(x::('X::order)). \<forall>(y::('Y::order)). y \<le> (f x) \<longleftrightarrow> x \<le> (g y)"
+
+
+subsection PrincipalFilters
+
+definition principal_filter::"'X::ord \<Rightarrow> 'X::ord set" where
+  "principal_filter a = {x. x \<ge> a}"
+
+definition principal_filter_in::"'X::ord \<Rightarrow> 'X::ord set \<Rightarrow> 'X::ord set" where
+  "principal_filter_in a C = C \<inter> (principal_filter a)"
+
+subsection SubsetsOfAPoset
+definition is_moore_family::"'a::order set \<Rightarrow> bool" where
+  "is_moore_family C \<equiv> (C \<noteq> {}) \<and> (\<forall>(a::'a). (\<exists>m \<in> (principal_filter_in a C). (\<forall>x \<in> (principal_filter_in a C). m \<le> x)))"
+
+definition moore_to_closure::"'X::{order,inf, Inf} set \<Rightarrow> ('X::{order, inf, Inf} \<Rightarrow> 'X::{order, inf, Inf})" where
+  "moore_to_closure C \<equiv> (\<lambda>x. Inf(principal_filter_in x C))"
+
+definition is_inhabited::"'a set  \<Rightarrow> bool" where
+   "is_inhabited X \<equiv> (X \<noteq> {})"
+
+definition is_downdir::"'a::order set \<Rightarrow> bool" where
+   "is_downdir X \<equiv> (\<forall>a b. (a \<in> X) \<longrightarrow> ( b \<in> X) \<longrightarrow> (\<exists>c  \<in> X. (c \<le> a) \<and>  (c \<le> b)))"
+
+definition is_upclosed::"'a::ord set \<Rightarrow> bool" where
+   "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
+
+definition is_pisystem::"'a::{order,inf} set \<Rightarrow> bool" where
+   "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (inf a b)  \<in> X)"
+
+definition is_filter::"'a::order set \<Rightarrow> bool" where 
+  "is_filter F \<equiv> (is_downdir F \<and> is_upclosed F \<and> is_inhabited F)"
+
+(*this is valid even without top element which is only needed for the degenerate case*)
+
+definition is_lb_set::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool"
+  where "is_lb_set L a \<equiv> (\<forall>x \<in> L. x \<le>a)"
+
+definition is_upper_bound::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_upper_bound u A \<equiv> (\<forall>a \<in> A. a \<le> u)"
+
+definition is_lower_bound::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_lower_bound l A \<equiv> (\<forall>a \<in> A. l \<le> a)"
+
+definition upper_bounds::"'a::ord set \<Rightarrow> 'a::ord set" where
+  "upper_bounds A \<equiv> {u. is_upper_bound u A}"
+
+definition lower_bounds::"'a::ord set \<Rightarrow> 'a::ord set" where
+  "lower_bounds A \<equiv> {l. is_lower_bound l A}"
+
+definition has_upper_bound::"'a::ord set \<Rightarrow> bool" where
+  "has_upper_bound A \<equiv> (\<exists>u. is_upper_bound u A)"
+
+definition has_lower_bound::"'a::ord set \<Rightarrow> bool" where
+  "has_lower_bound A \<equiv> (\<exists>l. is_lower_bound l A)"
+
+definition is_least::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_least l A \<equiv> (is_lower_bound l A) \<and> (l \<in> A)"
+
+definition is_greatest::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_greatest g A \<equiv> (is_upper_bound g A) \<and> (g \<in> A)"
+
+definition has_least::" 'a::ord set \<Rightarrow> bool" where
+  "has_least A \<equiv> (\<exists>l. is_least l A)"
+
+definition has_greatest::"'a::ord set \<Rightarrow> bool" where
+  "has_greatest A \<equiv> (\<exists>g. is_greatest g A)"
+
+definition is_sup_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_sup_in s A X \<equiv> (is_least s (upper_bounds A)) \<and> (s \<in> X)"
+ 
+definition is_sup::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_sup s A \<equiv> is_sup_in s A UNIV"
+
+definition is_inf_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_inf_in i A X \<equiv> (is_greatest i (lower_bounds A)) \<and> (i \<in> X)"
+ 
+definition is_inf::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_inf s A \<equiv> is_inf_in s A UNIV"
+ 
+definition has_sup_in::" 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "has_sup_in A X \<equiv> (\<exists>s.  (is_least s (upper_bounds A)) \<and> (s \<in> X))"
+ 
+definition has_sup::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "has_sup s A \<equiv>  (\<exists>s.  (is_least s (upper_bounds A)))"
+
+definition has_inf_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "has_inf_in A X \<equiv> (\<exists>i.(is_greatest i (lower_bounds A)) \<and> (i \<in> X))"
+ 
+definition has_inf::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "has_inf s A \<equiv>  (\<exists>s.  (is_greatest s (lower_bounds A)))"
+
+section SomeOrderResults
+subsection BasicImplications
+lemma in_upper_bounds_imp:
+  "\<And>u A. u \<in> upper_bounds A \<Longrightarrow> (\<forall>a \<in> A. a \<le> u)"
+  by (simp add: is_upper_bound_def upper_bounds_def)
+
+lemma in_lower_bounds_imp:
+  "\<And>l A. l \<in> lower_bounds A \<Longrightarrow> (\<forall>a \<in> A. l \<le> a)"
+  by (simp add: is_lower_bound_def lower_bounds_def)
+
+lemma is_greatest_imp:
+  assumes "is_greatest g A"
+  shows "g \<in> A \<and> (\<forall>a \<in> A. a \<le> g)"
+  by (meson assms is_greatest_def is_upper_bound_def)
+
+lemma is_least_imp:
+  assumes "is_least l A"
+  shows "l \<in> A \<and> (\<forall>a \<in> A. l \<le> a)"
+  by (metis assms is_least_def is_lower_bound_def)
+
+lemma is_inf_imp_lb:
+  assumes "is_inf i A"
+  shows "\<forall>a \<in> A. i \<le> a"
+  using assms in_lower_bounds_imp is_greatest_imp is_inf_def is_inf_in_def by blast
+
+lemma lower_bound_req:
+  "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> y \<le> a) \<Longrightarrow> y \<in> lower_bounds A"
+  by (simp add: is_lower_bound_def lower_bounds_def)
+
+lemma upper_bound_req:
+  "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> a \<le> y) \<Longrightarrow> y \<in> upper_bounds A"
+  by (simp add: is_upper_bound_def upper_bounds_def)
+
+
+lemma is_inf_imp_greatest_lb1:
+  assumes "is_inf i A"
+  shows "\<And>y. (y \<in> lower_bounds A) \<Longrightarrow> y \<le> i"
+  using assms is_greatest_imp is_inf_def is_inf_in_def by blast
+
+lemma is_inf_imp_greatest_lb2:
+  assumes "is_inf i A"
+  shows "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> y \<le> a) \<Longrightarrow> y \<le> i"
+  using assms is_inf_imp_greatest_lb1 lower_bound_req by blast
+
+lemma is_sup_imp_least_ub1:
+  assumes "is_sup s A"
+  shows "\<And>y. (y \<in> upper_bounds A) \<Longrightarrow>s \<le> y"
+  using assms is_least_imp is_sup_def is_sup_in_def by blast
+
+lemma is_ssup_imp_greatest_lb2:
+  assumes "is_sup s A"
+  shows "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> a \<le> y) \<Longrightarrow> s \<le> y"
+  using assms is_sup_imp_least_ub1 upper_bound_req by blast
+
+lemma is_sup_imp1:
+  assumes "is_sup s A"
+  shows "\<forall>a \<in> A. a \<le> s "
+  using assms in_upper_bounds_imp is_least_imp is_sup_def is_sup_in_def by blast
+
+lemma is_inf_imp1:
+  assumes "is_inf i A"
+  shows "\<forall>a \<in> A. i \<le> a "
+  using assms is_inf_imp_lb by auto
+
+
 lemma idempotent_req:
   assumes "f \<circ> f = f"
   shows "is_idempotent f"
   by (metis assms comp_apply is_idempotent_def)
 
-definition is_closure::"('a::ord \<Rightarrow> 'a::ord) \<Rightarrow> bool" where
-  "is_closure f \<equiv> (is_extensive f) \<and> (is_isotone f) \<and> (is_idempotent f)"
-
-context order
-begin
+(*Equivalent Condition To be Closure   *)
 lemma isotone_idempotent_imp_extensive:
   fixes f::"('X::order \<Rightarrow> 'X::order)"
-  shows "is_closure f \<longleftrightarrow> (\<forall>x1 x2. ((x1 \<le> (f x2)) \<longleftrightarrow>( (f x1) \<le> (f x2))))"
+  shows "is_closure f \<longleftrightarrow> (\<forall>x1 x2. ((x1 \<le> (f x2)) \<longleftrightarrow> ( (f x1) \<le> (f x2))))"
 proof 
   assume A0:"is_closure f"
   have LR:"\<And>x1 x2.  x1 \<le> (f x2) \<longrightarrow> (f x1) \<le> (f x2)"
@@ -130,12 +323,18 @@ proof
     by (simp add: RL is_closure_def)
 qed
 
- 
-end
+(*pointwise order is partial order*) 
 
 
-definition pointwise_less_eq::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow>('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
-  "pointwise_less_eq f g \<equiv> (\<forall>x. (f x) \<le> (g x))"
+lemma pw_less_reflexive:
+  fixes f::"('a::order \<Rightarrow> 'b::order)"
+  shows "pointwise_less_eq f f"
+  by (simp add: pointwise_less_eq_def)
+
+lemma pw_less_transitive:
+  fixes f g::"('a::order \<Rightarrow> 'b::order)"
+  shows "pointwise_less_eq f g \<and> pointwise_less_eq g h \<Longrightarrow> pointwise_less_eq f h"
+  by (meson dual_order.trans pointwise_less_eq_def)
 
 lemma pw_less_antisym:
   assumes "(pointwise_less_eq f g) \<and> (pointwise_less_eq g f)"
@@ -143,43 +342,56 @@ lemma pw_less_antisym:
   by (meson assms dual_order.eq_iff ext pointwise_less_eq_def)
 
 
-definition pointwise_less::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow>('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
-  "pointwise_less f g \<equiv> (pointwise_less_eq f g) \<and> (f \<noteq> g)"
-
-
-
-definition principal_filter::"'X::ord \<Rightarrow> 'X::ord set" where
-  "principal_filter a = {x. x \<ge> a}"
-
+(*basic property of being in principal filter*)
 lemma principal_filter_imp:
   "\<And>x a. x \<in> (principal_filter a) \<Longrightarrow> a \<le> x"
   by (simp add: principal_filter_def)
 
+lemma principal_filter_in_imp:
+  "\<And>x a C. x \<in> (principal_filter_in a C) \<Longrightarrow> a \<le> x"
+  by (simp add: principal_filter_imp principal_filter_in_def)
 
+(*embedding in poset*)
 lemma principal_filter_order_iso:
   "\<And>(x::'X::order) y::'X::order. x \<le> y \<Longrightarrow> (principal_filter y) \<subseteq> (principal_filter x) "
   by (metis atLeast_def atLeast_subset_iff principal_filter_def)
-
-definition principal_filter_in::"'X::ord \<Rightarrow> 'X::ord set \<Rightarrow> 'X::ord set" where
-  "principal_filter_in a C = C \<inter> (principal_filter a)"
 
 
 lemma principal_filter_in_order_iso:
   "\<And>(x::'X::order) (y::'X::order) (C::('X::order set)). x \<le> y \<Longrightarrow> (principal_filter_in y C) \<subseteq> (principal_filter_in x C) "
   by (simp add: inf.coboundedI2 principal_filter_in_def principal_filter_order_iso)
 
+lemma principal_inf1:
+  "\<forall>x::('X::complete_semilattice_inf). x = (Inf(principal_filter x))"
+proof
+  fix x::"'X::complete_semilattice_inf"
+  have A0:"x \<in> principal_filter x"
+    by (simp add: principal_filter_def)
+  have A1:"\<forall>y \<in> principal_filter x. x \<le> y"
+    by (simp add: principal_filter_imp)
+  show "x=(Inf(principal_filter x))"
+    by (simp add: A0 A1 CInf_greatest CInf_lower dual_order.eq_iff)
+qed
 
-lemma principal_filter_in_imp:
-  "\<And>x a C. x \<in> (principal_filter_in a C) \<Longrightarrow> a \<le> x"
-  by (simp add: principal_filter_imp principal_filter_in_def)
+lemma principal_inf2:
+  fixes C::"'X::complete_semilattice_inf set"
+  assumes A0:"x \<in> C"
+  shows "x = Inf(principal_filter_in x C)"
+proof-
+  have B0:"x = Inf(principal_filter x)"
+    by (simp add: principal_inf1)
+  have B1:"principal_filter_in x C \<subseteq> principal_filter x"
+    by (simp add: principal_filter_in_def) 
+  have B2:"x \<in> principal_filter_in x C"
+    by (simp add: assms principal_filter_def principal_filter_in_def)
+  have B3:"\<forall>y \<in> principal_filter_in x C. x \<le> y"
+    by (simp add: principal_filter_in_imp)
+  show ?thesis
+    by (simp add: B2 B3 CInf_greatest CInf_lower dual_order.antisym)
+qed  
 
-definition is_moore_family::"'a::order set \<Rightarrow> bool" where
-  "is_moore_family C \<equiv> (C \<noteq> {}) \<and> (\<forall>(a::'a). (\<exists>m \<in> (principal_filter_in a C). (\<forall>x \<in> (principal_filter_in a C). m \<le> x)))"
 
-definition moore_to_closure::"'X::{order,inf, Inf} set \<Rightarrow> ('X::{order, inf, Inf} \<Rightarrow> 'X::{order, inf, Inf})" where
-  "moore_to_closure C \<equiv> (\<lambda>x. Inf(principal_filter_in x C))"
-
-
+(*Infimum closed sets are a moore collection*)
 lemma inf_closed_then_moore:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"\<forall>E \<in> Pow(C). (Inf E) \<in> C"
@@ -197,7 +409,7 @@ proof-
     by (metis B1 B2 CInf_lower empty_iff is_moore_family_def)
 qed  
 
-
+(*Elements in range of closure are fixed point*)
 lemma in_cl_range_idempotent:
   assumes A0:"is_closure f"
   shows "\<And>x. x \<in> (range f) \<longrightarrow> f x = x"
@@ -237,6 +449,33 @@ proof-
     by (simp add: B6)
 qed
 
+lemma closure_range_inf_closed_gen:
+  fixes E::"'a::order set" and
+        f::"'a::order \<Rightarrow> 'a::order" and
+        i::"'a::order" 
+  assumes A0:"is_closure f" and
+          A1:"E \<subseteq> range f" and
+          A2:"is_inf i E"
+  shows "f (i) = i "
+proof-
+  have B0:"i \<le> f i"
+    using A0 is_closure_def is_extensive_def by blast
+  have B1:"\<forall>x \<in> E. i \<le> x"
+    using A2 is_inf_imp_lb by blast
+  have B2:"\<forall>x \<in> E. f i \<le> f x"
+    using A0 B1 is_closure_def is_isotone_def by blast
+  have B3:"\<forall>x \<in> E. f x = x"
+    using A0 A1 in_cl_range_idempotent by blast
+  have B4:"\<forall>x \<in> E. f i \<le> x"
+    using B2 B3 by fastforce
+  have B5:"f i \<le> i"
+    using A2 B4 is_inf_imp_greatest_lb2 by blast
+  have B6:"f i = i"
+    by (simp add: B0 B5 dual_order.antisym)
+  show ?thesis 
+    by (simp add: B6)
+qed
+
 lemma moore_closure_imp:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C"
@@ -249,6 +488,20 @@ lemma moore_closure_imp2:
   shows "\<forall>x. ((moore_to_closure C) x) \<in> (principal_filter_in x C)"
   by (metis A0 CInf_greatest CInf_lower is_moore_family_def moore_to_closure_def order_class.order_eq_iff)
 
+subsection FiniteInfSupOperations
+subsubsection FiniteInf
+(*
+
+  Adapted from  https://isabelle.in.tum.de/library/HOL/HOL/Lattices_Big.html 
+
+  and
+
+  T. Nipkow, L.C. Paulson (2005), "Proof Pearl: Defining Functions over Finite Sets", 
+  in J. Hurd, T. Melham (Eds.), Theorem Proving in Higher Order Logics, TPHOLs 2005, 
+  LNCS, Vol. 3603, Springer, Berlin, Heidelberg. 
+  Available at: https://doi.org/10.1007/11541868_25
+
+*)
 context semilattice_inf
 begin
 
@@ -385,11 +638,12 @@ next
   finally show ?thesis .
 qed
 
-
 lemma finite_inf_greatest:
   "\<And>z A. A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> ((\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> fInf A)"
   by (simp add: lower_bounded_iff)
 end
+
+subsubsection FiniteSup
 
 context semilattice_sup
 begin
@@ -481,9 +735,12 @@ lemma infinite: "\<not> finite A \<Longrightarrow> fSup A = the None"
   unfolding eq_fold1 by (cases "finite (UNIV::'a set)") (auto intro: finite_subset fold_infinite)
 
 end
+
+subsubsection FiniteInfSupInLattice
 context lattice
 begin
 
+(*Existence of finite inf and sup in lattice*)
 lemma finf_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (\<exists>i. fInf A=i)"
   by simp
@@ -494,9 +751,30 @@ lemma fsup_lattice:
 
 end
 
+subsubsection FiniteInfSupInCompleteLattice
+
+
+
+context complete_semilattice_sup
+begin
+(*finite inf and sup agree with inf and sup in complete lattice*)
+lemma finf_complete_lattice:
+  "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
+  using local.CSup_least local.CSup_upper local.Sup_fin.boundedI local.Sup_fin.coboundedI local.Sup_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
+end
+
+context complete_semilattice_inf
+begin
+(*finite inf and sup agree with inf and sup in complete lattice*)
+lemma finf_complete_lattice:
+  "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fInf A = Inf A)"
+  using local.CInf_greatest local.CInf_lower local.Inf_fin.bounded_iff local.Inf_fin.coboundedI local.Inf_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
+end
+
+
 context complete_lattice
 begin
-
+(*finite inf and sup agree with inf and sup in complete lattice*)
 lemma finf_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fInf A = Inf A)"
   using local.Inf_lower local.coboundedI local.dual_order.antisym local.le_Inf_iff local.lower_bounded_iff by auto
@@ -506,83 +784,80 @@ lemma fsup_complete_lattice:
   using local.Sup_fin.eq_fold' local.Sup_fin_Sup local.eq_fold1 by presburger
 end
 
+(*de Morgans for finite sup and inf in complete boolean algebra*)
+
 context complete_boolean_algebra
 begin
 lemma finf_complete_lattice_set:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> -(fInf A) = fSup (uminus ` A)"
   by (simp add: local.finf_complete_lattice local.fsup_complete_lattice local.uminus_Inf)
 
+
+lemma fsup_complete_lattice_set:
+  "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> -(fSup A) = fInf (uminus ` A)"
+  by (simp add: local.finf_complete_lattice local.fsup_complete_lattice local.uminus_Sup)
+
 end
 
-
-
-definition is_inhabited::"'a set  \<Rightarrow> bool" where
-   "is_inhabited X \<equiv> (X \<noteq> {})"
-
-definition is_downdir::"'a::order set \<Rightarrow> bool" where
-   "is_downdir X \<equiv> (\<forall>a b. (a \<in> X) \<longrightarrow> ( b \<in> X) \<longrightarrow> (\<exists>c  \<in> X. (c \<le> a) \<and>  (c \<le> b)))"
-
-definition is_upclosed::"'a::ord set \<Rightarrow> bool" where
-   "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
-
-definition is_pisystem::"'a::{order,inf} set \<Rightarrow> bool" where
-   "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (inf a b)  \<in> X)"
-
-definition is_filter::"'a::order set \<Rightarrow> bool" where 
-  "is_filter F \<equiv> (is_downdir F \<and> is_upclosed F \<and> is_inhabited F)"
-
-(*this is valid even without top element which is only needed for the degenerate case*)
-
-definition is_lb_set::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool"
-  where "is_lb_set L a \<equiv> (\<forall>x \<in> L. x \<le>a)"
-
-
-
-
-lemma moore_to_closure_iscl:
+subsection MooreClosures
+subsubsection MooreClosureIsClosure
+lemma moore_to_closure_is_extensive:
   fixes C::"'X::complete_semilattice_inf set"
-  assumes A0:"is_moore_family C"
-  shows "is_closure (moore_to_closure C)"
+  assumes A0:"is_moore_family C" 
+  shows "is_extensive (moore_to_closure C)"
+proof-
+  let ?f="moore_to_closure C"
+  have C01:"\<forall>x. x \<le> ?f x"
+  proof
+    fix x
+    let ?Px="principal_filter_in x C"
+    have C0B0:"\<exists>m \<in> ?Px. (\<forall>x \<in>?Px. m \<le> x)"
+      using A0 is_moore_family_def by blast
+    have C0B1:"(?f x) = Inf(?Px)"
+      by (simp add: moore_to_closure_def)
+    obtain m where C0B2:"m \<in> ?Px \<and> (\<forall>x \<in>?Px. m \<le> x)"
+      using C0B0 by blast
+    have C0B3:"m= Inf(?Px)"
+      by (simp add: C0B2 CInf_greatest CInf_lower dual_order.antisym)
+    have C0B4:"?f x \<in> principal_filter_in x C"
+      using C0B1 C0B2 C0B3 by fastforce
+    show "x \<le> ?f x"
+      using C0B4 principal_filter_in_imp by blast
+    qed
+    show ?thesis
+      by (simp add: C01 is_extensive_def) 
+qed
+
+
+lemma moore_to_closure_is_isotone:
+  fixes C::"'X::complete_semilattice_inf set"
+  assumes A0:"is_moore_family C" 
+  shows "is_isotone (moore_to_closure C)"
+proof-
+  let ?f="moore_to_closure C"
+  have C10:"\<And>x1 x2. x1 \<le> x2 \<longrightarrow> (?f x1) \<le> (?f x2)"
+  proof
+    fix x1 x2::"'X::complete_semilattice_inf" assume C10A0:"x1 \<le> x2"
+    let ?Px1="principal_filter_in x1 C" and ?Px2="principal_filter_in x2 C"
+    have C10B0:"?Px2 \<subseteq>?Px1"
+      by (simp add: C10A0 principal_filter_in_order_iso)
+    have C10B1:"Inf ?Px1 \<le> Inf ?Px2"
+      by (meson C10B0 CInf_greatest CInf_lower subset_eq)
+    show "(?f x1) \<le> (?f x2)"
+      by (simp add: C10B1 moore_to_closure_def)
+  qed
+  show ?thesis
+    by (simp add: C10 is_isotone_def)
+qed
+
+lemma moore_to_closure_is_idempotent:
+  fixes C::"'X::complete_semilattice_inf set"
+  assumes A0:"is_moore_family C" 
+  shows "is_idempotent (moore_to_closure C)"
 proof-
   let ?f="moore_to_closure C"
   have C0:"is_extensive ?f"
-  proof-
-    have C01:"\<forall>x. x \<le> ?f x"
-    proof
-      fix x
-      let ?Px="principal_filter_in x C"
-      have C0B0:"\<exists>m \<in> ?Px. (\<forall>x \<in>?Px. m \<le> x)"
-        using A0 is_moore_family_def by blast
-      have C0B1:"(?f x) = Inf(?Px)"
-        by (simp add: moore_to_closure_def)
-      obtain m where C0B2:"m \<in> ?Px \<and> (\<forall>x \<in>?Px. m \<le> x)"
-        using C0B0 by blast
-      have C0B3:"m= Inf(?Px)"
-        by (simp add: C0B2 CInf_greatest CInf_lower dual_order.antisym)
-      have C0B4:"?f x \<in> principal_filter_in x C"
-        using C0B1 C0B2 C0B3 by fastforce
-      show "x \<le> ?f x"
-        using C0B4 principal_filter_in_imp by blast
-      qed
-      show ?thesis
-        by (simp add: C01 is_extensive_def)
-    qed
-  have C1:"is_isotone ?f"
-  proof-
-    have C10:"\<And>x1 x2. x1 \<le> x2 \<longrightarrow> (?f x1) \<le> (?f x2)"
-    proof
-      fix x1 x2::"'X::complete_semilattice_inf" assume C10A0:"x1 \<le> x2"
-      let ?Px1="principal_filter_in x1 C" and ?Px2="principal_filter_in x2 C"
-      have C10B0:"?Px2 \<subseteq>?Px1"
-        by (simp add: C10A0 principal_filter_in_order_iso)
-      have C10B1:"Inf ?Px1 \<le> Inf ?Px2"
-        by (meson C10B0 CInf_greatest CInf_lower subset_eq)
-      show "(?f x1) \<le> (?f x2)"
-        by (simp add: C10B1 moore_to_closure_def)
-      qed
-    show ?thesis
-      by (simp add: C10 is_isotone_def)
-    qed
+    by (simp add: assms moore_to_closure_is_extensive)
   have C2:"is_idempotent ?f"
   proof-
     have C20:"\<forall>x. ?f x = ?f (?f x)"
@@ -609,9 +884,26 @@ proof-
       using C20 is_idempotent_def by blast
   qed
   show ?thesis
+    using C2 by auto
+qed
+
+lemma moore_to_closure_iscl:
+  fixes C::"'X::complete_semilattice_inf set"
+  assumes A0:"is_moore_family C"
+  shows "is_closure (moore_to_closure C)"
+proof-
+  let ?f="moore_to_closure C"
+  have C0:"is_extensive ?f"
+    by (simp add: assms moore_to_closure_is_extensive)
+  have C1:"is_isotone ?f"
+    by (simp add: assms moore_to_closure_is_isotone)
+  have C2:"is_idempotent ?f"
+    by (simp add: assms moore_to_closure_is_idempotent)
+  show ?thesis
     by (simp add: C0 C1 C2 is_closure_def)
 qed
 
+subsubsection ClosureRangeIsMooreFamily
 lemma clrange_is_moore:
   fixes f::"'X::complete_semilattice_inf \<Rightarrow> 'X::complete_semilattice_inf"
   assumes A0:"is_closure f"
@@ -641,7 +933,7 @@ proof-
     by (simp add: B3 is_moore_family_def)
 qed
 
-
+(*if f is a closure then f(a) is a lower bound of [a, \<rightarrow>)\<inter>(range f)  *)
 lemma cl_range_inf1:
   fixes f::"'X::complete_semilattice_inf \<Rightarrow> 'X::complete_semilattice_inf" and
         a::"'X::complete_semilattice_inf"
@@ -661,70 +953,56 @@ proof
     using A3B2 A3B3 by auto
 qed
 
-
+(*if C is a moore family then f=f_C is such f(a) that a lower bound of [a, \<rightarrow>)\<inter>(range f)  *)
 lemma cl_range_inf2:
   fixes C::"'X::complete_semilattice_inf set" and
         a::"'X::complete_semilattice_inf"
   assumes A0:"is_moore_family C" 
-  shows "\<forall>y \<in> (principal_filter_in a(range(moore_to_closure C))). ((moore_to_closure C)(a)) \<le> y"
+  defines "f \<equiv> moore_to_closure C" 
+  shows "\<forall>y \<in> (principal_filter_in a (range f)). (f a) \<le> y"
 proof
-  let ?f="moore_to_closure C"
-  fix y assume A0:"y \<in> principal_filter_in a (range ?f)"
-  have B0:"is_closure ?f"
+  fix y assume A0:"y \<in> principal_filter_in a (range f)"
+  have B0:"is_closure f"
     by (simp add: assms moore_to_closure_iscl)
-  have B0:"a \<le> y \<and> (\<exists>x. y = (?f x))"
+  have B0:"a \<le> y \<and> (\<exists>x. y = (f x))"
     by (metis A0 B0 IntD1 in_cl_range_idempotent principal_filter_in_def principal_filter_in_imp)
-  have B1:"(?f y) = y"
+  have B1:"(f y) = y"
     using B0 assms in_cl_range_idempotent moore_to_closure_iscl by blast
-  have B2:"(?f a) \<le> (?f y)"
-    by (simp add: A0 B1 assms cl_range_inf1 moore_to_closure_iscl)
+  have B2:"(f a) \<le> (f y)"
+    using B0 assms(1) f_def is_isotone_def moore_to_closure_is_isotone by blast
   have B3:"... = y"
     by (simp add: B1)
-  show "?f(a) \<le> y"
+  show "f(a) \<le> y"
     using B2 B3 by auto
 qed
 
-lemma principal_inf1:
-  "\<forall>x::('X::complete_semilattice_inf). x = (Inf(principal_filter x))"
-proof
-  fix x::"'X::complete_semilattice_inf"
-  have A0:"x \<in> principal_filter x"
-    by (simp add: principal_filter_def)
-  have A1:"\<forall>y \<in> principal_filter x. x \<le> y"
-    by (simp add: principal_filter_imp)
-  show "x=(Inf(principal_filter x))"
-    by (simp add: A0 A1 CInf_greatest CInf_lower dual_order.eq_iff)
-qed
 
+subsubsection DualIsomorphismBetweenMooreFamiliesAndClosures
 
-lemma principal_inf2:
-  fixes C::"'X::complete_semilattice_inf set"
-  assumes A0:"x \<in> C"
-  shows "x = Inf(principal_filter_in x C)"
-proof-
-  have B0:"x = Inf(principal_filter x)"
-    by (simp add: principal_inf1)
-  have B1:"principal_filter_in x C \<subseteq> principal_filter x"
-    by (simp add: principal_filter_in_def) 
-  have B2:"x \<in> principal_filter_in x C"
-    by (simp add: assms principal_filter_def principal_filter_in_def)
-  have B3:"\<forall>y \<in> principal_filter_in x C. x \<le> y"
-    by (simp add: principal_filter_in_imp)
-  show ?thesis
-    by (simp add: B2 B3 CInf_greatest CInf_lower dual_order.antisym)
-qed  
+(*
+  Let X=(X, leq) be a poset and if F:Pow(X)\<rightarrow>F(X, X) be the map moore_to_closure and
+  G:F(X, X)\<longrightarrow>Pow(X) be the range map, and let (\<C>, \<subseteq>) be the moore familes on X ordered by inclusion
+  and  (\<F>, \<le>) be the closure operators ordered pointwise.  Then for any f \<in> \<F> or C \<in> \<C>
+  F \<circ> G (f) = f
+  G \<circ> F (C) = C
+  for any f g \<in> \<F> 
+  G(g) \<subseteq> G(f) \<longrightarrow> f \<le> g
+  while for any C D \<in> \<C>
+  f \<le> g \<longrightarrow> G(g) \<subseteq> G(f)
+   
+*)
 
 lemma moore_cl_iso_inv1:
   fixes f::"'X::complete_semilattice_inf \<Rightarrow> 'X::complete_semilattice_inf"
   assumes A0:"is_closure f" 
-  shows "(moore_to_closure (range f)) = f"
+  defines "g \<equiv> moore_to_closure (range f)"
+  shows "g = f"
 proof-
-  have B0:"\<forall>x. (moore_to_closure (range f))(x) =  (f x)"
+  have B0:"\<forall>x. (g x) =  (f x)"
   proof
     fix a
-    have A0:"\<forall>x. f(x) \<in> principal_filter_in x (range f)"
-      by (metis Int_iff assms is_closure_def   is_extensive_def mem_Collect_eq principal_filter_def
-          principal_filter_in_def rangeI)
+    have A0:"\<forall>x. (f x) \<in> principal_filter_in x (range f)"
+      by (metis A0 Int_Collect is_closure_def is_extensive_def principal_filter_def principal_filter_in_def rangeI)
     have A1:"a \<le> (f a)"
       using assms is_closure_def is_extensive_def by auto
     have A2:"(f a) \<in> principal_filter_in a (range f)"
@@ -735,15 +1013,15 @@ proof-
       by (simp add: A2 A3 complete_semilattice_inf_class.CInf_greatest complete_semilattice_inf_class.CInf_lower order_antisym)
     have B1:"principal_filter_in a (range f) = (range f) \<inter> {y. a \<le> y}"
       by (simp add: principal_filter_def principal_filter_in_def)
-    have B2:"(moore_to_closure (range f))(a) = Inf(principal_filter_in a (range f))"
-      by (simp add: moore_to_closure_def)
+    have B2:"(g a) = Inf(principal_filter_in a (range f))"
+      by (simp add: g_def moore_to_closure_def)
     have B3:"... = Inf{y \<in> range f. a \<le> y}"
       by (simp add: B1 Collect_conj_eq)
     have B4:"... = Inf{y. \<exists>x. (y = f x) \<and> (a \<le> (f x))}"
       by (metis rangeE rangeI)
     have B5:"... = f a"
       using A4 B3 B4 by presburger
-    show "(moore_to_closure (range f))(a) = (f a)"
+    show "(g a) = (f a)"
       using A4 B2 by presburger
   qed
   show ?thesis
@@ -754,25 +1032,25 @@ qed
 lemma moore_cl_iso_inv2:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C" 
-  shows "C = range(moore_to_closure C)"
+  defines "f \<equiv> moore_to_closure C"
+  shows "C = range f"
 proof-
-  let ?f="moore_to_closure C"
-  have B0:"\<And>y. (y \<in> range(?f)) \<longrightarrow>  y \<in> C"
+  have B0:"\<And>y. (y \<in> (range f)) \<longrightarrow>  y \<in> C"
     proof
-      fix y assume B0A0:"(y \<in> range(?f))"
-      obtain x where B0A1:"(?f)(x) = y"
+      fix y assume B0A0:"(y \<in> (range f))"
+      obtain x where B0A1:"(f x) = y"
         using B0A0 by blast
       have B0B1:"y = Inf(principal_filter_in x C)"
-        by (metis B0A1 moore_to_closure_def)
+        using A0 B0A1 f_def moore_closure_imp by blast
       show "y \<in> C"
         using B0A1 assms moore_closure_imp2 principal_filter_in_def by fastforce
     qed
-  have B1:"\<And>y. (y \<in> C) \<longrightarrow> (y \<in> range(?f))"
+  have B1:"\<And>y. (y \<in> C) \<longrightarrow> (y \<in> (range f))"
   proof
     fix y assume B1A0:"y \<in> C"
-    have B1B0:"?f y = y"
-      by (metis B1A0 moore_to_closure_def principal_inf2)
-    show "y \<in> range(moore_to_closure C)"
+    have B1B0:"f y = y"
+      by (metis B1A0 f_def moore_to_closure_def principal_inf2)
+    show "y \<in> range(f)"
       by (metis B1B0 rangeI) 
   qed
   show ?thesis
@@ -828,9 +1106,9 @@ proof-
     by (simp add: B3 pointwise_less_eq_def)
 qed
 
+section Filters
 
-
-
+subsection Definitions
 definition filter_closure::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
   "filter_closure A \<equiv> {a. \<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> a}"
 
@@ -913,7 +1191,7 @@ definition is_lb_of::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" 
   "is_lb_of l E \<equiv> (\<forall>x \<in> E. l \<le> x)"
 
     
-section Simplifications
+subsection Simplifications
 lemma is_inhabited_imp:
   "\<And>X. is_inhabited X \<Longrightarrow> \<exists>x. x \<in> X"
   by (simp add: ex_in_conv is_inhabited_def)
@@ -933,7 +1211,7 @@ lemma is_pisystem_imp:
   shows "\<And>a b. (a \<in> X \<and> b \<in> X) \<Longrightarrow> (inf a b) \<in> X"
   using assms is_pisystem_def by blast
 
-section PrincipalFiltersAndTops 
+subsection PrincipalFiltersAndTops 
 
 lemma principal_filter_iso:
   fixes F::"'a::order set"
@@ -1005,7 +1283,7 @@ lemma toped_iff2:
 
 
 
-section Upsets
+subsection Upsets
 
 
 lemma upsets_moore_family:
@@ -1136,7 +1414,7 @@ qed
 
 
 
-section FilterClosure
+subsection FilterClosure
 
 lemma set_filter_topped:
   assumes A0:"is_filter F" shows "UNIV \<in> F"
@@ -1236,7 +1514,7 @@ lemma finite_lower_bound:
       using A5 is_lb_of_def by blast
 qed
 
-section FilterPiSystemInSemilatticeinf
+subsection FilterPiSystemInSemilatticeinf
 
 lemma downdir_inf:
   fixes X::"'X::semilattice_inf set"
@@ -1312,7 +1590,7 @@ qed
 
 
 
-section SemilatticeinfWithFinite
+subsection SemilatticeinfWithFinite
 
 lemma infs_eq:
   assumes A0:"finite F"
@@ -1697,7 +1975,7 @@ lemma upclosed_in_lattice_iff:
 
 end
 
-section FilterOnLattice
+subsection FilterOnLattice
 
 lemma filter_on_lattice_inf:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
@@ -1894,7 +2172,8 @@ lemma filter_on_lattice_sup_least_upper:
 
 
     
-section Meshing
+subsection MeshingAndGrilling
+subsubsection PropertiesOfMeshing
 lemma mesh_prop1:
   assumes A0:"{a}# F" and A1:"a \<le> b"
   shows "{b}#F"
@@ -2078,6 +2357,8 @@ proof-
   with LtR RtL show ?thesis
     by (metis A0b A1 finf_complete_lattice) 
 qed
+
+subsubsection PropertiesOfGrilling
 
 lemma grill_is_antitone:
   "A \<subseteq> B \<longrightarrow> grill B \<subseteq> grill A"
@@ -2500,7 +2781,10 @@ lemma filter_then_prime_imp_grillid:
       filter_is_ultra_iff_prime_alt)
 
 
+
 (* voll vereinigungsdualer operator*)
+
+
 
 lemma grill_intersection_union_dual:
   assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. (is_upclosed (EF(i)::'a set set))"
@@ -2803,37 +3087,6 @@ proof-
 qed
 
 
-definition antitone :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> bool" where
-"antitone f \<longleftrightarrow> (\<forall>x y. x \<le> y \<longrightarrow> f y \<le> f x)"
-
-definition comp_extensive :: "('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
-"comp_extensive f g \<longleftrightarrow> (\<forall>x. x \<le> g (f x)) \<and> (\<forall>y. y \<le> f (g y))"
-
-definition relation_to_fgc::"('X \<times> 'Y) set \<Rightarrow> (('X set) \<Rightarrow> ('Y set))" where
-  "relation_to_fgc R = (\<lambda>(A::('X set)). {(y::'Y). \<forall>x \<in> A. (x, y) \<in> R}) "
-
-definition relation_to_ggc::"('X \<times> 'Y) set \<Rightarrow> (('Y set) \<Rightarrow> ('X set))" where
-  "relation_to_ggc R = (\<lambda>(B::('Y set)). {(x::'X). \<forall>y \<in> B. (x, y) \<in> R}) "
-
-definition fgc_to_relation::"(('X set) \<Rightarrow> ('Y set)) \<Rightarrow> ('X \<times> 'Y) set" where
-  "fgc_to_relation f = {(x, y). y \<in> f({x}) }"
-
-definition ggc_to_relation::"(('Y set) \<Rightarrow> ('X set)) \<Rightarrow> ('X \<times> 'Y) set" where
-  "ggc_to_relation g = {(x, y). x \<in> g({y}) }"
-
-definition is_gc2::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
-  "is_gc2 f g \<equiv> (comp_extensive f g) \<and> (antitone f) \<and> (antitone g)"
-
-definition is_join_dual::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> bool" where
-  "is_join_dual f \<equiv> (\<forall>A. ( (f (Sup A)) = (Inf (f`(A))) ))"
-
-definition join_dual_partner::"('X::{Sup,order} \<Rightarrow> 'Y::{Inf,order}) \<Rightarrow> ('Y::{Inf,order} \<Rightarrow> 'X::{Sup,order})" where
-  "join_dual_partner f = (\<lambda>y::('Y::{Inf,order}). Sup {x::('X::{Sup,order}). y \<le> (f x)})"
-
-definition is_gc4::"('X::order \<Rightarrow> 'Y::order) \<Rightarrow> ('Y::order \<Rightarrow> 'X::order) \<Rightarrow> bool" where
-  "is_gc4 f g \<equiv> \<forall>(x::('X::order)). \<forall>(y::('Y::order)). y \<le> (f x) \<longleftrightarrow> x \<le> (g y)"
-
-
 lemma finite_ne_subset_induct[consumes 3, case_names singleton insert]:
   assumes "finite F"
       and "F \<noteq> {}"
@@ -3096,9 +3349,201 @@ proof-
     by (simp add: C0 C1 C2 is_closure_def)
 qed
 
-
 lemma grill_is_galois:
   "is_gc2 grill grill"
   by (simp add: gc2_iff_gc4 is_gc4_def mesh_prop11)
      
+lemma kt_fixed:
+  fixes f::"'a::complete_lattice \<Rightarrow> 'a::complete_lattice"
+  assumes A0:"is_isotone f"
+  defines "A \<equiv> {x. (f x) \<le> x}" and "P \<equiv> {x. f x = x}"
+  shows "(\<exists>a. f a = a) \<and> (\<exists>l. is_least l P) "
+proof-
+  define a where "a = Inf A"
+  have B0:"top \<in> A"
+    by (simp add: A_def)
+  have B1:"A \<noteq> {}"
+    using B0 by auto
+  have B2:"\<forall>x \<in> A. a \<le> x"
+    by (simp add: Inf_lower a_def)
+  have B3:"\<forall>x \<in> A. f a \<le> f x"
+    using A0 B2 is_isotone_def by auto
+  have B4:"\<forall>x \<in> A. f x \<le> x"
+    by (simp add: A_def)
+  have B5:"\<forall>x \<in> A. f a \<le> x"
+    by (metis B3 B4 order_trans)
+  have B6:"f a \<le> a"
+    by (metis B5 Inf_greatest a_def)
+  have B7:"(f \<circ> f)(a) \<le> f a"
+    using A0 B6 is_isotone_def by auto
+  have B8:"(f a) \<in> A"
+    using A_def B7 by auto
+  have B9:"a \<le> f a"
+    by (simp add: B2 B8)
+  have B10:"f a = a"
+    by (simp add: B6 B9 dual_order.antisym)
+  have B11:"P \<subseteq> A"
+    by (simp add: A_def Collect_mono_iff P_def)
+  have B12:"\<forall>x \<in> P. a \<le> x"
+    using B11 B2 by blast
+  have B13:"a \<in> A"
+    using B10 B8 by auto
+  show ?thesis
+    using B10 B12 P_def is_least_def is_lower_bound_def by blast
+qed
+
+
+definition covers::"'a::complete_semilattice_sup set \<Rightarrow> 'a::complete_semilattice_sup \<Rightarrow> bool" where
+  "covers A b \<equiv> (b \<le> Sup A) \<and> (A \<noteq> {}) "
+
+definition is_finite_subcover::"'a::complete_semilattice_sup set \<Rightarrow> 
+                                'a::complete_semilattice_sup set \<Rightarrow> 
+                                'a::complete_semilattice_sup \<Rightarrow>  bool" where
+ "is_finite_subcover S A b \<equiv> (S \<subseteq> A) \<and> (S \<noteq> {}) \<and> (finite S)  \<and> (b \<le> Sup S)"
+
+definition is_compact::"'a::complete_semilattice_sup \<Rightarrow> bool" where
+  "is_compact b \<equiv> (\<forall>A. (covers A b) \<longrightarrow> (\<exists>S. is_finite_subcover S A b))"
+
+definition is_directed::"'a::ord set \<Rightarrow> bool" where 
+  "is_directed D \<equiv> (D \<noteq> {}) \<and> (\<forall>A \<in> Pow D. (A \<noteq> {} \<and> finite A) \<longrightarrow> (\<exists>u \<in> D. is_upper_bound u A))"
+
+definition directed_covering::"'a::complete_semilattice_sup \<Rightarrow> 'a::complete_semilattice_sup set \<Rightarrow> bool" where
+  "directed_covering a D \<equiv> (covers D a) \<and> is_directed D"
+
+lemma compact_lattice_imp:
+  fixes c::"'a::complete_semilattice_sup"
+  assumes A0:"is_compact c"
+  shows "\<And>D. directed_covering c D \<longrightarrow> (\<exists>d \<in> D. c \<le> d)"
+proof
+  fix D assume A1:"directed_covering c D"
+  have B0:"(covers D c) "
+    using A1 directed_covering_def by auto
+  obtain S where A2:"is_finite_subcover S D c"
+    using B0 assms is_compact_def by blast
+  have B1:"(S \<subseteq> D) \<and> (S \<noteq> {}) \<and> (finite S)"
+    by (metis A2 is_finite_subcover_def)
+  obtain d where A3:"d \<in> D \<and> is_upper_bound d S"
+    by (meson A1 B1 PowI directed_covering_def is_directed_def)
+  show "(\<exists>d \<in> D. c \<le> d)"
+    by (meson A2 A3 CSup_least is_finite_subcover_def is_upper_bound_def order_trans)
+qed
+
+
+lemma compact_lattice_if:
+  fixes c::"'a::complete_semilattice_sup"
+  assumes A0:"\<And>D. directed_covering c D \<longrightarrow> (\<exists>d \<in> D. c \<le> d)"
+  shows "is_compact c"
+proof-
+  have B0:"(\<And>A. (covers A c) \<longrightarrow> (\<exists>S. is_finite_subcover S A c))"
+  proof
+    fix A assume A1:"covers A c"
+    define B where A2:"B={x. \<exists>S. S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> x=fSup S}"
+    have B1:"is_directed B"
+    proof-
+      have B2:"B \<noteq> {}"
+        by (smt (z3) A1 A2 covers_def empty_Collect_eq empty_not_insert empty_subsetI equals0I finite.emptyI finite_insert insert_subset)
+      have B3:"\<And>S. (S \<in> Pow B \<and> S \<noteq> {} \<and> finite S) \<longrightarrow> (\<exists>u \<in> B. is_upper_bound u S)"
+      proof
+        fix S assume A4:"S \<in> Pow B \<and> S \<noteq> {} \<and> finite S"
+        have B4:"\<forall>s \<in> S. \<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> s=fSup F"
+          using A2 A4 PowD by auto
+        define f where "f=(\<lambda>s. SOME F. ( F \<subseteq> A  \<and> finite F \<and> F \<noteq> {} \<and> s=fSup F) )"
+        define fS where "fS=\<Union>(f`S)"
+        have B5:"\<forall>s \<in> S. finite (f s) \<and> (f s) \<noteq> {} \<and> (f s) \<subseteq> A \<and> s=fSup (f s)"
+        proof
+            fix s assume A5:"s \<in> S"
+            show "finite (f s) \<and> (f s) \<noteq> {} \<and> (f s) \<subseteq> A \<and> (s = (fSup (f s)))"
+              by (smt (verit, del_insts) B4 A5 f_def someI_ex)
+        qed
+        have B6:"finite fS \<and> fS \<noteq> {} \<and> fS \<subseteq> A"
+          by (simp add: A4 B5 SUP_le_iff fS_def)
+        have B7:"fSup fS \<in> B"
+          using A2 B6 by blast
+        have B8:"\<forall>s \<in> S. f s \<subseteq> fS"
+          by (simp add: SUP_upper fS_def)
+        have B9:"\<forall>s \<in> S. (fSup fS) \<ge> fSup (f s)"
+          by (meson B5 B6 B8 le_iff_sup semilattice_sup_class.subset)
+        have B10:"\<forall>s \<in> S. s \<le> fSup fS"
+        proof
+          fix s assume A6:"s \<in> S"
+          have B100:"(fSup fS) \<ge> fSup (f s)"
+            by (simp add: A6 B9)
+          have B101:"fSup (f s) = s"
+            using A6 B5 by auto
+           show "s \<le> fSup fS"
+             using B100 B101 by auto
+        qed
+        show "\<exists>u \<in> B. is_upper_bound u S"
+          using B10 B7 is_upper_bound_def by auto
+      qed
+      show ?thesis
+        by (simp add: B2 B3 is_directed_def)
+    qed
+    have B11:"A \<subseteq> B"
+    proof
+      fix x assume A7:"x \<in> A"
+      have B12:"finite {x} \<and> {x} \<subseteq> A \<and> {x} \<noteq> {} \<and> fSup {x} = x"
+        by (simp add: A7)
+      show "x \<in> B"
+        by (metis (mono_tags, lifting) A2 B12 CollectI) 
+    qed
+    have B13:"Sup A \<le> Sup B"
+      by (meson B11 CSup_least CSup_upper subset_eq)
+    have B14:"c \<le> Sup B"
+      by (meson A1 B13 covers_def dual_order.trans)
+    obtain b where A8:"b \<in> B \<and> c \<le> b"
+      by (metis B1 B14 assms covers_def directed_covering_def is_directed_def)
+    obtain S where A9:"S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> fSup S = b"
+      using A2 A8 by blast
+    have B15:"c \<le> fSup S"
+      by (simp add: A8 A9)
+    have B16:"fSup S = Sup S"
+      using A9 complete_semilattice_sup_class.finf_complete_lattice by auto
+    have B16:"is_finite_subcover S A c"
+      by (metis A9 B15 B16 is_finite_subcover_def)
+    show "(\<exists>S. is_finite_subcover S A c)"
+      using B16 by blast
+  qed
+  show ?thesis
+    by (simp add: B0 is_compact_def)
+qed
+
+definition is_meet_reducible::"'a::order \<Rightarrow> bool" where
+  "is_meet_reducible x \<equiv> (\<exists>A. (A \<noteq> {}) \<and> (x \<notin> A) \<and> (is_inf x A))"
+
+definition is_join_reducible::"'a::order \<Rightarrow> bool" where
+  "is_join_reducible x \<equiv> (\<exists>A. (A \<noteq> {}) \<and> (x \<notin> A) \<and> (is_sup x A))"
+
+lemma top_is_meet_irreducible:
+  assumes A0:"\<forall>(x::'a::{order,top}). x \<le> top"
+  shows "\<not>(is_meet_reducible (top::'a::{order, top}))"
+proof(rule ccontr)
+  assume A1:"\<not>\<not>((is_meet_reducible (top::'a::{order, top})))"
+  have B1:"(\<exists>(A::('a::{order, top} set)). (A \<noteq> {}) \<and> (top \<notin> A) \<and> (is_inf top A))"
+    using A1 is_meet_reducible_def by auto
+  obtain A where A2:"((A::('a::{order, top} set)) \<noteq> {}) \<and> (top \<notin> A) \<and> (is_inf top A)"
+    using B1 by force
+  have B2:"top \<in> lower_bounds A"
+    using A2 is_greatest_imp is_inf_def is_inf_in_def by blast
+  show False
+    using A2 B2 assms dual_order.antisym in_lower_bounds_imp by blast
+qed
+
+
+lemma bot_is_meet_irreducible:
+  assumes A0:"\<forall>(x::'a::{order,bot}). bot \<le> x"
+  shows "\<not>(is_join_reducible (bot::'a::{order, bot}))"
+proof(rule ccontr)
+  assume A1:"\<not>\<not>((is_join_reducible (bot::'a::{order, bot})))"
+  have B1:"(\<exists>(A::('a::{order, bot} set)). (A \<noteq> {}) \<and> (bot \<notin> A) \<and> (is_sup bot A))"
+    using A1 is_join_reducible_def by auto
+  obtain A where A2:"((A::('a::{order, bot} set)) \<noteq> {}) \<and> (bot \<notin> A) \<and> (is_sup bot A)"
+    using B1 by force
+  have B2:"bot \<in> upper_bounds A"
+    using A2 is_least_imp is_sup_def is_sup_in_def by blast
+  show False
+    using A2 B2 assms dual_order.antisym in_upper_bounds_imp by blast
+qed
+
 end
+
