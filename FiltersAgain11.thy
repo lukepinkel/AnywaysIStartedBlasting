@@ -152,6 +152,12 @@ definition is_lower_bound::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool
   "is_lower_bound l A \<equiv> (\<forall>a \<in> A. l \<le> a)"
 
 
+definition is_upper_bound_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_upper_bound_in u A X \<equiv> (\<forall>a \<in> A. a \<le> u) \<and> u \<in> X"
+
+definition is_lower_bound_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where 
+  "is_lower_bound_in l A X \<equiv> (\<forall>a \<in> A. l \<le> a) \<and> (l \<in> X)"
+
 subsubsection Sets
 
 definition upper_bounds::"'a::ord set \<Rightarrow> 'a::ord set" where
@@ -159,6 +165,12 @@ definition upper_bounds::"'a::ord set \<Rightarrow> 'a::ord set" where
 
 definition lower_bounds::"'a::ord set \<Rightarrow> 'a::ord set" where
   "lower_bounds A \<equiv> {l. is_lower_bound l A}"
+
+definition upper_bounds_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set" where
+  "upper_bounds_in A X \<equiv> {u. is_upper_bound u A} \<inter> X"
+
+definition lower_bounds_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set" where
+  "lower_bounds_in A X \<equiv> {l. is_lower_bound l A} \<inter> X"
 
 definition principal_filter::"'X::ord \<Rightarrow> 'X::ord set" where
   "principal_filter a = {x. x \<ge> a}"
@@ -175,6 +187,13 @@ definition has_upper_bound::"'a::ord set \<Rightarrow> bool" where
 definition has_lower_bound::"'a::ord set \<Rightarrow> bool" where
   "has_lower_bound A \<equiv> (\<exists>l. is_lower_bound l A)"
 
+
+definition has_upper_bound_in::"'a::ord set \<Rightarrow>'a::ord set \<Rightarrow> bool" where
+  "has_upper_bound_in A X \<equiv> (\<exists>u. is_upper_bound_in u A X)"
+
+definition has_lower_bound_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "has_lower_bound_in A X \<equiv> (\<exists>l. is_lower_bound_in l A X)"
+
 subsection Extrema
 subsubsection Predicates
 
@@ -186,13 +205,13 @@ definition is_greatest::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" w
 
 
 definition is_sup_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "is_sup_in s A X \<equiv> (is_least s (upper_bounds A)) \<and> (s \<in> X)"
+  "is_sup_in s A X \<equiv> (is_least s (upper_bounds_in A X))"
  
 definition is_sup::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
   "is_sup s A \<equiv> is_sup_in s A UNIV"
 
 definition is_inf_in::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "is_inf_in i A X \<equiv> (is_greatest i (lower_bounds A)) \<and> (i \<in> X)"
+  "is_inf_in i A X \<equiv> (is_greatest i (lower_bounds_in A X))"
  
 definition is_inf::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
   "is_inf s A \<equiv> is_inf_in s A UNIV"
@@ -206,13 +225,13 @@ definition has_greatest::"'a::ord set \<Rightarrow> bool" where
   "has_greatest A \<equiv> (\<exists>g. is_greatest g A)"
 
 definition has_sup_in::" 'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "has_sup_in A X \<equiv> (\<exists>s.  (is_least s (upper_bounds A)) \<and> (s \<in> X))"
+  "has_sup_in A X \<equiv> (\<exists>s.  (is_least s (upper_bounds_in A X)))"
  
 definition has_sup::"'a::ord set \<Rightarrow> bool" where
   "has_sup A \<equiv>  (\<exists>s.  (is_least s (upper_bounds A)))"
 
 definition has_inf_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "has_inf_in A X \<equiv> (\<exists>i.(is_greatest i (lower_bounds A)) \<and> (i \<in> X))"
+  "has_inf_in A X \<equiv> (\<exists>i. (is_greatest i (lower_bounds_in A X)))"
  
 definition has_inf::" 'a::ord set \<Rightarrow> bool" where
   "has_inf A \<equiv>  (\<exists>s.  (is_greatest s (lower_bounds A)))"
@@ -309,29 +328,63 @@ definition moore_to_closure::"'a::ord set \<Rightarrow> ('a::ord \<Rightarrow> '
 section SomeOrderResults
 subsection BasicImplications
 subsubsection Bounds
+
 lemma in_upper_bounds_imp:
   "\<And>u A. u \<in> upper_bounds A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> u)"
   by (simp add: is_upper_bound_def upper_bounds_def)
+
+lemma in_upper_bounds_in_imp:
+  "\<And>u A X. u \<in> upper_bounds_in A X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> u)"
+  by (simp add: is_upper_bound_def upper_bounds_in_def)
+
+
+lemma in_upper_bounds_in_imp2:
+  "\<And>u A X. u \<in> upper_bounds_in A X \<Longrightarrow> (\<forall>a \<in> A.  a \<le> u)"
+  by (simp add: is_upper_bound_def upper_bounds_in_def)
+
 
 lemma in_lower_bounds_imp:
   "\<And>l A. l \<in> lower_bounds A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> l \<le> a)"
   by (simp add: is_lower_bound_def lower_bounds_def)
 
+lemma in_lower_bounds_in_imp:
+  "\<And>l A X. l \<in> lower_bounds_in A X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> l \<le> a)"
+  by (simp add: is_lower_bound_def lower_bounds_def lower_bounds_in_def)
+
 lemma imp_in_upper_bounds:
   "\<And>u A. (\<forall>a \<in> A. a \<le> u) \<Longrightarrow> u \<in> upper_bounds A "
   by (simp add: is_upper_bound_def upper_bounds_def)
+
+
+lemma imp_in_upper_bounds_in:
+  "\<And>u A X. (\<forall>a \<in> A. a \<le> u) \<and> (u \<in> X) \<Longrightarrow> u \<in> upper_bounds_in A X "
+  by (simp add: is_upper_bound_def upper_bounds_in_def)
 
 lemma imp_in_lower_bounds:
   "\<And>l A.  (\<forall>a \<in> A. l \<le> a) \<Longrightarrow> l \<in> lower_bounds A"
   by (simp add: is_lower_bound_def lower_bounds_def)
 
+
+lemma imp_in_lower_bounds_in:
+  "\<And>l A X.  (\<forall>a \<in> A. l \<le> a) \<and> (l \<in> X) \<Longrightarrow> l \<in> lower_bounds_in A X"
+  by (simp add: is_lower_bound_def lower_bounds_in_def)
+
+
 lemma lower_bound_if:
-  "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> y \<le> a) \<Longrightarrow> y \<in> lower_bounds A"
+  "\<And>y A. (\<And>a. a \<in> A \<Longrightarrow> y \<le> a) \<Longrightarrow> y \<in> lower_bounds A"
   by (simp add: is_lower_bound_def lower_bounds_def)
 
+lemma lower_bound_in_if:
+  "\<And>y A X. (\<And>a. a \<in> A \<Longrightarrow> y \<le> a) \<Longrightarrow>  (y \<in> X) \<Longrightarrow> y \<in> lower_bounds_in A X"
+  by (simp add: is_lower_bound_def lower_bounds_in_def)
+
 lemma upper_bound_if:
-  "\<And>y. (\<And>a. a \<in> A \<Longrightarrow> a \<le> y) \<Longrightarrow> y \<in> upper_bounds A"
+  "\<And>y A. (\<And>a. a \<in> A \<Longrightarrow> a \<le> y) \<Longrightarrow> y \<in> upper_bounds A"
   by (simp add: is_upper_bound_def upper_bounds_def)
+
+lemma upper_bound_in_if:
+  "\<And>y A X. (\<And>a. a \<in> A \<Longrightarrow> a \<le> y) \<Longrightarrow> y \<in> X  \<Longrightarrow> y \<in> upper_bounds_in A X"
+  by (simp add: is_upper_bound_def upper_bounds_in_def)
 
 subsubsection ExtremaPredicates
 
@@ -409,54 +462,66 @@ lemma is_least_eq_if2:
 
 subsubsection InfAndSupImplications
 
+lemma is_inf_reduce:
+  "\<And>i A. is_inf i A \<Longrightarrow> is_greatest i (lower_bounds A)"
+  by (simp add: is_inf_def is_inf_in_def lower_bounds_def lower_bounds_in_def)
+
+lemma is_sup_reduce:
+  "\<And>s A. is_sup s A \<Longrightarrow> is_least s (upper_bounds A)"
+  by (simp add: is_sup_def is_sup_in_def upper_bounds_def upper_bounds_in_def)
+
 lemma is_inf_in_imp_lb1:
-  "\<And>i A X. is_inf_in i A X \<Longrightarrow> i \<in> lower_bounds A"
+  "\<And>i A X. is_inf_in i A X \<Longrightarrow> i \<in> lower_bounds_in A X"
   by (simp add: is_greatest_def is_inf_def is_inf_in_def)
+
+lemma is_inf_imp_lb1:
+  "\<And>i A. is_inf i A \<Longrightarrow> i \<in> lower_bounds A"
+  by (simp add: is_greatest_imp is_inf_reduce)
+
 
 lemma is_inf_in_imp_lb2:
   "\<And>i A X. is_inf_in i A X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> i \<le> a)"
-  by (simp add: is_greatest_def is_inf_in_def is_lower_bound_def lower_bounds_def)
+  using in_lower_bounds_in_imp is_inf_in_imp_lb1 by blast
+
+
+lemma is_inf_imp_lb2:
+  "\<And>i A. is_inf i A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> i \<le> a)"
+  using in_lower_bounds_imp is_inf_imp_lb1 by blast
+
 
 lemma is_sup_in_imp_ub1:
-  "\<And>s A X. is_sup_in s A X \<Longrightarrow> s \<in> upper_bounds A"
+  "\<And>s A X. is_sup_in s A X \<Longrightarrow> s \<in> upper_bounds_in A X"
   by (simp add: is_least_def is_sup_in_def)
+
+
+lemma is_sup_imp_ub1:
+  "\<And>s A. is_sup s A \<Longrightarrow> s \<in> upper_bounds A"
+  by (simp add: is_least_imp is_sup_reduce)
 
 lemma is_sup_in_imp_ub2:
   "\<And>s A X.  is_sup_in s A X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> s)"
-  by (simp add: is_least_def is_sup_in_def is_upper_bound_def upper_bounds_def)
-
-lemma is_inf_imp_lb1:
-  "\<And>i A.  is_inf i A \<Longrightarrow> i \<in> lower_bounds A"
-  by (simp add: is_greatest_def is_inf_def is_inf_in_def)
-
-lemma is_inf_imp_lb2:
-  "\<And>i A.  is_inf i A \<Longrightarrow>  (\<And>a. a \<in> A \<Longrightarrow> i \<le> a)"
-  by (simp add: is_greatest_def is_inf_def is_inf_in_def is_lower_bound_def lower_bounds_def)
-
-lemma is_sup_imp_ub1:
-  "\<And>s A.  is_sup s A \<Longrightarrow> s \<in> upper_bounds A"
-  by (simp add: is_least_def is_sup_def is_sup_in_def)
+  using in_upper_bounds_in_imp is_sup_in_imp_ub1 by blast
 
 lemma is_sup_imp_ub2:
-  "\<And>s A.  is_sup s A \<Longrightarrow>  (\<And>a. a \<in> A \<Longrightarrow> a \<le> s)"
-  by (simp add: is_least_def is_sup_def is_sup_in_def is_upper_bound_def upper_bounds_def)
+  "\<And>s A.  is_sup s A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> s)"
+  using in_upper_bounds_imp is_sup_imp_ub1 by blast
 
 
 lemma is_inf_in_imp_glb1:
-  "\<And>i A X. is_inf_in i A X \<Longrightarrow> is_greatest i (lower_bounds A)"
+  "\<And>i A X. is_inf_in i A X \<Longrightarrow> is_greatest i (lower_bounds_in A X)"
   by (simp add: is_inf_def is_inf_in_def)
 
 lemma is_inf_in_imp_glb2:
-  "\<And>i A X. is_inf_in i A X \<Longrightarrow> (\<And>l. l \<in> lower_bounds A \<Longrightarrow> l \<le> i)"
+  "\<And>i A X. is_inf_in i A X \<Longrightarrow> (\<And>l. l \<in> lower_bounds_in A X \<Longrightarrow> l \<le> i)"
   using is_greatest_imp2 is_inf_in_imp_glb1 by blast
 
 lemma is_inf_in_imp_glb3:
-  "\<And>l i A. is_inf_in i A X \<Longrightarrow> l \<in> lower_bounds A \<Longrightarrow> l \<le> i"
+  "\<And>l i A X. is_inf_in i A X \<Longrightarrow> l \<in> lower_bounds_in A X \<Longrightarrow> l \<le> i"
   by (simp add: is_inf_in_imp_glb2)
 
 lemma is_inf_imp_glb1:
   "\<And>i A. is_inf i A \<Longrightarrow> is_greatest i (lower_bounds A)"
-  by (simp add: is_inf_def is_inf_in_def)
+  by (simp add: is_inf_reduce)
 
 lemma is_inf_imp_glb2:
   "\<And>i A. is_inf i A \<Longrightarrow> (\<And>l. l \<in> lower_bounds A \<Longrightarrow> l \<le> i)"
@@ -468,20 +533,20 @@ lemma is_inf_imp_glb3:
   by (simp add: is_inf_imp_glb2)
 
 lemma is_sup_in_imp_lub1:
-  "\<And>s A X. is_sup_in s A X \<Longrightarrow> is_least s (upper_bounds A)"
+  "\<And>s A X. is_sup_in s A X \<Longrightarrow> is_least s (upper_bounds_in A X)"
   by (simp add: is_sup_def is_sup_in_def)
 
 lemma is_sup_in_imp_lub2:
-  "\<And>s A X. is_sup_in s A X \<Longrightarrow> (\<And>u. u \<in> upper_bounds A \<Longrightarrow> s \<le> u)"
+  "\<And>s A X. is_sup_in s A X \<Longrightarrow> (\<And>u. u \<in> upper_bounds_in A X \<Longrightarrow> s \<le> u)"
   using is_least_imp2 is_sup_in_imp_lub1 by blast
 
 lemma is_sup_in_imp_lub3:
-  "\<And>u s A X. is_sup_in s A X\<Longrightarrow>  u \<in> upper_bounds A \<Longrightarrow> s \<le> u"
+  "\<And>u s A X. is_sup_in s A X\<Longrightarrow>  u \<in> upper_bounds_in A X \<Longrightarrow> s \<le> u"
   using is_least_imp2 is_sup_in_imp_lub1 by blast
 
 lemma is_sup_imp_lub1:
   "\<And>s A. is_sup s A \<Longrightarrow> is_least s (upper_bounds A)"
-  by (simp add: is_sup_def is_sup_in_def)
+  by (simp add: is_sup_reduce)
 
 lemma is_sup_imp_lub2:
   "\<And>s A. is_sup s A \<Longrightarrow> (\<And>u. u \<in> upper_bounds A \<Longrightarrow> s \<le> u)"
@@ -491,15 +556,97 @@ lemma is_sup_imp_lub3:
   "\<And>u s A. is_sup s A \<Longrightarrow>  u \<in> upper_bounds A \<Longrightarrow> s \<le> u"
   using is_least_imp2 is_sup_imp_lub1 by blast
 
+lemma glb_imp_is_inf:
+  "\<And>i A. is_greatest i (lower_bounds A) \<Longrightarrow> is_inf i A"
+  by (simp add: is_inf_def is_inf_in_def lower_bounds_def lower_bounds_in_def)
+
+lemma lub_imp_is_sup:
+  "\<And>s A. is_least s (upper_bounds A) \<Longrightarrow> is_sup s A"
+  by (simp add: is_sup_def is_sup_in_def upper_bounds_def upper_bounds_in_def)
+
+
+lemma glb_imp_is_inf_in:
+  "\<And>i A X. is_greatest i (lower_bounds_in A X) \<Longrightarrow> is_inf_in i A X"
+  by (simp add: is_inf_def is_inf_in_def lower_bounds_def lower_bounds_in_def)
+
+lemma lub_imp_is_sup_in:
+  "\<And>s A X. is_least s (upper_bounds_in A X) \<Longrightarrow> is_sup_in s A X"
+  by (simp add: is_sup_def is_sup_in_def upper_bounds_def upper_bounds_in_def)
+
+
 subsubsection TonicityOfExtremaFunctions
 
 lemma upper_bounds_iso:
   "A \<subseteq> B \<Longrightarrow> upper_bounds B \<subseteq> upper_bounds A"
   by (meson in_upper_bounds_imp subset_iff upper_bound_if)
 
+
+lemma upper_bounds_in_iso:
+  fixes A B X::"'a::order set"
+  assumes A0:"A \<subseteq> B"
+  shows "upper_bounds_in B X \<subseteq> upper_bounds_in A X"
+proof
+  fix a assume A1:"a \<in> upper_bounds_in B X"
+  have B0:"\<forall>b \<in> B. b \<le> a"
+    using A1 in_upper_bounds_in_imp2 by blast
+  show "a \<in> upper_bounds_in A X"
+    by (metis A1 IntD2 assms in_upper_bounds_in_imp subset_iff upper_bound_in_if upper_bounds_in_def)
+qed
+
+
+
+lemma upper_bounds_in_iso2:
+  fixes A B X::"'a::order set"
+  assumes A0:"B \<subseteq> X"
+  shows "upper_bounds_in A B \<subseteq> upper_bounds_in A X"
+proof
+  fix u assume A1:"u \<in> upper_bounds_in A B"
+  have B0:"\<forall>a \<in> A. a \<le> u"
+    using A1 in_upper_bounds_in_imp2 by blast
+  show "u \<in> upper_bounds_in A X"
+    by (metis A1 IntD2 assms in_upper_bounds_in_imp subset_iff upper_bound_in_if upper_bounds_in_def)
+qed
+
+
 lemma lower_bounds_iso:
   "A \<subseteq> B \<Longrightarrow> lower_bounds B \<subseteq> lower_bounds A"
   by (meson in_lower_bounds_imp subset_iff lower_bound_if)
+
+lemma lower_upper_comp_extensive:
+  "A \<subseteq> lower_bounds (upper_bounds A)"
+  by (simp add: in_upper_bounds_imp lower_bound_if subset_iff)
+
+
+lemma upper_lower_comp_extensive:
+  "A \<subseteq> upper_bounds (lower_bounds A)"
+  by (simp add: in_lower_bounds_imp subset_iff upper_bound_if)
+
+
+lemma lower_bounds_in_iso:
+  fixes A B X::"'a::order set"
+  assumes A0:"A \<subseteq> B"
+  shows "lower_bounds_in B X \<subseteq> lower_bounds_in A X"
+proof
+  fix a assume A1:"a \<in> lower_bounds_in B X"
+  have B0:"\<forall>b \<in> B. a \<le> b"
+    using A1 in_lower_bounds_in_imp by blast
+  show "a \<in> lower_bounds_in A X"
+    by (metis A1 IntD2 assms in_lower_bounds_in_imp subset_iff lower_bound_in_if lower_bounds_in_def)
+qed
+
+
+
+lemma lower_bounds_in_iso2:
+  fixes A B X::"'a::order set"
+  assumes A0:"B \<subseteq> X"
+  shows "lower_bounds_in A B \<subseteq> lower_bounds_in A X"
+proof
+  fix l assume A1:"l \<in> lower_bounds_in A B"
+  have B0:"\<forall>a \<in> A. l \<le> a"
+    using A1 in_lower_bounds_in_imp by blast
+  show "l \<in> lower_bounds_in A X"
+    by (metis A1 IntD2 assms in_lower_bounds_in_imp subset_iff lower_bound_in_if lower_bounds_in_def)
+qed
 
 lemma greatest_iso:
   "(A::'a::order set) \<subseteq> B \<Longrightarrow> has_greatest A \<Longrightarrow> has_greatest B \<Longrightarrow> Greatest A \<le> Greatest B"
@@ -508,6 +655,8 @@ lemma greatest_iso:
 lemma least_anti:
   "(A::'a::order set) \<subseteq> B \<Longrightarrow> has_least A \<Longrightarrow> has_least B \<Longrightarrow> Least B \<le> Least A"
   using is_least_eq_if1 is_least_imp is_least_imp2 by blast
+
+
 
 subsubsection EmptySetTopAndBot
 
@@ -644,7 +793,7 @@ lemma has_inf_in_imp1:
 
 lemma has_inf_imp1:
   "\<And>(A::'a::order set). has_inf A \<Longrightarrow> (\<exists>i. is_inf i A)"
-  by (simp add: has_inf_def is_inf_def is_inf_in_def)
+  by (simp add: has_inf_def is_inf_def is_inf_in_def lower_bounds_def lower_bounds_in_def)
 
 lemma inf_in_unique2:
   "\<And>(A::'a::order set) X. has_inf_in A X \<Longrightarrow> (\<exists>!i. is_inf_in i A X)"
@@ -661,7 +810,7 @@ lemma has_sup_in_imp1:
 
 lemma has_sup_imp1:
   "\<And>(A::'a::order set). has_sup A \<Longrightarrow> (\<exists>s. is_sup s A)"
-  by (simp add: has_sup_def is_sup_def is_sup_in_def)
+  by (simp add: has_sup_def is_sup_def is_sup_in_def upper_bounds_def upper_bounds_in_def)
 
 lemma sup_in_unique2:
   "\<And>(A::'a::order set) X. has_sup_in A X \<Longrightarrow> (\<exists>!s. is_sup_in s A X)"
@@ -682,9 +831,14 @@ lemma is_sup_sup_eq:
   by (simp add: Supp_def sup_unique2 the1_equality)
 
 
+
 lemma is_inf_in_inf_eq:
-  "\<And>(i::'a::order) A X. has_inf_in A X \<Longrightarrow> is_inf_in i A X \<Longrightarrow> (i = Infp A)"
-  by (meson UNIV_I has_inf_def is_inf_def is_inf_in_def is_inf_inf_eq)
+  "\<And>(i::'a::order) A X. has_inf_in A X \<Longrightarrow> is_inf_in i A X \<Longrightarrow> (i = InfIn A X)"
+  by (metis InfIn_def inf_in_unique2 the_equality)
+
+lemma is_sup_in_sup_eq:
+  "\<And>(s::'a::order) A X. has_sup_in A X \<Longrightarrow> is_sup_in s A X \<Longrightarrow> (s = SupIn A X)"
+  by (metis SupIn_def sup_in_unique2 the_equality)
 
 
 
@@ -694,26 +848,72 @@ lemma infp_is_gbl:
   shows "Infp A = Greatest (lower_bounds A)"
   using assms has_inf_imp1 is_greatest_eq_if2 is_inf_imp_glb1 is_inf_inf_eq by blast
 
+lemma infin_is_gbl:
+  fixes A X::"'a::order set"
+  assumes A0:"has_inf_in A X"
+  shows "InfIn A X = Greatest (lower_bounds_in A X)"
+  using assms inf_in_unique2 is_greatest_eq_if2 is_inf_in_imp_glb1 is_inf_in_inf_eq by blast
+
 lemma supp_is_lub:
   fixes A::"'a::order set"
   assumes A0:"has_sup A"
   shows "Supp A = Least (upper_bounds A)"
   using assms has_sup_imp1 is_least_eq_if2 is_sup_imp_lub1 is_sup_sup_eq by blast
 
+lemma supin_is_lub:
+  fixes A X::"'a::order set"
+  assumes A0:"has_sup_in A X"
+  shows "SupIn A X = Least (upper_bounds_in A X)"
+  using assms sup_in_unique2 is_least_eq_if2 is_sup_in_imp_lub1 is_sup_in_sup_eq by blast
+
 subsubsection TonicityOfInfSup
 
-lemma is_sup_in_sup_eq:
-  "\<And>(s::'a::order) A X. has_sup_in A X \<Longrightarrow> is_sup_in s A X \<Longrightarrow> (s = Supp A)"
-  by (meson UNIV_I has_sup_def is_sup_def is_sup_in_def is_sup_sup_eq)
+
+lemma sup_in_iso:
+  fixes A B X::"'a::order set"
+  assumes A0:"A \<subseteq> B" and A1:"has_sup_in A X" and A2:"has_sup_in B X"
+  shows "SupIn A X \<le> SupIn B X"
+  by (metis A0 A1 A2 has_sup_in_def is_least_eq_if2 is_least_imp is_sup_in_imp_lub3 
+     is_sup_in_sup_eq subsetD sup_in_unique2 supin_is_lub upper_bounds_in_iso)
 
 lemma sup_iso:
   "(A::'a::order set) \<subseteq> B \<Longrightarrow> has_sup A \<Longrightarrow> has_sup B \<Longrightarrow> Supp A \<le> Supp B"
-  by (metis imp_in_upper_bounds in_mono is_sup_imp_lub3 is_sup_imp_ub2 is_sup_sup_eq sup_unique2)
+  by (metis has_sup_def has_sup_imp1 in_mono is_least_eq_if2 is_least_imp2 is_sup_imp_ub1
+       is_sup_sup_eq supp_is_lub upper_bounds_iso)
+
+lemma inf_in_anti:
+  fixes A B X::"'a::order set"
+  assumes A0:"A \<subseteq> B" and A1:"has_inf_in A X" and A2:"has_inf_in B X"
+  shows "InfIn B X \<le> InfIn A X"
+  by (metis A0 A1 A2 has_inf_in_def infin_is_gbl is_greatest_def is_greatest_eq_if2
+       is_upper_bound_def lower_bounds_in_iso subsetD)
 
 
 lemma inf_anti:
   "(A::'a::order set) \<subseteq> B \<Longrightarrow> has_inf A \<Longrightarrow> has_inf B \<Longrightarrow> Infp B \<le> Infp A"
   by (metis has_inf_imp1 is_inf_imp_glb2 is_inf_imp_lb2 is_inf_inf_eq lower_bound_if subsetD)
+
+lemma sup_in_space_anti:
+  fixes A B X::"'a::order set"
+  assumes A0:"B \<subseteq> X" and A2:"has_sup_in A X" and A3:"has_sup_in A B"
+  shows "SupIn A X \<le> SupIn A B"                         
+  by (smt (verit, best) A0 A2 A3 Int_iff is_sup_in_imp_lub3 is_sup_in_imp_ub1 
+  is_sup_in_sup_eq subsetD sup_in_unique2 upper_bounds_in_def)
+
+
+lemma inf_in_space_mono:
+  fixes A B X::"'a::order set"
+  assumes A0:"B \<subseteq> X" and A2:"has_inf_in A X" and A3:"has_inf_in A B"
+  shows "InfIn A B \<le> InfIn A X"            
+proof-
+  have B0:"is_greatest (InfIn A B) (lower_bounds_in A B)"          
+     using A3 inf_in_unique2 is_inf_in_def is_inf_in_inf_eq by blast 
+  have B1:"is_greatest (InfIn A X) (lower_bounds_in A X)"
+    using A2 inf_in_unique2 is_inf_in_imp_glb1 is_inf_in_inf_eq by blast 
+  show ?thesis
+    by (meson A0 B0 B1 is_greatest_imp is_greatest_imp2 lower_bounds_in_iso2 subsetD)
+qed
+  
 
 subsubsection PrincipalFilterImplications
 
@@ -728,7 +928,7 @@ proof-
   have B2:"is_greatest x (lower_bounds (principal_filter x))"
     by (simp add: B0 B1 imp_in_upper_bounds is_greatest_if)
   have B3:"is_inf x (principal_filter x)"
-    by (simp add: B2 is_inf_def is_inf_in_def)
+    using A0 B2 greatest_unique1 inf_unique2 is_inf_imp_glb1 by blast
   show "x = Infp (principal_filter x)"
     by (simp add: A0 B3 is_inf_inf_eq)
 qed
@@ -782,14 +982,33 @@ lemma greatest_singleton:
   "is_greatest (x::'a::order) {x}"
   by (simp add: is_greatest_def is_upper_bound_def)
 
+lemma is_lower_bound_in_singleton:
+  fixes x::"'a::order"
+  shows "x \<in> X \<Longrightarrow> x \<in> lower_bounds_in {x} X"
+  by (simp add: imp_in_lower_bounds_in)
+
+lemma is_upper_bound_in_singleton:
+  fixes x::"'a::order"
+  shows "x \<in> X \<Longrightarrow> x \<in> upper_bounds_in {x} X"
+  by (simp add: imp_in_upper_bounds_in)
+
+lemma is_sup_in_singleton:
+  "x \<in> X \<Longrightarrow> is_sup_in (x::'a::order) {x} X"
+  by (simp add: in_upper_bounds_in_imp is_least_def is_lower_bound_def is_sup_in_def is_upper_bound_in_singleton)
+
+
+lemma is_inf_in_singleton:
+  "x \<in> X \<Longrightarrow> is_inf_in (x::'a::order) {x} X"
+  by (simp add: in_lower_bounds_in_imp is_greatest_def is_upper_bound_def is_inf_in_def is_lower_bound_in_singleton)
+
 
 lemma is_sup_singleton:
   "is_sup (x::'a::order) {x}"
-  by (simp add: greatest_singleton in_upper_bounds_imp is_greatest_imp is_least_if is_sup_def is_sup_in_def lower_bound_if)
+  by (simp add: is_sup_def is_sup_in_singleton)
 
 lemma is_inf_singleton:
   "is_inf (x::'a::order) {x}"
-  by (simp add: in_lower_bounds_imp is_greatest_def is_inf_def is_inf_in_def is_least_imp is_upper_bound_def least_singleton)
+  by (simp add: is_inf_def is_inf_in_singleton)
 
 
 lemma is_lub_singleton:
@@ -799,6 +1018,22 @@ lemma is_lub_singleton:
 lemma is_glb_singleton:
   "is_greatest (x::'a::order) (lower_bounds {x})"
   by (simp add: is_inf_imp_glb1 is_inf_singleton)
+
+lemma is_lub_in_singleton:
+  "x \<in> X \<Longrightarrow> is_least (x::'a::order) (upper_bounds_in {x} X)"
+  by (simp add: is_sup_in_imp_lub1 is_sup_in_singleton)
+
+
+lemma is_glb_in_singleton:
+  "x \<in> X \<Longrightarrow> is_greatest (x::'a::order) (lower_bounds_in {x} X)"
+  by (simp add: is_inf_in_imp_glb1 is_inf_in_singleton)
+
+
+lemma is_sup_in_int1:
+  fixes i::"'a::order" and A X::"'a::order set"
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}"
+  shows "is_inf_in i A X  \<longleftrightarrow> (is_greatest i ((lower_bounds A) \<inter> X))"
+  by (simp add: is_inf_in_def lower_bounds_def lower_bounds_in_def)
 
 
 subsubsection MooreFamilySimplifications
@@ -908,16 +1143,72 @@ lemma moore_family_is_cofinal:
 subsection Completesemilattices
 subsubsection InfAndSup
 
-lemma complete_semilattice_inf_has_inf:
-  "\<forall>(A::'a::complete_semilattice_inf set). has_inf A"
+lemma complete_semilattice_inf_is_inf:
+  "\<forall>(A::'a::complete_semilattice_inf set). is_inf (Inf A) A"
 proof
   fix A::"'a::complete_semilattice_inf set"
-  have B0:"is_inf (Inf A) A"
-    by (meson CInf_greatest CInf_lower UNIV_I in_lower_bounds_imp is_greatest_def
-        is_inf_def is_inf_in_def is_upper_bound_def lower_bound_if)
-  show "has_inf A"
-    using B0 has_inf_def is_inf_imp_glb1 by auto
+  define i where "i=Inf A"
+  have B0:"i \<in> lower_bounds A"
+    by (simp add: CInf_lower i_def lower_bound_if)
+  have B1:"is_greatest i (lower_bounds A)"
+    by (metis B0 CInf_greatest i_def imp_in_upper_bounds in_lower_bounds_imp is_greatest_if)
+  show "is_inf (Inf A) A"
+    using B1 greatest_unique1 has_inf_def has_inf_imp1 i_def is_inf_imp_glb1 by blast
 qed
+
+
+lemma complete_semilattice_inf_in_is_inf_in:
+  fixes A X::"'a::complete_semilattice_inf set"
+  assumes A0:"(Inf A) \<in> X"
+  shows "is_inf_in (InfIn A X) A X"
+proof-
+  define i where "i=Inf A"
+  have B0:"i \<in> X"
+    by (simp add: assms i_def)
+  have B0:"i \<in> lower_bounds_in A X"
+    by (metis B0 CInf_lower i_def imp_in_lower_bounds_in)
+  have B1:"is_greatest i (lower_bounds_in A X)"
+    by (metis B0 IntD2 Int_commute complete_semilattice_inf_is_inf i_def is_greatest_def is_inf_imp_glb1 is_upper_bound_def lower_bounds_def lower_bounds_in_def)
+  show ?thesis
+    by (metis B1 glb_imp_is_inf_in has_inf_in_def infin_is_gbl is_greatest_eq_if2)
+qed
+
+
+lemma complete_semilattice_inf_in_eq_inf_in:
+  fixes A X::"'a::complete_semilattice_inf set"
+  assumes A0:"(Inf A) \<in> X"
+  shows "has_inf_in A X \<and> (InfIn A X) = Inf A"
+  by (meson CInf_greatest assms complete_semilattice_inf_in_is_inf_in complete_semilattice_inf_is_inf has_inf_in_def imp_in_lower_bounds_in in_lower_bounds_in_imp is_inf_imp_lb2 is_inf_in_imp_glb1 is_inf_in_imp_glb3 is_inf_in_imp_lb1 order_antisym)
+
+
+
+lemma complete_semilattice_sup_in_is_sup_in:
+  fixes A X::"'a::complete_semilattice_sup set"
+  assumes A0:"(Sup A) \<in> X"
+  shows "is_sup_in (SupIn A X) A X"
+proof-
+  define s where "s=Sup A"
+  have B0:"s \<in> X"
+    by (simp add: assms s_def)
+  have B0:"s \<in> upper_bounds_in A X"
+    by (metis B0 CSup_upper s_def imp_in_upper_bounds_in)
+  have B1:"is_least s (upper_bounds_in A X)"
+    by (metis B0 CSup_least in_upper_bounds_in_imp is_least_def is_lower_bound_def s_def)
+  show ?thesis
+    by (metis B1 has_sup_in_def is_sup_in_def is_sup_in_sup_eq)
+qed
+
+
+lemma complete_semilattice_sup_in_eq_sup_in:
+  fixes A X::"'a::complete_semilattice_sup set"
+  assumes A0:"(Sup A) \<in> X"
+  shows "has_sup_in A X \<and> (SupIn A X) = Sup A"
+  by (meson CSup_least CSup_upper assms complete_semilattice_sup_in_is_sup_in has_sup_in_def imp_in_upper_bounds_in in_upper_bounds_in_imp is_sup_in_imp_lub1 is_sup_in_imp_lub3 is_sup_in_imp_ub1 order_antisym)
+
+
+lemma complete_semilattice_inf_has_inf:
+  "\<forall>(A::'a::complete_semilattice_inf set). has_inf A"
+  using complete_semilattice_inf_is_inf has_inf_def is_inf_imp_glb1 by blast
 
 lemma complete_semilattice_inf_infp_eq:
   "\<forall>(A::'a::complete_semilattice_inf set). Infp A = Inf A"
@@ -926,23 +1217,27 @@ proof
   have B0:"is_inf (Infp A) A"
     using complete_semilattice_inf_has_inf has_inf_imp1 is_inf_inf_eq by blast
   have B1:"is_inf (Inf A) A"
-    by (simp add: CInf_greatest CInf_lower in_lower_bounds_imp is_greatest_def is_inf_def 
-        is_inf_in_def is_upper_bound_def lower_bound_if)
+    by (simp add: complete_semilattice_inf_is_inf)
   show "Infp A = Inf A"
     using B0 B1 inf_unique1 by auto
+qed
+
+lemma complete_semilattice_sup_is_sup:
+  "\<forall>(A::'a::complete_semilattice_sup set). is_sup (Sup A) A"
+proof
+  fix A::"'a::complete_semilattice_sup set"
+  define s  where "s=Sup A"
+  have B0:"s \<in> upper_bounds A"
+    by (simp add: CSup_upper s_def upper_bound_if)
+  have B1:"is_least s (upper_bounds A)"
+    by (metis B0 CSup_least in_upper_bounds_imp is_least_def is_lower_bound_def s_def)
+  show "is_sup (Sup A) A"
+    by (metis B1 inf_top.right_neutral is_sup_def is_sup_in_def s_def upper_bounds_def upper_bounds_in_def)
 qed
   
 lemma complete_semilattice_sup_has_sup:
   "\<forall>(A::'a::complete_semilattice_sup set). has_sup A"
-proof
-  fix A::"'a::complete_semilattice_sup set"
-  have B0:"is_sup (Sup A) A"
-    by (meson CSup_least CSup_upper UNIV_I in_upper_bounds_imp is_least_def
-        is_sup_def is_sup_in_def is_lower_bound_def upper_bound_if)
-  show "has_sup A"
-    using B0 has_sup_def is_sup_imp_lub1 by auto
-qed
-
+  using complete_semilattice_sup_is_sup has_sup_def is_sup_imp_lub1 by blast
 
 lemma complete_semilattice_sup_supp_eq:
   "\<forall>(A::'a::complete_semilattice_sup set). Supp A = Sup A"
@@ -951,12 +1246,13 @@ proof
   have B0:"is_sup (Supp A) A"
     using complete_semilattice_sup_has_sup has_sup_imp1 is_sup_sup_eq by blast
   have B1:"is_sup (Sup A) A"
-    by (simp add: CSup_least CSup_upper in_upper_bounds_imp is_least_def is_sup_def 
-        is_sup_in_def is_lower_bound_def upper_bound_if)
+    by (simp add: complete_semilattice_sup_is_sup)
   show "Supp A = Sup A"
     using B0 B1 sup_unique1 by auto
 qed
   
+
+
 lemma complete_semilattice_inf_ub_imp_sup:
   fixes A::"'a::complete_semilattice_inf set"
   assumes "upper_bounds A \<noteq> {}"
@@ -976,7 +1272,7 @@ proof-
     have B3:"is_least s (upper_bounds A)"
       using B0 B1 U_def bot_is_least by auto
     have B4:"is_sup s A"
-      by (simp add: B3 is_sup_def is_sup_in_def)
+      by (simp add: B0 B1 True imp_in_upper_bounds_in is_least_def is_lower_bound_def is_sup_def is_sup_in_def)
     have B5:"has_sup A"
       using B3 has_sup_def by auto
     then show ?thesis
@@ -1004,6 +1300,7 @@ proof-
     using P0 by auto
 qed
 
+
 lemma complete_semilattice_sup_lb_imp_inf:
   fixes A::"'a::complete_semilattice_sup set"
   assumes "lower_bounds A \<noteq> {}"
@@ -1023,7 +1320,7 @@ proof-
     have B3:"is_greatest i (lower_bounds A)"
       using B0 B1 L_def top_is_greatest by auto
     have B4:"is_inf i A"
-      by (simp add: B3 is_inf_def is_inf_in_def)
+      by (simp add: B0 B1 True imp_in_lower_bounds_in is_greatest_def is_upper_bound_def is_inf_def is_inf_in_def)
     have B5:"has_inf A"
       using B3 has_inf_def by auto
     then show ?thesis
@@ -1051,6 +1348,53 @@ proof-
     using P0 by auto
 qed
 
+lemma sup_in_space_subset_existence:
+  fixes A B X::"'a::order set"
+  assumes A0:"has_sup_in A X" and A1:"A \<subseteq> B \<and> B \<subseteq> X" and A2:"A \<noteq> {}"
+  shows "SupIn A X \<in> B \<longleftrightarrow> (has_sup_in A B \<and> SupIn A B = SupIn A X)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:"?L"
+  define s where "s=SupIn A X"
+  have B0:"s \<in> upper_bounds_in A B"
+    by (metis A0 L is_sup_in_imp_ub2 is_sup_in_sup_eq s_def sup_in_unique2 upper_bound_in_if)
+  have B1:"s \<in> upper_bounds_in A X"
+    using A0 has_sup_in_imp1 is_sup_in_imp_ub1 is_sup_in_sup_eq s_def by blast
+  have B2:"\<forall>u \<in> upper_bounds_in A B. s \<le> u"
+    by (metis A0 A1 has_sup_in_imp1 is_sup_in_imp_lub3 is_sup_in_sup_eq s_def subset_eq upper_bounds_in_iso2)
+  have B3:"is_sup_in s A B"
+    by (simp add: B0 B2 is_least_def is_lower_bound_def lub_imp_is_sup_in)
+  show "?R"
+    by (metis B3 has_sup_in_def is_sup_in_def is_sup_in_sup_eq s_def)
+  next
+  assume R:"?R"
+  show "?L"
+    by (metis Int_iff R is_sup_in_imp_ub1 is_sup_in_sup_eq sup_in_unique2 upper_bounds_in_def)
+qed
+
+
+lemma inf_in_space_subset_existence:
+  fixes A B X::"'a::order set"
+  assumes A0:"has_inf_in A X" and A1:"A \<subseteq> B \<and> B \<subseteq> X" and A2:"A \<noteq> {}"
+  shows "InfIn A X \<in> B \<longleftrightarrow> (has_inf_in A B \<and> InfIn A B = InfIn A X)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:"?L"
+  define i where "i=InfIn A X"
+  have B0:"i \<in> lower_bounds_in A B"
+    by (metis A0 L i_def inf_in_unique2 is_inf_in_imp_lb2 is_inf_in_inf_eq lower_bound_in_if)
+  have B1:"i \<in> lower_bounds_in A X"
+    by (meson A1 B0 in_mono lower_bounds_in_iso2)
+  have B2:"\<forall>l \<in> lower_bounds_in A B. l \<le> i"
+    using A0 A1 has_inf_in_imp1 i_def is_inf_in_imp_glb3 is_inf_in_inf_eq lower_bounds_in_iso2 by blast
+  have B3:"is_inf_in i  A B"
+    by (simp add: B0 B2 glb_imp_is_inf_in is_greatest_def is_upper_bound_def)
+  show "?R"
+    by (metis B3 has_inf_in_def i_def is_inf_in_imp_glb1 is_inf_in_inf_eq)
+  next
+  assume R:"?R"
+  show "?L"
+    by (metis Int_iff R inf_in_unique2 is_inf_in_imp_lb1 is_inf_in_inf_eq lower_bounds_in_def)
+qed
+
 subsubsection MooreClosures
 
 lemma principal_inf2:
@@ -1071,7 +1415,7 @@ proof-
   have B5:"is_greatest x (lower_bounds (principal_filter_in x C))"
     by (simp add: B2 B4 in_lower_bounds_imp is_greatest_def is_upper_bound_def)
   show ?thesis
-    by (simp add: B5 complete_semilattice_inf_has_inf is_inf_def is_inf_in_def is_inf_inf_eq)
+    by (simp add: B5 complete_semilattice_inf_has_inf infp_is_gbl is_greatest_eq_if2)
 qed  
 
 
@@ -1405,17 +1749,7 @@ lemma fsup_complete_lattice:
 
 lemma complete_semilattice_sup_is_sup:
   "\<forall>(A::'X::complete_semilattice_sup set). (is_sup (Sup A) A)"
-proof
-  fix A::"'X::complete_semilattice_sup set"
-  have B0:"(Sup A) \<in>(upper_bounds A)"
-    by (simp add: complete_semilattice_sup_class.CSup_upper upper_bound_if)
-  have B1:"\<forall>u \<in> upper_bounds A. (Sup A) \<le> u"
-    by (simp add: complete_semilattice_sup_class.CSup_least in_upper_bounds_imp)
-  have B2:"is_least (Sup A) (upper_bounds A)"
-    by (simp add: B0 B1 is_least_def is_lower_bound_def)
-  show "is_sup (Sup A) A"
-    by (simp add: B2 is_sup_def is_sup_in_def)
-qed
+  by (simp add: complete_semilattice_sup_is_sup)
 
 end
 
@@ -1426,20 +1760,10 @@ lemma finf_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fInf A = Inf A)"
   using local.CInf_greatest local.CInf_lower local.Inf_fin.bounded_iff local.Inf_fin.coboundedI local.Inf_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
 
-
 lemma complete_semilattice_inf_is_inf:
   "\<forall>(A::'X::complete_semilattice_inf set). (is_inf (Inf A) A)"
-proof
-  fix A::"'X::complete_semilattice_inf set"
-  have B0:"(Inf A) \<in>(lower_bounds A)"
-    by (simp add: complete_semilattice_inf_class.CInf_lower lower_bound_if)
-  have B1:"\<forall>l \<in> lower_bounds A. (Inf A) \<ge> l"
-    by (simp add: complete_semilattice_inf_class.CInf_greatest in_lower_bounds_imp)
-  have B2:"is_greatest (Inf A) (lower_bounds A)"
-    by (simp add: B0 B1 is_greatest_def is_upper_bound_def)
-  show "is_inf (Inf A) A"
-    by (simp add: B2 is_inf_def is_inf_in_def)
-qed
+  by (simp add: complete_semilattice_inf_is_inf)
+
 
 end
 
@@ -1461,14 +1785,26 @@ end
 lemma complete_lattice_inf_is_inf:
   fixes A::"'a::complete_lattice set"
   shows "(is_inf (Inf A) A)"
-  by (meson UNIV_I dual_order.refl in_lower_bounds_imp is_greatest_def is_inf_def is_inf_in_def is_upper_bound_def le_Inf_iff lower_bound_if)
-
+proof-
+  have B0:"(Inf A) \<in> lower_bounds A"
+    by (simp add: csli.CInf_lower lower_bound_if)
+  have B1:"is_greatest (Inf A) (lower_bounds A)"
+    by (simp add: B0 in_lower_bounds_imp is_greatest_def is_upper_bound_def le_Inf_iff)
+  show ?thesis
+    using B1 greatest_unique1 has_inf_def has_inf_imp1 is_inf_imp_glb1 by blast
+qed
 
 lemma complete_lattice_sup_is_sup:
   fixes A::"'a::complete_lattice set"
   shows "(is_sup (Sup A) A)"
-  by (meson Sup_le_iff UNIV_I csls.CSup_upper in_upper_bounds_imp is_least_def is_lower_bound_def is_sup_def is_sup_in_def upper_bound_if)
-
+proof-
+  have B0:"(Sup A) \<in> upper_bounds A"
+    by (simp add: csls.CSup_upper upper_bound_if)
+  have B1:"is_least (Sup A) (upper_bounds A)"
+    by (simp add: B0 Sup_le_iff imp_in_lower_bounds in_upper_bounds_imp is_least_if)
+  show ?thesis
+    by (metis B1 has_sup_def is_least_eq_if2 is_sup_imp_lub1 sup_unique2)
+qed
 
 (*de Morgans for finite sup and inf in complete boolean algebra*)
 
@@ -1508,33 +1844,6 @@ lemma complete_lattice_sup_least:
   shows "\<forall>u \<in> upper_bounds A. Sup A \<le> u"
   by (simp add: csls.CSup_least in_upper_bounds_imp)
 
-lemma order_sup_singleton:
-  fixes a::"'a::order"
-  shows "is_sup a {a}"
-  proof-
-    have B0:"a \<in> upper_bounds {a}"
-      by (metis dual_order.refl singletonD upper_bound_if)
-    have B1:"\<forall>u \<in> upper_bounds {a}. a \<le> u"
-      by (simp add: in_upper_bounds_imp)
-    have B2:"is_least a (upper_bounds {a})"
-      by (simp add: B0 B1 is_least_def is_lower_bound_def)
-    show ?thesis
-      by (simp add: B2 is_sup_def is_sup_in_def)
-qed
-
-lemma order_inf_singleton:
-  fixes a::"'a::order"
-  shows "is_inf a {a}"
-  proof-
-    have B0:"a \<in> lower_bounds {a}"
-      by (metis dual_order.refl singletonD lower_bound_if)
-    have B1:"\<forall>l \<in> lower_bounds {a}. l \<le> a"
-      by (simp add: in_lower_bounds_imp)
-    have B2:"is_greatest a (lower_bounds {a})"
-      by (simp add: B0 B1 is_greatest_def is_upper_bound_def)
-    show ?thesis
-      by (simp add: B2 is_inf_def is_inf_in_def)
-qed
 
 lemma has_least_imp_inf_eq_least:
   fixes A::"'a::order set"
@@ -1547,8 +1856,10 @@ proof-
     using A1 is_least_imp by blast
   have B1:"\<forall>l \<in> lower_bounds A. l \<le> m"
     using A1 in_lower_bounds_imp is_least_imp by blast
+  have B2:"is_greatest m (lower_bounds A)"
+    by (simp add: B0 B1 imp_in_upper_bounds is_greatest_if)
   have B2:"m = Infp A"
-    by (meson B0 B1 UNIV_I has_inf_def is_greatest_def is_inf_def is_inf_in_def is_inf_inf_eq is_upper_bound_def)
+    by (metis B2 has_inf_def infp_is_gbl is_greatest_eq_if2)
   show ?thesis
     using A1 B2 is_least_eq_if2 by auto
 qed
@@ -1747,6 +2058,39 @@ proof
   qed
 qed
   
+lemma complete_semilattice_sup_inf_closed_then_moore:
+  fixes C::"'a::complete_semilattice_sup set"
+  assumes A0:"C \<noteq> {}" and A0:"\<And>E. (E \<in> Pow(C) \<and> (has_inf E)) \<Longrightarrow> (Infp E) \<in> C"
+  shows "is_moore_family C"
+proof-
+    have P:"\<forall>x. has_least (principal_filter_in x C)"
+    proof
+      fix x
+      define Cx where "Cx=principal_filter_in x C"
+      have B0:"x \<in> lower_bounds Cx"
+        by (simp add: Cx_def lower_bound_if principal_filter_in_imp)
+      have B1:"lower_bounds Cx \<noteq> {}"
+        using B0 by auto
+      have B3:"has_inf (Cx)"
+        by (simp add: B1 complete_semilattice_sup_lb_imp_inf)
+      define i where "i = Infp Cx"
+      have B4:"x \<le> i"
+        by (simp add: B0 B1 CSup_upper complete_semilattice_sup_lb_imp_inf i_def)
+      have B5:"i \<in> C"
+        by (metis A0 B3 Cx_def PowI i_def inf_le1 principal_filter_in_def)
+      have B6:"i \<in> Cx"
+        by (simp add: B4 B5 Cx_def principal_filter_def principal_filter_in_def)
+      have B7:"i \<in> lower_bounds Cx"
+        using B3 has_inf_imp1 i_def is_inf_imp_lb1 is_inf_inf_eq by blast
+      have B8:"is_least i Cx"
+        by (simp add: B6 B7 is_least_if)
+      show "has_least (principal_filter_in x C)"
+        using B8 Cx_def has_least_def by blast
+    qed
+    show ?thesis
+      by (simp add: P assms(1) is_moore_family_def)
+qed
+
 subsubsection ClosureRangeIsMooreFamily
 lemma clrange_is_moore:
   fixes f::"'a::order \<Rightarrow> 'a::order"
@@ -1966,9 +2310,9 @@ proof-
     by (metis A0 A1 B0 closure_range_inf_closed_gen moore_cl_iso_inv2 moore_to_closure_is_idempotent3 
         moore_to_closure_iscl)
   have B2:"is_inf_in i A C"
-    by (simp add: B0 B1 is_inf_imp_glb1 is_inf_in_def)
+    by (meson A1 B0 B1 Int_iff is_greatest_def is_inf_imp_glb1 is_sup_in_int1 is_upper_bound_def)
   have B3:"has_inf_in A C"
-    using B0 B1 has_inf_in_def is_inf_imp_glb1 by blast
+    using B2 has_inf_in_def is_inf_in_def by blast
   have B4:"Infp A = i"
     by (simp add: complete_semilattice_inf_infp_eq i_def)
   have B5:"InfIn A C  = i"
@@ -1978,6 +2322,7 @@ proof-
   show ?thesis
     by (simp add: B3 B6)
 qed
+
 
 
 
@@ -1999,7 +2344,7 @@ proof-
   have B1:"\<forall>l \<in> lower_bounds A. l \<le> i"
     by (simp add: A0 A1 boundedI i_def in_lower_bounds_imp)
   have B0:"is_inf i A"
-    by (simp add: B0 B1 is_greatest_if is_inf_def is_inf_in_def upper_bound_if)
+    by (simp add: B0 B1 glb_imp_is_inf is_greatest_def is_upper_bound_def)
   show "has_inf A"
     using B0 has_inf_def is_inf_imp_glb1 by auto
 qed
@@ -2045,7 +2390,7 @@ proof-
   have B1:"\<forall>u \<in> upper_bounds A. s \<le> u"
     by (metis A0 A1 Sup_fin.boundedI Sup_fin.eq_fold' in_upper_bounds_imp s_def semilattice_sup_class.eq_fold1)
   have B0:"is_sup s A"
-    by (simp add: B0 B1 is_least_if is_sup_def is_sup_in_def lower_bound_if)
+    by (simp add: B0 B1 is_least_def is_lower_bound_def lub_imp_is_sup)
   show "has_sup A"
     using B0 has_sup_def is_sup_imp_lub1 by auto
 qed
@@ -2059,9 +2404,9 @@ proof-
   have B0:"is_sup (Supp A) A"
     using A0 A1 has_sup_imp1 is_sup_sup_eq semilattice_sup_has_sup by blast
   have B1:"is_sup (fSup A) A"
-    by (metis (no_types, lifting) A0 A1 Sup_fin.boundedI Sup_fin.eq_fold' 
-        UNIV_I imp_in_upper_bounds in_upper_bounds_imp is_least_def is_lower_bound_def 
-        is_sup_def is_sup_in_def le_iff_sup semilattice_sup_class.eq_fold1 semilattice_sup_class.in_idem)
+    by (metis (no_types, lifting) A0 A1 Sup_fin.boundedI Sup_fin.eq_fold' imp_in_upper_bounds
+        in_upper_bounds_imp is_least_def is_lower_bound_def le_iff_sup lub_imp_is_sup
+         semilattice_sup_class.eq_fold1 semilattice_sup_class.in_idem)
   show "Supp A = fSup A"
     using B0 B1 sup_unique1 by auto
 qed
@@ -2082,7 +2427,7 @@ lemma semilattice_sup_bsup_eq_sup:
 
 
 subsection Lattices
-
+subsubsection InfAndSupOperators
 
 lemma lattice_inf_has_inf:
   fixes A::"'a::lattice set"
@@ -2114,8 +2459,158 @@ lemma lattice_sup_supp_eq:
   shows " Supp A = fSup A"
   by (simp add: A0 A1 semilattice_sup_supp_eq)
 
-  
+lemma sup_in_empty_set_least:
+  fixes C::"'a::order set"
+  assumes A0:"has_least C"
+  shows "SupIn {} C = Least C"
+proof-
+  have B0:"(Least C) \<in> upper_bounds_in {} C"
+    by (meson assms empty_iff is_least_eq_if1 is_least_imp upper_bound_in_if)
+  have B1:"is_least (Least C) (upper_bounds_in {} C)"
+    by (simp add: assms is_least_eq_if1 is_upper_bound_def upper_bounds_in_def)
+  show ?thesis
+    by (metis B1 has_sup_in_def is_least_eq_if2 supin_is_lub)
+qed
 
+subsubsection Closures
+
+
+lemma closures_in_complete_lattice0:
+  fixes C A::"'a::complete_lattice set"
+  assumes A0:"C \<noteq>  {}" and A1:"is_moore_family C" and A2:"A \<subseteq> C"
+  shows "Inf A \<in> C"
+  by (metis A1 A2 Pow_iff complete_lattice_inf_is_inf has_inf_def is_inf_imp_glb1 is_inf_inf_eq
+       moore_then_inf_closed top_greatest)  
+
+
+lemma closures_in_complete_lattice1:
+  fixes C A::"'a::complete_lattice set"
+  assumes A0:"C \<noteq>  {}" and A1:"is_moore_family C" and A2:"A \<subseteq> C"
+  shows "InfIn A UNIV \<in> C"
+  by (metis A0 A1 A2 closures_in_complete_lattice0 complete_lattice_inf_is_inf has_inf_in_def inf_top.right_neutral is_inf_def is_inf_imp_glb1 is_inf_in_inf_eq lower_bounds_def lower_bounds_in_def)
+
+
+lemma closures_in_complete_lattice2:
+  fixes C A::"'a::complete_lattice set"
+  assumes A0:"A \<noteq> {}" and A1:"is_moore_family C" and A2:"A \<subseteq> C"
+  shows "InfIn A C \<in> C \<and> InfIn A C = InfIn A UNIV \<and> has_inf_in A C"
+proof-
+  have B0:"has_inf_in A UNIV"
+    using complete_lattice_inf_is_inf has_inf_in_def is_inf_def is_inf_in_def by blast
+   have B1:"A \<subseteq> C \<and> C \<subseteq> UNIV"
+     by (simp add: A2)
+  have B2:"A \<noteq> {}"
+    using A0 by force
+  have B3:"InfIn A UNIV \<in> C"
+    by (simp add: A1 A2 closures_in_complete_lattice1 moore_family_imp_ne)
+  have B3:"(has_inf_in A C \<and> InfIn A C = InfIn A UNIV)"
+    using B0 B1 B2 B3 inf_in_space_subset_existence by blast
+  show ?thesis
+    by (simp add: B0 B1 B2 B3 inf_in_space_subset_existence)
+qed
+
+
+lemma closures_in_complete_lattice3:
+  fixes C A::"'a::complete_lattice set"
+  assumes A0:"A \<noteq> {}" and A1:"is_moore_family C" and A2:"A \<subseteq> C"
+  shows "SupIn A C = Inf (upper_bounds_in A C)"
+proof-
+  define U where "U=upper_bounds_in A C"
+  have B0:"U \<noteq> {}"
+    by (metis A1 empty_iff moore_closure_topped top_greatest upper_bound_in_if U_def)
+  have B1:"U  \<subseteq> C"
+    by (simp add: upper_bounds_in_def U_def)
+  have B2:"Inf U \<in> C"
+    by (simp add: A1 B1 closures_in_complete_lattice0 moore_family_imp_ne)
+  define i where "i=Inf U"
+  have B3:"i \<in> U"
+    by (metis B2 U_def csli.CInf_greatest i_def in_upper_bounds_in_imp upper_bound_in_if)
+  have B4:"is_least i U"
+    using B3 complete_lattice_inf_is_inf i_def is_inf_imp_lb1 is_least_if by blast
+  show ?thesis
+    by (metis B4 U_def has_sup_in_def i_def is_sup_in_def is_sup_in_sup_eq)
+qed
+(*ooof this got scuffed*)
+lemma closures_in_complete_lattice:
+  fixes C::"'a::complete_lattice set"
+  assumes A0:"C \<noteq>  {}" and A1:"is_moore_family C"
+  defines "f \<equiv> (moore_to_closure C)"
+  shows "\<forall>A. f(Sup A) = f (Sup (f`A)) \<and>  (f (Sup (f`A)) =  SupIn (f`A) C)"
+proof
+  fix A 
+  show "f(Sup A) = f (Sup (f`A)) \<and>  (f (Sup (f`A)) =  SupIn (f`A) C)"
+proof(cases "A = {}")
+  case True
+   have B00:"f` A = A"
+     by (simp add: True)
+   have B01:"Sup A = bot"
+     using True by auto
+  have B02:"f(Sup A) = f(bot)"
+    using B01 by presburger
+  have B03:"is_least (f bot) C"
+    by (metis (full_types) A1 Inf_UNIV UNIV_I clrange_is_moore csli.CInf_lower f_def is_isotone_def 
+        is_least_def is_lower_bound_def moore_cl_iso_inv1 moore_to_closure_is_idempotent2 
+        moore_to_closure_is_idempotent3 moore_to_closure_is_isotone moore_to_closure_iscl rangeI)
+  have B04:"\<forall>a \<in> A. a \<in> upper_bounds_in A C"
+    using True by blast
+  have B05:"SupIn {} C = Inf C"
+     by (metis B03 complete_lattice_inf_is_inf has_inf_def has_least_def has_least_imp_inf_eq_least
+         is_inf_imp_glb1 is_inf_inf_eq sup_in_empty_set_least)
+   have B06:"is_least (Inf C) C"
+     by (metis B03 B05 has_least_def is_least_eq_if2 sup_in_empty_set_least)
+   have B07:"Inf C = (f bot)"
+     using B03 B06 least_unique1 by auto
+    have B08:"f (Sup A) = (f (Sup (f`A) ))"
+      by (simp add: B00)
+    have B09:"(f (Sup (f`A)) =  SupIn (f`A) C)"
+      by (simp add: B05 B07 True)
+  then show ?thesis
+    using B08 by blast
+next
+  case False
+  have B00:"(f`A) \<noteq> {} \<and> (f`A) \<subseteq> C \<and> C \<subseteq> UNIV"
+    by (metis (mono_tags, lifting) A1 False f_def image_is_empty image_subsetI 
+        in_cl_range_idempotent moore_to_closure_is_idempotent3 moore_to_closure_iscl rangeI top_greatest)
+  have B10:"\<forall>x. x \<le> (f x) "
+    using A1 f_def is_closure_def is_extensive_def moore_to_closure_iscl by auto
+  have B11:"\<forall>a \<in> A. (f a) \<le> (Sup (f`A))"
+    by (simp add: SUP_upper)
+  have B12:"(Sup A) \<le> (Sup (f`A))"
+    by (meson B10 B11 csls.CSup_least order_trans)
+  have B13:"f (Sup A) \<le> (f (Sup (f`A)))"
+    using A1 B12 f_def is_isotone_def moore_to_closure_is_isotone by blast
+  have B14:"(Sup (f`A)) = Supp (f`A)"
+    using complete_lattice_sup_is_sup has_sup_def is_sup_imp_lub1 is_sup_sup_eq by blast
+  have B15:"... = SupIn (f`A) UNIV"
+    by (metis B14 complete_lattice_sup_is_sup has_sup_in_def is_sup_def is_sup_in_imp_lub1 is_sup_in_sup_eq)
+  have B16:"upper_bounds_in (f`A) C \<noteq> {}"
+    by (metis A1 B10 empty_iff f_def moore_to_closure_is_idempotent3 order_antisym top_greatest upper_bound_in_if)
+  have B17:"upper_bounds_in (f`A) C \<subseteq> C"
+    by (simp add: upper_bounds_in_def)
+  define i where "i=Inf(upper_bounds_in (f`A) C)"
+  have B18:"SupIn (f`A) C = i"
+    by (metis A1 B00 closures_in_complete_lattice3 i_def)
+  have B19:"(Sup (f`A)) \<le> SupIn (f`A) C"
+    by (simp add: B18 csls.CSup_least i_def in_upper_bounds_in_imp le_Inf_iff)
+  have B20:"f(Sup(f`A)) \<le> f(SupIn (f`A) C)"
+    using A1 B19 f_def is_isotone_def moore_to_closure_is_isotone by blast
+  have B21:"... = SupIn (f`A) C"
+    by (metis A0 A1 B17 B18 closures_in_complete_lattice0 f_def i_def moore_to_closure_is_idempotent2)
+  have B22:"... \<le> f(Sup A)"
+  proof-
+    have  B220:"\<forall>a \<in> A. a \<le> Sup A"
+      using csls.CSup_upper by blast
+    have B221:"\<forall>a \<in> A. f a \<le> f (Sup A)"
+      using A1 B220 f_def is_isotone_def moore_to_closure_is_isotone by blast
+     show ?thesis
+       by (metis (no_types, lifting) A1 B18 B221 SUP_least Sup_le_iff clrange_is_moore csli.CInf_lower 
+          f_def i_def moore_cl_iso_inv1 moore_to_closure_is_idempotent2 moore_to_closure_is_idempotent3 
+          moore_to_closure_iscl rangeI upper_bound_in_if)
+  qed
+  then show ?thesis
+    using B13 B20 B21 by fastforce
+  qed
+qed
 section Filters
 
 subsection Definitions
@@ -2538,7 +3033,7 @@ proof-
   have B2:"is_greatest  c1 (lower_bounds {a, b})"
     by (simp add: B0 B1 is_greatest_def is_upper_bound_def)
   have B3:"is_inf c1 {a, b}"
-    by (simp add: B2 is_inf_def is_inf_in_def)
+    by (simp add: B2 glb_imp_is_inf)
   have B4:"has_inf {a, b}"
     using B2 has_inf_def by auto
   show ?thesis
@@ -4352,8 +4847,7 @@ proof-
       have B150:"?L=Inf ?fA"
         by (simp add: image_def)
       have B151:"... = Infp ?fA"
-        by (smt (verit, ccfv_SIG) complete_lattice_inf_greatest csli.CInf_lower has_inf_in_def
-           is_greatest_def is_inf_in_def is_inf_in_inf_eq is_upper_bound_def lower_bound_if)
+        by (meson complete_lattice_inf_is_inf has_inf_def is_inf_imp_glb1 is_inf_inf_eq)
       have B152:"?R= f (Sup ?sA)"
         by (simp add: image_def)
       have B153:"... = f (Supp ?sA)"
@@ -4609,7 +5103,7 @@ proof(rule ccontr)
   obtain A where A2:"((A::('a::{order, top} set)) \<noteq> {}) \<and> (top \<notin> A) \<and> (is_inf top A)"
     using B1 by force
   have B2:"top \<in> lower_bounds A"
-    using A2 is_greatest_imp is_inf_def is_inf_in_def by blast
+    by (simp add: A2 is_inf_imp_lb1)
   show False
     using A2 B2 assms dual_order.antisym in_lower_bounds_imp by blast
 qed
@@ -4625,7 +5119,7 @@ proof(rule ccontr)
   obtain A where A2:"((A::('a::{order, bot} set)) \<noteq> {}) \<and> (bot \<notin> A) \<and> (is_sup bot A)"
     using B1 by force
   have B2:"bot \<in> upper_bounds A"
-    using A2 is_least_imp is_sup_def is_sup_in_def by blast
+    by (simp add: A2 is_sup_imp_ub1)
   show False
     using A2 B2 assms dual_order.antisym in_upper_bounds_imp by blast
 qed
@@ -4659,7 +5153,7 @@ proof
         have B51:"is_greatest (Inf ?L) (lower_bounds ?L)"
           by (meson B50 Inf_greatest in_lower_bounds_imp is_greatest_def is_upper_bound_def)
         show ?thesis
-          by (simp add: B51 is_inf_def is_inf_in_def)
+          by (simp add: complete_lattice_inf_is_inf)
       qed
       have B3:"(is_meet_reducible m)"
         by (metis B0 B3 B4 B5 is_meet_reducible_def)
