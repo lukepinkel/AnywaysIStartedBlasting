@@ -2184,7 +2184,7 @@ proof-
     using B0 B1 B2 Fa_def G_def by fastforce
 qed
 
-lemma filter_is_ultrafilter_inter:
+lemma filter_is_intersection_of_finer_ultrafilters:
   fixes F::"'X::{boolean_algebra,order_bot} set"
   assumes A0:"is_pfilter F"
   shows "F = \<Inter>(finer_ultrafilters F)"
@@ -2221,7 +2221,7 @@ proof-
 qed
 
 
-lemma filtergrill_is_coarser_ultra_union:
+lemma ultrafilters_is_union_of_coarser_ultrafilters:
   fixes G::"'X::{boolean_algebra,order_bot} set"
   assumes A0:"is_prime_alt G \<and> is_pfilter G"
   shows "(G= \<Union>(coarser_ultrafilters G))"
