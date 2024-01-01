@@ -1154,6 +1154,34 @@ lemma filter_inlattice_inf_closed:
   shows "\<And>x1 x2. (x1 \<in> F \<and> x2 \<in> F) \<Longrightarrow> (inf x1 x2 \<in> F)"
   by (metis assms empty_iff filter_in_semilattice_inf_iff)
 
+lemma filter_on_lattice_inf_is_lb:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A2:"is_filter (F2::('X::lattice set))"
+  shows "inf F1 F2 \<le> F1 \<and> inf F1 F2 \<le> F2"
+  by simp
+
+lemma filter_on_lattice_glb:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A1:"is_filter (F2::('X::lattice set))" and
+          A2:"is_filter (F3::('X::lattice set))" and
+          A3:"F3 \<le> F1 \<and> F3 \<le> F2"
+  shows "F3 \<le> inf F1 F2"
+  by (simp add: A3)
+
+lemma filter_on_lattice_inf_is_inf:
+  assumes A0:"is_filter (F1::('X::lattice set))" and 
+          A1:"is_filter (F2::('X::lattice set))"
+  shows "is_inf_in (inf F1 F2) {F1, F2} (filters_in UNIV)"
+proof-
+  let ?I="inf F1 F2"
+  let ?X="filters_in UNIV"
+  have B0:"?I \<le> F1 \<and> ?I \<le> F2"
+    by simp
+  have B1:"is_filter ?I"
+  have B1:"?I \<in> lb_set_in {F1, F2} ?X"
+  proof-
+    
+
 
 lemma filter_on_lattice_bsup:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
