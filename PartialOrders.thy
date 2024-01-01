@@ -604,24 +604,20 @@ abbreviation principal_filter_in::"'a::order \<Rightarrow> 'a::order set \<Right
   "principal_filter_in x A \<equiv> ub_set_in {x} A"
 
 
-section Results
-
+section FiniteExtrema
+subsection Lattices
 context lattice
 begin
-
 (*Existence of finite inf and sup in lattice*)
 lemma finf_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (\<exists>i. fInf A=i)"
   by simp
-
 lemma fsup_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (\<exists>s. fSup A=s)"
   by simp
-
 end
 
-
-
+subsubsection CompleteSemilattices
 context complete_semilattice_sup
 begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
@@ -629,9 +625,7 @@ lemma fsup_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
   using local.CSup_least local.CSup_upper local.Sup_fin.boundedI local.Sup_fin.coboundedI
          local.Sup_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
-
 end
-
 context complete_semilattice_inf
 begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
@@ -640,11 +634,9 @@ lemma finf_complete_lattice:
   using local.CInf_greatest local.CInf_lower local.Inf_fin.bounded_iff 
           local.Inf_fin.coboundedI local.Inf_fin.eq_fold' local.dual_order.antisym local.eq_fold1
            by auto
-
-
 end
 
-
+subsubsection CompleteLattices
 context complete_lattice
 begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
@@ -658,16 +650,61 @@ lemma fsup_complete_lattice:
   using local.Sup_fin.eq_fold' local.Sup_fin_Sup local.eq_fold1 by presburger
 
 end
-
-
+section Bounds
+subsection UpperBounds
+subsubsection Relative
 
 lemma ub_set_in_mem:
   "\<And>(A::'a::order set) X x u. (u \<in> ub_set_in A X  \<and> x \<in> A) \<Longrightarrow> (x \<le> u \<and> u \<in> X) "
   by (simp add: ub_set_in_def)
 
+lemma ub_set_in_subset:
+  "ub_set_in A X \<subseteq> X"
+  by (simp add: Collect_conj_eq ub_set_in_def)
+
 lemma ub_set_in_imp:
   "\<And>(A::'a::order set) X u. (u \<in> ub_set_in A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<le> u)"
   by (simp add: ub_set_in_def)
+
+
+lemma ub_set_in_elm:
+  "\<And>(A::'a::order set) X u. (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> u \<in> X \<Longrightarrow> u \<in> ub_set_in A X"
+  by (simp add: ub_set_in_def)
+
+lemma ub_set_in_mem_iff:
+  "\<forall>x. x \<in> ub_set_in A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x )"
+  using ub_set_in_def by auto
+
+
+lemma ub_set_in_antitone1:
+  "\<And>A B X. A \<subseteq> B \<Longrightarrow>  ub_set_in B X \<subseteq> ub_set_in A X"
+  by (simp add: subset_eq ub_set_in_def)
+
+lemma ub_set_in_isotone2:
+  "\<And>A  B X. B \<subseteq> X \<Longrightarrow>  ub_set_in A B \<subseteq> ub_set_in A X"
+  by (simp add: subset_eq ub_set_in_def)
+
+lemma ub_set_in_degenerate:
+  "ub_set_in {} X = X"
+  by (simp add: ub_set_in_def)
+
+lemma ub_set_in_ub_inter:
+  "(ub_set A) \<inter> B = ub_set_in A B"
+  by (simp add: Collect_conj_eq ub_set_def ub_set_in_def)
+
+lemma ub_set_in_ub_univ:
+  "ub_set A = ub_set_in A UNIV"
+  using ub_set_in_ub_inter by auto
+
+lemma ub_set_in_univ_absorb:
+  "ub_set_in A UNIV = ub_set A"
+  using ub_set_in_ub_univ by blast
+
+lemma ub_set_in_singleton:
+  "ub_set_in {x} C  = {y \<in> C. x \<le> y}"
+  by (simp add: set_eq_iff ub_set_in_mem_iff)
+
+subsubsection Absolute
 
 lemma ub_set_mem:
   "\<And>(A::'a::order set) x u. (u \<in> ub_set A  \<and> x \<in> A) \<Longrightarrow> (x \<le> u) "
@@ -682,17 +719,10 @@ lemma ub_set_if:
   by (simp add: ub_set_def)
 
 
-lemma ub_set_in_elm:
-  "\<And>(A::'a::order set) X u. (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> u \<in> X \<Longrightarrow> u \<in> ub_set_in A X"
-  by (simp add: ub_set_in_def)
 
 lemma ub_set_elm:
   "\<And>(A::'a::order set) u. (\<And>a. a \<in> A \<Longrightarrow> a \<le> u)  \<Longrightarrow> u \<in> ub_set A"
   by (simp add: ub_set_def)
-
-lemma ub_set_in_mem_iff:
-  "\<forall>x. x \<in> ub_set_in A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x )"
-  using ub_set_in_def by auto
 
 lemma ub_set_mem_iff:
   "\<forall>x. x \<in> ub_set A \<longleftrightarrow> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x )"
@@ -703,47 +733,18 @@ lemma imp_in_upper_bounds:
   using ub_set_mem_iff by blast
 
 
-lemma ub_set_in_antitone1:
-  "\<And>A B X. A \<subseteq> B \<Longrightarrow>  ub_set_in B X \<subseteq> ub_set_in A X"
-  by (simp add: subset_eq ub_set_in_def)
-
 lemma ub_set_antitone1:
   "\<And>A B. A \<subseteq> B \<Longrightarrow>  ub_set B \<subseteq> ub_set A"
   by (simp add: subset_eq ub_set_def)
-
-lemma ub_set_in_isotone2:
-  "\<And>A  B X. B \<subseteq> X \<Longrightarrow>  ub_set_in A B \<subseteq> ub_set_in A X"
-  by (simp add: subset_eq ub_set_in_def)
-
-lemma ub_set_in_degenerate:
-  "ub_set_in {} X = X"
-  by (simp add: ub_set_in_def)
 
 lemma ub_set_degenerate:
   "ub_set {} = UNIV"
   by (simp add: ub_set_def)
 
-lemma ub_set_in_ub_inter:
-  "(ub_set A) \<inter> B = ub_set_in A B"
-  by (simp add: Collect_conj_eq ub_set_def ub_set_in_def)
-
-lemma ub_set_in_ub_univ:
-  "ub_set A = ub_set_in A UNIV"
-  using ub_set_in_ub_inter by auto
 
 
-lemma ub_set_in_univ_absorb:
-  "ub_set_in A UNIV = ub_set A"
-  using ub_set_in_ub_univ by blast
-
-
-lemma ub_set_singleton:
-  "ub_set {x} = {y. x \<le> y}"
-  by (simp add: set_eq_iff ub_set_mem_iff)
-
-
-
-
+subsection LowerBounds
+subsubsection Relative
 lemma lb_set_in_mem:
   "\<And>(A::'a::order set) X x l. (l \<in> lb_set_in A X  \<and> x \<in> A) \<Longrightarrow> (l \<le> x \<and> l \<in> X) "
   by (simp add: lb_set_in_def)
@@ -752,6 +753,48 @@ lemma lb_set_in_imp:
   "\<And>(A::'a::order set) X l. (l \<in> lb_set_in A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> l \<le> x)"
   by (simp add: lb_set_in_def)
 
+lemma lb_set_in_subset:
+  "lb_set_in A X \<subseteq> X"
+  by (simp add: Collect_conj_eq lb_set_in_def)
+
+lemma lb_set_in_elm:
+  "\<And>(A::'a::order set) X l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<in> X \<Longrightarrow> l \<in> lb_set_in A X"
+  by (simp add: lb_set_in_def)
+
+lemma lb_set_in_mem_iff:
+  "\<forall>x. x \<in> lb_set_in A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> x \<le> a )"
+  using lb_set_in_def by auto
+
+lemma lb_set_in_antitone1:
+  "\<And>A  B X. A \<subseteq> B \<Longrightarrow>  lb_set_in B X \<subseteq> lb_set_in A X"
+  by (simp add: subset_eq lb_set_in_def)
+                                 
+lemma lb_set_in_isotone2:
+  "\<And>A B X. B \<subseteq> X \<Longrightarrow>  lb_set_in A B \<subseteq> lb_set_in A X"
+  by (simp add: subset_eq lb_set_in_def)
+
+lemma lb_set_in_degenerate:
+  "lb_set_in {} X = X"
+  by (simp add: lb_set_in_def)
+  
+lemma lb_set_in_lb_inter:
+  "(lb_set A) \<inter> B = lb_set_in A B"
+  by (simp add: Collect_conj_eq lb_set_def lb_set_in_def)
+
+lemma lb_set_in_lb_univ:
+  "lb_set A = lb_set_in A UNIV"
+  using lb_set_in_lb_inter by auto
+
+lemma lb_set_in_univ_absorb:
+  "lb_set_in A UNIV = lb_set A"
+  using lb_set_in_lb_univ by blast
+
+lemma lb_set_in_singleton:
+  "lb_set_in {x} C  = {y \<in> C. x \<ge> y}"
+  by (simp add: set_eq_iff lb_set_in_mem_iff)
+
+
+subsubsection Absolute
 
 lemma lb_set_mem:
   "\<And>(A::'a::order set) x l. (l \<in> lb_set A  \<and> x \<in> A) \<Longrightarrow> (l \<le> x) "
@@ -765,19 +808,9 @@ lemma lb_set_if:
   "\<And>(A::'a::order set) l. (\<And>x. x \<in> A \<Longrightarrow> l \<le> x) \<Longrightarrow> l \<in> lb_set A"
   by (simp add: lb_set_def)
 
-lemma lb_set_in_elm:
-  "\<And>(A::'a::order set) X l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<in> X \<Longrightarrow> l \<in> lb_set_in A X"
-  by (simp add: lb_set_in_def)
-
 lemma lb_set_elm:
   "\<And>(A::'a::order set) l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a)  \<Longrightarrow> l \<in> lb_set A"
   by (simp add: lb_set_def)
-
-
-lemma lb_set_in_mem_iff:
-  "\<forall>x. x \<in> lb_set_in A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> x \<le> a )"
-  using lb_set_in_def by auto
-
 
 lemma lb_set_mem_iff:
   "\<forall>x. x \<in> lb_set A \<longleftrightarrow> (\<forall>a. a \<in> A \<longrightarrow> x \<le> a )"
@@ -787,54 +820,21 @@ lemma imp_in_lower_bounds:
   "\<And>l A.  (\<forall>a \<in> A. l \<le> a) \<Longrightarrow> l \<in> lb_set A"
   using lb_set_mem_iff by blast
 
-
-lemma lb_set_in_antitone1:
-  "\<And>A  B X. A \<subseteq> B \<Longrightarrow>  lb_set_in B X \<subseteq> lb_set_in A X"
-  by (simp add: subset_eq lb_set_in_def)
-
-
 lemma lb_set_antitone1:
   "\<And>A B. A \<subseteq> B \<Longrightarrow>  lb_set B \<subseteq> lb_set A"
   by (simp add: subset_eq lb_set_def)
-
-
-                                              
-lemma lb_set_in_isotone2:
-  "\<And>A B X. B \<subseteq> X \<Longrightarrow>  lb_set_in A B \<subseteq> lb_set_in A X"
-  by (simp add: subset_eq lb_set_in_def)
-
-
-
-lemma lb_set_in_degenerate:
-  "lb_set_in {} X = X"
-  by (simp add: lb_set_in_def)
-       
-         
+      
 lemma lb_set_degenerate:
   "lb_set {} = UNIV"
   by (simp add: lb_set_def)
          
-
-lemma lb_set_in_lb_inter:
-  "(lb_set A) \<inter> B = lb_set_in A B"
-  by (simp add: Collect_conj_eq lb_set_def lb_set_in_def)
-
-lemma lb_set_in_lb_univ:
-  "lb_set A = lb_set_in A UNIV"
-  using lb_set_in_lb_inter by auto
-
-lemma lb_set_in_univ_absorb:
-  "lb_set_in A UNIV = lb_set A"
-  using lb_set_in_lb_univ by blast
-
 lemma lb_set_singleton:
   "lb_set {x} = {y. x \<ge> y}"
   by (simp add: set_eq_iff lb_set_mem_iff)
 
-
-
-
-                                              
+section MaxMin      
+subsection Max
+subsubsection Predicate                                  
 lemma is_max_imp:
   "\<And>A x. is_max x A \<Longrightarrow> (x \<in> A \<and> x \<in> ub_set A)"
   by (simp add: is_max_def ub_set_in_ub_univ)
@@ -855,6 +855,28 @@ lemma is_max_iff:
   "is_max m A \<longleftrightarrow> m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> m )"
   by (simp add: is_max_def ub_set_in_mem_iff)
 
+lemma max_imp_ne:
+  assumes "\<exists>m. is_max m A"
+  shows "A \<noteq> {}"
+  using assms is_max_def by auto
+
+lemma max_isotone1:
+  "\<And>A B ma mb. A \<subseteq> B \<and> (is_max ma A) \<and> ( is_max mb B) \<longrightarrow>  ma \<le> mb"
+  using is_max_iff by blast
+
+lemma is_max_top:
+  fixes top::"'a::ord"
+  assumes is_top:"\<forall>x. x \<le> top"
+  shows "is_max top UNIV"
+  by (simp add: is_max_iff is_top)
+     
+
+lemma is_max_singleton:
+  "is_max (x::'a::order) {x}"
+  by (simp add: is_max_iff)
+
+subsubsection Existential                                  
+
 lemma has_max_iff:
   "has_max A \<longleftrightarrow> (\<exists>m.  m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> m ))"
   by (simp add: has_max_def is_max_iff)
@@ -862,11 +884,6 @@ lemma has_max_iff:
 lemma has_max_iff2:
   "has_max A \<longleftrightarrow> (\<exists>m. is_max m A)"
   by (simp add: has_max_def is_max_iff)
-
-lemma max_imp_ne:
-  assumes "\<exists>m. is_max m A"
-  shows "A \<noteq> {}"
-  using assms is_max_def by auto
 
 lemma max_unique:
   "\<And>(A::'a::order set) m1 m2. is_max m1 A \<Longrightarrow> is_max m2 A \<Longrightarrow> m1=m2"
@@ -878,42 +895,10 @@ lemma if_has_max_max_unique:
   shows "\<exists>!m. is_max m A"
   using assms has_max_iff2 max_unique by blast
 
-lemma max_if:
-  "\<And>(A::'a::order set) m. is_max m A \<Longrightarrow> m = max A"
-  by (simp add: max_def max_unique the_equality)
-
-         
-lemma max_if2:
-  "\<And>(A::'a::order set) x.  x \<in> A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> x) \<Longrightarrow>  x = max A"
-  by (simp add: is_max_if2 max_if)
-           
-lemma max_isotone1:
-  "\<And>A B ma mb. A \<subseteq> B \<and> (is_max ma A) \<and> ( is_max mb B) \<longrightarrow>  ma \<le> mb"
-  using is_max_iff by blast
-
-lemma max_isotone2:
-  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_max A) \<and> ( has_max B) \<longrightarrow>  max A \<le> max B"
-  by (metis if_has_max_max_unique max_if max_isotone1)
-
-lemma is_max_top:
-  fixes top::"'a::ord"
-  assumes is_top:"\<forall>x. x \<le> top"
-  shows "is_max top UNIV"
-  by (simp add: is_max_iff is_top)
-     
-
-
-lemma is_max_singleton:
-  "is_max (x::'a::order) {x}"
-  by (simp add: is_max_iff)
-
 lemma has_max_singleton:
   "has_max {x::'a::order}"
   using has_max_def is_max_singleton by auto
 
-lemma max_singleton:
-  "max {x::'a::order} = x"
-  by(simp add: max_def is_max_def ub_set_in_def)
 lemma max_top:
   fixes top::"'a::ord"
   assumes is_top:"\<forall>x. x \<le> top"
@@ -927,6 +912,26 @@ proof-
     by (simp add: B1 has_max_def)
 qed
 
+subsubsection Operator        
+
+lemma max_if:
+  "\<And>(A::'a::order set) m. is_max m A \<Longrightarrow> m = max A"
+  by (simp add: max_def max_unique the_equality)
+ 
+lemma max_if2:
+  "\<And>(A::'a::order set) x.  x \<in> A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> x) \<Longrightarrow>  x = max A"
+  by (simp add: is_max_if2 max_if)
+           
+lemma max_isotone2:
+  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_max A) \<and> ( has_max B) \<longrightarrow>  max A \<le> max B"
+  by (metis if_has_max_max_unique max_if max_isotone1)
+
+lemma max_singleton:
+  "max {x::'a::order} = x"
+  by(simp add: max_def is_max_def ub_set_in_def)
+
+subsection Min
+subsubsection Predicate
 lemma is_min_imp:
   "\<And>A x. is_min x A \<Longrightarrow> (x \<in> A \<and> x \<in> lb_set A)"
   by (simp add: is_min_def lb_set_in_lb_univ)  
@@ -947,6 +952,26 @@ lemma is_min_iff:
   "is_min m A \<longleftrightarrow> m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> m \<le> a )"
   by (simp add: is_min_def lb_set_in_mem_iff)
 
+lemma min_imp_ne:
+  assumes "\<exists>m. is_min m A"
+  shows "A \<noteq> {}"
+  using assms is_min_def by auto
+
+lemma min_antitone1:
+  "\<And>A B ma mb. A \<subseteq> B \<and> (is_min ma A) \<and> ( is_min mb B) \<longrightarrow>  mb \<le> ma"
+  using is_min_iff by blast
+
+lemma is_min_bot:
+  fixes bot::"'a::ord"
+  assumes is_bot:"\<forall>x. bot \<le> x"
+  shows "is_min bot UNIV"
+  by (simp add: is_min_iff is_bot)
+
+lemma is_min_singleton:
+  "is_min (x::'a::order) {x}"
+  by (simp add: is_min_iff)
+
+subsubsection Existential
 
 lemma has_min_iff:
   "has_min A \<longleftrightarrow> (\<exists>m.  m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> m \<le> a ))"
@@ -956,10 +981,6 @@ lemma has_min_iff2:
   "has_min A \<longleftrightarrow> (\<exists>m. is_min m A)"
   by (simp add: has_min_def)
 
-lemma min_imp_ne:
-  assumes "\<exists>m. is_min m A"
-  shows "A \<noteq> {}"
-  using assms is_min_def by auto
     
 lemma min_unique:
   "\<And>(A::'a::order set) m1 m2. is_min m1 A \<Longrightarrow> is_min m2 A \<Longrightarrow> m1=m2"
@@ -969,31 +990,6 @@ lemma if_has_min_min_unique:
   assumes "has_min (A::'a::order set)"
   shows "\<exists>!m. is_min m A"
   using assms has_min_iff2 min_unique by blast
-
-lemma min_if:
-  "\<And>(A::'a::order set) m. is_min m A \<Longrightarrow> m = min A"
-  by (simp add: min_def min_unique the_equality)
-          
-lemma min_if2:
-  "\<And>(A::'a::order set) x.  x \<in> A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> x \<le> a) \<Longrightarrow>  x = min A"
-  by (simp add: is_min_if2 min_if)
-  
-lemma min_antitone1:
-  "\<And>A B ma mb. A \<subseteq> B \<and> (is_min ma A) \<and> ( is_min mb B) \<longrightarrow>  mb \<le> ma"
-  using is_min_iff by blast
-
-lemma min_antitone2:
-  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_min A) \<and> ( has_min B) \<longrightarrow>  min B \<le> min A"
-  by (metis has_min_def is_min_iff min_if subset_iff)
-
-
-lemma is_min_bot:
-  fixes bot::"'a::ord"
-  assumes is_bot:"\<forall>x. bot \<le> x"
-  shows "is_min bot UNIV"
-  by (simp add: is_min_iff is_bot)
-
-
 
 lemma min_bot:
   fixes bot::"'a::ord"
@@ -1008,20 +1004,31 @@ proof-
     by (simp add: B1 has_min_def)
 qed
 
-lemma is_min_singleton:
-  "is_min (x::'a::order) {x}"
-  by (simp add: is_min_iff)
-
 lemma has_min_singleton:
   "has_min {x::'a::order}"
   using has_min_def is_min_singleton by auto
+
+subsubsection Operator
+
+lemma min_if:
+  "\<And>(A::'a::order set) m. is_min m A \<Longrightarrow> m = min A"
+  by (simp add: min_def min_unique the_equality)
+          
+lemma min_if2:
+  "\<And>(A::'a::order set) x.  x \<in> A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> x \<le> a) \<Longrightarrow>  x = min A"
+  by (simp add: is_min_if2 min_if)
+  
+lemma min_antitone2:
+  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_min A) \<and> ( has_min B) \<longrightarrow>  min B \<le> min A"
+  by (metis has_min_def is_min_iff min_if subset_iff)
 
 lemma min_singleton:
   "min {x::'a::order} = x"  
   by(simp add: min_def is_min_def lb_set_in_def)
 
 
-
+section RelativeExtrema
+subsection Supremum
 
 lemma is_sup_in_iff:
   "is_sup_in m A X \<longleftrightarrow> (is_min m ( ub_set_in A X))"
@@ -1055,6 +1062,7 @@ lemma is_sup_in_if3:
 lemma sup_in_unique:
   "\<And>(A::'a::order set) X m1 m2. is_sup_in m1 A X \<Longrightarrow> is_sup_in m2 A X \<Longrightarrow> m1=m2"
   by (simp add: is_sup_in_def min_unique)
+
 
 lemma if_has_sup_in_unique:
   assumes "has_sup_in (A::'a::order set) X"
@@ -1136,7 +1144,7 @@ proof
     by (metis IntD2 R inf_commute is_min_if1 is_sup_in_def lb_set_in_lb_inter)
 qed
 
-
+subsection Infima
 
 lemma is_inf_in_iff:
   "is_inf_in m A X \<longleftrightarrow> (is_max m (lb_set_in A X))"
@@ -1257,6 +1265,8 @@ proof
     by (metis IntD2 R inf_commute is_inf_in_def is_max_if1 ub_set_in_ub_inter)
 qed
 
+section AbsoluteExtrema
+subsection Suprema
 
 lemma is_sup_iff:
   "is_sup m A \<longleftrightarrow> (is_min m ( ub_set A))"
@@ -1413,6 +1423,11 @@ lemma complete_semilattice_sup_exists_sup:
   "\<And>(A::'a::complete_semilattice_sup set). has_sup A"
   using complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def by blast
 
+lemma is_sup_imp_lub:
+  "\<And>s A. is_sup s A \<Longrightarrow> is_min s (ub_set A)"
+  by (simp add: is_sup_iff)
+
+subsection Infima
 
 lemma is_inf_iff:
   "is_inf m A \<longleftrightarrow> (is_max m (lb_set A))"
@@ -1606,7 +1621,7 @@ lemma is_inf_imp_glb1:
   by (simp add: is_inf_iff)
 
 
-
+section MiscResults
 (*de Morgans for finite sup and inf in complete boolean algebra*)
 
 context complete_boolean_algebra
@@ -1654,20 +1669,6 @@ lemma complete_semilattice_sup_lb_imp_inf2:
   shows "has_inf A \<and> InfUn A = SupUn(lb_set A)"
   by (simp add: assms complete_semilattice_sup_exists_sup complete_semilattice_sup_is_sup complete_semilattice_sup_lb_imp_inf is_sup_sup_eq)
 
-
-
-lemma is_sup_in_int1:
-  fixes i::"'a::order" and A X::"'a::order set"
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}"
-  shows "is_inf_in i A X  \<longleftrightarrow> (is_max i ((lb_set A) \<inter> X))"
-  by (simp add: is_inf_in_def lb_set_in_lb_inter)
-
-lemma inf_closed_t:
-  fixes i::"'a::order" and A B C::"'a::order set"
-  assumes A0:"A \<subseteq> B \<and> B \<subseteq> C" and A1:"i \<in> B" and A2:"is_inf_in i A C"
-  shows " is_inf_in i A B"
-  apply(simp add: is_inf_in_def lb_set_in_def is_max_def ub_set_in_def)
-  by (meson A0 A1 A2 is_inf_in_def is_max_iff lb_set_in_mem_iff subsetD)
 
 
 lemma is_inhabited_imp:
