@@ -627,11 +627,18 @@ proof-
     by (simp add: B3 B6)
 qed
 
+
+definition is_cofinal::"'a::order set \<Rightarrow> bool" where 
+  "is_cofinal C \<equiv> (\<forall>x. ub_set_in {x} C \<noteq> {})"
+
+definition ne_inf_closed::"'a::order set \<Rightarrow> bool" where
+  "ne_inf_closed C \<equiv>  (\<forall>A \<in> Pow(C). A \<noteq> {} \<longrightarrow>  (has_inf_in A C) \<and> (InfIn A C) = (InfUn A))"
+
 lemma moore_family_is_complete_semilattice_inf_converse:
   fixes C::"'a::complete_semilattice_inf set"
   assumes A0:"C \<noteq> {}" and 
-          A1:"\<forall>x. ub_set_in {x} C \<noteq> {}" and
-          A2:"\<forall>A \<in> Pow(C). A \<noteq> {} \<longrightarrow>  (has_inf_in A C) \<and> (InfIn A C) = (InfUn A)"
+          A1:"is_cofinal C" and
+          A2:"ne_inf_closed C"
   shows "is_moore_family C"
 proof-
   have B0:"\<forall>a.  has_min (ub_set_in {a} C)"
@@ -639,9 +646,9 @@ proof-
     fix a::"'a::complete_semilattice_inf"
     define A where "A=(ub_set_in {a} C)"
     have B1:"A \<noteq> {} \<and> A \<subseteq> C"
-      by (simp add: A_def A1 ub_set_in_subset)
+      using A1 A_def is_cofinal_def ub_set_in_subset by blast
     have B2:"has_inf_in A C \<and> (InfIn A C) = (InfUn A)"
-      by (simp add: A2 B1)
+      by (meson A2 B1 PowI ne_inf_closed_def)
     define i where "i=InfIn A C"
     have B3:"i \<in> C"
       using B2 i_def infin_is_inf is_inf_in_imp1 lb_set_in_mem_iff by blast
@@ -660,6 +667,18 @@ proof-
   qed
   show ?thesis
     by (simp add: A0 B0 is_moore_family_def)
+qed
+
+lemma moore_family_iff_cofinal_ac:
+  fixes C::"'a::complete_semilattice_inf set"
+  assumes A0:"C \<noteq> {}" 
+  shows "is_moore_family C \<longleftrightarrow> (is_cofinal C) \<and> (ne_inf_closed C)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L show ?R
+    by (simp add: L ne_inf_closed_def is_cofinal_def moore_family_is_cofinal moore_family_is_complete_semilattice_inf)
+  next
+  assume R:?R show ?L
+    by (simp add: R assms moore_family_is_complete_semilattice_inf_converse)
 qed
 
 lemma filter_topped:
