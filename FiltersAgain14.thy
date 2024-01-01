@@ -1189,8 +1189,16 @@ proof-
   have B0:"?I \<le> F1 \<and> ?I \<le> F2"
     by simp
   have B1:"is_filter ?I"
-  have B1:"?I \<in> lb_set_in {F1, F2} ?X"
-  proof-
+    by (simp add: A0 A1 filter_on_lattice_inf)
+  have B2:"?I \<in> lb_set_in {F1, F2} ?X"
+    by (simp add: B1 filters_in_def lb_set_in_mem_iff)
+  have B3:"\<forall>F. F \<in>  lb_set_in {F1, F2} ?X \<longrightarrow> F \<le> ?I"
+    by (simp add: lb_set_in_mem_iff)
+  have B4:"is_max ?I (lb_set_in {F1, F2} ?X)"
+    using B2 B3 is_max_if2 by blast
+  show ?thesis
+    by (simp add: B4 is_inf_in_def)
+qed
     
 
 
@@ -1341,6 +1349,11 @@ lemma filter_on_lattice_sup_least_upper:
   shows "\<And>G. (is_filter G \<and>  (\<forall>F \<in> EF. F \<le> G))\<longrightarrow>  filter_sup(EF) \<le> G"
   by (simp add: A0 A1 filter_sup_is_lub)
 
+lemma filter_on_lattice_sup_is_sup:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "is_sup_in (filter_sup EF) EF  (filters_in UNIV)"
+  using A0 A1 filter_sup_is_sup_in_filters by blast
 
 
     
