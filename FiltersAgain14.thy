@@ -83,6 +83,13 @@ lemma top_least_in_principal_filter:
   shows "is_min top (ub_set {top})"
   by (simp add: is_min_singleton is_top top_principal_filter)
 
+lemma top_eq_least_in_principal_filter:
+  fixes top::"'a::order"
+  assumes is_top:"\<forall>x. x \<le> top"
+  shows "min (ub_set {top}) = top"
+  by (simp add: is_top min_singleton top_principal_filter)
+
+
 
 lemma moore_closure_topped:
   fixes C::"'a::order set" and
@@ -90,31 +97,40 @@ lemma moore_closure_topped:
   assumes A0:"is_moore_family C" and 
           A1:"\<forall>x. x \<le> top"
   shows "top \<in> C"
-  by (metis A0 A1 has_min_iff is_moore_family_def order_antisym_conv singletonI ub_set_in_mem_iff)
+  by (metis A0 A1 dual_order.antisym has_min_iff is_moore_family_def singletonI ub_set_in_mem)
+
+
 
 lemma in_cl_range_idempotent:
   assumes A0:"is_closure f"
   shows "\<And>x. x \<in> (range f) \<longrightarrow> f x = x"
   by (metis assms image_iff is_closure_def is_idempotent_def)
 
+lemma closure_range_non_increasing:
+  fixes E::"'a::order set" and  f::"'a::order \<Rightarrow> 'a::order" and  i::"'a::order" 
+  assumes A0:"is_closure f" and
+          A1:"E \<subseteq> range f" and
+          A2:"is_inf i E"  
+  shows"\<And>x. x \<in> E \<longrightarrow> f i \<le> x"
+proof
+  fix x assume A3:"x \<in> E"
+  have B00:"f i \<le> f x"
+    using A0 A2 A3 is_closure_def is_inf_imp2 is_isotone_def by blast
+  have B01:"... =  x"
+    using A0 A1 A3 in_cl_range_idempotent by blast
+  show "(f i) \<le> x"
+    using B00 B01 by force
+qed
 
 lemma closure_range_inf_closed_:
   fixes E::"'a::order set" and  f::"'a::order \<Rightarrow> 'a::order" and  i::"'a::order" 
   assumes A0:"is_closure f" and
           A1:"E \<subseteq> range f" and
           A2:"is_inf i E"
-  shows "i \<in> range f"
+  shows "i \<in> range f \<and> (f i) = i"
 proof-
   have B0:"\<And>x. x \<in> E \<longrightarrow> f i \<le> x"
-  proof
-    fix x assume A3:"x \<in> E"
-    have B00:"f i \<le> f x"
-      using A0 A2 A3 is_closure_def is_inf_imp2 is_isotone_def by blast
-    have B01:"... =  x"
-      using A0 A1 A3 in_cl_range_idempotent by blast
-    show "(f i) \<le> x"
-      using B00 B01 by force
-  qed
+    using A0 A1 A2 closure_range_non_increasing by blast
   have B1:"(f i) \<in> lb_set E"
     by (simp add: B0 lb_set_elm)
   have B2:"i \<le> f i"
@@ -124,14 +140,6 @@ proof-
   show ?thesis
     using B2 B3 order_antisym by blast
 qed
-
-lemma closure_range_inf_closed_gen:
-  fixes E::"'a::order set" and  f::"'a::order \<Rightarrow> 'a::order" and  i::"'a::order" 
-  assumes A0:"is_closure f" and
-          A1:"E \<subseteq> range f" and
-          A2:"is_inf i E"
-  shows "f (i) = i "
-  using A0 A1 A2 closure_range_inf_closed_ in_cl_range_idempotent by blast
 
 
 lemma moore_closure_imp:
@@ -153,11 +161,11 @@ lemma inf_closed_then_moore:
   shows "is_moore_family C"
 proof-
   have B0:"\<forall>a. (ub_set_in {a} C) \<in> Pow(C)"
-    by (metis Pow_bottom Pow_iff ub_set_in_antitone1 ub_set_in_degenerate)
+    by (simp add: ub_set_in_subset)
   have B1:"\<forall>a. Inf(ub_set_in {a} C) \<in> C"
     using B0 assms by auto
   have B2:"\<forall>a. Inf(ub_set_in {a} C) \<in> (ub_set_in {a} C)"
-    by (meson B1 CInf_greatest ub_set_in_elm ub_set_in_mem)
+    by (meson B1 CInf_greatest ub_set_in_mem_iff)
   have B3:"\<forall>a. (\<forall>x \<in> (ub_set_in {a} C).  Inf(ub_set_in {a} C) \<le> x)"
     by (simp add: complete_semilattice_inf_class.CInf_lower)
   show ?thesis
@@ -172,14 +180,14 @@ lemma closure_range_inf_closed:
   assumes A0:"is_closure f" and
           A1:"E \<subseteq> range f"
   shows "f (Inf E) = Inf E "
-  by (meson A0 A1 closure_range_inf_closed_gen complete_semilattice_inf_is_inf)
+  using A0 A1 closure_range_inf_closed_ complete_semilattice_inf_is_inf by blast
 
 
 lemma moore_closure_imp_csemilattice_inf:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C"
   shows "\<forall>x. (moore_to_closure C) x = Inf(ub_set_in {x} C)"
-  by (metis complete_semilattice_inf_is_inf has_inf_def has_max_iff2 inf_is_inf is_inf_iff is_inf_unique moore_to_closure_def)
+  by (simp add: complete_semilattice_inf_is_inf2 moore_to_closure_def)
 
 
 
@@ -190,21 +198,7 @@ lemma moore_to_closure_is_extensive:
 proof-
   let ?f="moore_to_closure C"
   have C01:"\<forall>x. x \<le> ?f x"
-  proof
-    fix x
-    have B0:"has_min (ub_set_in {x} C)"
-      by (simp add: assms moore_family_imp)
-    obtain y where A1:"is_min y ( ub_set_in {x} C)"
-      using B0 has_min_iff2 by auto
-    have B1:"is_inf y (ub_set_in {x} C)"
-      by (metis A1 is_inf_def is_max_iff is_min_iff lb_set_mem_iff)
-    have B2:"?f x = y"
-      by (metis B1 has_inf_def has_max_iff2 inf_is_inf is_inf_def is_inf_unique moore_to_closure_def)
-    have B3:"?f x \<in> ub_set_in {x} C"
-      using A1 B2 is_min_iff by auto
-    show "x \<le> ?f x"
-      using B3 ub_set_in_mem by auto
-  qed
+    by (metis A0 IntE has_least_imp_inf_eq_least has_min_iff min_if2 moore_family_imp moore_to_closure_def singletonI ub_set_imp ub_set_in_ub_inter)
   show ?thesis
     by (simp add: C01 is_extensive_def) 
 qed
@@ -214,18 +208,6 @@ lemma principle_filter_anti:
   by (simp add: order_trans subset_eq ub_set_in_mem_iff)
 
 
-lemma min_then_inf:
-  assumes A0:"has_min A"
-  shows "has_inf A"
-proof-
-  obtain y where A1:"is_min y A"
-    using A0 has_min_iff2 by auto
-  have B1:"is_inf y A"
-    by (metis A1 is_inf_iff is_max_iff is_min_iff lb_set_mem_iff) 
-  show ?thesis
-    using B1 has_inf_def has_max_iff2 is_inf_def by blast
-qed 
-
 lemma moore_to_closure_is_isotone:
   fixes C::"'a::order set"
   assumes A0:"is_moore_family C" 
@@ -233,19 +215,7 @@ lemma moore_to_closure_is_isotone:
 proof-
   let ?f="moore_to_closure C"
   have C10:"\<And>x1 x2. x1 \<le> x2 \<longrightarrow> (?f x1) \<le> (?f x2)"
-  proof
-    fix x1 x2::"'a::order" assume A1:"x1 \<le> x2"
-    have B0:"(ub_set_in {x2} C) \<subseteq>  (ub_set_in {x1} C)"
-      by (simp add: A1 principle_filter_anti)
-    have B1:"has_min (ub_set_in {x1} C) \<and> has_min (ub_set_in {x2} C) "
-      using assms moore_family_imp by auto
-    have B2:"has_inf (ub_set_in {x1} C) \<and> has_inf (ub_set_in {x2} C) "
-      by (simp add: B1 min_then_inf)
-    have B3:"InfUn  (ub_set_in {x1} C) \<le> InfUn  (ub_set_in {x2} C)"
-      using B0 B2 inf_antitone1 by blast
-    show "?f x1 \<le> ?f x2"
-      by (simp add: B3 moore_to_closure_def)
-  qed
+    by (simp add: assms has_min_has_inf inf_antitone1 moore_family_imp moore_to_closure_def principle_filter_anti)
   show ?thesis
     by (simp add: C10 is_isotone_def)
 qed
@@ -266,9 +236,9 @@ proof-
       let ?y1="?f x" and ?y2="?f (?f x)"
       let ?Px="ub_set_in {x} C" and ?Pfx="ub_set_in {?y1} C"
       have C2B0:"?y1 \<in> ?Px"
-        by (metis assms has_min_iff2 inf_is_inf is_inf_def is_inf_unique is_max_iff is_min_iff lb_set_mem_iff min_then_inf moore_family_imp moore_to_closure_def)
+        by (metis assms has_min_iff2 inf_is_inf is_inf_def is_inf_unique is_max_iff is_min_iff lb_set_mem_iff has_min_has_inf moore_family_imp moore_to_closure_def)
       have C2B1:"?y2 \<in> ?Pfx"
-        by (metis assms has_min_iff2 inf_is_inf is_inf_def is_inf_unique is_max_iff is_min_iff lb_set_mem_iff min_then_inf moore_family_imp moore_to_closure_def)
+        by (metis assms has_min_iff2 inf_is_inf is_inf_def is_inf_unique is_max_iff is_min_iff lb_set_mem_iff has_min_has_inf moore_family_imp moore_to_closure_def)
       have C2B2:"?y1 \<in> C"
         using C2B0 ub_set_in_mem_iff by auto
       have C2B3:"?y1 \<in> ?Pfx"
@@ -276,7 +246,7 @@ proof-
       have C2B4:"\<forall>z \<in> ?Pfx. ?y1 \<le> z"
         by (simp add: ub_set_in_mem_iff)
       have C2B3:"?y1 = InfUn ?Pfx"
-        by (metis (no_types, lifting) C2B1 C2B3 assms empty_subsetI has_inf_singleton inf_antitone1 inf_singleton insert_subsetI min_then_inf moore_family_imp moore_to_closure_def order_antisym_conv singleton_iff ub_set_in_mem)
+        by (metis (no_types, lifting) C2B1 C2B3 assms empty_subsetI has_inf_singleton inf_antitone1 inf_singleton insert_subsetI has_min_has_inf moore_family_imp moore_to_closure_def order_antisym_conv singleton_iff ub_set_in_mem)
       show "?f x = ?f (?f x)"
         by (metis C2B3 moore_to_closure_def)
       qed
@@ -298,7 +268,7 @@ proof
     by (simp add: assms f_def moore_closure_imp)
   have B1:"... = c"
     by (metis A1 B0 assms f_def inf_is_inf is_extensive_def is_inf_def is_max_iff is_max_singleton
-        lb_set_mem min_then_inf moore_family_imp moore_to_closure_is_extensive order_antisym ub_set_in_elm)
+        lb_set_mem has_min_has_inf moore_family_imp moore_to_closure_is_extensive order_antisym ub_set_in_elm)
   show "f(c) = c"
     by (simp add: B0 B1)
 qed 
@@ -526,11 +496,11 @@ proof-
     have A32:"is_min ?fa ?Pfa"
       by (simp add: A2 A3 is_min_iff)
     have A33:"min(?Pfa) = ?fa"
-      by (metis A30 A32 has_sup_in_def is_sup_in_def sup_in_degenerate sup_in_unique supin_is_sup ub_set_in_degenerate)
+      using A32 min_if by force
     have A4:"f(a) = InfUn(principal_filter_in a (range f))"
       by (simp add: A30 A33 has_least_imp_inf_eq_least)
     have B1:"principal_filter_in a (range f) = (range f) \<inter> {y. a \<le> y}"
-      by (metis Int_commute ub_set_in_ub_inter ub_set_singleton)
+      by (simp add: Collect_conj_eq ub_set_in_singleton)
     have B2:"(g a) = InfUn(principal_filter_in a (range f))"
       by (simp add: g_def moore_to_closure_def)
     have B3:"... = InfUn{y \<in> range f. a \<le> y}"
@@ -576,53 +546,51 @@ proof-
 qed
 
 
-lemma moore_cl_iso1:
+lemma moore_cl_iso:
   fixes f1::"'a::order \<Rightarrow> 'a::order" and
         f2::"'a::order \<Rightarrow> 'a::order"
-  assumes A0:"pointwise_less_eq f1 f2" and
-          A1:"is_closure f1 \<and> is_closure f2" 
-  shows "(range f2) \<subseteq> (range f1)"
-proof-
-  let ?G1="range f1" and ?G2="range f2"
-  have B0:"\<forall>x \<in> ?G2. f1 x =x"
-  proof
-    fix x assume B0A0:"x \<in> ?G2"
-    have B0B0:"x \<le> (f1 x)"
-      using A1 is_closure_def is_extensive_def by blast
-    have B0B1:"... \<le> (f2 x)"
-      by (meson A0 pointwise_less_def pointwise_less_eq_def)
-    have B0B2:"... = x"
-      using A1 B0A0 in_cl_range_idempotent by blast
-    show "(f1 x) = x"
-      using B0B0 B0B1 B0B2 by auto
+  assumes A0:"is_closure f1 \<and> is_closure f2" 
+  shows "(range f2) \<subseteq> (range f1) \<longleftrightarrow> pointwise_less_eq f1 f2" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L show ?R
+  proof-
+    let ?G1="range f1" and ?G2="range f2"
+    have B0:"?G2 \<subseteq> ?G1"
+      using L by force
+    have B1:"\<forall>x.  (?G2 \<inter> (ub_set {x})) \<subseteq> (?G1 \<inter> (ub_set {x})) "
+      using B0 by blast
+    have B2:"\<forall>x. principal_filter_in x ?G2 \<subseteq>  principal_filter_in x ?G1"
+      by (simp add: B0 ub_set_in_isotone2)
+    have B3:"\<forall>x. InfUn( principal_filter_in x ?G1) \<le> InfUn( principal_filter_in x ?G2)"
+      by (simp add: A0 B2 clrange_is_moore inf_antitone1 has_min_has_inf moore_family_imp)
+    have B3:"\<forall>x. f1 x \<le> f2 x"
+      by (metis A0 B3 moore_cl_iso_inv1 moore_to_closure_def)
+    show ?thesis
+      by (simp add: B3 pointwise_less_eq_def)
   qed
-  have B1:"\<forall>x \<in> ?G2. x \<in> ?G1"
-    by (metis B0 range_eqI)
-  show ?thesis
-    using B1 by blast
+  next
+  assume R:?R show ?L
+  proof-
+    let ?G1="range f1" and ?G2="range f2"
+    have B0:"\<forall>x \<in> ?G2. f1 x =x"
+    proof
+      fix x assume B0A0:"x \<in> ?G2"
+      have B0B0:"x \<le> (f1 x)"
+        using A0 is_closure_def is_extensive_def by blast
+      have B0B1:"... \<le> (f2 x)"
+        by (meson R pointwise_less_def pointwise_less_eq_def)
+      have B0B2:"... = x"
+        using A0 B0A0 in_cl_range_idempotent by blast
+      show "(f1 x) = x"
+        using B0B0 B0B1 B0B2 by auto
+    qed
+    have B1:"\<forall>x \<in> ?G2. x \<in> ?G1"
+      by (metis B0 range_eqI)
+    show ?thesis
+      using B1 by blast
+  qed
 qed
 
-lemma moore_cl_iso2:
-  fixes f1::"'a::order \<Rightarrow> 'a::order" and
-        f2::"'a::order \<Rightarrow> 'a::order"
-  assumes A0:"(range f2) \<subseteq> (range f1)" and
-          A1:"is_closure f1 \<and> is_closure f2" 
-  shows "pointwise_less_eq f1 f2"
-proof-
-  let ?G1="range f1" and ?G2="range f2"
-  have B0:"?G2 \<subseteq> ?G1"
-    using A0 by force
-  have B1:"\<forall>x.  (?G2 \<inter> (ub_set {x})) \<subseteq> (?G1 \<inter> (ub_set {x})) "
-    using B0 by blast
-  have B2:"\<forall>x. principal_filter_in x ?G2 \<subseteq>  principal_filter_in x ?G1"
-    by (simp add: B0 ub_set_in_isotone2)
-  have B3:"\<forall>x. InfUn( principal_filter_in x ?G1) \<le> InfUn( principal_filter_in x ?G2)"
-    by (simp add: A1 B2 clrange_is_moore inf_antitone1 min_then_inf moore_family_imp)
-  have B3:"\<forall>x. f1 x \<le> f2 x"
-    by (metis A1 B3 moore_cl_iso_inv1 moore_to_closure_def)
-  show ?thesis
-    by (simp add: B3 pointwise_less_eq_def)
-qed
 
 (*Converse is true as well TODO*)
 lemma moore_family_is_complete_semilattice_inf:
@@ -634,8 +602,7 @@ proof-
   have B0:"is_inf i A"
     by (simp add: complete_semilattice_inf_is_inf i_def)
   have B1:"i \<in> C"
-    by (metis A0 A1 B0 closure_range_inf_closed_gen moore_cl_iso_inv2 moore_to_closure_is_idempotent3 
-        moore_to_closure_iscl)
+    by (metis A0 A1 B0 closure_range_inf_closed_ moore_cl_iso_inv2 moore_to_closure_iscl)
   have B2:"is_inf_in i A C"
     apply(simp add:is_inf_in_def lb_set_in_def is_max_def ub_set_in_def)
     by (metis B1 CInf_greatest CInf_lower i_def)
