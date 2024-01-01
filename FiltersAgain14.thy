@@ -1356,28 +1356,62 @@ lemma filter_on_lattice_sup_is_sup:
   using A0 A1 filter_sup_is_sup_in_filters by blast
 
 
+lemma filter_on_lattice_finf_is_filter:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F" and A2:"finite EF"
+  shows "is_filter (fInf (EF))"
+  by (metis A0 A1 A2 filter_on_lattice_inf finite_meet_in_set mem_Collect_eq subsetI)
 
-lemma filter_on_lattice_inf_is_filter:
+lemma filter_on_lattice_finf_is_lb:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F" and A2:"finite EF"
+  shows "(fInf (EF)) \<in> (lb_set_in EF (filters_in UNIV))"
+  by (metis (no_types, lifting) A0 A1 A2 CollectI Pow_iff complete_lattice_class.finf_complete_lattice
+       csli.CInf_lower filter_on_lattice_finf_is_filter filters_in_def lb_set_in_mem_iff top_greatest)
+
+
+lemma filter_on_lattice_finf_is_glb:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F" and A2:"finite EF"
+  shows "is_max (fInf EF) (lb_set_in EF (filters_in UNIV))"
+proof-
+  let ?I="(fInf EF)"  let ?X="filters_in UNIV" let ?L="(lb_set_in EF ?X)"
+  have B0:"?I \<in> ?X"
+    by (simp add: A0 A1 A2 filter_on_lattice_finf_is_filter filters_in_def)
+  have B1:"\<forall>F. F \<in> ?L \<longrightarrow> F \<le> ?I"
+    by (simp add: A0 A2 finite_inf_greatest lb_set_in_imp)
+  show ?thesis
+    by (simp add: A0 A1 A2 B1 filter_on_lattice_finf_is_lb is_max_iff)
+qed
+
+lemma filter_on_lattice_finf_is_inf:
+  fixes EF::"'a::lattice set set"
+  assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F" and A2:"finite EF"
+  shows "is_inf_in (fInf EF) EF  (filters_in UNIV)"
+  by (simp add: A0 A1 A2 filter_on_lattice_finf_is_glb is_inf_in_def)
+
+subsection FiltersOnTopLattice
+lemma filter_on_top_lattice_inf_is_filter:
   fixes EF::"'a::bounded_lattice_top set set"
   assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows "is_filter (filter_inf (EF))"
   by (simp add: A0 A1 filter_inf_is_filter)
 
 
-lemma filter_on_lattice_inf_is_lb:
+lemma filter_on_top_lattice_inf_is_lb:
   fixes EF::"'a::bounded_lattice_top set set"
   assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows " (filter_inf (EF)) \<in> lb_set_in EF (filters_in UNIV)"
   by (simp add: A0 A1 filter_inf_is_inf_in_filters is_inf_in_imp1)
 
 
-lemma filter_on_lattice_inf_is_glb:
+lemma filter_on_top_lattice_inf_is_glb:
   fixes EF::"'a::bounded_lattice_top set set"
   assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows "is_max (filter_inf (EF)) (lb_set_in EF (filters_in UNIV))"
   by (simp add: A0 A1 filter_inf_is_inf_in_filters is_inf_in_imp1)
 
-lemma filter_on_lattice_inf_is_inf_in_filters:
+lemma filter_on_top_lattice_inf_is_inf_in_filters:
   fixes EF::"'a::bounded_lattice_top set set"
   assumes A0:"EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows "is_inf_in (filter_inf (EF)) EF (filters_in UNIV)"
