@@ -592,7 +592,16 @@ proof
 qed
 
 
-(*Converse is true as well TODO*)
+(*Converse is true as well that is
+fix a complete semilattice inf
+C is a moore family 
+      \<longleftrightarrow>
+C is cofinal
+\<forall>x. ub_set_in {x} C \<noteq> {}
+and a complete semilattice inf
+ \<forall>A \<in> Pow(C)-{}. has_in_in A C \<and> InfIn A C = InfUn A
+
+*)
 lemma moore_family_is_complete_semilattice_inf:
   fixes A C::"'a::complete_semilattice_inf set"
   assumes A0:"is_moore_family C" and A1:"A \<noteq> {} \<and> A \<subseteq> C"
@@ -616,6 +625,41 @@ proof-
     by (simp add: B4 B5)
   show ?thesis
     by (simp add: B3 B6)
+qed
+
+lemma moore_family_is_complete_semilattice_inf_converse:
+  fixes C::"'a::complete_semilattice_inf set"
+  assumes A0:"C \<noteq> {}" and 
+          A1:"\<forall>x. ub_set_in {x} C \<noteq> {}" and
+          A2:"\<forall>A \<in> Pow(C). A \<noteq> {} \<longrightarrow>  (has_inf_in A C) \<and> (InfIn A C) = (InfUn A)"
+  shows "is_moore_family C"
+proof-
+  have B0:"\<forall>a.  has_min (ub_set_in {a} C)"
+  proof
+    fix a::"'a::complete_semilattice_inf"
+    define A where "A=(ub_set_in {a} C)"
+    have B1:"A \<noteq> {} \<and> A \<subseteq> C"
+      by (simp add: A_def A1 ub_set_in_subset)
+    have B2:"has_inf_in A C \<and> (InfIn A C) = (InfUn A)"
+      by (simp add: A2 B1)
+    define i where "i=InfIn A C"
+    have B3:"i \<in> C"
+      using B2 i_def infin_is_inf is_inf_in_imp1 lb_set_in_mem_iff by blast
+    have B4:"a \<in> lb_set A "
+      by (simp add: A_def lb_set_mem_iff ub_set_in_imp)
+    have B5:"a \<le> i"
+      by (simp add: B2 B4 complete_semilattice_inf_greatest complete_semilattice_inf_is_inf2 i_def)
+    have B6:"i \<in> A"
+      by (simp add: B5 B3 A_def ub_set_in_def)
+    have B7:"i \<in> lb_set A"
+      by (simp add: B2 complete_semilattice_infun_is_inf i_def is_inf_imp1)
+    have B8:"is_min i A"
+      by (simp add: B6 B7 is_min_if1)
+    show "has_min (ub_set_in {a} C)"
+      using A_def B8 is_min_imp_has_min by blast
+  qed
+  show ?thesis
+    by (simp add: A0 B0 is_moore_family_def)
 qed
 
 lemma filter_topped:
