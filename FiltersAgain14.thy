@@ -16,23 +16,6 @@ declare [[show_consts]]
 *)
 
 (*
-Organization - the duals can be taken as implicit
-
- 1. Add complete_semilattice_inf 
-   1.1 Add it as an semilattice_inf
-   1.2 Add complete_boolean_algebra and complete_lattice as complete_semilattice_inf
-2. First extend semilattice_inf to finitary fInf using fold
-3. Up
-  3.1  Sets of upper bounds
-    3.1.1 ub_set is all the upper bounds of the type
-    3.1.2 ub_set_in is all the upper bounds restricted to a set
-  3.2 max (greatest)
-    3.2.1 is_max predicate
-    3.2.2 has_max existential
-    3.2.3 choice operator
-  3.3 sup
-    3.3.1 is_sup_in
-
 (0).
   (0.1) I shat the bed and ended up referring to both closure ranges as  moore closures in addition
      to the real thing.  Gotta go through and rename
@@ -71,18 +54,6 @@ distributivity  means
   - ultrafilters are prime filters
 
 Every proper filter in a topped distributive lattice is the inf of finer ultrafilters
-
-*)
-(*
-
-  Adapted from  https://isabelle.in.tum.de/library/HOL/HOL/Lattices_Big.html 
-
-  and
-
-  T. Nipkow, L.C. Paulson (2005), "Proof Pearl: Defining Functions over Finite Sets", 
-  in J. Hurd, T. Melham (Eds.), Theorem Proving in Higher Order Logics, TPHOLs 2005, 
-  LNCS, Vol. 3603, Springer, Berlin, Heidelberg. 
-  Available at: https://doi.org/10.1007/11541868_25
 
 *)
 
@@ -529,10 +500,6 @@ subsubsection DualIsomorphismBetweenMooreFamiliesAndClosures
 *)
 
 
-lemma ub_set_single:
-  "ub_set {x} = {y. x \<le> y}"
-  by (simp add: set_eq_iff ub_set_mem_iff)
-
 
 lemma moore_cl_iso_inv1:
   fixes f::"'X::order \<Rightarrow> 'X::order"
@@ -563,7 +530,7 @@ proof-
     have A4:"f(a) = InfUn(principal_filter_in a (range f))"
       by (simp add: A30 A33 has_least_imp_inf_eq_least)
     have B1:"principal_filter_in a (range f) = (range f) \<inter> {y. a \<le> y}"
-      by (metis Int_commute ub_set_in_ub_inter ub_set_single)
+      by (metis Int_commute ub_set_in_ub_inter ub_set_singleton)
     have B2:"(g a) = InfUn(principal_filter_in a (range f))"
       by (simp add: g_def moore_to_closure_def)
     have B3:"... = InfUn{y \<in> range f. a \<le> y}"
@@ -978,16 +945,38 @@ qed
 
 lemma filter_sup_is_ub:
   fixes EF::"'X::semilattice_inf set set"
-  assumes A0: "EF \<noteq> {}" and A0:"\<forall>F \<in> EF. is_filter F"
+  assumes A0: "EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows "\<forall>F \<in> EF. F \<subseteq>  (filter_sup EF)"
-  by (metis A0 Sup_upper filter_closure_isotone filter_sup_def filters_in_filter_cl_range)
+  by (metis Sup_le_iff filter_closure_extensive filter_sup_def)
   
 lemma filter_sup_is_lub:
   fixes EF::"'X::semilattice_inf set set"
-  assumes A0: "EF \<noteq> {}" and A0:"\<forall>F \<in> EF. is_filter F"
+  assumes A0: "EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
   shows "\<And>G. is_filter G \<Longrightarrow> (\<forall>F \<in> EF. F \<subseteq> G) \<Longrightarrow> (filter_sup EF) \<subseteq> G"
   by (metis Sup_le_iff filter_closure_isotone filter_sup_def filters_in_filter_cl_range)
 
+lemma filter_sup_is_sup_in_filters:
+  fixes EF::"'a::semilattice_inf set set"
+  assumes A0: "EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "is_sup_in (filter_sup EF) EF (filters_in UNIV)"
+proof-
+  let ?S=" (filter_sup EF)"
+  let ?X="(filters_in UNIV)"
+  have B0:"?S \<in> ub_set_in EF ?X" using A0 A1 filter_sup_is_ub
+    by (metis (no_types, lifting) is_filter_def Pow_UNIV UNIV_I
+         bot_is_meet_irreducible complete_lattice_sup_is_sup
+         empty_subsetI filter_closure_is_filter filter_sup_def 
+         filters_in_def is_inhabited_def is_join_reducible_def mem_Collect_eq
+          ub_set_in_elm)
+  have B1:"\<And>G. is_filter G \<Longrightarrow> (\<forall>F \<in> EF. F \<subseteq> G) \<Longrightarrow> (G \<in> ub_set_in EF ?X)"
+    by (simp add: filters_in_def ub_set_in_elm)
+  have B2:"\<And>G. (G \<in> ub_set_in EF ?X) \<Longrightarrow> ?S \<le> G"
+    by (simp add: A0 A1 filter_sup_is_lub filters_in_def ub_set_in_mem_iff)
+  have B3:"is_min ?S (ub_set_in EF ?X)"
+    by (simp add: B0 B2 is_min_if2)
+  show ?thesis
+    by (simp add: B3 is_sup_in_iff)
+qed
 
 lemma filter_inf_is_filter:
   fixes EF::"'X::bounded_semilattice_inf_top set set"
@@ -1031,6 +1020,28 @@ proof-
   qed
   show ?thesis
     by (simp add: is_filter_def P0 P1 P2)
+qed
+
+
+lemma filter_inf_is_inf_in_filters:
+  fixes EF::"'a::bounded_semilattice_inf_top set set"
+  assumes A0: "EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "is_inf_in (filter_inf EF) EF (filters_in UNIV)"
+proof-
+  let ?I="(filter_inf EF)"
+  let ?X="(filters_in UNIV)"
+  have B0:"?I \<in> lb_set_in EF ?X"
+    by (metis (no_types, lifting) A0 A1 Pow_UNIV UNIV_witness dual_order.refl filter_inf_def 
+        filter_inf_is_filter filters_in_def lb_set_in_elm 
+        le_Inf_iff mem_Collect_eq top_apply top_set_def)
+  have B1:"\<And>G. is_filter G \<Longrightarrow> (\<forall>F \<in> EF. G \<le> F) \<Longrightarrow> (G \<in> lb_set_in EF ?X)"
+    by (simp add: filters_in_def lb_set_in_elm)
+  have B2:"\<And>G. (G \<in> lb_set_in EF ?X) \<Longrightarrow> G \<le> ?I"
+    by (simp add: A0 filter_inf_def lb_set_in_mem_iff le_Inf_iff)
+  have B3:"is_max ?I (lb_set_in EF ?X)"
+    by (simp add: B0 B2 is_max_iff)
+  show ?thesis
+    by (simp add: B3 is_inf_in_iff)
 qed
 
 lemma smallest_filter1:
@@ -1094,7 +1105,7 @@ proof-
         have " (\<forall>x \<in> (principal_filter_in a ?EF). {top::('X::bounded_semilattice_inf_top)} \<le> x)"
           by (metis mem_Collect_eq smallest_filter2 ub_set_in_mem_iff)
        then show ?thesis
-         by (metis Int_Collect True mem_Collect_eq singleton_insert_inj_eq smallest_filter1 ub_set_in_ub_inter ub_set_single)
+         by (metis Int_Collect True mem_Collect_eq singleton_insert_inj_eq smallest_filter1 ub_set_in_ub_inter ub_set_singleton)
      next
        case False
        then show ?thesis
