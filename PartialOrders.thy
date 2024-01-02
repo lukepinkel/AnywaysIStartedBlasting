@@ -33,13 +33,13 @@ Organization - the duals can be taken as implicit
 
 section CompleteSemilatticeClass
 class complete_semilattice_inf = semilattice_inf + Inf +
-    assumes CInf_lower: "x \<in> A \<Longrightarrow> Inf A \<le> x"
-    and CInf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
+    assumes CInf_lower: "A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> Inf A \<le> x"
+    and CInf_greatest: "A \<noteq> {} \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
 
   
 class complete_semilattice_sup = semilattice_sup + Sup +
-   assumes CSup_upper: "x \<in> A \<Longrightarrow> x \<le>  Sup A"
-    and CSup_least: "(\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
+   assumes CSup_upper: "A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> x \<le>  Sup A"
+    and CSup_least: "A \<noteq> {} \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
 
 
 sublocale complete_semilattice_inf \<subseteq> semilattice_inf inf "(\<le>)" "(<)" ..
@@ -461,7 +461,6 @@ definition binf::"'a::order  \<Rightarrow> 'a::order \<Rightarrow> 'a::order" wh
 definition bsup::"'a::order \<Rightarrow> 'a::order \<Rightarrow> 'a::order" where
   "bsup a b \<equiv> SupUn {a, b}"
 
-
 definition is_join_dual::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
   "is_join_dual f \<equiv> (\<forall>A. ( (f (SupUn A)) = (InfUn (f`(A))) ))"
 
@@ -469,6 +468,16 @@ definition join_dual_partner::"('a::order \<Rightarrow> 'b::order) \<Rightarrow>
   "join_dual_partner f = (\<lambda>y::('b::order). SupUn {x::'a::order. y \<le> (f x)})"
 
 subsection SpecialSets
+
+definition is_cofinal_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" (infix "is'_cofinal'_in" 50) where
+  "A is_cofinal_in B \<equiv> (\<forall>a. a \<in> A \<longrightarrow> (\<exists>b \<in> B. b \<ge> a))"
+
+definition is_inf_complete::"'a::ord set \<Rightarrow> bool" where 
+  "is_inf_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_inf_in A X)"
+
+definition is_sup_complete::"'a::ord set \<Rightarrow> bool" where 
+  "is_sup_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_sup_in A X)"
+
 
 definition is_inhabited::"'a set  \<Rightarrow> bool" where
    "is_inhabited X \<equiv> (X \<noteq> {})"
@@ -478,7 +487,6 @@ definition is_downdir::"'a::ord set \<Rightarrow> bool" where
 
 definition is_upclosed::"'a::ord set \<Rightarrow> bool" where
    "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
-
 
 definition is_pisystem::"'a::order set \<Rightarrow> bool" where
    "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (binf a b)  \<in> X)"
@@ -740,6 +748,10 @@ lemma ub_set_antitone1:
 lemma ub_set_degenerate:
   "ub_set {} = UNIV"
   by (simp add: ub_set_def)
+
+lemma ub_set_singleton:
+  "ub_set {x}  = {y. x \<le> y}"
+  by (simp add: set_eq_iff ub_set_mem_iff)
 
 
 
@@ -1046,6 +1058,10 @@ lemma is_sup_in_imp3:
   "\<And>m A X. is_sup_in m A X  \<Longrightarrow>  (\<And>u. u \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> m \<le> u)"
   by (simp add: is_min_iff is_sup_in_def ub_set_in_mem_iff)
 
+lemma is_sup_in_in_set:
+  "\<And>m A X. is_sup_in m A X \<Longrightarrow> m \<in> X"
+  by (simp add: is_sup_in_def is_sup_in_imp1 is_min_iff ub_set_in_mem_iff)
+
 lemma is_sup_in_if1:
   "\<And>m A X. m \<in> X \<Longrightarrow>  (m \<in>( ub_set_in A X) \<and> is_min m (ub_set_in A X)) \<Longrightarrow> is_sup_in m A X "
   by (simp add: is_sup_in_def)
@@ -1058,11 +1074,9 @@ lemma is_sup_in_if3:
   "\<And>m A X. m \<in> X \<Longrightarrow>  (\<And>a. a \<in> A \<Longrightarrow> a \<le> m) \<Longrightarrow>  (\<And>u. u \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> m \<le> u) \<Longrightarrow> is_sup_in m A X "
   by (simp add: is_min_iff is_sup_in_def ub_set_in_mem_iff)
 
-
 lemma sup_in_unique:
   "\<And>(A::'a::order set) X m1 m2. is_sup_in m1 A X \<Longrightarrow> is_sup_in m2 A X \<Longrightarrow> m1=m2"
   by (simp add: is_sup_in_def min_unique)
-
 
 lemma if_has_sup_in_unique:
   assumes "has_sup_in (A::'a::order set) X"
@@ -1086,6 +1100,21 @@ proof-
     using A1 B0 by blast
 qed
 
+lemma has_sup_in_imp1:
+  "\<And>(A::'a::order set) X. has_sup_in A X  \<Longrightarrow>  ((SupIn A X) \<in>( ub_set_in A X) \<and> is_min (SupIn A X) (ub_set_in A X))"
+  using is_sup_in_imp1 supin_is_sup by blast
+
+lemma has_sup_in_imp2:
+  "\<And>(A::'a::order set) X. has_sup_in A X  \<Longrightarrow>  (\<And>a. a \<in> A \<Longrightarrow> a \<le> (SupIn A X))"
+  using is_sup_in_imp2 supin_is_sup by blast
+
+lemma has_sup_in_imp3:
+  "\<And>(A::'a::order set) X. has_sup_in A X  \<Longrightarrow> (\<And>u. u \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> (SupIn A X) \<le> u)"
+  using is_sup_in_imp3 supin_is_sup by blast
+
+lemma has_sup_in_in_set:
+  "\<And>(A::'a::order set) X. has_sup_in A X \<Longrightarrow> (SupIn A X) \<in> X"
+  using is_sup_in_in_set supin_is_sup by blast
 
 lemma sup_in_degenerate:  
   assumes A0:"has_min (X::'a::order set)"
@@ -1100,6 +1129,12 @@ lemma supin_singleton:
   "SupIn {x::'a::order} UNIV = x"
   apply(simp add: SupIn_def)
   using is_supin_singleton sup_in_unique by blast
+
+lemma sup_in_max:
+  fixes X::"'a::order set"
+  assumes "has_sup_in X X"
+  shows "is_max (SupIn X X) X"
+  by (simp add: assms has_sup_in_imp2 has_sup_in_in_set is_max_if2)
 
 lemma sup_in_isotone1:
   "\<And>(A::'a::order set) B X. has_sup_in A X \<Longrightarrow> has_sup_in B X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> SupIn A X \<le> SupIn B X"
@@ -1144,6 +1179,40 @@ proof
     by (metis IntD2 R inf_commute is_min_if1 is_sup_in_def lb_set_in_lb_inter)
 qed
 
+lemma sup_complete_has_max:
+  "\<And>(X::'a::order set). X \<noteq> {} \<Longrightarrow> is_sup_complete X \<Longrightarrow> (is_max (SupIn X X) X)"
+  by (simp add: is_sup_complete_def sup_in_max)
+
+lemma sup_complete_bounded_inf:
+  fixes X::"'a::order set"
+  assumes A0:"is_sup_complete X"
+  shows "\<And>A. (A \<subseteq> X \<and>  lb_set_in A X \<noteq> {}) \<longrightarrow> (has_inf_in A X)"
+proof
+  fix A
+  assume  A1:"A \<subseteq> X \<and>  (lb_set_in A X \<noteq> {})" 
+  let ?L="lb_set_in A X"
+  have B0:"?L \<subseteq> X"
+    by (simp add: lb_set_in_subset)
+  have B1:"has_sup_in ?L X"
+    using A1 B0 assms is_sup_complete_def by blast
+  have B2:"(SupIn ?L X) \<in> ?L"
+    by (meson A1 B1 has_sup_in_imp3 has_sup_in_in_set lb_set_in_elm lb_set_in_imp subsetD)
+  show "has_inf_in A X"
+  proof(cases "A = {}")
+    case True
+    then show ?thesis
+      by (metis B1 has_inf_in_def has_max_iff2 lb_set_in_degenerate sup_in_max)
+  next
+    case False
+    then show ?thesis
+      by (meson B1 B2 has_inf_in_def has_max_iff has_sup_in_imp2)
+  qed
+qed
+
+
+
+
+
 subsection Infima
 
 lemma is_inf_in_iff:
@@ -1161,6 +1230,10 @@ lemma is_inf_in_imp2:
 lemma is_inf_in_imp3:
   "\<And>m A X. is_inf_in m A X  \<Longrightarrow>  (\<And>l. l \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<le> m)"
   by (simp add: is_max_iff is_inf_in_def lb_set_in_mem_iff)
+
+lemma is_inf_in_in_set:
+  "\<And>m A X. is_inf_in m A X \<Longrightarrow> m \<in> X"
+  by (simp add: is_inf_in_def is_inf_in_imp1 is_max_iff lb_set_in_mem_iff)
 
 
 lemma is_inf_in_if1:
@@ -1190,7 +1263,6 @@ lemma has_inf_in_has_glb:
   "\<And>A B.  has_inf_in A B \<Longrightarrow> has_max (lb_set_in A B)"
   by (simp add: has_inf_in_def)
 
-
 lemma infin_is_inf:
   assumes A0:"has_inf_in (A::'a::order set) B"
   shows "is_inf_in (InfIn A B) A B"
@@ -1202,6 +1274,24 @@ proof-
   show ?thesis
     using A1 B0 by blast
 qed
+
+lemma has_inf_in_imp1:
+  "\<And>(A::'a::order set) X. has_inf_in A X  \<Longrightarrow>  ((InfIn A X) \<in>(lb_set_in A X) \<and> is_max (InfIn A X) (lb_set_in A X))"
+  using is_inf_in_imp1 infin_is_inf by blast
+
+lemma has_inf_in_imp2:
+  "\<And>(A::'a::order set) X. has_inf_in A X  \<Longrightarrow>  (\<And>a. a \<in> A \<Longrightarrow> a \<ge> (InfIn A X))"
+  using is_inf_in_imp2 infin_is_inf by blast
+
+lemma has_inf_in_imp3:
+  "\<And>(A::'a::order set) X. has_inf_in A X  \<Longrightarrow> (\<And>u. u \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<ge> u) \<Longrightarrow> (InfIn A X) \<ge> u)"
+  using is_inf_in_imp3 infin_is_inf by blast
+
+lemma has_inf_in_in_set:
+  "\<And>(A::'a::order set) X. has_inf_in A X \<Longrightarrow> (InfIn A X) \<in> X"
+  using is_inf_in_in_set infin_is_inf by blast
+
+
 lemma inf_in_degenerate:  
   assumes A0:"has_max (X::'a::order set)"
   shows "InfIn {} X = max X"
@@ -1221,6 +1311,13 @@ lemma infin_eq_infun:
   assumes A0:"has_inf_in (A::'a::order set) UNIV"
   shows "InfIn A UNIV = InfUn A"
   by (simp add: InfIn_def InfUn_def is_inf_in_def is_inf_def lb_set_in_univ_absorb)
+
+
+lemma inf_in_min:
+  fixes X::"'a::order set"
+  assumes "has_inf_in X X"
+  shows "is_min (InfIn X X) X"
+  by (simp add: assms has_inf_in_imp2 has_inf_in_in_set is_min_if2)
 
 lemma inf_in_antitone1:
   "\<And>(A::'a::order set) B X. has_inf_in A X \<Longrightarrow> has_inf_in B X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> InfIn B X \<le> InfIn A X"
@@ -1264,6 +1361,38 @@ proof
   assume R:"?R" show "?L"
     by (metis IntD2 R inf_commute is_inf_in_def is_max_if1 ub_set_in_ub_inter)
 qed
+
+lemma inf_complete_has_min:
+  "\<And>(X::'a::order set). X \<noteq> {} \<Longrightarrow> is_inf_complete X \<Longrightarrow> (is_min (InfIn X X) X)"
+  by (simp add: is_inf_complete_def inf_in_min)
+
+
+lemma inf_complete_bounded_sup:
+  fixes X::"'a::order set"
+  assumes A0:"is_inf_complete X"
+  shows "\<And>A. (A \<subseteq> X \<and>  ub_set_in A X \<noteq> {}) \<longrightarrow> (has_sup_in A X)"
+proof
+  fix A
+  assume  A1:"A \<subseteq> X \<and>  (ub_set_in A X \<noteq> {})" 
+  let ?U="ub_set_in A X"
+  have B0:"?U \<subseteq> X"
+    by (simp add: ub_set_in_subset)
+  have B1:"has_inf_in ?U X"
+    using A1 B0 assms is_inf_complete_def by blast
+  have B2:"(InfIn ?U X) \<in> ?U"
+    by (meson A1 B1 has_inf_in_imp3 has_inf_in_in_set ub_set_in_elm ub_set_in_imp subsetD)
+  show "has_sup_in A X"
+  proof(cases "A = {}")
+    case True
+    then show ?thesis
+      by (metis B1 has_sup_in_def has_min_iff2 ub_set_in_degenerate inf_in_min)
+  next
+    case False
+    then show ?thesis
+      by (meson B1 B2 has_inf_in_imp2 has_min_iff has_sup_in_def)
+  qed
+qed
+
 
 section AbsoluteExtrema
 subsection Suprema
@@ -1355,28 +1484,29 @@ lemma supin_eq_supun:
   by(simp add:SupIn_def SupUn_def is_sup_in_def is_sup_def ub_set_in_univ_absorb)
 
 lemma complete_semilattice_sup_is_sup:
-  "\<forall>(A::'X::complete_semilattice_sup set). (is_sup (Sup A) A)"
+  "\<forall>(A::'X::complete_semilattice_sup set). A \<noteq> {} \<longrightarrow> (is_sup (Sup A) A)"
   by (simp add: CSup_least CSup_upper is_sup_if3)
 
 
 lemma complete_semilattice_supun_is_sup:
-  "\<forall>(A::'X::complete_semilattice_sup set). (is_sup (SupUn A) A)"
-  using complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def sup_is_sup by blast
+  "\<forall>(A::'X::complete_semilattice_sup set). A \<noteq> {} \<longrightarrow> (is_sup (SupUn A) A)"
+  by (meson complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def sup_is_sup)
 
 
 lemma complete_semilattice_sup_least:
   fixes A::"'a::complete_semilattice_sup set"
-  shows "\<forall>u \<in> ub_set A. Sup A \<le> u"
+  shows "\<forall>u \<in> ub_set A. A \<noteq> {} \<longrightarrow>  Sup A \<le> u"
   by (simp add: CSup_least ub_set_imp)
 
 lemma complete_semilattice_supun_eq_sup:
-  fixes A::"'a::complete_semilattice_sup set"
+  fixes A::"'a::complete_semilattice_sup set" 
+  assumes "A \<noteq> {}"
   shows "SupUn A = Sup A"
-  using complete_semilattice_sup_is_sup complete_semilattice_supun_is_sup is_sup_unique by blast
+  by (meson assms complete_semilattice_sup_is_sup complete_semilattice_supun_is_sup is_sup_unique)
 
 lemma complete_semilattice_sup_is_sup2:
-  "\<forall>(A::'X::complete_semilattice_sup set). SupUn A = Sup A"
-  using complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def is_sup_unique sup_is_sup by blast
+  "\<forall>(A::'X::complete_semilattice_sup set). A \<noteq> {} \<longrightarrow> SupUn A = Sup A"
+  by (simp add: complete_semilattice_supun_eq_sup)
 
 lemma has_supin_singleton:
   "has_sup_in {x::'a::order} UNIV"
@@ -1405,8 +1535,9 @@ lemma is_sup_sup_eq:
 
 lemma complete_lattice_sup_is_sup:
   fixes A::"'a::complete_lattice set"
+  assumes "A \<noteq> {}"
   shows "(is_sup (Sup A) A)"
-  by (simp add: csls.CSup_least csls.CSup_upper is_sup_if3)
+  by (simp add: Sup_least Sup_upper is_sup_if3)
 
 lemma has_max_imp_sup_eq_max:
   fixes A::"'a::order set"
@@ -1416,12 +1547,12 @@ lemma has_max_imp_sup_eq_max:
 
 lemma complete_lattice_sup_least:
   fixes A::"'a::complete_lattice set"
-  shows "\<forall>u \<in> ub_set A. Sup A \<le> u"
+  shows "\<forall>u \<in> ub_set A. A \<noteq> {} \<longrightarrow> Sup A \<le> u"
   by (simp add: csls.CSup_least ub_set_mem)
 
 lemma complete_semilattice_sup_exists_sup:
-  "\<And>(A::'a::complete_semilattice_sup set). has_sup A"
-  using complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def by blast
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> has_sup A"
+  by (meson complete_semilattice_supun_is_sup has_min_def has_sup_def is_sup_def)
 
 lemma is_sup_imp_lub:
   "\<And>s A. is_sup s A \<Longrightarrow> is_min s (ub_set A)"
@@ -1445,8 +1576,6 @@ lemma is_inf_imp3:
   "\<And>m A. is_inf m A  \<Longrightarrow>  (\<And>l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<le> m)"
   by (simp add: is_max_iff is_inf_def lb_set_mem_iff)
 
-
-
 lemma is_inf_if1:
   "\<And>m A. (is_max m (lb_set A)) \<Longrightarrow> is_inf m A"
   by (simp add: is_inf_def)
@@ -1458,7 +1587,6 @@ lemma is_inf_if2:
 lemma is_inf_if3:
   "\<And>m A. (\<And>a. a \<in> A \<Longrightarrow> m \<le> a) \<Longrightarrow>  (\<And>l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<le> m) \<Longrightarrow> is_inf m A"
   by (simp add: is_inf_if2 lb_set_elm)
-
 
 lemma is_inf_unique:
   "\<And>(A::'a::order set) m1 m2. is_inf m1 A \<Longrightarrow> is_inf m2 A \<Longrightarrow> m1=m2"  
@@ -1476,7 +1604,6 @@ lemma is_min_is_inf:
 lemma has_min_has_inf:
   "\<And>A.  has_min A \<Longrightarrow> has_inf A"
   by (meson has_inf_def has_max_iff2 if_has_min_min_unique is_inf_def is_min_is_inf)
-
 
 lemma has_inf_in_imp_inf:
   assumes "has_inf_in A UNIV"
@@ -1507,31 +1634,34 @@ qed
 
 
 lemma complete_semilattice_inf_is_inf:
-  "\<forall>(A::'X::complete_semilattice_inf set). (is_inf (Inf A) A)"
+  "\<forall>(A::'X::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> (is_inf (Inf A) A)"
   by (simp add: CInf_greatest CInf_lower is_inf_if3)
 
 lemma complete_semilattice_infun_is_inf:
-  "\<forall>(A::'X::complete_semilattice_inf set). (is_inf (InfUn A) A)"
-  using complete_semilattice_inf_is_inf has_inf_def inf_is_inf is_inf_def is_max_imp_has_max by blast
+  "\<forall>(A::'X::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> (is_inf (InfUn A) A)"
+  by (meson complete_semilattice_inf_is_inf has_inf_def inf_is_inf is_inf_def is_max_imp_has_max)
+
 
 lemma complete_semilattice_inf_greatest:
   fixes A::"'a::complete_semilattice_inf set"
-  shows "\<forall>l \<in> lb_set A. l \<le> Inf A"
+  shows "\<forall>l \<in> lb_set A. A \<noteq> {} \<longrightarrow> l \<le> Inf A"
   by (simp add: CInf_greatest lb_set_mem)
 
 lemma complete_lattice_inf_is_inf:
   fixes A::"'a::complete_lattice set"
+  assumes "A \<noteq> {}"
   shows "(is_inf (Inf A) A)"
-  by (simp add: csli.CInf_greatest csli.CInf_lower is_inf_if3)
+  by (simp add: Inf_greatest Inf_lower is_inf_if3)
 
 lemma complete_semilattice_infun_eq_inf:
   fixes A::"'a::complete_semilattice_inf set"
+  assumes "A \<noteq> {}"
   shows "InfUn A = Inf A"
-  using complete_semilattice_inf_is_inf complete_semilattice_infun_is_inf is_inf_unique by blast
+  by (meson assms complete_semilattice_inf_is_inf complete_semilattice_infun_is_inf is_inf_unique)
 
 lemma complete_semilattice_inf_is_inf2:
-  "\<forall>(A::'X::complete_semilattice_inf set). InfUn A = Inf A"
-  using complete_semilattice_inf_is_inf has_inf_def has_max_iff2 inf_is_inf is_inf_def is_inf_unique by blast
+  "\<forall>(A::'X::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> InfUn A = Inf A"
+  using complete_semilattice_infun_eq_inf by blast
 
 
 lemma has_infin_singleton:
@@ -1563,8 +1693,6 @@ lemma inf_antitone1:
 lemma is_inf_inf_eq:
   "\<And>(i::'a::order) A. has_inf A \<Longrightarrow> is_inf i A \<Longrightarrow> (i = InfUn A)"
   by (simp add: inf_is_inf is_inf_unique)
-
-
 
 lemma sup_eq_inf_ub:
   fixes A::"'a::order set"
@@ -1609,12 +1737,12 @@ lemma has_least_imp_inf_eq_least:
 
 lemma complete_lattice_inf_greatest:
   fixes A::"'a::complete_lattice set"
-  shows "\<forall>l \<in> lb_set A. l \<le> Inf A"
+  shows "\<forall>l \<in> lb_set A. A \<noteq> {} \<longrightarrow> l \<le> Inf A"
   by (simp add: csli.CInf_greatest lb_set_imp)
 
 lemma complete_semilattice_inf_exists_inf:
-  "\<And>(A::'a::complete_semilattice_inf set). has_inf A"
-  using complete_semilattice_inf_is_inf has_inf_def has_max_iff2 is_inf_imp1 by blast
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> has_inf A"
+  by (metis complete_semilattice_infun_is_inf has_inf_def has_max_def is_inf_def)
 
 lemma is_inf_imp_glb1:
   "\<And>i A. is_inf i A \<Longrightarrow> is_max i (lb_set A)"
@@ -1638,36 +1766,44 @@ lemma fsup_complete_lattice_set:
 end
 
 
-lemma complete_semilattice_inf_exists_sup:
-  "\<And>(A::'a::complete_semilattice_inf set). has_sup A"
-  by (metis CInf_greatest CInf_lower has_min_iff has_sup_def ub_set_mem_iff)
-
-lemma complete_semilattice_sup_exists_inf:
-  "\<And>(A::'a::complete_semilattice_sup set). has_inf A"
-  by (metis CSup_least CSup_upper has_max_iff has_inf_def lb_set_mem_iff)
-
-lemma complete_semilattice_inf_ub_imp_sup:
-  fixes A::"'a::complete_semilattice_inf set"
-  shows "has_sup A \<and> SupUn A = Inf(ub_set A)"
-  by (meson complete_semilattice_inf_exists_sup complete_semilattice_inf_is_inf is_inf_unique is_min_is_inf is_sup_def sup_is_sup)
-
-lemma complete_semilattice_inf_ub_imp_sup2:
-  fixes A::"'a::complete_semilattice_inf set"
-  shows "has_sup A \<and> SupUn A = InfUn(ub_set A)"
-  by (simp add: complete_semilattice_inf_exists_inf complete_semilattice_inf_is_inf complete_semilattice_inf_ub_imp_sup is_inf_inf_eq)
 
 
 lemma complete_semilattice_sup_lb_imp_inf:
   fixes A::"'a::complete_semilattice_sup set"
   assumes "lb_set A \<noteq> {}"
   shows "has_inf A \<and> InfUn A = Sup(lb_set A)"
-  using complete_semilattice_sup_exists_inf complete_semilattice_sup_is_sup inf_is_inf is_inf_iff is_max_is_sup is_sup_unique by blast
+  by (simp add: assms complete_semilattice_sup_exists_sup complete_semilattice_supun_eq_sup inf_eq_sup_lb)
 
 lemma complete_semilattice_sup_lb_imp_inf2:
   fixes A::"'a::complete_semilattice_sup set"
   assumes "lb_set A \<noteq> {}"
   shows "has_inf A \<and> InfUn A = SupUn(lb_set A)"
-  by (simp add: assms complete_semilattice_sup_exists_sup complete_semilattice_sup_is_sup complete_semilattice_sup_lb_imp_inf is_sup_sup_eq)
+  by (simp add: assms complete_semilattice_sup_is_sup2 complete_semilattice_sup_lb_imp_inf)
+
+lemma ub_set_in_ne_iff:
+  "(ub_set_in {a} B) \<noteq> {} \<longleftrightarrow> (\<exists>b \<in> B. a \<le> b)"
+  using ub_set_in_singleton by fastforce
+
+lemma lb_set_in_ne_iff:
+  "(lb_set_in {a} B) \<noteq> {} \<longleftrightarrow> (\<exists>b \<in> B. a \<ge> b)"
+  using lb_set_in_singleton by fastforce
+
+lemma is_cofinal_in_imp:
+  "\<And>A B. A is_cofinal_in B \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (\<exists>b \<in> B. a \<le> b))"
+  by (simp add: is_cofinal_in_def)
+
+lemma is_cofinal_in_imp_ub_in_ne:
+  "\<And>A B. A is_cofinal_in B \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (ub_set_in {a} B) \<noteq> {})"
+  by (simp add: is_cofinal_in_imp ub_set_in_ne_iff)
+
+
+lemma is_cofinal_in_if:
+  "\<And>A B. (\<And>a. a \<in> A \<Longrightarrow> (\<exists>b \<in> B. a \<le> b)) \<Longrightarrow> A is_cofinal_in B "
+  by (simp add: is_cofinal_in_def)
+
+lemma is_cofinal_in_if_ub_in_ne:
+  "\<And>A B. (\<And>a. a \<in> A \<Longrightarrow> (ub_set_in {a} B) \<noteq> {}) \<Longrightarrow> A is_cofinal_in B "
+  by (simp add: is_cofinal_in_if ub_set_in_ne_iff)
 
 
 
@@ -2066,11 +2202,11 @@ proof
       have B5:"is_inf (Inf ?L) ?L"
       proof-
         have B50:"Inf ?L \<in> lb_set ?L"
-          by (simp add: csli.CInf_lower lb_set_mem_iff)
+          by (meson Inf_lower imp_in_lower_bounds)
         have B51:"is_max (Inf ?L) (lb_set ?L)"
-          by (simp add: complete_lattice_inf_is_inf is_inf_imp_glb1)
+          by (meson B0 B50 complete_lattice_inf_greatest is_max_iff)
         show ?thesis
-          by (simp add: complete_lattice_inf_is_inf)
+          by (simp add: B51 is_inf_if1)
       qed
       have B3:"(is_meet_reducible m)"
         by (metis B0 B3 B4 B5 is_meet_reducible_def)
