@@ -155,39 +155,37 @@ lemma moore_family_is_cofinal:
   using assms has_min_iff2 is_moore_family_def min_imp_ne by auto
 
 
-lemma inf_closed_then_moore:
-  fixes C::"'X::complete_semilattice_inf set"
-  assumes A0:"\<forall>E \<in> Pow(C). (Inf E) \<in> C"
-  shows "is_moore_family C"
-proof-
-  have B0:"\<forall>a. (ub_set_in {a} C) \<in> Pow(C)"
-    by (simp add: ub_set_in_subset)
-  have B1:"\<forall>a. Inf(ub_set_in {a} C) \<in> C"
-    using B0 assms by auto
-  have B2:"\<forall>a. Inf(ub_set_in {a} C) \<in> (ub_set_in {a} C)"
-    by (meson B1 CInf_greatest ub_set_in_mem_iff)
-  have B3:"\<forall>a. (\<forall>x \<in> (ub_set_in {a} C).  Inf(ub_set_in {a} C) \<le> x)"
-    by (simp add: complete_semilattice_inf_class.CInf_lower)
-  show ?thesis
-    by (metis B2 CInf_lower Pow_top assms empty_iff has_min_iff is_moore_family_def)
-qed  
-
 
 
 lemma closure_range_inf_closed:
   fixes E::"'X::complete_semilattice_inf set" and
         f::"'X::complete_semilattice_inf \<Rightarrow> 'X::complete_semilattice_inf"
   assumes A0:"is_closure f" and
-          A1:"E \<subseteq> range f"
+          A1:"E \<subseteq> range f" and
+          A2:"E \<noteq> {}"
   shows "f (Inf E) = Inf E "
-  using A0 A1 closure_range_inf_closed_ complete_semilattice_inf_is_inf by blast
+proof-
+  define i where "i = Inf E"
+  have B0:"\<forall>x.  x\<in> E \<longrightarrow> i \<le> x"
+    using CInf_lower i_def by blast
+  have B1:"\<forall>x. x \<in> E \<longrightarrow> f i \<le> x"
+    using A0 A1 closure_range_non_increasing complete_semilattice_inf_is_inf i_def by blast
+  have B2:"f i \<in> lb_set E"
+    by (simp add: B1 lb_set_elm)
+  have B3:"f i \<le> i"
+    using A2 B2 complete_semilattice_inf_greatest i_def by blast
+  have B4:"f i \<ge> i"
+    using A0 is_closure_def is_extensive_def by blast
+  show ?thesis
+    using B3 B4 i_def order_antisym_conv by blast
+qed
 
 
 lemma moore_closure_imp_csemilattice_inf:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C"
   shows "\<forall>x. (moore_to_closure C) x = Inf(ub_set_in {x} C)"
-  by (simp add: complete_semilattice_inf_is_inf2 moore_to_closure_def)
+  by (simp add: assms complete_semilattice_inf_is_inf2 moore_family_is_cofinal moore_to_closure_def)
 
 
 
@@ -609,12 +607,12 @@ lemma moore_family_is_complete_semilattice_inf:
 proof-
   define i where "i=Inf A"
   have B0:"is_inf i A"
-    by (simp add: complete_semilattice_inf_is_inf i_def)
+    using A1 complete_semilattice_inf_is_inf i_def by blast
   have B1:"i \<in> C"
     by (metis A0 A1 B0 closure_range_inf_closed_ moore_cl_iso_inv2 moore_to_closure_iscl)
   have B2:"is_inf_in i A C"
     apply(simp add:is_inf_in_def lb_set_in_def is_max_def ub_set_in_def)
-    by (metis B1 CInf_greatest CInf_lower i_def)
+    using B0 B1 is_inf_imp2 is_inf_imp3 by blast
   have B3:"has_inf_in A C"
     using B2 has_inf_in_def has_max_def is_inf_in_def by blast
   have B4:"InfUn A = i"
@@ -655,11 +653,11 @@ proof-
     have B4:"a \<in> lb_set A "
       by (simp add: A_def lb_set_mem_iff ub_set_in_imp)
     have B5:"a \<le> i"
-      by (simp add: B2 B4 complete_semilattice_inf_greatest complete_semilattice_inf_is_inf2 i_def)
+      by (simp add: B1 B2 B4 complete_semilattice_inf_greatest complete_semilattice_infun_eq_inf i_def)
     have B6:"i \<in> A"
       by (simp add: B5 B3 A_def ub_set_in_def)
     have B7:"i \<in> lb_set A"
-      by (simp add: B2 complete_semilattice_infun_is_inf i_def is_inf_imp1)
+      by (simp add: B1 B2 complete_semilattice_infun_is_inf i_def is_inf_imp1)
     have B8:"is_min i A"
       by (simp add: B6 B7 is_min_if1)
     show "has_min (ub_set_in {a} C)"
@@ -2436,7 +2434,7 @@ lemma complete_lattice_inf_exists:
   shows "Inf A = InfUn A"
 proof-
   have B0:"is_inf (Inf A) A"
-    by (simp add: complete_lattice_inf_is_inf)
+    by (metis Inf_empty complete_lattice_inf_is_inf equals0D is_inf_if3 top_greatest)
   show "Inf A = InfUn A"
     using B0 has_inf_def has_max_iff2 is_inf_def is_inf_inf_eq by blast
 qed
@@ -2446,7 +2444,7 @@ lemma complete_lattice_sup_exists:
   shows "Sup A = SupUn A"
 proof-
   have B0:"is_sup (Sup A) A"
-    by (simp add: complete_lattice_sup_is_sup)
+    by (simp add: Sup_least Sup_upper is_sup_if3)
   show "Sup A = SupUn A"
     using B0 has_sup_def has_min_iff2 is_sup_def is_sup_sup_eq by blast
 qed
@@ -2533,11 +2531,11 @@ proof-
     have B12:"?B2 \<subseteq> ?B1"
       using A2 by force
     have B13:"is_sup (Sup ?B1) ?B1"
-      using complete_lattice_sup_is_sup by blast
+      by (meson Sup_least Sup_upper is_sup_if3)
     have B14:"has_sup ?B1"
       by (metis B13 has_min_iff has_sup_def is_min_iff is_sup_def)
     have B14b:"is_sup (Sup ?B2) ?B2"
-      by (simp add: complete_lattice_sup_is_sup)
+      by (meson Sup_least Sup_upper is_sup_if3)
     have B14c:"has_sup ?B2"
       by (metis B14b has_min_iff has_sup_def is_min_iff is_sup_def)
     have B15:"(?g y2) \<le> (?g y1)"
@@ -2555,7 +2553,7 @@ proof-
     have B22:"y \<in> lb_set (f`{x. (f x) \<ge> y})"
       by (simp add: imp_in_lower_bounds)
     have B23:"y \<le>  InfUn (f`{x. (f x) \<ge> y})"
-      by (metis B22 complete_lattice_inf_exists complete_lattice_inf_greatest)
+      by (metis B22 complete_lattice_inf_exists lb_set_mem_iff le_Inf_iff)
     show "y \<le> (f (?g y))"
       by (simp add: B21 B23)
   qed
@@ -2563,7 +2561,7 @@ proof-
   proof
     fix x::"'X::complete_lattice"
     show "x \<le> (?g (f x))"
-      by (metis (mono_tags) complete_lattice_sup_exists csls.CSup_upper join_dual_partner_def mem_Collect_eq order_refl)
+      by (metis (mono_tags) Sup_upper complete_lattice_sup_exists join_dual_partner_def mem_Collect_eq order_refl)
   qed
   have B4:"(comp_extensive f ?g)"
     by (simp add: B2 B3 comp_extensive_def)
