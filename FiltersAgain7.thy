@@ -17,6 +17,11 @@ TODO
 
 (2). The filters on a topped semilattice inf form a moore collection 
   DONE (filter_moore_family)
+  (2.1) The closure of a family of filters is described in filter_closure_is_closure
+        filter_closure_is_filter 
+  (2.2) The supremum of  a family is described in filter_sup_is_ub filter_sup_is_lub
+        and via definition in terms of closure by filter_closure_is_filter
+  (2.3) The infimum is described in filter_inf_is_filter
 (3). The filters on a lattice
   (3.1) form a lattice 
         DONE (instantiation filter:: (lattice) lattice)
@@ -36,6 +41,10 @@ distributivity  means
   -finite sups are meets of elements from each filter
   -arbitrary sups are  the infs of finitely many elements from the union
   - ultrafilters are prime filters
+
+Every proper filter in a topped distributive lattice is the inf of finer ultrafilters
+
+
 *)
 
 section Settings
@@ -110,6 +119,8 @@ definition binary_filter_sup::"'a::semilattice_inf set \<Rightarrow> 'a::semilat
 definition filter_sup::"'a::semilattice_inf_Inf set set \<Rightarrow> 'a::semilattice_inf_Inf set" where
   "filter_sup EF \<equiv> filter_closure(Sup(EF))"
 
+definition filter_inf::"'a::bounded_semilattice_inf_top set set \<Rightarrow> 'a::bounded_semilattice_inf_top set" where
+  "filter_inf EF \<equiv> (if EF={} then {top} else \<Inter>EF)"
 
 definition is_proper::"'a::order set \<Rightarrow> bool" where
   "is_proper F \<equiv> F \<noteq> UNIV"
@@ -813,6 +824,62 @@ proof
     qed
 qed
 
+lemma filter_sup_is_ub:
+  fixes EF::"'X::semilattice_inf_Inf set set"
+  assumes A0: "EF \<noteq> {}" and A0:"\<forall>F \<in> EF. is_filter F"
+  shows "\<forall>F \<in> EF. F \<subseteq>  (filter_sup EF)"
+  by (metis A0 Sup_upper filter_closure_isotone filter_sup_def filters_in_filter_cl_range)
+  
+lemma filter_sup_is_lub:
+  fixes EF::"'X::semilattice_inf_Inf set set"
+  assumes A0: "EF \<noteq> {}" and A0:"\<forall>F \<in> EF. is_filter F"
+  shows "\<And>G. is_filter G \<Longrightarrow> (\<forall>F \<in> EF. F \<subseteq> G) \<Longrightarrow> (filter_sup EF) \<subseteq> G"
+  by (metis Sup_le_iff filter_closure_isotone filter_sup_def filters_in_filter_cl_range)
+
+
+lemma filter_inf_is_filter:
+  fixes EF::"'X::bounded_semilattice_inf_top set set"
+  assumes A0: "EF \<noteq> {}" and A1:"\<forall>F \<in> EF. is_filter F"
+  shows "is_filter (filter_inf EF)"
+proof-
+  let ?I="filter_inf EF"
+  have P0:"is_inhabited ?I"
+    by (metis A0 A1 InterI empty_iff filter_inf_def filter_topped is_inhabited_def)
+  have P1:"is_upclosed ?I"
+  proof-
+    have B01:"\<And>a b. b \<in> ?I \<and> b \<le> a \<longrightarrow> a \<in> ?I"
+    proof
+      fix a b assume A01:"b \<in> ?I \<and>  b \<le> a"
+      have B02:"\<forall>F \<in> EF. b \<in> F"
+        by (metis A0 A01 Inter_iff filter_inf_def)
+      have B03:"\<forall>F \<in> EF. a \<in> F"
+        by (metis A01 A1 B02 FiltersAgain7.is_filter_def is_upclosed_imp)
+      show "a \<in> ?I"
+        by (simp add: A0 B03 filter_inf_def)
+    qed
+    show ?thesis
+      using B01 is_upclosed_def by blast
+  qed
+  have P2:"is_downdir ?I"
+    proof-
+    have B20:"(\<And>a b.  (a \<in> ?I \<and> b \<in> ?I) \<longrightarrow> (\<exists>c  \<in> ?I. (c \<le> a) \<and>  (c \<le> b)))"
+    proof
+       fix a b assume B2A0:"a \<in> ?I \<and> b \<in> ?I" 
+       have B21:"\<forall>F \<in> EF. a \<in> F \<and> b \<in> F"
+         by (metis A0 B2A0 InterE filter_inf_def)
+       have B22:"\<forall>F \<in> EF. inf a b \<in> F"
+         by (meson A1 B21 FiltersAgain7.is_filter_def downdir_inf)
+       have B23:"inf a b \<in> ?I"
+         by (simp add: A0 B22 filter_inf_def)
+        show "(\<exists>c  \<in> ?I. (c \<le> a) \<and>  (c \<le> b))"
+          by (meson B23 inf.cobounded1 inf.cobounded2)
+  qed
+  show ?thesis
+    by (simp add: B20 is_downdir_def)
+  qed
+  show ?thesis
+    by (simp add: FiltersAgain7.is_filter_def P0 P1 P2)
+qed
 
 lemma smallest_filter1:
   "is_filter {top::('X::bounded_semilattice_inf_top_Inf)}"
@@ -1098,12 +1165,14 @@ end
 
 section Meshing
 lemma mesh_prop1:
-  assumes A0:"{a}# F" and A1:"a \<subseteq> b"
+  assumes A0:"{a}# F" and A1:"a \<le> b"
   shows "{b}#F"
 proof-
-  have B0:"\<forall>f \<in> F. ((a \<inter> f) \<noteq> {})" by (meson A0 insertI1 meshes_def)
-  have B1:"\<forall>f \<in> F. ((a \<inter> f) \<subseteq> (b \<inter> f))" by (simp add: A1 inf.coboundedI1)
-  have B2:"\<forall>f \<in> F. (b \<inter> f \<noteq> {})"  using B0 B1 by fastforce
+  have B0:"\<forall>f \<in> F. ((inf a f) \<noteq> bot)"
+       by (meson A0 insertI1 meshes_def)
+  have B1:"\<forall>f \<in> F. ((inf a f) \<le> (inf b f))" by (simp add: A1 inf.coboundedI1)
+  have B2:"\<forall>f \<in> F. ((inf b f) \<noteq> bot)"
+    using B0 B1 bot.extremum_uniqueI by fastforce
   with B2 show ?thesis by (simp add: meshes_def)
 qed
 
@@ -1114,16 +1183,16 @@ lemma mesh_prop2:
 
 lemma mesh_prop3:
   assumes A0:"is_filter F \<and> is_filter G" and
-          A1:"{} \<notin> F \<and> {} \<notin> G"
-  shows "F \<subseteq> G \<longrightarrow> F#G"
+          A1:"bot \<notin> F \<and> bot \<notin> G"
+  shows "F \<le> G \<longrightarrow> F#G"
 proof
-  assume A1:"F \<subseteq> G"
+  assume A1:"F \<le> G"
   show "F#G"
   proof-
-    have P0:"\<forall>f \<in>F. \<forall>g \<in> G. f \<inter> g \<noteq> {}"
+    have P0:"\<forall>f \<in>F. \<forall>g \<in> G. (inf f g) \<noteq> bot"
     proof
       fix f assume B0:"f \<in> F"
-      show "\<forall>g \<in> G. f \<inter> g \<noteq> {}"
+      show "\<forall>g \<in> G. inf f g \<noteq> bot"
       proof
         fix g assume B1:"g \<in> G"
         have B2:"f \<in> G" 
@@ -1132,8 +1201,8 @@ proof
           by (simp add: assms)
         have B4:"is_pisystem G"
           using is_filter_def assms downdir_up_pisystem by auto
-        have B5:"f \<inter> g \<in> G" using B1 B2 B4 is_pisystem_def by auto
-        show "f \<inter> g \<noteq> {}"
+        have B5:"(inf f g) \<in> G" using B1 B2 B4 is_pisystem_def by auto
+        show "inf f g \<noteq> bot"
           using B5 assms(2) by fastforce 
       qed
     qed
@@ -1183,11 +1252,11 @@ lemma mesh_prop9:
   by (metis inf_commute meshes_def)
 
 lemma mesh_prop10:
-   "A#B \<longleftrightarrow> B \<subseteq> grill A"
+   "A#B \<longleftrightarrow> B \<le> grill A"
   using mesh_prop8 mesh_prop9 by blast
 
 lemma mesh_prop11:
-   "A \<subseteq> grill B \<longleftrightarrow> B \<subseteq> grill A"
+   "A \<le> grill B \<longleftrightarrow> B \<le> grill A"
   using mesh_prop10 mesh_prop8 by auto
 
 lemma mesh_prop12:
