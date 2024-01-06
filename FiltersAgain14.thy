@@ -59,7 +59,7 @@ Every proper filter in a topped distributive lattice is the inf of finer ultrafi
 
 
 lemma moore_family_imp:
-  "\<And>C. is_moore_family C \<Longrightarrow>(\<And>a. has_min (ub_set_in {a} C))"  
+  "\<And>C. is_moore_family C \<Longrightarrow>(\<And>a. has_min (principal_filter_in a C))"  
   by (simp add: is_moore_family_def)
 
 lemma moore_family_imp_ne:
@@ -68,7 +68,7 @@ lemma moore_family_imp_ne:
 
 lemma moore_family_if_lpf:
   assumes "C \<noteq> {}"
-  shows "is_moore_family C \<longleftrightarrow> (\<forall>a. has_min (ub_set_in {a} C))"
+  shows "is_moore_family C \<longleftrightarrow> (\<forall>a. has_min (principal_filter_in a C))"
   by (simp add: assms is_moore_family_def)
 
 lemma top_principal_filter:
@@ -145,13 +145,13 @@ qed
 lemma moore_closure_imp:
   fixes C::"'X::order set"
   assumes A0:"is_moore_family C"
-  shows "\<forall>x. (moore_to_closure C) x = InfUn (ub_set_in {x} C)"
+  shows "\<forall>x. (moore_to_closure C) x = InfUn (principal_filter_in x C)"
   by (simp add: moore_to_closure_def)
 
 lemma moore_family_is_cofinal:
   fixes C::"'X::order set"
   assumes A0:"is_moore_family C"
-  shows "\<forall>x. ub_set_in {x} C \<noteq> {}"
+  shows "\<forall>x. principal_filter_in x C \<noteq> {}"
   using assms has_min_iff2 is_moore_family_def min_imp_ne by auto
 
 
@@ -184,7 +184,7 @@ qed
 lemma moore_closure_imp_csemilattice_inf:
   fixes C::"'X::complete_semilattice_inf set"
   assumes A0:"is_moore_family C"
-  shows "\<forall>x. (moore_to_closure C) x = Inf(ub_set_in {x} C)"
+  shows "\<forall>x. (moore_to_closure C) x = Inf(principal_filter_in x C)"
   by (simp add: assms complete_semilattice_inf_is_inf2 moore_family_is_cofinal moore_to_closure_def)
 
 
@@ -202,7 +202,7 @@ proof-
 qed
 
 lemma principle_filter_anti:
-  "\<And>(x1::'a::order) x2 X. x1 \<le> x2 \<Longrightarrow> (ub_set_in {x2} X) \<subseteq>  (ub_set_in {x1} X)"
+  "\<And>(x1::'a::order) x2 X. x1 \<le> x2 \<Longrightarrow> (principal_filter_in x2 X) \<subseteq>  (principal_filter_in x1 X)"
   by (simp add: order_trans subset_eq ub_set_in_mem_iff)
 
 
@@ -232,7 +232,7 @@ proof-
     proof 
       fix x
       let ?y1="?f x" and ?y2="?f (?f x)"
-      let ?Px="ub_set_in {x} C" and ?Pfx="ub_set_in {?y1} C"
+      let ?Px="principal_filter_in x C" and ?Pfx="principal_filter_in ?y1 C"
       have C2B0:"?y1 \<in> ?Px"
         by (metis assms has_min_iff2 inf_is_inf is_inf_def is_inf_unique is_max_iff is_min_iff lb_set_mem_iff has_min_has_inf moore_family_imp moore_to_closure_def)
       have C2B1:"?y2 \<in> ?Pfx"
@@ -262,7 +262,7 @@ lemma moore_to_closure_is_idempotent2:
 proof
   fix c assume A1:"c \<in> C"
   define f where "f=(moore_to_closure C)"
-  have B0:"f(c) = InfUn(ub_set_in {c} C)"
+  have B0:"f(c) = InfUn(principal_filter_in c C)"
     by (simp add: assms f_def moore_closure_imp)
   have B1:"... = c"
     by (metis A1 B0 assms f_def inf_is_inf is_extensive_def is_inf_def is_max_iff is_max_singleton
@@ -281,11 +281,11 @@ lemma moore_to_closure_is_idempotent3:
 proof
   fix c 
   assume A1:"f(c) = c"
-  have B0:"... = InfUn(ub_set_in {c} C)"
+  have B0:"... = InfUn(principal_filter_in c C)"
     by (metis A1 f_def moore_to_closure_def)
-  have B1:"... = min (ub_set_in {c} C)"
+  have B1:"... = min (principal_filter_in c C)"
     by (simp add: assms has_least_imp_inf_eq_least moore_family_imp)
-  have B2:"c \<in> ub_set_in {c} C"
+  have B2:"c \<in> principal_filter_in c C"
     by (metis A0 B0 B1 has_sup_in_def is_min_iff is_sup_in_def moore_family_imp
          sup_in_degenerate supin_is_sup ub_set_in_degenerate)
   show "c \<in> C"
@@ -349,10 +349,10 @@ lemma complete_semilattice_sup_inf_closed_then_moore:
   assumes A0:"C \<noteq> {}" and A0:"\<And>E. (E \<in> Pow(C) \<and> (has_inf E)) \<Longrightarrow> (InfUn E) \<in> C"
   shows "is_moore_family C"
 proof-
-    have P:"\<forall>x. has_min (ub_set_in {x} C)"
+    have P:"\<forall>x. has_min (principal_filter_in x C)"
     proof
       fix x
-      define Cx where "Cx= ub_set_in {x} C"
+      define Cx where "Cx= principal_filter_in x C"
       have B0:"x \<in> lb_set Cx"
         by (metis Cx_def lb_set_mem_iff singletonI ub_set_in_mem)
       have B1:"lb_set Cx \<noteq> {}"
@@ -370,7 +370,7 @@ proof-
         using B3 i_def inf_is_inf is_inf_def is_max_iff by blast
       have B8:"is_min i Cx"
         using B6 B7 is_min_def lb_set_in_lb_univ by fastforce
-      show "has_min (ub_set_in {x} C)"
+      show "has_min (principal_filter_in x C)"
         using B8 Cx_def has_min_def by blast
     qed
     show ?thesis
@@ -625,42 +625,46 @@ proof-
     by (simp add: B3 B6)
 qed
 
+lemma cofinal_imp_nonempty_principal:
+  assumes A0:"UNIV is_cofinal_in C"
+  shows "\<forall>x. (principal_filter_in x C) \<noteq> {}"
+  using assms is_cofinal_in_imp_ub_in_ne by blast
 
-definition is_cofinal::"'a::order set \<Rightarrow> bool" where 
-  "is_cofinal C \<equiv> (\<forall>x. ub_set_in {x} C \<noteq> {})"
-
-definition ne_inf_closed::"'a::order set \<Rightarrow> bool" where
-  "ne_inf_closed C \<equiv>  (\<forall>A \<in> Pow(C). A \<noteq> {} \<longrightarrow>  (has_inf_in A C) \<and> (InfIn A C) = (InfUn A))"
+definition temp_condition::"'a::order set \<Rightarrow> bool" where
+  "temp_condition C \<equiv> (\<forall>A. (A \<noteq> {} \<and> A \<subseteq> C) \<longrightarrow> (InfIn A C = InfUn A))"
 
 lemma moore_family_is_complete_semilattice_inf_converse:
   fixes C::"'a::complete_semilattice_inf set"
   assumes A0:"C \<noteq> {}" and 
-          A1:"is_cofinal C" and
-          A2:"ne_inf_closed C"
+          A1:"UNIV is_cofinal_in C" and
+          A2:"is_inf_complete C" and
+          A3:"\<And>A. (A \<noteq> {} \<and> A \<subseteq> C) \<Longrightarrow>  (InfIn A C = InfUn A)"
   shows "is_moore_family C"
 proof-
-  have B0:"\<forall>a.  has_min (ub_set_in {a} C)"
+  have B0:"\<forall>a. has_min (principal_filter_in a C)"
   proof
     fix a::"'a::complete_semilattice_inf"
-    define A where "A=(ub_set_in {a} C)"
+    define A where "A=(principal_filter_in a C)"
     have B1:"A \<noteq> {} \<and> A \<subseteq> C"
-      using A1 A_def is_cofinal_def ub_set_in_subset by blast
-    have B2:"has_inf_in A C \<and> (InfIn A C) = (InfUn A)"
-      by (meson A2 B1 PowI ne_inf_closed_def)
+      by (simp add: A1 A_def cofinal_imp_nonempty_principal ub_set_in_subset)
+    have B2:"has_inf_in A C"
+      using A2 B1 is_inf_complete_def by auto
+    have B2b:"(InfIn A C = InfUn A)"
+      by (simp add: A3 B1)
     define i where "i=InfIn A C"
     have B3:"i \<in> C"
       using B2 i_def infin_is_inf is_inf_in_imp1 lb_set_in_mem_iff by blast
     have B4:"a \<in> lb_set A "
       by (simp add: A_def lb_set_mem_iff ub_set_in_imp)
     have B5:"a \<le> i"
-      by (simp add: B1 B2 B4 complete_semilattice_inf_greatest complete_semilattice_infun_eq_inf i_def)
+      by (simp add: B1 B2b B4 complete_semilattice_inf_greatest complete_semilattice_infun_eq_inf i_def)
     have B6:"i \<in> A"
       by (simp add: B5 B3 A_def ub_set_in_def)
     have B7:"i \<in> lb_set A"
-      by (simp add: B1 B2 complete_semilattice_infun_is_inf i_def is_inf_imp1)
+      by (simp add: B1 B2b complete_semilattice_infun_is_inf i_def is_inf_imp1)
     have B8:"is_min i A"
       by (simp add: B6 B7 is_min_if1)
-    show "has_min (ub_set_in {a} C)"
+    show "has_min (principal_filter_in a C)"
       using A_def B8 is_min_imp_has_min by blast
   qed
   show ?thesis
@@ -670,13 +674,13 @@ qed
 lemma moore_family_iff_cofinal_ac:
   fixes C::"'a::complete_semilattice_inf set"
   assumes A0:"C \<noteq> {}" 
-  shows "is_moore_family C \<longleftrightarrow> (is_cofinal C) \<and> (ne_inf_closed C)" (is "?L \<longleftrightarrow> ?R")
+  shows "is_moore_family C \<longleftrightarrow> (UNIV is_cofinal_in C) \<and> (temp_condition C) \<and> (is_inf_complete C)" (is "?L \<longleftrightarrow> ?R")
 proof
   assume L:?L show ?R
-    by (simp add: L ne_inf_closed_def is_cofinal_def moore_family_is_cofinal moore_family_is_complete_semilattice_inf)
+    by (simp add: L is_cofinal_in_if_ub_in_ne is_inf_complete_def moore_family_is_cofinal moore_family_is_complete_semilattice_inf temp_condition_def)
   next
   assume R:?R show ?L
-    by (simp add: R assms moore_family_is_complete_semilattice_inf_converse)
+    by (meson R assms moore_family_is_complete_semilattice_inf_converse temp_condition_def)
 qed
 
 lemma filter_topped:
@@ -783,8 +787,7 @@ proof-
     qed
   qed
   have RtL:"(\<forall>x y. (x \<in> X \<and> y \<in> X) \<longleftrightarrow> (inf x y) \<in> X)\<longrightarrow> is_filter X"
-    by (metis is_filter_def assms binf_def downdir_up_pisystem inf.orderE is_inhabited_def 
-        is_pisystem_def is_upclosed_def semilattice_inf_infp_eq_small_inf)
+    by (metis PartialOrders.is_filter_def assms downdir_up_pisystem inf.orderE is_inhabited_def is_pi_system_imp is_upclosed_def)
   show ?thesis
     using LtR RtL by blast
 qed
@@ -815,11 +818,11 @@ proof-
     have B3:"E \<in> Pow (A) \<and> finite E \<and> E \<noteq> {}"
       using A1 B2 E_def by auto
     have B4:"\<forall>y \<in> Ex. (fInf E) \<le> (fInf (g y))"
-      by (metis B2 B3 E_def SUP_upper subset_imp)
+      by (metis B2 B3 E_def SUP_upper semilattice_inf_class.subset_imp)
     have B5:"\<forall>y \<in> Ex. (fInf E) \<le> y"
       using B2 B4 order.trans by blast
     have B6:"(fInf E) \<le> (fInf Ex)"
-      by (simp add: A1 B5 boundedI)
+      by (simp add: A1 B5 semilattice_inf_class.boundedI)
     have B7:"(fInf E) \<le> x"
       using A1 B6 order.trans by blast
     show "x \<in> filter_closure A"
@@ -891,7 +894,7 @@ proof-
       have B0B2:"Sc \<in> Pow(E) \<and> finite Sc \<and> Sc \<noteq> {}"
         using B0A1 B0A2 B0A3 by auto
       have B0B3:"(fInf Sc) \<le> (fInf Sa) \<and> (fInf Sc) \<le>(fInf Sb)"
-        by (simp add: B0A1 B0A2 B0A3 subset_imp)
+        by (simp add: B0A1 B0A2 B0A3 semilattice_inf_class.subset_imp)
       have B0B4:"(fInf Sc) \<le> a \<and> (fInf Sc) \<le> b"
         using B0A1 B0A2 B0B3 dual_order.trans by blast
       show "\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)"
@@ -2467,7 +2470,7 @@ proof-
     have B01:"... = (InfUn {(f x1), (f x2)})"
       by (metis (mono_tags, lifting) assms image_insert image_is_empty is_join_dual_def)
     have B02:"... \<le> (f x1)"
-      by (simp add: semilattice_inf_infp_eq)
+      by (simp add: semilattice_inf_finf_eq)
     show "(f x2) \<le> (f x1)"
       using B00 B01 B02 by auto
   qed
