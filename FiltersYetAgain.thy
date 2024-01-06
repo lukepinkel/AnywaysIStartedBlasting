@@ -11,7 +11,8 @@ declare [[show_sorts]]
 declare [[show_consts]]
 
 
-(*\strikethrough{6th7th8th9th10th11th12th times the charm last one I swear} (it wasnt the last time) 
+(*
+\strikethrough{6th7th8th9th10th11th12th times the charm last one I swear} (it wasnt the last time) 
 *)
 
 (*
@@ -1221,6 +1222,11 @@ proof-
     using A1 B0 by blast
 qed
 
+lemma has_max_lb:
+  assumes A0:"has_max (lb_set_in (A::'a::order set) B)"
+  shows "is_inf_in (InfIn A B) A B"
+  by (simp add: assms has_inf_in_def infin_is_inf)
+
 lemma inf_is_inf:
   assumes A0:"has_inf (A::'a::order set)"
   shows "is_inf (InfUn A) A"
@@ -1245,6 +1251,11 @@ proof-
     using A1 B0 by blast
 qed
 
+lemma has_min_ub:
+  assumes A0:"has_min (ub_set_in (A::'a::order set) B)"
+  shows "is_sup_in (SupIn A B) A B"
+  by (simp add: assms has_sup_in_def supin_is_sup)
+
 lemma sup_is_sup:
   assumes A0:"has_sup (A::'a::order set)"
   shows "is_sup (SupUn A) A"
@@ -1262,9 +1273,17 @@ lemma complete_semilattice_sup_is_sup:
   "\<forall>(A::'X::complete_semilattice_sup set). (is_sup (Sup A) A)"
   by (simp add: CSup_least CSup_upper is_sup_if3)
 
+lemma complete_semilattice_sup_is_sup2:
+  "\<forall>(A::'X::complete_semilattice_sup set). SupUn A = Sup A"
+  using complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def is_sup_unique sup_is_sup by blast
+
 lemma complete_semilattice_inf_is_inf:
   "\<forall>(A::'X::complete_semilattice_inf set). (is_inf (Inf A) A)"
   by (simp add: CInf_greatest CInf_lower is_inf_if3)
+
+lemma complete_semilattice_inf_is_inf2:
+  "\<forall>(A::'X::complete_semilattice_inf set). InfUn A = Inf A"
+  using complete_semilattice_inf_is_inf has_inf_def has_max_iff2 inf_is_inf is_inf_def is_inf_unique by blast
 
 
 lemma lb_set_in_univ_absorb:
@@ -1492,6 +1511,25 @@ proof-
     by (metis B2 has_inf_def has_max_iff2 is_inf_def is_inf_inf_eq)
 qed
 
+lemma sup_in_expression:
+  "is_sup_in m A X \<longleftrightarrow> m \<in> (lb_set_in (ub_set_in A X) X) \<inter> (ub_set_in A X)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:"?L" show "?R"
+  by (metis IntI L is_min_imp is_sup_in_imp1 lb_set_in_lb_inter ub_set_in_mem_iff)
+  next
+  assume R:"?R" show "?L"
+    by (metis IntD2 R inf_commute is_min_if1 is_sup_in_def lb_set_in_lb_inter)
+qed
+
+lemma inf_in_expression:
+  "is_inf_in m A X \<longleftrightarrow> m \<in> (ub_set_in (lb_set_in A X) X) \<inter> (lb_set_in A X)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:"?L" show "?R"
+  by (metis IntI L is_max_imp is_inf_in_imp1 ub_set_in_ub_inter lb_set_in_mem_iff)
+  next
+  assume R:"?R" show "?L"
+    by (metis IntD2 R inf_commute is_inf_in_def is_max_if1 ub_set_in_ub_inter)
+qed
 
 lemma has_least_imp_inf_eq_least:
   fixes A::"'a::order set"
