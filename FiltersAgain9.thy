@@ -68,11 +68,26 @@ class complete_semilattice_sup = semilattice_sup + Sup +
 
 sublocale complete_semilattice_inf \<subseteq> semilattice_inf inf "(\<le>)" "(<)" ..
 
+sublocale complete_semilattice_sup \<subseteq> semilattice_sup sup "(\<le>)" "(<)" ..
+
 sublocale complete_lattice \<subseteq> semilattice_inf inf  "(\<le>)" "(<)" ..
+
+sublocale complete_lattice \<subseteq> semilattice_sup sup  "(\<le>)" "(<)" ..
 
 sublocale complete_boolean_algebra  \<subseteq> semilattice_inf inf  "(\<le>)" "(<)" ..
 
 sublocale complete_boolean_algebra  \<subseteq> semilattice_sup sup "(\<le>)" "(<)" ..
+
+sublocale complete_lattice \<subseteq> csls:complete_semilattice_sup
+  apply unfold_locales
+  apply (simp add: local.Sup_upper)
+  using local.Sup_least by blast
+
+
+sublocale complete_lattice \<subseteq> csli:complete_semilattice_inf
+  apply unfold_locales
+  apply (simp add: local.Inf_lower)
+  using local.Inf_greatest by blast
 
 
 subsection FunctionsOnPosets
@@ -758,9 +773,24 @@ subsubsection FiniteInfSupInCompleteLattice
 context complete_semilattice_sup
 begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
-lemma finf_complete_lattice:
+lemma fsup_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
   using local.CSup_least local.CSup_upper local.Sup_fin.boundedI local.Sup_fin.coboundedI local.Sup_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
+
+lemma complete_semilattice_sup_is_sup:
+  "\<forall>(A::'X::complete_semilattice_sup set). (is_sup (Sup A) A)"
+proof
+  fix A::"'X::complete_semilattice_sup set"
+  have B0:"(Sup A) \<in>(upper_bounds A)"
+    by (simp add: complete_semilattice_sup_class.CSup_upper upper_bound_req)
+  have B1:"\<forall>u \<in> upper_bounds A. (Sup A) \<le> u"
+    by (simp add: complete_semilattice_sup_class.CSup_least in_upper_bounds_imp)
+  have B2:"is_least (Sup A) (upper_bounds A)"
+    by (simp add: B0 B1 is_least_def is_lower_bound_def)
+  show "is_sup (Sup A) A"
+    by (simp add: B2 is_sup_def is_sup_in_def)
+qed
+
 end
 
 context complete_semilattice_inf
@@ -769,6 +799,22 @@ begin
 lemma finf_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fInf A = Inf A)"
   using local.CInf_greatest local.CInf_lower local.Inf_fin.bounded_iff local.Inf_fin.coboundedI local.Inf_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
+
+
+lemma complete_semilattice_inf_is_inf:
+  "\<forall>(A::'X::complete_semilattice_inf set). (is_inf (Inf A) A)"
+proof
+  fix A::"'X::complete_semilattice_inf set"
+  have B0:"(Inf A) \<in>(lower_bounds A)"
+    by (simp add: complete_semilattice_inf_class.CInf_lower lower_bound_req)
+  have B1:"\<forall>l \<in> lower_bounds A. (Inf A) \<ge> l"
+    by (simp add: complete_semilattice_inf_class.CInf_greatest in_lower_bounds_imp)
+  have B2:"is_greatest (Inf A) (lower_bounds A)"
+    by (simp add: B0 B1 is_greatest_def is_upper_bound_def)
+  show "is_inf (Inf A) A"
+    by (simp add: B2 is_inf_def is_inf_in_def)
+qed
+
 end
 
 
@@ -782,7 +828,21 @@ lemma finf_complete_lattice:
 lemma fsup_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
   using local.Sup_fin.eq_fold' local.Sup_fin_Sup local.eq_fold1 by presburger
+
 end
+
+
+lemma complete_lattice_inf_is_inf:
+  fixes A::"'a::complete_lattice set"
+  shows "(is_inf (Inf A) A)"
+  by (meson UNIV_I dual_order.refl in_lower_bounds_imp is_greatest_def is_inf_def is_inf_in_def is_upper_bound_def le_Inf_iff lower_bound_req)
+
+
+lemma complete_lattice_sup_is_sup:
+  fixes A::"'a::complete_lattice set"
+  shows "(is_sup (Sup A) A)"
+  by (meson Sup_le_iff UNIV_I csls.CSup_upper in_upper_bounds_imp is_least_def is_lower_bound_def is_sup_def is_sup_in_def upper_bound_req)
+
 
 (*de Morgans for finite sup and inf in complete boolean algebra*)
 
@@ -3393,25 +3453,26 @@ proof-
 qed
 
 
-definition covers::"'a::complete_semilattice_sup set \<Rightarrow> 'a::complete_semilattice_sup \<Rightarrow> bool" where
-  "covers A b \<equiv> (b \<le> Sup A) \<and> (A \<noteq> {}) "
+definition covers::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "covers A b \<equiv> (b \<in> lower_bounds A) \<and> (A \<noteq> {}) "
 
-definition is_finite_subcover::"'a::complete_semilattice_sup set \<Rightarrow> 
-                                'a::complete_semilattice_sup set \<Rightarrow> 
-                                'a::complete_semilattice_sup \<Rightarrow>  bool" where
- "is_finite_subcover S A b \<equiv> (S \<subseteq> A) \<and> (S \<noteq> {}) \<and> (finite S)  \<and> (b \<le> Sup S)"
+definition is_finite_subcover::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>   'a::order \<Rightarrow>  bool" where
+ "is_finite_subcover S A b \<equiv> (S \<subseteq> A) \<and> (S \<noteq> {}) \<and> (finite S)  \<and> (b \<in> lower_bounds S)"
 
-definition is_compact::"'a::complete_semilattice_sup \<Rightarrow> bool" where
+definition is_compact::"'a::order \<Rightarrow> bool" where
   "is_compact b \<equiv> (\<forall>A. (covers A b) \<longrightarrow> (\<exists>S. is_finite_subcover S A b))"
 
 definition is_directed::"'a::ord set \<Rightarrow> bool" where 
   "is_directed D \<equiv> (D \<noteq> {}) \<and> (\<forall>A \<in> Pow D. (A \<noteq> {} \<and> finite A) \<longrightarrow> (\<exists>u \<in> D. is_upper_bound u A))"
 
-definition directed_covering::"'a::complete_semilattice_sup \<Rightarrow> 'a::complete_semilattice_sup set \<Rightarrow> bool" where
+definition directed_covering::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "directed_covering a D \<equiv> (covers D a) \<and> is_directed D"
 
+definition is_compactly_generated::"'a::order set  \<Rightarrow> bool" where
+  "is_compactly_generated X \<equiv> (\<forall>x \<in> X. (\<exists>Cx. (\<forall>c \<in> Cx. is_compact c) \<and> (is_sup x Cx)))"
+
 lemma compact_lattice_imp:
-  fixes c::"'a::complete_semilattice_sup"
+  fixes c::"'a::order"
   assumes A0:"is_compact c"
   shows "\<And>D. directed_covering c D \<longrightarrow> (\<exists>d \<in> D. c \<le> d)"
 proof
@@ -3425,19 +3486,32 @@ proof
   obtain d where A3:"d \<in> D \<and> is_upper_bound d S"
     by (meson A1 B1 PowI directed_covering_def is_directed_def)
   show "(\<exists>d \<in> D. c \<le> d)"
-    by (meson A2 A3 CSup_least is_finite_subcover_def is_upper_bound_def order_trans)
+    by (meson A3 B0 covers_def in_lower_bounds_imp)
 qed
 
+lemma order_sup_singleton:
+  fixes a::"'a::order"
+  shows "is_sup a {a}"
+  proof-
+    have B0:"a \<in> upper_bounds {a}"
+      by (metis dual_order.refl singletonD upper_bound_req)
+    have B1:"\<forall>u \<in> upper_bounds {a}. a \<le> u"
+      by (simp add: in_upper_bounds_imp)
+    have B2:"is_least a (upper_bounds {a})"
+      by (simp add: B0 B1 is_least_def is_lower_bound_def)
+    show ?thesis
+      by (simp add: B2 is_sup_def is_sup_in_def)
+qed
 
 lemma compact_lattice_if:
-  fixes c::"'a::complete_semilattice_sup"
+  fixes c::"'a::complete_lattice"
   assumes A0:"\<And>D. directed_covering c D \<longrightarrow> (\<exists>d \<in> D. c \<le> d)"
   shows "is_compact c"
 proof-
   have B0:"(\<And>A. (covers A c) \<longrightarrow> (\<exists>S. is_finite_subcover S A c))"
   proof
     fix A assume A1:"covers A c"
-    define B where A2:"B={x. \<exists>S. S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> x=fSup S}"
+    define B where A2:"B \<equiv> {x. (\<exists>S. S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> (x=fSup S))}"
     have B1:"is_directed B"
     proof-
       have B2:"B \<noteq> {}"
@@ -3488,19 +3562,19 @@ proof-
         by (metis (mono_tags, lifting) A2 B12 CollectI) 
     qed
     have B13:"Sup A \<le> Sup B"
-      by (meson B11 CSup_least CSup_upper subset_eq)
+      by (simp add: B11 Sup_subset_mono)
     have B14:"c \<le> Sup B"
-      by (meson A1 B13 covers_def dual_order.trans)
+      by (metis A1 B13 covers_def dual_order.trans in_lower_bounds_imp less_eq_Sup)
     obtain b where A8:"b \<in> B \<and> c \<le> b"
-      by (metis B1 B14 assms covers_def directed_covering_def is_directed_def)
+      by (metis A1 B11 covers_def in_lower_bounds_imp subset_empty subset_eq)
     obtain S where A9:"S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> fSup S = b"
       using A2 A8 by blast
     have B15:"c \<le> fSup S"
       by (simp add: A8 A9)
     have B16:"fSup S = Sup S"
-      using A9 complete_semilattice_sup_class.finf_complete_lattice by auto
+      using A9 complete_lattice_class.fsup_complete_lattice by blast
     have B16:"is_finite_subcover S A c"
-      by (metis A9 B15 B16 is_finite_subcover_def)
+      by (meson A1 A9 covers_def in_lower_bounds_imp is_finite_subcover_def lower_bound_req subset_eq)
     show "(\<exists>S. is_finite_subcover S A c)"
       using B16 by blast
   qed
@@ -3544,6 +3618,233 @@ proof(rule ccontr)
   show False
     using A2 B2 assms dual_order.antisym in_upper_bounds_imp by blast
 qed
+
+lemma meet_irreducible_in_complete_lattice_iff:
+  fixes m::"'a::complete_lattice"
+  assumes A0:"m \<noteq> top"
+  shows "\<not>(is_meet_reducible m) \<longleftrightarrow> (m < Inf {x. m < x})"
+proof
+  assume A1:"\<not>(is_meet_reducible m)"
+  have B0:"{x. m < x} \<noteq> {}"
+    using assms top.not_eq_extremum by auto
+  have B1:"m \<le> Inf {x. m < x}"
+    using le_Inf_iff order_le_less by auto
+  show "(m < Inf {x. m < x})"
+  proof-
+    let ?L="{x. m <x}"
+    have B5:"\<not>(m < Inf {x. m < x}) \<longrightarrow> \<not>\<not>(is_meet_reducible m)"
+    proof
+    assume A2:"\<not>(m < Inf {x. m < x})"
+      have B2:"m \<ge> Inf {x. m <x}"
+        using A2 B1 by auto
+      have B3:"m = Inf {x. m <x}"
+        using A2 B1 by auto
+      have B4:"m \<notin> {x. m < x}"
+        by simp
+      have B5:"is_inf (Inf ?L) ?L"
+      proof-
+        have B50:"Inf ?L \<in> lower_bounds ?L"
+          by (meson Inf_lower lower_bound_req)
+        have B51:"is_greatest (Inf ?L) (lower_bounds ?L)"
+          by (meson B50 Inf_greatest in_lower_bounds_imp is_greatest_def is_upper_bound_def)
+        show ?thesis
+          by (simp add: B51 is_inf_def is_inf_in_def)
+      qed
+      have B3:"(is_meet_reducible m)"
+        by (metis B0 B3 B4 B5 is_meet_reducible_def)
+      show "\<not>\<not>(is_meet_reducible m)"
+        by (simp add: B3)
+      qed
+    show ?thesis
+      using A1 B5 by auto
+  qed
+  next
+  assume A3:"(m < Inf {x. m < x})"
+  show "\<not>(is_meet_reducible m)"
+  proof-
+     have B6:"(is_meet_reducible m) \<longrightarrow> \<not>(m < Inf {x. m < x})"
+     proof
+      assume A4:"is_meet_reducible m"
+      obtain A where A5:"A \<noteq> {} \<and> m \<notin> A \<and> is_inf m A"
+        using A4 is_meet_reducible_def by auto
+      have B7:"\<forall>x \<in> A. m < x"
+        using A5 is_inf_imp_lb by fastforce
+      have B8:"m \<le> Inf {x. m < x}"
+        by (simp add: A3 order_le_less)
+      show " \<not>(m < Inf {x. m < x})"
+        by (metis (full_types) A5 B7 B8 CollectI Inf_lower antisym_conv2 is_inf_imp_greatest_lb2 order_antisym)
+      qed
+    show ?thesis
+      using A3 B6 by auto
+  qed 
+qed
+
+
+lemma complete_semilattice_inf_least:
+  fixes A::"'a::complete_semilattice_inf set"
+  shows "\<forall>l \<in> lower_bounds A. l \<le> Inf A"
+  by (simp add: CInf_greatest in_lower_bounds_imp)
+
+lemma complete_semilattice_lb_le_sup:
+  fixes A::"'a::complete_lattice set"
+  assumes "A \<noteq> {}"
+  shows "\<forall>l \<in> lower_bounds A. l \<le> Sup A"
+  by (meson Sup_upper2 assms equals0I in_lower_bounds_imp)
+
+(*
+lemma compactly_generated_lattice_elements:
+  fixes x::"'a::complete_lattice" and
+        X::"'a::complete_lattice set"
+  assumes A0:"x \<in> X" and 
+          A1:"is_compactly_generated X" and
+          A2:"\<forall>(y::'a::complete_lattice). y \<le> (top::'a::complete_lattice)" and
+          A3:"top \<in> X" and 
+          A4:"\<forall>(A::'a::complete_lattice set) \<in> Pow X. (\<exists>i \<in> X. is_inf i A)"
+  shows "is_inf x {m \<in> X. x \<le> m \<and> \<not>(is_meet_reducible m)}"
+proof-
+  define M where "M={m \<in> X. x \<le> m \<and> \<not>(is_meet_reducible m)}"
+  have B0:"\<not>(is_meet_reducible (top::'a::complete_lattice))"
+    by (simp add: A2 top_is_meet_irreducible)
+  have B1:"top \<in> M"
+    by (simp add: A2 A3 M_def top_is_meet_irreducible)
+  have B0:"M \<noteq> {}"
+    using B1 by auto  
+  have T:"is_inf x M"
+  proof(rule ccontr)
+    assume A4:"\<not> (is_inf x M)"
+    have B2:"x \<in> lower_bounds M"
+      by (metis (mono_tags, lifting) CollectD M_def lower_bound_req)
+    have B3:"\<forall>m \<in> M. x < m"
+      by (metis A4 B2 UNIV_I in_lower_bounds_imp is_greatest_def is_inf_def
+           is_inf_in_def is_upper_bound_def nless_le)
+    let ?i="SOME i. (i \<in> X) \<and> (is_inf i M)"
+    have B4:"(\<forall>x \<in> X. (\<exists>Cx. (\<forall>c \<in> Cx. is_compact c) \<and> (x = Sup Cx)))"
+      by (metis all_not_in_conv ccpo_Sup_singleton compact_lattice_if covers_def directed_covering_def in_lower_bounds_imp)
+    have B5:"\<exists>i.  (i \<in> X) \<and> (is_inf i M)"
+      using M_def assms(5) by auto
+    have B6:"?i \<in> X "
+      by (metis (no_types, lifting) B5 verit_sko_ex')
+    obtain K where  A5:"(\<forall>c \<in> K. is_compact c) \<and> (?i = Sup K)"
+      using B4 B6 by blast
+    have B70:"\<exists>k \<in> K. \<not>(k \<le> x)"
+    proof(rule ccontr)
+      assume A6:"\<not>(\<exists>k \<in> K. \<not>(k \<le> x))"
+      have B71:"?i \<le> x"
+        using A5 A6 Sup_le_iff by auto
+      have B72:"?i=x"
+        by (metis (no_types, lifting) B2 B5 B71 antisym is_inf_imp_greatest_lb1 verit_sko_ex')
+      have B73:"is_inf x M"
+         by (metis B5 B72 someI_ex) 
+      show "False"
+        using A4 B73 by auto
+    qed 
+    obtain k where A7:"k \<in> K \<and> \<not>(k \<le> x)"
+      using B70 by auto
+    define \<A> where A8:"\<A> = {A \<in> Pow X. x \<in> lower_bounds A \<and> k \<notin> lower_bounds A}"
+    have B8:"{x} \<in> Pow X \<and> x \<in> lower_bounds {x} \<and> k \<notin> lower_bounds {x}"
+      by (metis A0 A7 PowD PowI Pow_bottom dual_order.refl in_lower_bounds_imp insert_subsetI lower_bound_req singletonD singletonI)
+    have B9:"\<A> \<noteq> {}"
+      using A8 B8 by blast
+    have B10:"\<And>\<C>. \<C> \<in> chains \<A> \<and> \<C> \<noteq> {} \<longrightarrow> (\<Union>\<C>)\<in> \<A>"
+    proof
+      fix \<C> assume A9:"\<C> \<in> chains \<A> \<and> \<C> \<noteq> {}"
+      define A where A10:"A=(\<Union>\<C>)"
+      have B100:"A \<noteq> {}"
+      proof-
+        obtain C where A101:"C \<in> \<C> \<and> C \<noteq> {}"
+          using A8 A9 chainsD2 lower_bound_req by force
+        show ?thesis
+          using A10 A101 by blast
+      qed
+      have B101:"x \<in> lower_bounds A"
+      proof-
+        have B1010:"\<forall>a \<in> A. x \<le> a"
+        proof
+          fix a assume A11:"a \<in> A"
+          obtain C where A12:"C \<in> \<C> \<and> a \<in> C"
+            using A10 A11 by blast
+          have B10100:"x \<in> lower_bounds C"
+            using A12 A8 A9 chainsD2 by auto
+          show "x \<le> a"
+            using A12 B10100 in_lower_bounds_imp by blast
+        qed
+        show ?thesis
+          by (simp add: B1010 lower_bound_req)
+      qed
+      have B102:"k \<notin> lower_bounds A"
+      proof(rule ccontr)
+        assume A13:"\<not>(k \<notin> lower_bounds A)"
+        have B1020:"k \<in> lower_bounds A"
+          using A13 by auto
+        have B1021:"\<forall>l \<in> lower_bounds A. l \<le> Sup A"
+          using B100 complete_semilattice_lb_le_sup by blast
+        have B1022:"k \<le> Sup A"
+          by (simp add: B1020 B1021)
+        have B1023:"covers A k"
+          using A13 B100 covers_def by auto
+        obtain S where A14:"is_finite_subcover S A k"
+          using A5 A7 B1023 is_compact_def by blast
+        define StC where A15:"StC = (\<lambda>s. SOME C. C \<in> \<C> \<and> s \<in> C)"
+        have B1024:"\<forall>s \<in> S. \<exists>C \<in> \<C>. s \<in> C"
+          by (metis A10 UnionE A14 is_finite_subcover_def subset_eq)
+        have B1025:"finite (StC`S)"
+          by (meson A14 finite_imageI is_finite_subcover_def)
+        have B1026:"\<forall>C \<in> (StC`S). C \<in> \<C>"
+          by (smt (verit, best) A15 B1024 imageE verit_sko_ex')
+        have B1027:"\<And>Ci Cj. (Ci \<in> (StC`S) \<and>  (Cj \<in> StC`S)) \<longrightarrow> (Ci \<le> Cj) \<or> (Cj \<le> Ci)"
+        proof
+          fix Ci Cj assume A16:"(Ci \<in> (StC`S) \<and>  (Cj \<in> StC`S))"
+          have B10271:"Ci \<in> \<C> \<and> Cj \<in> \<C>"
+            using A16 B1026 by blast
+          show "(Ci \<le> Cj) \<or> (Cj \<le> Ci)"
+            by (smt (verit, ccfv_SIG) A10 A13 A8 A9 B10271 chainsD2 csls.CSup_upper
+                in_lower_bounds_imp lower_bound_req mem_Collect_eq subset_eq)
+        qed
+        have B1028:"(StC`S) \<subseteq> \<C>"
+          by (simp add: B1026 subsetI)
+        have B1029:"(\<forall>Ci\<in>(StC`S). \<forall>Cj\<in>(StC`S). Ci \<subseteq> Cj \<or> Cj \<subseteq> Ci)"
+          using B1027 by blast
+        have B1030:"(StC`S) \<in> chains \<C>"
+          by (simp add: B1028 B1029 chain_subset_def chains_def)
+        obtain Cj where A18:"Cj \<in> (StC`S) \<and> (\<forall>Ci \<in> (StC`S). Ci \<subseteq> Cj)"
+          by (metis A14 B1025 B1029 finite_has_maximal image_is_empty is_finite_subcover_def)
+        have B1031:"\<forall>s \<in> S. \<exists>Ci \<in> (StC`S). s \<in> Ci"
+          by (metis (mono_tags, lifting) B1024 A15 imageI someI_ex)
+        have B1032:"S \<subseteq> Cj"
+          by (meson A18 B1031 subset_eq)
+        have B1033:"k \<in> lower_bounds Cj"
+          using A10 A18 B1020 B1026 in_lower_bounds_imp lower_bound_req by fastforce
+        show "False"
+          using A18 A8 A9 B1026 B1033 chainsD2 by auto
+      qed
+      show "A \<in> \<A>"
+        using A10 A8 A9 B101 B102 chainsD2 by fastforce
+    qed
+    have B104:"\<And>\<C>. \<lbrakk>\<C>\<noteq>{}; subset.chain \<A> \<C>\<rbrakk> \<Longrightarrow> \<Union>\<C> \<in> \<A>"
+      by (simp add: B10 chains_alt_def)
+    have B105:"\<exists>Mx\<in>\<A>. \<forall>A\<in>\<A>. Mx \<subseteq> A \<longrightarrow> A = Mx"
+      using B9 B104 subset_Zorn_nonempty by blast
+    obtain Mx where A20:"Mx \<in> \<A> \<and> (\<forall>A\<in>\<A>. Mx \<subseteq> A \<longrightarrow> A = Mx)"
+      using B105 by blast
+    define m where "m=Sup Mx"
+    have B106:"\<not>(is_meet_reducible m)"
+    proof-
+      have B1060:"m < Inf {z. m < z}"
+      proof-
+      have B10600:"\<And>z. m < z \<longrightarrow> z \<notin> Mx"
+        using csls.CSup_upper less_le_not_le m_def by auto
+      have B10601:"{z. m < z} \<noteq> {}"
+      proof-
+        have "\<not>(k \<le> m)"
+        have "sup m k > m"
+    show "False"
+*)
+
+
+
+
+
+
 
 end
 
