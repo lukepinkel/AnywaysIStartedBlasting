@@ -315,6 +315,58 @@ qed
 lemma infinite: "\<not> finite A \<Longrightarrow> fSup A = the None"
   unfolding eq_fold1 by (cases "finite (UNIV::'a set)") (auto intro: finite_subset fold_infinite)
 
+lemma upper_bounded_iff:
+  assumes "finite A" and "A \<noteq> {}"
+  shows "fSup A \<le> x \<longleftrightarrow> (\<forall>a\<in>A. a \<le> x)"
+  using assms by (induct rule: finite_ne_induct) simp_all
+
+lemma boundedI:
+  assumes "finite A"
+  assumes "A \<noteq> {}"
+  assumes "\<And>a. a \<in> A \<Longrightarrow> a \<le> x"
+  shows "fSup A \<le> x"
+  using assms(1) assms(2) assms(3) upper_bounded_iff by auto
+
+lemma boundedE:
+  assumes "finite A" and "A \<noteq> {}" and "fSup A \<le> x"
+  obtains "\<And>a. a \<in> A \<Longrightarrow> a \<le> x"
+  using assms by (simp add: upper_bounded_iff)
+
+lemma coboundedI:
+  assumes "finite A"
+    and "a \<in> A"
+  shows "a \<le> fSup A"
+proof -
+  from assms have "A \<noteq> {}" by auto
+  from \<open>finite A\<close> \<open>A \<noteq> {}\<close> \<open>a \<in> A\<close> show ?thesis
+  proof (induct rule: finite_ne_induct)
+    case singleton thus ?case by (simp add: refl)
+  next
+    case (insert x B)
+    from insert have "a = x \<or> a \<in> B" by simp
+    then show ?case
+      by (simp add: insert.hyps(1) local.in_idem local.le_iff_sup)
+  qed
+qed
+
+lemma subset_imp:
+  assumes "A \<subseteq> B" and "A \<noteq> {}" and "finite B"
+  shows "fSup A \<le> fSup B"
+proof (cases "A = B")
+  case True then show ?thesis by (simp add: refl)
+next
+  case False
+  have B: "B = A \<union> (B - A)" using \<open>A \<subseteq> B\<close> by blast
+  then have "fSup B = fSup (A \<union> (B - A))" by simp
+  also have "\<dots> = sup (fSup A) (fSup (B - A))" using False assms by (subst union) (auto intro: finite_subset)
+  also have "\<dots> \<ge> fSup A" by simp
+  finally show ?thesis .
+qed
+
+lemma finite_sup_greatest:
+  "\<And>z A. A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> ((\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> fSup A \<le> z)"
+  by (simp add: upper_bounded_iff)
+
 end
 
 
@@ -480,6 +532,12 @@ definition is_inf_complete::"'a::ord set \<Rightarrow> bool" where
 definition is_sup_complete::"'a::ord set \<Rightarrow> bool" where 
   "is_sup_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_sup_in A X)"
 
+definition is_inf_closed::"'a::ord set \<Rightarrow> bool" where 
+  "is_inf_closed X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> InfIn A X \<in> X)"
+
+definition is_sup_closed::"'a::ord set \<Rightarrow> bool" where 
+  "is_sup_closed X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> SupIn A X \<in> X)"
+
 definition is_inhabited::"'a set  \<Rightarrow> bool" where
    "is_inhabited X \<equiv> (X \<noteq> {})"
 
@@ -635,12 +693,12 @@ begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
 lemma finf_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fInf A = Inf A)"
-  using local.Inf_lower local.coboundedI local.dual_order.antisym local.le_Inf_iff
-         local.lower_bounded_iff by auto
+  by (simp add: local.csli.finf_complete_lattice)
+
 
 lemma fsup_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
-  using local.Sup_fin.eq_fold' local.Sup_fin_Sup local.eq_fold1 by presburger
+  using local.csls.fsup_complete_lattice by blast
 
 end
 section Bounds
@@ -1193,9 +1251,6 @@ proof
       by (meson B1 B2 has_inf_in_def has_max_iff has_sup_in_imp2)
   qed
 qed
-
-
-
 
 
 subsection Infima
@@ -1789,6 +1844,52 @@ lemma is_inf_imp_glb1:
   by (simp add: is_inf_iff)
 
 
+lemma sup_complete_bounded_inf_eq1:
+  fixes A X::"'a::order set"
+  assumes A0:"(A \<subseteq> X \<and>  lb_set_in A X \<noteq> {})" and
+          A1:"has_sup_in (lb_set_in A X) X"
+  shows "InfIn A X = SupIn (lb_set_in A X) X"
+proof(cases "A = {}")
+  case True
+  then show ?thesis
+    by (metis A1 has_max_iff2 inf_in_degenerate lb_set_in_degenerate max_if sup_in_max)
+next
+  case False
+  define L where "L=lb_set_in A X" 
+  define I where "I=InfIn A X"
+  define S where "S=SupIn L X"
+  have B0:"S \<in> L"
+    by (metis (mono_tags, lifting) A0 A1 L_def S_def has_sup_in_imp3 has_sup_in_in_set lb_set_in_elm lb_set_in_imp subset_eq) 
+  have B1:"\<forall>l. l \<in> L \<longrightarrow> l \<le> S"
+    by (simp add: A1 L_def S_def has_sup_in_imp2)
+  have B2:"is_inf_in S A X"
+    using B0 B1 L_def is_inf_in_def is_max_if2 by blast
+  then show ?thesis
+    using L_def S_def is_inf_in_inf_eq by force
+qed
+  
+
+lemma sup_complete_bounded_inf_eq2:
+  fixes X::"'a::order set"
+  assumes A0:"is_sup_complete X"
+  shows "\<And>A. (A \<subseteq> X \<and>  lb_set_in A X \<noteq> {}) \<longrightarrow> (InfIn A X = SupIn (lb_set_in A X) X)"
+proof
+  fix A assume A1:"(A \<subseteq> X \<and>  lb_set_in A X \<noteq> {})"
+  show "(InfIn A X = SupIn (lb_set_in A X) X)"
+  proof(cases "A = {}")
+    case True
+    then show ?thesis
+      by (metis A1 assms complete_semilattice_sup_has_max inf_in_degenerate lb_set_in_degenerate max_if) 
+  next
+    case False
+    then show ?thesis
+      by (meson A1 IntD1 PowI assms dual_order.antisym has_inf_in_imp1 has_sup_in_imp1 inf_in_expression infin_is_inf is_min_iff is_sup_complete_def is_sup_in_imp2 lb_set_in_subset sup_complete_bounded_inf supin_is_sup)
+  qed
+qed
+
+
+
+
 section MiscResults
 (*de Morgans for finite sup and inf in complete boolean algebra*)
 
@@ -1891,11 +1992,11 @@ lemma semilattice_inf_has_inf:
   fixes A::"'a::semilattice_inf set"
   assumes A0:"finite A" and
           A1:"A \<noteq> {}"
-  shows " has_inf A"
+  shows "has_inf A"
 proof-
   define i where "i=fInf A"
   have B0:"i \<in> lb_set A"
-    by (simp add: A0 coboundedI i_def lb_set_elm)
+    by (simp add: A0 i_def lb_set_mem_iff semilattice_inf_class.coboundedI)
   have B1:"\<forall>l. l \<in> lb_set A \<longrightarrow> l \<le> i"
     by (simp add: A0 A1 finite_inf_greatest i_def lb_set_mem_iff)
   have B0:"is_inf i A"
@@ -1904,7 +2005,25 @@ proof-
     using B0 has_inf_def has_max_iff2 is_inf_def by blast
 qed
 
-lemma semilattice_inf_infp_eq:
+
+lemma semilattice_sup_has_sup:
+  fixes A::"'a::semilattice_sup set"
+  assumes A0:"finite A" and
+          A1:"A \<noteq> {}"
+  shows "has_sup A"
+proof-
+  define s where "s=fSup A"
+  have B0:"s \<in> ub_set A"
+    by (simp add: A0 s_def semilattice_sup_class.coboundedI ub_set_elm)
+  have B1:"\<forall>u. u \<in> ub_set A \<longrightarrow> s \<le> u"
+    by (simp add: A0 A1 s_def ub_set_mem_iff upper_bounded_iff)
+  have B0:"is_sup s A"
+    by (simp add: B0 B1 is_min_if2 is_sup_if1)
+  show "has_sup A"
+    using B0 has_sup_def is_min_imp_has_min is_sup_imp_lub by blast
+qed
+
+lemma semilattice_inf_finf_eq:
   fixes A::"'a::semilattice_inf set"
   assumes A0:"finite A" and
           A1:"A \<noteq> {}"
@@ -1913,22 +2032,48 @@ proof-
   have B0:"is_inf (InfUn A) A"
     by (simp add: A0 A1 inf_is_inf semilattice_inf_has_inf)
   have B1:"is_inf (fInf A) A"
-    by (simp add: A0 A1 coboundedI is_inf_def is_max_iff lb_set_mem_iff lower_bounded_iff)
+    by (simp add: A0 A1 is_inf_if3 semilattice_inf_class.boundedI semilattice_inf_class.coboundedI)
   show "InfUn A = fInf A"
     using B0 B1 is_inf_unique by blast
+qed
+
+
+lemma semilattice_sup_fsup_eq:
+  fixes A::"'a::semilattice_sup set"
+  assumes A0:"finite A" and
+          A1:"A \<noteq> {}"
+  shows " SupUn A = fSup A"
+proof-
+  have B0:"is_sup (SupUn A) A"
+    by (simp add: A0 A1 semilattice_sup_has_sup sup_is_sup)
+  have B1:"is_sup (fSup A) A"
+    by (simp add: A0 A1 finite_sup_greatest is_sup_if3 semilattice_sup_class.coboundedI)
+  show "SupUn A = fSup A"
+    using B0 B1 is_sup_unique by blast
 qed
   
 
 
-lemma semilattice_inf_infp_eq_small_inf:
+lemma semilattice_inf_finf_eq_small_inf:
   fixes a::"'a::semilattice_inf" and b::"'a::semilattice_inf"
   shows "inf a b = InfUn {a, b}"
-  by (simp add: semilattice_inf_infp_eq)
+  by (simp add: semilattice_inf_finf_eq)
 
 lemma semilattice_inf_binf_eq_inf:
   fixes a::"'a::semilattice_inf" and b::"'a::semilattice_inf"
   shows "inf a b = binf a b"
-  by (simp add: binf_def semilattice_inf_infp_eq)
+  by (simp add: binf_def semilattice_inf_finf_eq)
+
+
+lemma semilattice_sup_fsup_eq_small_inf:
+  fixes a::"'a::semilattice_sup" and b::"'a::semilattice_sup"
+  shows "sup a b = SupUn {a, b}"
+  by (simp add: semilattice_sup_fsup_eq)
+
+lemma semilattice_sup_bsup_eq_sup:
+  fixes a::"'a::semilattice_sup" and b::"'a::semilattice_sup"
+  shows "sup a b = bsup a b"
+  by (simp add: bsup_def semilattice_sup_fsup_eq)
 
 
 
@@ -2005,7 +2150,7 @@ lemma infs_insert:
   shows "fInf {x, fInf F} = fInf (insert x F)"
 proof-
   have B0:"\<forall>y \<in> (insert x F). fInf {x, fInf F} \<le> y"
-    by (metis assms coboundedI finite.insertI infs_eq semilattice_inf_class.insert)
+    by (metis assms finite.insertI infs_eq semilattice_inf_class.coboundedI semilattice_inf_class.insert)
   have B1:"\<forall>y \<in>  (insert x F).  fInf (insert x F) \<le> y"
     using B0 assms by auto
   have B2:"fInf {x, fInf F} \<le> fInf (insert x F)"
