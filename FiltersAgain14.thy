@@ -758,42 +758,6 @@ proof
     using A2 B0 filter_closure_obtains0 by auto
 qed
 
-
-lemma finite_lower_bound:
-  fixes C::"'a::order set"
-  assumes A0: "\<And>a1 a2. a1 \<in> C \<Longrightarrow> a2 \<in> C \<Longrightarrow> (\<exists>l \<in> C. is_lb_of l {a1, a2})" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> C"
-  shows "(\<exists>l \<in> C. is_lb_of l E)"
-  using A1 A2 A3 
-  proof (induct E rule: finite_ne_induct)
-    case (singleton x)
-    then show ?case
-    proof-
-      have S0:"x \<le> x"
-        by simp
-      have S1:" is_lb_of x {x}"
-        by (simp add: is_lb_of_def)
-      show S4:"(\<exists>l \<in> C. is_lb_of l {x})"
-        using S1 singleton by auto
-    qed
-  next
-    case (insert x F)
-    have P0:"x \<in> C"
-      using insert.prems by auto
-    have P1: "F \<subseteq> C" 
-      using insert.prems by auto
-    obtain lF where A4:"lF \<in> C \<and> is_lb_of lF F"
-      using P1 insert.hyps(4) by blast
-    obtain l where A5:"l \<in> C \<and> is_lb_of l {lF, x}"
-      using A0 A4 P0 by blast
-    have P2:"\<forall>y \<in> (insert x F). l \<le> y"
-      by (metis A4 A5 dual_order.trans insert_iff is_lb_of_def)
-    then show ?case
-      using A5 is_lb_of_def by blast
-qed
-
 subsection FilterPiSystemInSemilatticeinf
 
 lemma filter_in_semilattice_inf_iff:
@@ -2362,18 +2326,6 @@ proof-
     by (simp add: coarser_ultrafilters_def)
 qed
 
-
-lemma finite_ne_subset_induct[consumes 3, case_names singleton insert]:
-  assumes "finite F"
-      and "F \<noteq> {}"
-      and "F \<subseteq> X"
-      and singleton: "\<And>x . P {x}"
-      and insert: "\<And>x E . finite E \<Longrightarrow> E \<noteq> {} \<Longrightarrow> E \<subseteq> X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<notin> E \<Longrightarrow> P E \<Longrightarrow> P (insert x E)"
-    shows "P F"
-  using assms(1-3)
-  apply (induct rule: finite_ne_induct)
-  apply (simp add: singleton)
-  by (simp add: insert)
 
 
 lemma gc2_iff_gc4:
