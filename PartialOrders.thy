@@ -32,11 +32,15 @@ Organization - the duals can be taken as implicit
 *)
 
 section CompleteSemilatticeClass
+
+(*
+  complete_semilattice_inf will have a bot element and dually for complete_semilattice_sup and a top
+  but this element need not be the Inf or Sup of the empty set
+*)
 class complete_semilattice_inf = semilattice_inf + Inf +
     assumes CInf_lower: "A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> Inf A \<le> x"
     and CInf_greatest: "A \<noteq> {} \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> Inf A"
 
-  
 class complete_semilattice_sup = semilattice_sup + Sup +
    assumes CSup_upper: "A \<noteq> {} \<Longrightarrow> x \<in> A \<Longrightarrow> x \<le>  Sup A"
     and CSup_least: "A \<noteq> {} \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
@@ -396,7 +400,6 @@ definition max::"'a::ord set \<Rightarrow> 'a::ord" where
 definition min::"'a::ord set \<Rightarrow> 'a::ord" where
   "min A \<equiv> (THE m. is_min m A)"
 
-
 subsubsection SupInfOperators
 definition SupIn::"'a::ord set \<Rightarrow>'a::ord set \<Rightarrow> 'a::ord" where
   "SupIn A X = (THE s. is_sup_in s A X)"
@@ -428,7 +431,6 @@ definition pointwise_less_eq::"('a::ord \<Rightarrow> 'b::ord) \<Rightarrow>('a:
 
 definition pointwise_less::"('a::ord \<Rightarrow> 'b::ord) \<Rightarrow>('a::ord \<Rightarrow> 'b::ord) \<Rightarrow> bool" where
   "pointwise_less f g \<equiv> (pointwise_less_eq f g) \<and> (f \<noteq> g)"
-
 
 definition antitone :: "('a::ord \<Rightarrow> 'b::ord) \<Rightarrow> bool" where
 "antitone f \<longleftrightarrow> (\<forall>x y. x \<le> y \<longrightarrow> f y \<le> f x)"
@@ -478,7 +480,6 @@ definition is_inf_complete::"'a::ord set \<Rightarrow> bool" where
 definition is_sup_complete::"'a::ord set \<Rightarrow> bool" where 
   "is_sup_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_sup_in A X)"
 
-
 definition is_inhabited::"'a set  \<Rightarrow> bool" where
    "is_inhabited X \<equiv> (X \<noteq> {})"
 
@@ -493,7 +494,6 @@ definition is_pisystem::"'a::order set \<Rightarrow> bool" where
 
 definition is_filter::"'a::ord set \<Rightarrow> bool" where 
   "is_filter F \<equiv> (is_downdir F \<and> is_upclosed F \<and> is_inhabited F)"
-
 
 definition covers::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
   "covers A b \<equiv> (b \<in> lb_set A) \<and> (A \<noteq> {}) "
@@ -525,7 +525,6 @@ definition is_moore_family::"'a::order set \<Rightarrow> bool" where
 definition moore_to_closure::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
   "moore_to_closure C \<equiv> (\<lambda>x. InfUn(ub_set_in {x} C))"
 
-
 definition filter_closure::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
   "filter_closure A \<equiv> {a. \<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> a}"
 
@@ -535,11 +534,11 @@ definition up_closure::"'a::order set \<Rightarrow> 'a::order set" where
 definition is_prime::"'a::{order, sup} set \<Rightarrow> bool" where
   "is_prime A \<equiv> (\<forall>a. \<forall>b. (sup a b) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
 
-
+definition is_prime_alt::"'a::{boolean_algebra,order_bot} set \<Rightarrow> bool" where
+  "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((-a) \<in> U)))"
 
 definition binary_filter_sup::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
   "binary_filter_sup A B = {x. \<exists>a \<in> A. \<exists>b \<in> B. inf a b \<le> x}"
-
 
 definition filter_sup::"'a::semilattice_inf set set \<Rightarrow> 'a::semilattice_inf set" where
   "filter_sup EF \<equiv> filter_closure(Sup(EF))"
@@ -549,7 +548,6 @@ definition filter_inf::"'a::bounded_semilattice_inf_top set set \<Rightarrow> 'a
 
 definition is_proper::"'a::order set \<Rightarrow> bool" where
   "is_proper F \<equiv> F \<noteq> UNIV"
-
 
 definition is_pfilter::"'a::order set \<Rightarrow>  bool" where
   "is_pfilter F \<equiv> (is_filter F) \<and> (is_proper F)"
@@ -566,7 +564,6 @@ abbreviation upset_family::"'a::order set set" where
 definition filters_in::"'a::order set \<Rightarrow> 'a::order set set" where
   "filters_in A = {F. (is_filter F) \<and> (F \<in> (Pow A))}"
 
-
 definition pfilters_in::"'a::order set \<Rightarrow> 'a::order set set" where
   "pfilters_in A = {F. (is_pfilter F) \<and> (F \<in> (Pow A))}"
 
@@ -582,31 +579,17 @@ definition finer_ultrafilters::"'a::order set \<Rightarrow> 'a::order set set" w
 definition coarser_ultrafilters::"'a::order set \<Rightarrow> 'a::order set set" where
   "coarser_ultrafilters F = {U. is_ultrafilter U \<and> (F \<supseteq> U)}"
 
-
 definition finer_upsets::"'a::order set \<Rightarrow> 'a::order set set" where
   "finer_upsets A = {U. is_upclosed U \<and> (A \<subseteq> U)}"
 
-
-definition moore_upclosure::"'a::order_top set \<Rightarrow> 'a::order_top set" where
-  "moore_upclosure A = (if A={} then {top} else up_closure A)"
-
-
 definition is_chain::"'X::order set \<Rightarrow> bool" where
   "is_chain A \<equiv> (\<forall>a1 \<in> A. \<forall>a2 \<in> A. (a1 \<le> a2 \<or> a2 \<le> a1))"
-
 
 definition meshes::"('a::{lattice,order_bot} set) \<Rightarrow> ('a::{lattice,order_bot} set) \<Rightarrow> bool"  (infixl "#" 50)  where
    "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  ((inf a b) \<noteq> bot))"
 
 definition grill::"'a::{lattice,order_bot} set \<Rightarrow> 'a::{lattice,order_bot} set" where
   "grill A = {x::('a::{lattice,order_bot}). {x}#A}"  
-
-definition is_prime_alt::"'a::{boolean_algebra,order_bot} set \<Rightarrow> bool" where
-  "is_prime_alt U \<equiv> (\<forall>a. ((a \<in> U) \<and> \<not>((-a) \<in> U)) \<or> (\<not>(a \<in> U) \<and> ((-a) \<in> U)))"
-
-definition is_lb_of::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_lb_of l E \<equiv> (\<forall>x \<in> E. l \<le> x)"
-
 
 abbreviation principal_filter_in::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "principal_filter_in x A \<equiv> ub_set_in {x} A"
@@ -633,7 +616,9 @@ lemma fsup_complete_lattice:
   "\<And>A. (finite A \<and> A \<noteq> {}) \<longrightarrow> (fSup A = Sup A)"
   using local.CSup_least local.CSup_upper local.Sup_fin.boundedI local.Sup_fin.coboundedI
          local.Sup_fin.eq_fold' local.dual_order.antisym local.eq_fold1 by auto
+
 end
+
 context complete_semilattice_inf
 begin
 (*finite inf and sup agree with inf and sup in complete lattice*)
@@ -1484,13 +1469,32 @@ lemma supin_eq_supun:
   by(simp add:SupIn_def SupUn_def is_sup_in_def is_sup_def ub_set_in_univ_absorb)
 
 lemma complete_semilattice_sup_is_sup:
-  "\<forall>(A::'X::complete_semilattice_sup set). A \<noteq> {} \<longrightarrow> (is_sup (Sup A) A)"
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> (is_sup (Sup A) A)"
   by (simp add: CSup_least CSup_upper is_sup_if3)
 
+lemma complete_semilattice_sup_is_sup_in:
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> (is_sup_in (Sup A) A UNIV)"
+  by (simp add: CSup_least CSup_upper is_sup_in_if3)
 
 lemma complete_semilattice_supun_is_sup:
-  "\<forall>(A::'X::complete_semilattice_sup set). A \<noteq> {} \<longrightarrow> (is_sup (SupUn A) A)"
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> (is_sup (SupUn A) A)"
   by (meson complete_semilattice_sup_is_sup has_min_def has_sup_def is_sup_def sup_is_sup)
+
+lemma complete_semilattice_supin_is_sup:
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> (is_sup (SupIn A UNIV) A)"
+  by (metis complete_semilattice_sup_is_sup complete_semilattice_sup_is_sup_in is_sup_in_sup_eq)
+
+lemma complete_semilattice_supin_is_supin:
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> (is_sup_in (SupIn A UNIV) A UNIV)"
+  by (simp add: complete_semilattice_supin_is_sup is_sup_imp1 is_sup_in_iff ub_set_in_univ_absorb)
+
+lemma complete_semilattice_supin_existence:
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> has_sup_in A UNIV"
+  by (metis complete_semilattice_supin_is_sup has_sup_in_def is_min_imp_has_min is_sup_iff ub_set_in_univ_absorb)
+
+lemma complete_semilattice_sup_existence:
+  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> has_sup A"
+  by (simp add: complete_semilattice_supin_existence has_sup_in_imp_sup)
 
 
 lemma complete_semilattice_sup_least:
@@ -1549,10 +1553,6 @@ lemma complete_lattice_sup_least:
   fixes A::"'a::complete_lattice set"
   shows "\<forall>u \<in> ub_set A. A \<noteq> {} \<longrightarrow> Sup A \<le> u"
   by (simp add: csls.CSup_least ub_set_mem)
-
-lemma complete_semilattice_sup_exists_sup:
-  "\<And>(A::'a::complete_semilattice_sup set). A \<noteq> {} \<Longrightarrow> has_sup A"
-  by (meson complete_semilattice_supun_is_sup has_min_def has_sup_def is_sup_def)
 
 lemma is_sup_imp_lub:
   "\<And>s A. is_sup s A \<Longrightarrow> is_min s (ub_set A)"
@@ -1632,15 +1632,55 @@ proof-
     using A1 B0 by blast
 qed
 
+lemma complete_semilattice_inf_has_min:
+  fixes X::"'a::order set"
+  assumes "X \<noteq> {} \<and> is_inf_complete X"
+  shows "has_min X \<and> (is_min (InfIn X X) X)"
+  using assms inf_complete_has_min is_min_imp_has_min by blast
+
+lemma complete_semilattice_sup_has_max:
+  fixes X::"'a::order set"
+  assumes "X \<noteq> {} \<and> is_sup_complete X"
+  shows "has_max X \<and> (is_max (SupIn X X) X)"
+  using assms is_max_imp_has_max sup_complete_has_max by blast
+
+
+lemma complete_semilattice_inf_has_min2:
+  "has_min (UNIV::'a::complete_semilattice_inf set)"
+  by (metis CInf_lower PartialOrders.min_bot UNIV_I empty_not_UNIV)
+
+lemma complete_semilattice_sup_has_max2:
+  "has_max (UNIV::'a::complete_semilattice_sup set)"
+  by (metis CSup_upper PartialOrders.max_top UNIV_I ex_in_conv)
+
 
 lemma complete_semilattice_inf_is_inf:
-  "\<forall>(A::'X::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> (is_inf (Inf A) A)"
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> (is_inf (Inf A) A)"
   by (simp add: CInf_greatest CInf_lower is_inf_if3)
 
+lemma complete_semilattice_inf_is_inf_in:
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> (is_inf_in (Inf A) A UNIV)"
+  by (simp add: CInf_greatest CInf_lower is_inf_in_if3)
+
 lemma complete_semilattice_infun_is_inf:
-  "\<forall>(A::'X::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> (is_inf (InfUn A) A)"
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> (is_inf (InfUn A) A)"
   by (meson complete_semilattice_inf_is_inf has_inf_def inf_is_inf is_inf_def is_max_imp_has_max)
 
+lemma complete_semilattice_infin_is_inf:
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> (is_inf (InfIn A UNIV) A)"
+  by (metis complete_semilattice_inf_is_inf complete_semilattice_inf_is_inf_in is_inf_in_inf_eq)
+
+lemma complete_semilattice_infin_is_infin:
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> (is_inf_in (InfIn A UNIV) A UNIV)"
+  by (simp add: complete_semilattice_infin_is_inf is_inf_imp1 is_inf_in_iff lb_set_in_univ_absorb)
+
+lemma complete_semilattice_infin_existence:
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> has_inf_in A UNIV"
+  by (metis complete_semilattice_infun_is_inf has_inf_in_def has_max_def is_inf_def lb_set_in_lb_univ)
+
+lemma complete_semilattice_inf_existence:
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> has_inf A"
+  by (simp add: complete_semilattice_infin_existence has_inf_in_imp_inf)
 
 lemma complete_semilattice_inf_greatest:
   fixes A::"'a::complete_semilattice_inf set"
@@ -1741,7 +1781,7 @@ lemma complete_lattice_inf_greatest:
   by (simp add: csli.CInf_greatest lb_set_imp)
 
 lemma complete_semilattice_inf_exists_inf:
-  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<longrightarrow> has_inf A"
+  "\<And>(A::'a::complete_semilattice_inf set). A \<noteq> {} \<Longrightarrow> has_inf A"
   by (metis complete_semilattice_infun_is_inf has_inf_def has_max_def is_inf_def)
 
 lemma is_inf_imp_glb1:
@@ -1772,7 +1812,7 @@ lemma complete_semilattice_sup_lb_imp_inf:
   fixes A::"'a::complete_semilattice_sup set"
   assumes "lb_set A \<noteq> {}"
   shows "has_inf A \<and> InfUn A = Sup(lb_set A)"
-  by (simp add: assms complete_semilattice_sup_exists_sup complete_semilattice_supun_eq_sup inf_eq_sup_lb)
+  by (simp add: assms complete_semilattice_sup_existence complete_semilattice_supun_eq_sup inf_eq_sup_lb)
 
 lemma complete_semilattice_sup_lb_imp_inf2:
   fixes A::"'a::complete_semilattice_sup set"
