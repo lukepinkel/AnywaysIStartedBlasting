@@ -201,9 +201,7 @@ proof-
     by (simp add: C01 is_extensive_def) 
 qed
 
-lemma principle_filter_anti:
-  "\<And>(x1::'a::order) x2 X. x1 \<le> x2 \<Longrightarrow> (principal_filter_in x2 X) \<subseteq>  (principal_filter_in x1 X)"
-  by (simp add: order_trans subset_eq ub_set_in_mem_iff)
+
 
 
 lemma moore_to_closure_is_isotone:
@@ -213,7 +211,7 @@ lemma moore_to_closure_is_isotone:
 proof-
   let ?f="moore_to_closure C"
   have C10:"\<And>x1 x2. x1 \<le> x2 \<longrightarrow> (?f x1) \<le> (?f x2)"
-    by (simp add: assms has_min_has_inf inf_antitone1 moore_family_imp moore_to_closure_def principle_filter_anti)
+    by (simp add: assms has_min_has_inf inf_antitone1 moore_family_imp moore_to_closure_def principle_filter_anti1)
   show ?thesis
     by (simp add: C10 is_isotone_def)
 qed
