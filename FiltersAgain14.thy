@@ -2695,4 +2695,291 @@ lemma grill_is_galois:
   by (simp add: gc2_iff_gc4 is_gc4_def mesh_prop11)
      
 
+definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set" where
+  "fin_inf_cl A \<equiv> {x. \<exists>F \<in> Fpow_ne A. has_inf F \<and> x = InfUn F}"
+
+definition arb_sup_cl::"'a::order set \<Rightarrow> 'a::order set" where
+  "arb_sup_cl A \<equiv> {x. \<exists>F \<in> Pow A. has_sup F \<and> x = SupUn F}"
+
+lemma fin_inf_cl_imp0:
+  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
+  using fin_inf_cl_def by blast
+
+lemma arb_sup_cl_imp0:
+  "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
+  using arb_sup_cl_def by blast
+
+lemma fin_inf_cl_imp1:
+  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> has_inf F \<and>  x = InfUn F)"
+  by (metis fin_inf_cl_imp0 fpow_ne_imp)
+
+lemma arb_sup_cl_imp1:
+  "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A  \<and> has_sup F \<and> x = SupUn F)"
+  using arb_sup_cl_imp0 by auto
+
+lemma fin_inf_cl_if1:
+  "\<And>A x.  (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F) \<Longrightarrow> x \<in> fin_inf_cl A"
+  by (simp add: fin_inf_cl_def)
+
+lemma arb_sup_cl_if1:
+  "\<And>A x.  (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F) \<Longrightarrow> x \<in> arb_sup_cl A"
+  by (simp add: arb_sup_cl_def)
+
+lemma fin_inf_cl_mem_iff:
+  "x \<in> fin_inf_cl A \<longleftrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
+  by (simp add: fin_inf_cl_def)
+
+lemma  arb_sup_cl_mem_iff:
+  "x \<in> arb_sup_cl A \<longleftrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
+  by (simp add: arb_sup_cl_def)
+
+
+lemma fpow_ne_iso:
+  "A \<subseteq> B \<Longrightarrow> Fpow_ne A \<subseteq> Fpow_ne B"
+  by (simp add: Diff_mono Fpow_mono)
+
+lemma fpow_ne_finite_union:
+  assumes A0:"EF \<in> Fpow_ne (Fpow_ne A)"
+  shows "(\<Union>EF) \<in> Fpow_ne A"
+  by (metis DiffD2 Pow_empty Pow_iff assms fpow_ne_equiv fpow_ne_union subset_eq)
+
+
+lemma arb_sup_cl_extensive:
+  "A \<subseteq> arb_sup_cl A"
+proof
+  fix a assume A0:"a \<in> A"
+  have B0:"{a} \<in> Pow A \<and> has_sup {a} \<and> a = SupUn {a}"
+    by (simp add: A0 has_sup_singleton sup_singleton)
+  show "a \<in> arb_sup_cl A"
+    using B0 arb_sup_cl_def by blast
+qed
+
+lemma fin_inf_cl_extensive:
+  "A \<subseteq> fin_inf_cl A"
+proof
+  fix a assume A0:"a \<in> A"
+  have B0:"{a} \<in> Fpow_ne A \<and> has_inf {a} \<and> a = InfUn {a}"
+    by (metis A0 fpow_ne_singleton has_inf_singleton inf_singleton)
+  show "a \<in> fin_inf_cl A"
+    using B0 fin_inf_cl_def by blast
+qed
+
+
+lemma arb_sup_cl_iso:
+  assumes "A \<subseteq> B"
+  shows "arb_sup_cl A  \<subseteq> arb_sup_cl B"
+proof
+  fix a assume A0:"a \<in> arb_sup_cl A"
+  obtain F where A1:"F \<in> Pow A \<and> has_sup F \<and> a = SupUn F"
+    using A0 arb_sup_cl_imp0 by auto
+  have B0:"F \<in> Pow B \<and> has_sup F \<and>  a = SupUn F"
+    using A1 assms fpow_ne_iso by blast
+  show "a \<in> arb_sup_cl B"
+    using B0 arb_sup_cl_def by blast
+qed
+
+lemma fin_inf_cl_iso:
+  assumes "A \<subseteq> B"
+  shows "fin_inf_cl A  \<subseteq> fin_inf_cl B"
+proof
+  fix a assume A0:"a \<in> fin_inf_cl A"
+  obtain F where A1:"F \<in> Fpow_ne A \<and> has_inf F \<and> a = InfUn F"
+    using A0 fin_inf_cl_def by auto
+  have B0:"F \<in> Fpow_ne B \<and> has_inf F \<and>  a = InfUn F"
+    using A1 assms fpow_ne_iso by blast
+  show "a \<in> fin_inf_cl B"
+    using B0 fin_inf_cl_def by blast
+qed
+
+
+(*these got out of hand and are just FUBAR*)
+lemma fin_inf_cl_idemp:
+    "fin_inf_cl A = fin_inf_cl (fin_inf_cl A)"
+proof-
+  define C where "C=(fin_inf_cl A)"
+  have L:"C \<subseteq> fin_inf_cl C"
+    by (simp add: fin_inf_cl_extensive)
+  have R:"fin_inf_cl C \<subseteq> C"
+  proof
+    fix x assume A0:"x \<in> fin_inf_cl C"
+    obtain Fx where A1:"Fx \<in> Fpow_ne C \<and> has_inf Fx \<and> x = InfUn Fx"
+      using A0 C_def fin_inf_cl_def by blast
+    have B0:"\<forall>y. y \<in> Fx \<longrightarrow> (\<exists>Fy \<in> Fpow_ne A. has_inf Fy \<and>  y = InfUn Fy)"
+      using A1 C_def fin_inf_cl_def fpow_ne_imp by blast
+    (*define Fxy where "Fxy={Fy \<in> Fpow_ne A. has_inf Fy \<and> (\<exists>y \<in> Fx. y = InfUn Fy)}" something something injection*)
+    define F where "F=(\<lambda>y. SOME Fy. Fy \<in> Fpow_ne A \<and> has_inf Fy \<and>  y= InfUn Fy)"
+    define FFx where "FFx=F`Fx"
+    have B1:"\<And>y. y \<in> Fx  \<longrightarrow>  has_inf (F y)" 
+    proof
+      fix y assume A2:"y \<in> Fx"
+      obtain Fy where A3:"Fy \<in> Fpow_ne A \<and> has_inf Fy \<and>  y= InfUn Fy"
+        by (meson A2 B0)
+      show "has_inf (F y)"
+        by (metis (mono_tags, lifting) A3 F_def someI_ex)
+     qed
+    have B2:"Fx = (InfUn`FFx)"
+    proof-
+      have B3:"Fx \<subseteq> InfUn`FFx"
+      proof
+        fix y assume A4:"y \<in> Fx"
+        have B4:"(InfUn (F y) = y)"
+          by (metis (mono_tags, lifting) A4 B0 F_def someI_ex)
+        show "y \<in> (InfUn`FFx)"
+          by (metis A4 B4 FFx_def imageI)
+      qed
+      have B4:"InfUn`FFx \<subseteq> Fx"
+        by (metis A1 B3 FFx_def card_seteq dual_order.eq_iff finite_imageI fpow_ne_imp surj_card_le)
+      show ?thesis
+        using B3 B4 by blast
+    qed
+   define G where "G=\<Union>FFx"
+    have B6:"has_inf (InfUn`FFx)"
+      using A1 B2 by blast
+    have B7:"InfUn Fx = InfUn(InfUn`FFx)"
+      using B2 by blast
+    have B8:"... = InfUn(G)"
+      by (metis A1 B1 B6 FFx_def fpow_ne_equiv inf_comp_un_ind G_def)
+    have B9:"\<And>y. y \<in> Fx  \<longrightarrow> (F y) \<in> Fpow_ne A"
+      by (metis (mono_tags, lifting) B0 F_def someI)
+    have B10:"\<forall>Fy \<in> FFx. Fy \<in> Fpow_ne A"
+      using B9 FFx_def by auto
+    have B11:"FFx \<in> Fpow_ne (Fpow_ne A)"
+      by (metis A1 B10 FFx_def finite_imageI fpow_ne_equiv fpow_ne_if image_is_empty subsetI)
+    define G where "G=\<Union>FFx"
+    have B12:"G \<in> Fpow_ne A"
+      using B11 G_def fpow_ne_finite_union by auto
+    have B13:"has_inf G \<and> x = InfUn G"
+      by (metis A1 B1 B6 B7 FFx_def G_def fpow_ne_equiv inf_comp_un_ind)
+    show "x \<in> C"
+      using B12 B13 C_def fin_inf_cl_if1 by blast
+    qed
+  show ?thesis
+    using C_def L R by force
+qed
+
+lemma arb_sup_cl_idemp:
+    "arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
+proof-
+  define C where "C=(arb_sup_cl A)"
+  have L:"C \<subseteq> arb_sup_cl C"
+    by (simp add: arb_sup_cl_extensive)
+  have R:"arb_sup_cl C \<subseteq> C"
+  proof
+    fix x assume A0:"x \<in> arb_sup_cl C"
+    obtain Fx where A1:"Fx \<in> Pow C \<and> has_sup Fx \<and> x = SupUn Fx"
+      using A0 arb_sup_cl_imp0 by auto
+    have B0:"\<forall>y. y \<in> Fx \<longrightarrow> (\<exists>Fy \<in> Pow A. has_sup Fy \<and>  y = SupUn Fy)"
+      using A1 C_def arb_sup_cl_def by blast
+    define F where "F=(\<lambda>y. SOME Fy. Fy \<in> Pow A \<and> has_sup Fy \<and>  y= SupUn Fy)"
+    have B00:"\<And>x1 x2. x1 \<in> Fx \<and> x2 \<in> Fx  \<and> (SupUn \<circ> F) x1 = (SupUn \<circ> F) x2 \<longrightarrow> x1 =x2"
+    proof
+      fix x1 x2 assume B00A0:"x1 \<in> Fx \<and> x2 \<in> Fx  \<and> (SupUn \<circ> F) x1 = (SupUn \<circ> F) x2" 
+      have B00B0:"(F x1) \<in> Pow A \<and> has_sup (F x1) \<and>  x1 = SupUn (F x1)"
+        by (metis (mono_tags, lifting) B0 B00A0 F_def someI)
+      have B00B1:"(F x2) \<in> Pow A \<and> has_sup (F x2) \<and>  x2 = SupUn (F x2)"
+        by (metis (mono_tags, lifting) B0 B00A0 F_def someI)
+      have B00B2:"SupUn (F x1) = SupUn (F x2)"
+        using B00A0 by fastforce
+      show "x1 = x2"
+        using B00B0 B00B1 B00B2 by presburger
+    qed
+    define FFx where "FFx=F`Fx"
+    have B1:"\<And>y. y \<in> Fx  \<longrightarrow>  has_sup (F y)" 
+    proof
+      fix y assume A2:"y \<in> Fx"
+      obtain Fy where A3:"Fy \<in> Pow A \<and> has_sup Fy \<and>  y= SupUn Fy"
+        by (meson A2 B0)
+      show "has_sup (F y)"
+        by (metis (mono_tags, lifting) A3 F_def someI_ex)
+     qed
+    have B2:"Fx = (SupUn`FFx)"
+    proof-
+      have B3:"Fx \<subseteq> SupUn`FFx"
+      proof
+        fix y assume A4:"y \<in> Fx"
+        have B4:"(SupUn (F y) = y)"
+          by (metis (mono_tags, lifting) A4 B0 F_def someI_ex)
+        show "y \<in> (SupUn`FFx)"
+          by (metis A4 B4 FFx_def imageI)
+      qed
+      have B4:"SupUn`FFx \<subseteq> Fx"
+      proof
+        fix z assume B4A0:"z \<in> SupUn`FFx"
+        obtain w where B4A1:"w \<in> Fx \<and> z = (SupUn \<circ> F) w "
+          using B4A0 FFx_def by auto
+        obtain Fw where B4A2:"Fw = (F w) \<and> w = SupUn Fw \<and> Fw \<in> Pow A \<and> has_sup Fw"
+          by (metis (mono_tags, lifting) B0 B4A1 F_def someI_ex)
+        have B4B0:"SupUn Fw = SupUn (F w)"
+          using B4A2 by force
+        have B4B1:"... =  (SupUn \<circ> F) w "
+          by simp
+        have B4B2:"... = z"
+          using B4A1 by force
+        show "z \<in> Fx"
+          using B4A1 B4A2 by fastforce
+      qed
+      show ?thesis
+        using B3 B4 by blast
+    qed
+   define G where "G=\<Union>FFx"
+    have B6:"has_sup (SupUn`FFx)"
+      using A1 B2 by blast
+    have B7:"SupUn Fx = SupUn(SupUn`FFx)"
+      using B2 by blast
+    have B8:"... = SupUn(G)"
+      by (metis B1 B6 FFx_def G_def Union_empty image_empty sup_comp_un_ind)
+    have B9:"\<And>y. y \<in> Fx  \<longrightarrow> (F y) \<in> Pow A"
+      by (metis (mono_tags, lifting) B0 F_def someI)
+    have B10:"\<forall>Fy \<in> FFx. Fy \<in> Pow A"
+      using B9 FFx_def by auto
+    have B11:"FFx \<in> Pow (Pow A)"
+      using B10 by blast
+    have B12:"G \<in> Pow A"
+      using B11 G_def fpow_ne_finite_union by auto
+    have B13:"has_sup G \<and> x = SupUn G"
+      by (metis A1 B1 B2 FFx_def G_def Sup_empty image_empty sup_comp_un_ind)
+    show "x \<in> C"
+      using B12 B13 C_def arb_sup_cl_def by blast
+    qed
+  show ?thesis
+    using C_def L R by force
+qed
+
+lemma f_inf_cl_idemp2:
+  "\<forall>A. fin_inf_cl A = fin_inf_cl (fin_inf_cl A)"
+  using fin_inf_cl_idemp by blast
+
+lemma arb_sup_cl_idemp2:
+  "\<forall>A. arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
+  using arb_sup_cl_idemp by blast
+
+
+lemma fin_inf_cl_is_cl:
+  "is_closure fin_inf_cl"
+  unfolding is_closure_def
+  apply(simp add: is_extensive_def fin_inf_cl_extensive is_isotone_def fin_inf_cl_iso)
+  apply(simp add:is_idempotent_def)
+  using f_inf_cl_idemp2 by blast
+
+
+lemma arb_sup_cl_is_cl:
+  "is_closure arb_sup_cl"
+  unfolding is_closure_def
+  apply(simp add: is_extensive_def arb_sup_cl_extensive is_isotone_def arb_sup_cl_iso)
+  apply(simp add:is_idempotent_def)
+  using arb_sup_cl_idemp2 by blast
+
+lemma comp_extensive:
+  fixes f1 f2::"'a::order \<Rightarrow> 'a::order" 
+  assumes "is_extensive f1 \<and> is_extensive f2"
+  shows " is_extensive (f1 \<circ> f2)"
+  by (metis assms comp_apply is_extensive_def order_trans)
+
+lemma comp_isotone:
+  fixes f1 f2::"'a::order \<Rightarrow> 'a::order" 
+  assumes "is_isotone f1 \<and> is_isotone f2"
+  shows " is_isotone (f1 \<circ> f2)"
+  by (metis assms comp_apply is_isotone_def)
+
+
 end
