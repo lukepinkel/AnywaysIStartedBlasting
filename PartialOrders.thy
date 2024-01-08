@@ -2882,5 +2882,78 @@ proof-
     using A3 A4 B9 B10 by blast
 qed
 
+lemma sup_comp_un_ind:
+  fixes F::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"I \<noteq> {}" and A1:"\<And>i. i \<in> I  \<Longrightarrow> has_sup (F i)" and A2:"has_sup (SupUn`(F`I))"
+  shows "(has_sup (\<Union>i \<in> I. F i)) \<and> SupUn (SupUn`(F`I)) = SupUn (\<Union>i \<in> I. F i)"
+proof-
+  define A where A3:"A=(\<Union>i \<in> I. F i)"
+  define G where A4:"G= SupUn`(F`I)"
+  have B0:"\<And>i. i \<in> I \<longrightarrow> (F i) \<subseteq> A"
+    by (simp add: A3 SUP_upper)
+  have B1:"\<And>i. i \<in> I \<longrightarrow> (\<forall>u. u \<in>(ub_set A) \<longrightarrow> SupUn (F i) \<le> u)"
+    by (meson A1 B0 in_mono is_sup_imp3 sup_is_sup ub_set_mem_iff)
+  have B2:"\<And>i. i \<in> I \<longrightarrow> ub_set A \<subseteq> ub_set {(SupUn (F i))}"
+    by (simp add: B1 ub_set_mem_iff subset_eq)
+  have B3:"ub_set A \<subseteq> ub_set G"
+    by (simp add: A4 B1 imp_in_upper_bounds subsetI)
+  have B4:"\<And>u. u \<in> ub_set A \<longrightarrow> SupUn G \<le> u"
+    using A2 A4 B3 sup_is_sup is_sup_imp3 ub_set_imp by blast
+  have B5:"\<And>a. a \<in> A \<longrightarrow> a \<le> SupUn G"
+  proof
+    fix a assume A5:"a \<in> A"
+    obtain i where A6:"i \<in> I \<and> a \<in> F i"
+      using A3 A5 by blast
+    have B6:"a \<le> SupUn (F i)"
+      using A1 A6 is_sup_imp2 sup_is_sup by blast
+    show "a \<le> SupUn G"
+      by (metis A2 A4 A6 B6 dual_order.trans imageI is_sup_imp2 sup_is_sup)
+  qed
+  have B8:"is_sup (SupUn G) A"
+    by (simp add: B4 B5 imp_in_upper_bounds is_sup_if3)
+  have B9:"has_sup A"
+    using B8 has_sup_def has_min_def is_sup_def by blast
+  have B10:"SupUn G = SupUn A"
+    by (simp add: B8 B9 is_sup_sup_eq)
+  show ?thesis
+    using A3 A4 B9 B10 by blast
+qed
+
+lemma sup_comp_un:
+  fixes F::"'a::order set set"
+  assumes A0:"F \<noteq> {}" and A1:"\<And>A. A \<in> F \<Longrightarrow> has_sup A" and A2:"has_sup (SupUn`(F))"
+  shows "(has_sup (\<Union>F)) \<and> (SupUn (SupUn`(F)) = SupUn (\<Union>F))"
+proof-
+  define A where A3:"A=\<Union>F"
+  define G where A4:"G=SupUn`(F)"
+  have B0:"\<And>E. E \<in> F \<Longrightarrow> E \<subseteq> A"
+    by (simp add: A3 Union_upper)
+  have B1:"\<And>E. E \<in> F \<Longrightarrow> (\<forall>u. u \<in>(ub_set A) \<longrightarrow> SupUn (E) \<le> u)"
+    by (meson A1 B0 in_mono is_sup_imp3 sup_is_sup ub_set_mem_iff)
+  have B2:"\<And>E. E \<in> F \<Longrightarrow> ub_set A \<subseteq> ub_set {(SupUn E)}"
+    by (simp add: B1 ub_set_mem_iff subset_eq)
+  have B3:"ub_set A \<subseteq> ub_set G"
+    by (simp add: A4 B1 imp_in_upper_bounds subsetI)
+  have B4:"\<And>u. u \<in> ub_set A \<longrightarrow> SupUn G \<le> u"
+    using A2 A4 B3 sup_is_sup is_sup_imp3 ub_set_imp by blast
+  have B5:"\<And>a. a \<in> A \<longrightarrow> a \<le> SupUn G"
+  proof
+    fix a assume A5:"a \<in> A"
+    obtain E  where A6:"E \<in> F \<and> a \<in> E"
+      using A3 A5 by blast
+    have B6:"a \<le> SupUn E"
+      using A1 A6 is_sup_imp2 sup_is_sup by blast
+    show "a \<le> SupUn G"
+      by (metis A2 A4 A6 B6 dual_order.trans imageI is_sup_imp2 sup_is_sup)
+  qed
+  have B8:"is_sup (SupUn G) A"
+    by (simp add: B4 B5 imp_in_upper_bounds is_sup_if3)
+  have B9:"has_sup A"
+    using B8 has_sup_def has_min_def is_sup_def by blast
+  have B10:"SupUn G = SupUn A"
+    by (simp add: B8 B9 is_sup_sup_eq)
+  show ?thesis
+    using A3 A4 B9 B10 by blast
+qed
 
 end
