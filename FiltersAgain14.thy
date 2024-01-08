@@ -726,8 +726,12 @@ lemma set_filter_improper_iff:
   by (simp add: assms filter_improper_iff)
 
 lemma filter_closure_obtains0:
-  "\<And>x. x \<in> filter_closure A \<longleftrightarrow> (\<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> x)"
+  "\<And>x. x \<in> filter_closure A \<longleftrightarrow> (\<exists>S\<in>Fpow_ne A. InfUn S \<le> x)"
   by (simp add: filter_closure_def)
+
+lemma fpow_ne_equiv:
+  "S\<in>Fpow_ne A \<longleftrightarrow> (S \<in> Pow A \<and> finite S \<and> S \<noteq> {})"
+  by (metis Pow_iff fpow_ne_if fpow_ne_imp)
 
 lemma filter_closure_extensive:
   fixes A::"'a::semilattice_inf set"
@@ -735,29 +739,29 @@ lemma filter_closure_extensive:
 proof-
   have B0:"\<forall>a. a \<in> A \<longrightarrow>   a \<in> lb_set {a}"
     by (simp add: lb_set_def)
-  have B1:"\<forall>a \<in> A. {a} \<in> Pow(A) \<and> (finite {a}) \<and> ({a} \<noteq> {})"
-    by simp
+  have B1:"\<forall>a \<in> A. {a} \<in> Fpow_ne A"
+    by (meson fpow_ne_singleton)
   have B2:"\<forall>a \<in> A. a \<in> (filter_closure A)"
-    by (metis B1 dual_order.refl filter_closure_obtains0 semilattice_inf_class.singleton)
+    by (metis B0 B1 DiffI Diff_insert_absorb filter_closure_obtains0 inf_singleton lb_set_mem mk_disjoint_insert)
   show ?thesis
     by (simp add: B2 subset_iff)
 qed
 
 lemma filter_closure_isotone:
-  fixes A::"'X::semilattice_inf set" and  
-        B::"'X::semilattice_inf set"
+  fixes A::"'a::semilattice_inf set" and  
+        B::"'a::semilattice_inf set"
   assumes A0:"A \<subseteq> B"
   shows "(filter_closure A) \<subseteq> (filter_closure B)"
 proof
   fix x assume A1:"x \<in> (filter_closure A)"
-  obtain S1 where A2:"S1 \<in> (Pow A) \<and> (finite S1) \<and> (S1 \<noteq> {}) \<and> fInf S1 \<le> x"
+  obtain S1 where A2:"S1 \<in>Fpow_ne A \<and> InfUn S1 \<le> x"
     by (meson A1 filter_closure_obtains0)
   have B0:"S1 \<in> Pow  B"
-    using A2 assms by blast
-  obtain S2 where A3:"S2 \<in> (Pow B) \<and> (finite S2) \<and> (S2 \<noteq> {}) \<and> fInf S2 \<le> x"
-    using A2 B0 by blast
+    by (meson A2 PowI assms fpow_ne_imp order_trans)
+  obtain S2 where A3:"S2 \<in> Fpow_ne B \<and> InfUn S2 \<le> x"
+    by (metis A2 B0 PowD fpow_ne_if fpow_ne_imp)
   show "x \<in> (filter_closure B)"
-    using A2 B0 filter_closure_obtains0 by auto
+    using A3 filter_closure_obtains0 by auto
 qed
 
 subsection FilterPiSystemInSemilatticeinf
@@ -802,26 +806,29 @@ lemma filter_closure_idempotent:
   fixes A::"'X::semilattice_inf set"  
   shows "(filter_closure A) = (filter_closure (filter_closure A))"
 proof-
-  have B0:"(filter_closure(filter_closure A)) \<subseteq> filter_closure A"
+  let ?A1="filter_closure A" let ?A2="filter_closure ?A1"
+  have B0:"?A2 \<subseteq> ?A1"
   proof
-    fix x assume A0:"x \<in> (filter_closure(filter_closure A))"
-    obtain Ex where A1:"(Ex\<in>Pow( (filter_closure A)) \<and>  finite Ex \<and>  Ex \<noteq> {} \<and>  (fInf Ex) \<le> x)"
+    fix x assume A0:"x \<in>?A2"
+    obtain Ex where A1:"(Ex \<in> Fpow_ne ?A1 \<and> (InfUn Ex) \<le> x)"
       by (meson A0 filter_closure_obtains0)
-    have B1:"\<forall>y \<in> Ex. (\<exists>Ey \<in> Pow(A). finite Ey \<and> Ey \<noteq> {} \<and> (fInf Ey) \<le> y)"
-      by (metis A1 UnionI Union_Pow_eq filter_closure_obtains0)
-    define g where "g=(\<lambda>y. SOME Ey. Ey \<in> Pow(A) \<and> finite Ey \<and> Ey \<noteq> {} \<and> (fInf Ey) \<le> y)"
-    have B2:"\<forall>y \<in>  Ex. ((g y) \<in> Pow(A) \<and> (finite (g y)) \<and> (g y \<noteq> {}) \<and> (fInf (g y)) \<le> y)"
+    have B1:"\<forall>y \<in> Ex. (\<exists>Ey\<in> Fpow_ne A. (InfUn Ey) \<le> y)"
+      by (meson A1 filter_closure_obtains0 fpow_ne_imp in_mono)
+    define g where "g=(\<lambda>y. SOME Ey. Ey \<in> Fpow_ne A \<and> (InfUn Ey) \<le> y)"
+    have B2:"\<forall>y \<in>  Ex. ((g y) \<in> Fpow_ne A \<and> (InfUn (g y)) \<le> y)"
       by (metis (mono_tags, lifting) B1 g_def someI)
+    have B20:"finite (g`Ex) \<and> (\<forall>Ey \<in> (g`Ex). Ey \<in> Fpow_ne A)"
+      by (metis A1 B2 finite_imageI fpow_ne_imp imageE)
     define E where "E=(\<Union>(g`Ex))"
-    have B3:"E \<in> Pow (A) \<and> finite E \<and> E \<noteq> {}"
-      using A1 B2 E_def by auto
-    have B4:"\<forall>y \<in> Ex. (fInf E) \<le> (fInf (g y))"
-      by (metis B2 B3 E_def SUP_upper semilattice_inf_class.subset_imp)
-    have B5:"\<forall>y \<in> Ex. (fInf E) \<le> y"
+    have B3:"E \<in> Fpow_ne A"
+      by (metis A1 B20 DiffD2 Diff_eq_empty_iff E_def Fpow_subset_Pow PowI Pow_empty finite_has_maximal fpow_ne_union image_is_empty subset_empty)
+    have B4:"\<forall>y \<in> Ex. (InfUn E) \<le> (InfUn (g y))"
+      by (metis B2 B3 E_def UN_upper fpow_ne_imp inf_antitone1 semilattice_inf_has_inf)
+    have B5:"\<forall>y \<in> Ex. (InfUn E) \<le> y"
       using B2 B4 order.trans by blast
-    have B6:"(fInf E) \<le> (fInf Ex)"
-      by (simp add: A1 B5 semilattice_inf_class.boundedI)
-    have B7:"(fInf E) \<le> x"
+    have B6:"(InfUn E) \<le> (InfUn Ex)"
+      by (metis A1 B5 fpow_ne_imp inf_is_inf is_inf_imp3 semilattice_inf_has_inf)
+    have B7:"(InfUn E) \<le> x"
       using A1 B6 order.trans by blast
     show "x \<in> filter_closure A"
       using B3 B7 filter_closure_obtains0 by blast
@@ -830,14 +837,16 @@ proof-
     by (simp add: B0 filter_closure_extensive set_eq_subset)
 qed
 
+
+
 lemma filter_closure_is_closure:
-  shows "is_closure filter_closure"
+  shows "is_closure (filter_closure::('a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set))"
 proof-
-  have A0:"is_extensive filter_closure"
-    by (simp add: filter_closure_extensive is_extensive_def)
-  have A1:"is_isotone filter_closure"
+  have A0:"is_extensive (filter_closure::('a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set))"
+    by (metis filter_closure_obtains0 fpow_ne_singleton inf_singleton is_extensive_def order.refl subsetI)
+  have A1:"is_isotone (filter_closure::('a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set))"
     by (simp add: filter_closure_isotone is_isotone_def)
-  have A3:"is_idempotent filter_closure"
+  have A3:"is_idempotent (filter_closure::('a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set))"
     using filter_closure_idempotent is_idempotent_def by blast
   show ?thesis
     by (simp add: A0 A1 A3 is_closure_def)
@@ -851,17 +860,17 @@ lemma filters_in_filter_cl_range:
 proof-
   have B0:"filter_closure F \<subseteq> F"
   proof-
-    have B00:"filter_closure F = {a. \<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le>  a}"
+    have B00:"filter_closure F = {a. \<exists>S\<in>Fpow_ne(F). InfUn S \<le>  a}"
       by (simp add: filter_closure_def)
-    have B01:"\<And>a. (\<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> a) \<longrightarrow> a \<in> F"
+    have B01:"\<And>a. (\<exists>S\<in>Fpow_ne(F). InfUn S \<le> a) \<longrightarrow> a \<in> F"
     proof
-      fix a assume B01A0:"(\<exists>S\<in>Pow(F). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> a)"
-      obtain S where B01A1:"S \<in> Pow(F) \<and> finite S \<and> S \<noteq> {} \<and>  fInf S \<le> a"
+      fix a assume B01A0:"\<exists>S\<in>Fpow_ne(F). InfUn S \<le> a "
+      obtain S where B01A1:"S \<in>Fpow_ne(F) \<and>  InfUn S \<le> a"
         using B01A0 by force
-      have B01A1:"(fInf S) \<in> F"
-        using B01A1 assms filters_inf_closed by auto
+      have B01A1:"(InfUn S) \<in> F"
+        by (metis B01A1 assms filters_inf_closed fpow_ne_imp semilattice_inf_finf_eq)
       show "a \<in> F"
-        by (meson B01A0 is_filter_def PowD assms filters_inf_closed is_upclosed_imp)
+        by (metis B01A0 PartialOrders.is_filter_def assms filters_inf_closed fpow_ne_imp is_upclosed_imp semilattice_inf_finf_eq)
     qed
     show ?thesis
       by (meson B01 filter_closure_obtains0 subsetI)
@@ -884,19 +893,19 @@ proof-
     have B01:"(\<And>a b.  (a \<in> ?F \<and> b \<in> ?F) \<longrightarrow> (\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)))"
     proof
        fix a b assume B0A0:"a \<in> ?F \<and> b \<in> ?F"
-      obtain Sa where B0A1:"Sa \<in> Pow(E) \<and> finite Sa \<and> Sa \<noteq> {} \<and> (fInf Sa) \<le> a"
-        by (meson B0A0 filter_closure_obtains0)
-      obtain Sb where B0A2:"Sb \<in> Pow(E) \<and> finite Sb \<and> Sb \<noteq> {} \<and> (fInf Sb) \<le> b"
-        by (meson B0A0 filter_closure_obtains0) 
+      obtain Sa where B0A1:"Sa \<in> Fpow_ne E \<and> (InfUn Sa) \<le> a"
+        using B0A0 filter_closure_obtains0 by blast
+      obtain Sb where B0A2:"Sb \<in> Fpow_ne(E) \<and> (fInf Sb) \<le> b"
+        by (metis B0A0 filter_closure_obtains0 fpow_ne_equiv semilattice_inf_finf_eq)
       define Sc where B0A3:"Sc=Sa \<union> Sb"
-      have B0B2:"Sc \<in> Pow(E) \<and> finite Sc \<and> Sc \<noteq> {}"
-        using B0A1 B0A2 B0A3 by auto
+      have B0B2:"Sc \<in> Fpow_ne (E)"
+        by (metis B0A1 B0A2 B0A3 finite_Un fpow_ne_if fpow_ne_imp le_sup_iff sup_eq_bot_iff)
       have B0B3:"(fInf Sc) \<le> (fInf Sa) \<and> (fInf Sc) \<le>(fInf Sb)"
-        by (simp add: B0A1 B0A2 B0A3 semilattice_inf_class.subset_imp)
+        by (metis B0A1 B0A2 B0A3 B0B2 fpow_ne_imp inf_sup_ord(4) semilattice_inf_class.subset_imp sup_ge1)
       have B0B4:"(fInf Sc) \<le> a \<and> (fInf Sc) \<le> b"
-        using B0A1 B0A2 B0B3 dual_order.trans by blast
+        by (metis B0A1 B0A2 B0B3 dual_order.trans fpow_ne_imp semilattice_inf_finf_eq)
       show "\<exists>c  \<in> ?F. (c \<le> a) \<and>  (c \<le> b)"
-        by (meson B0B2 B0B4 dual_order.refl filter_closure_obtains0)
+        by (metis B0B2 B0B4 dual_order.refl filter_closure_obtains0 fpow_ne_equiv semilattice_inf_finf_eq)
       qed
     show ?thesis
       by (simp add: B01 is_downdir_def)
@@ -906,9 +915,9 @@ proof-
     have B10:"\<And>a b. (a \<le> b \<and>  a \<in> ?F) \<longrightarrow>  b \<in> ?F"
     proof 
       fix a b assume B1A0:"(a \<le> b \<and>  a \<in> ?F)" 
-      obtain Sa where B1A1:"Sa \<in> Pow(E) \<and> finite Sa \<and> Sa \<noteq> {} \<and> (fInf Sa) \<le> a"
+      obtain Sa where B1A1:"Sa \<in> Fpow_ne E \<and>  (InfUn Sa) \<le> a"
         by (meson B1A0 filter_closure_obtains0)
-      have B1B1:"(fInf Sa) \<le> b"
+      have B1B1:"(InfUn Sa) \<le> b"
         using B1A0 B1A1 dual_order.trans by blast
       show "b \<in> ?F"
         using B1A1 B1B1 filter_closure_obtains0 by blast
@@ -1967,7 +1976,7 @@ proof
   show "is_prime_alt U"
   proof-
     have B0:"\<forall>a. (a \<in> U) \<or> (-a) \<in> U"
-      by (metis A1 assms bot_least compl_sup_top filter_topped is_pfilter_def ultrafilter_notprime_contradiction)
+      by (metis A1 assms filter_topped is_pfilter_def order_bot_class.bot_least sup_compl_top ultrafilter_notprime_contradiction)
     show ?thesis
       by (metis B0 assms boolean_algebra.conj_cancel_right filter_inlattice_inf_closed is_pfilter_def is_prime_alt_def proper_filter_iff)
   qed
@@ -2230,29 +2239,29 @@ proof-
         using A1 inf_bot_left by blast
       have A022:"bot \<notin> Fa"
         using Fa_def A020 A021 by blast
-      have A024:"\<forall>S \<in> Pow(F). finite S \<and> S \<noteq> {} \<longrightarrow> fInf S \<noteq> bot"
-        by (metis A0 A021 Pow_iff filters_inf_closed is_pfilter_def)
-      have A025:"\<And>S. S \<in> Pow(Fa) \<and> finite S \<and> S \<noteq> {} \<longrightarrow> fInf S \<noteq> bot"
+      have A024:"\<forall>S. S \<in> Fpow_ne(F) \<longrightarrow> InfUn S \<noteq> bot"
+        by (metis A0 A021 filters_inf_closed fpow_ne_imp is_pfilter_def semilattice_inf_finf_eq)
+      have A025:"\<And>S. S \<in> Fpow_ne(Fa)  \<longrightarrow> InfUn S \<noteq> bot"
       proof
-        fix S assume A0250:"S \<in> Pow(Fa) \<and> finite S \<and> S \<noteq> {} "
-        show "fInf S \<noteq> bot"
+        fix S assume A0250:"S \<in> Fpow_ne(Fa) "
+        show "InfUn S \<noteq> bot"
         proof(cases "a \<in> S")
           case True
-          have A0251:"fInf S = (if (S-{a}={}) then a else (inf a (fInf(S - {a}))))"
-            using A0250 True semilattice_inf_class.remove by blast
-          have "fInf S \<noteq> bot"
+          have A0251:"InfUn S = (if (S-{a}={}) then a else (inf a (InfUn(S - {a}))))"
+            by (metis A0250 True finite_Diff fpow_ne_equiv semilattice_inf_class.remove semilattice_inf_finf_eq)
+          have "InfUn S \<noteq> bot"
           proof(cases "S-{a}={}")
             case True
             then show ?thesis
               using A020 A0251 by presburger
           next
             case False
-            have A0252:"(finite (S - {a})) \<and> ((S - {a}) \<noteq> {}) \<and> ((S - {a}) \<subseteq> F)"
-              using A0250 Fa_def False by blast
-            have A0253:"fInf(S - {a}) \<noteq> bot"
+            have A0252:" (S - {a}) \<in> Fpow_ne F"
+              by (metis A0250 Fa_def False Sup_insert True Un_insert_right ccpo_Sup_singleton finite_Diff fpow_ne_if fpow_ne_imp subset_insert_iff sup_bot.right_neutral)
+            have A0253:"InfUn(S - {a}) \<noteq> bot"
               by (meson A024 A0252 PowI)
-            have A0254:"(inf (fInf(S - {a})) a) \<noteq> bot"
-              by (meson A0 A0252 A1 filters_inf_closed is_pfilter_def)
+            have A0254:"(inf (InfUn(S - {a})) a) \<noteq> bot"
+              by (metis A0 A0252 A1 filters_inf_closed fpow_ne_imp is_pfilter_def semilattice_inf_finf_eq)
             then show ?thesis
               by (metis A0251 False inf_commute)
           qed
@@ -2261,8 +2270,7 @@ proof-
         next
           case False
           then show ?thesis
-            by (metis A0 A021 A0250 Fa_def PowD Sup_insert Un_insert_right ccpo_Sup_singleton
-                filters_inf_closed is_pfilter_def subset_insert_iff sup_bot.right_neutral)
+            by (metis A024 A0250 Fa_def Sup_insert Un_insert_right ccpo_Sup_singleton fpow_ne_if fpow_ne_imp subset_insert_iff sup_bot.right_neutral)
           qed
         qed
       show ?thesis
