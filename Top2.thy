@@ -6,23 +6,40 @@ definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set" where
   "fin_inf_cl A \<equiv> {x. \<exists>F \<in> Fpow_ne A. has_inf F \<and> x = InfUn F}"
 
 definition arb_sup_cl::"'a::order set \<Rightarrow> 'a::order set" where
-  "arb_sup_cl A \<equiv> {x. \<exists>F \<in> Pow A. x = SupUn F}"
+  "arb_sup_cl A \<equiv> {x. \<exists>F \<in> Pow A. has_sup F \<and> x = SupUn F}"
 
 lemma fin_inf_cl_imp0:
-  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F \<in>  Fpow_ne A. x = InfUn F)"
+  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
   using fin_inf_cl_def by blast
 
+lemma arb_sup_cl_imp0:
+  "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
+  using arb_sup_cl_def by blast
+
 lemma fin_inf_cl_imp1:
-  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and>  x = InfUn F)"
+  "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> has_inf F \<and>  x = InfUn F)"
   by (metis fin_inf_cl_imp0 fpow_ne_imp)
+
+lemma arb_sup_cl_imp1:
+  "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A  \<and> has_sup F \<and> x = SupUn F)"
+  using arb_sup_cl_imp0 by auto
 
 lemma fin_inf_cl_if1:
   "\<And>A x.  (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F) \<Longrightarrow> x \<in> fin_inf_cl A"
   by (simp add: fin_inf_cl_def)
 
+lemma arb_sup_cl_if1:
+  "\<And>A x.  (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F) \<Longrightarrow> x \<in> arb_sup_cl A"
+  by (simp add: arb_sup_cl_def)
+
 lemma fin_inf_cl_mem_iff:
   "x \<in> fin_inf_cl A \<longleftrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
   by (simp add: fin_inf_cl_def)
+
+lemma  arb_sup_cl_mem_iff:
+  "x \<in> arb_sup_cl A \<longleftrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
+  by (simp add: arb_sup_cl_def)
+
 
 lemma fpow_ne_iso:
   "A \<subseteq> B \<Longrightarrow> Fpow_ne A \<subseteq> Fpow_ne B"
@@ -33,7 +50,18 @@ lemma fpow_ne_finite_union:
   shows "(\<Union>EF) \<in> Fpow_ne A"
   by (metis DiffD2 Pow_empty Pow_iff assms fpow_ne_equiv fpow_ne_union subset_eq)
 
-lemma fin_inf_cl_iso:
+
+lemma arb_sup_cl_extensive:
+  "A \<subseteq> arb_sup_cl A"
+proof
+  fix a assume A0:"a \<in> A"
+  have B0:"{a} \<in> Pow A \<and> has_sup {a} \<and> a = SupUn {a}"
+    by (simp add: A0 has_sup_singleton sup_singleton)
+  show "a \<in> arb_sup_cl A"
+    using B0 arb_sup_cl_def by blast
+qed
+
+lemma fin_inf_cl_extensive:
   "A \<subseteq> fin_inf_cl A"
 proof
   fix a assume A0:"a \<in> A"
@@ -44,7 +72,20 @@ proof
 qed
 
 
-lemma fin_inf_cl_mono:
+lemma arb_sup_cl_iso:
+  assumes "A \<subseteq> B"
+  shows "arb_sup_cl A  \<subseteq> arb_sup_cl B"
+proof
+  fix a assume A0:"a \<in> arb_sup_cl A"
+  obtain F where A1:"F \<in> Pow A \<and> has_sup F \<and> a = SupUn F"
+    using A0 arb_sup_cl_imp0 by auto
+  have B0:"F \<in> Pow B \<and> has_sup F \<and>  a = SupUn F"
+    using A1 assms fpow_ne_iso by blast
+  show "a \<in> arb_sup_cl B"
+    using B0 arb_sup_cl_def by blast
+qed
+
+lemma fin_inf_cl_iso:
   assumes "A \<subseteq> B"
   shows "fin_inf_cl A  \<subseteq> fin_inf_cl B"
 proof
@@ -57,12 +98,14 @@ proof
     using B0 fin_inf_cl_def by blast
 qed
 
+
+
 lemma fin_inf_cl_idemp:
     "fin_inf_cl A = fin_inf_cl (fin_inf_cl A)"
 proof-
   define C where "C=(fin_inf_cl A)"
   have L:"C \<subseteq> fin_inf_cl C"
-    by (simp add: fin_inf_cl_iso)
+    by (simp add: fin_inf_cl_extensive)
   have R:"fin_inf_cl C \<subseteq> C"
   proof
     fix x assume A0:"x \<in> fin_inf_cl C"
@@ -120,6 +163,31 @@ proof-
   show ?thesis
     using C_def L R by force
 qed
+
+lemma arb_sup_cl_idemp:
+    "arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
+proof-
+  define C where "C=(arb_sup_cl A)"
+  have L:"C \<subseteq> arb_sup_cl C"
+    by (simp add: arb_sup_cl_extensive)
+  have R:"arb_sup_cl C \<subseteq> C"
+  proof
+    fix x assume A0:"x \<in> arb_sup_cl C"
+    obtain Fx where A1:"Fx \<in> Pow C \<and> has_sup Fx \<and> x = SupUn Fx"
+      using A0 arb_sup_cl_imp0 by auto
+    show "x \<in> C"
+
+lemma f_inf_cl_idemp2:
+  "\<forall>A. fin_inf_cl A = fin_inf_cl (fin_inf_cl A)"
+  using fin_inf_cl_idemp by blast
+
+lemma fin_inf_cl_is_cl:
+  "is_closure fin_inf_cl"
+  unfolding is_closure_def
+  apply(simp add: is_extensive_def fin_inf_cl_extensive is_isotone_def fin_inf_cl_iso)
+  apply(simp add:is_idempotent_def)
+  using f_inf_cl_idemp2 by blast
+
 
 
 definition top_u1::"'a set set \<Rightarrow> bool" where
