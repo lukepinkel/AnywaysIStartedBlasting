@@ -389,6 +389,17 @@ lemma finite_sup_greatest:
 end
 
 
+abbreviation Fpow_ne::"'a set \<Rightarrow> 'a set set" where
+  "Fpow_ne A \<equiv> (Fpow A)-{{}}"
+
+abbreviation Dpow::"'a set \<Rightarrow> 'a set set set" where
+  "Dpow A \<equiv> (Pow (Pow A))"
+
+abbreviation Pow_ne::"'a set \<Rightarrow> 'a set set" where
+  "Pow_ne A \<equiv> (Pow A) - {{}}"
+
+
+
 section Definitions
 subsection Bounds
 definition ub_set_in::"'a::ord set \<Rightarrow> 'a::ord set  \<Rightarrow> 'a::ord set" where
@@ -546,16 +557,16 @@ definition is_cofinal_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> b
   "A is_cofinal_in B \<equiv> (\<forall>a. a \<in> A \<longrightarrow> (\<exists>b \<in> B. b \<ge> a))"
 
 definition is_inf_complete::"'a::ord set \<Rightarrow> bool" where 
-  "is_inf_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_inf_in A X)"
+  "is_inf_complete X \<equiv> (\<forall>A. A \<in> Pow_ne X \<longrightarrow> has_inf_in A X)"
 
 definition is_sup_complete::"'a::ord set \<Rightarrow> bool" where 
-  "is_sup_complete X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> has_sup_in A X)"
+  "is_sup_complete X \<equiv> (\<forall>A. A \<in> Pow_ne X \<longrightarrow> has_sup_in A X)"
 
 definition is_inf_closed::"'a::ord set \<Rightarrow> bool" where 
-  "is_inf_closed X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> InfIn A X \<in> X)"
+  "is_inf_closed X \<equiv> (\<forall>A. A \<in> Pow_ne X \<longrightarrow> InfIn A X \<in> X)"
 
 definition is_sup_closed::"'a::ord set \<Rightarrow> bool" where 
-  "is_sup_closed X \<equiv> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<noteq> {} \<longrightarrow> SupIn A X \<in> X)"
+  "is_sup_closed X \<equiv> (\<forall>A. A \<in> Pow_ne X  \<longrightarrow> SupIn A X \<in> X)"
 
 definition is_inhabited::"'a set  \<Rightarrow> bool" where
    "is_inhabited X \<equiv> (X \<noteq> {})"
@@ -566,23 +577,29 @@ definition is_downdir::"'a::ord set \<Rightarrow> bool" where
 definition is_upclosed::"'a::ord set \<Rightarrow> bool" where
    "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
 
+definition is_upclosed_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
+   "is_upclosed_in A x \<equiv> (\<forall>a b. a \<le> b \<and>  b \<le> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
+
 definition is_pisystem::"'a::order set \<Rightarrow> bool" where
    "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (binf a b)  \<in> X)"
 
 definition is_filter::"'a::ord set \<Rightarrow> bool" where 
   "is_filter F \<equiv> (is_downdir F \<and> is_upclosed F \<and> is_inhabited F)"
 
+definition is_filter_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where 
+  "is_filter_in F x \<equiv> (is_downdir F \<and> is_upclosed_in F x \<and> is_inhabited F \<and> (\<forall>f. f \<in> F \<longrightarrow> f \<le> x))"
+
 definition covers::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
   "covers A b \<equiv> (b \<in> lb_set A) \<and> (A \<noteq> {}) "
 
 definition is_finite_subcover::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow>   'a::ord \<Rightarrow>  bool" where
- "is_finite_subcover S A b \<equiv> (S \<subseteq> A) \<and> (S \<noteq> {}) \<and> (finite S)  \<and> (b \<in> lb_set S)"
+ "is_finite_subcover S A b \<equiv> (S \<in> Fpow_ne A)  \<and> (b \<in> lb_set S)"
 
 definition is_compact::"'a::ord \<Rightarrow> bool" where
   "is_compact b \<equiv> (\<forall>A. (covers A b) \<longrightarrow> (\<exists>S. is_finite_subcover S A b))"
 
 definition is_directed::"'a::ord set \<Rightarrow> bool" where 
-  "is_directed D \<equiv> (D \<noteq> {}) \<and> (\<forall>A \<in> Pow D. (A \<noteq> {} \<and> finite A) \<longrightarrow> (\<exists>u \<in> D. u \<in> ub_set A))"
+  "is_directed D \<equiv> (D \<noteq> {}) \<and> (\<forall>A. A  \<in> Fpow_ne D \<longrightarrow> (\<exists>u \<in> D. u \<in> ub_set A))"
 
 definition directed_covering::"'a::ord \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
   "directed_covering a D \<equiv> (covers D a) \<and> is_directed D"
@@ -602,11 +619,18 @@ definition is_moore_family::"'a::order set \<Rightarrow> bool" where
 definition moore_to_closure::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
   "moore_to_closure C \<equiv> (\<lambda>x. InfUn(ub_set_in {x} C))"
 
-definition filter_closure::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
-  "filter_closure A \<equiv> {a. \<exists>S\<in>Pow(A). finite S \<and>  S \<noteq> {} \<and>  fInf S \<le> a}"
+definition filter_closure::"'a::order set \<Rightarrow> 'a::order set" where
+  "filter_closure A \<equiv> {a. \<exists>S\<in>Fpow_ne(A). InfUn S \<le> a}"
+
+definition filter_closure_in::"'a::order set \<Rightarrow>'a::order \<Rightarrow> 'a::order set" where
+  "filter_closure_in A x \<equiv> {a. a \<le> x \<and> (\<exists>S\<in>Fpow_ne(A). InfUn S \<le> a)}"
+
 
 definition up_closure::"'a::order set \<Rightarrow> 'a::order set" where
   "up_closure A \<equiv> {x. \<exists>a \<in> A. a \<le> x}"
+
+definition up_closure_in::"'a::order set \<Rightarrow> 'a::order \<Rightarrow>  'a::order set" where
+  "up_closure_in A x \<equiv> {y. \<exists>a \<in> A. a \<le> y \<and> y \<le> x}"
 
 definition is_prime::"'a::{order, sup} set \<Rightarrow> bool" where
   "is_prime A \<equiv> (\<forall>a. \<forall>b. (sup a b) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
@@ -617,7 +641,7 @@ definition is_prime_alt::"'a::{boolean_algebra,order_bot} set \<Rightarrow> bool
 definition binary_filter_sup::"'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set \<Rightarrow> 'a::semilattice_inf set" where
   "binary_filter_sup A B = {x. \<exists>a \<in> A. \<exists>b \<in> B. inf a b \<le> x}"
 
-definition filter_sup::"'a::semilattice_inf set set \<Rightarrow> 'a::semilattice_inf set" where
+definition filter_sup::"'a::order set set \<Rightarrow> 'a::order set" where
   "filter_sup EF \<equiv> filter_closure(Sup(EF))"
 
 definition filter_inf::"'a::bounded_semilattice_inf_top set set \<Rightarrow> 'a::bounded_semilattice_inf_top set" where
@@ -626,8 +650,14 @@ definition filter_inf::"'a::bounded_semilattice_inf_top set set \<Rightarrow> 'a
 definition is_proper::"'a::order set \<Rightarrow> bool" where
   "is_proper F \<equiv> F \<noteq> UNIV"
 
+definition is_proper_in::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "is_proper_in F x \<equiv> (F \<noteq> {y. y \<le> x})"
+
 definition is_pfilter::"'a::order set \<Rightarrow>  bool" where
   "is_pfilter F \<equiv> (is_filter F) \<and> (is_proper F)"
+
+definition is_pfilter_in::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "is_pfilter_in F x \<equiv>  (is_filter_in F x) \<and> (is_proper_in F x)"
 
 definition is_ultrafilter::"'a::order set  \<Rightarrow> bool" where
   "is_ultrafilter U \<equiv> (is_pfilter U  \<and> (\<forall>F .  (is_pfilter F \<and> U \<subseteq> F) \<longrightarrow> U=F))"
@@ -905,6 +935,21 @@ lemma lb_set_degenerate:
 lemma lb_set_singleton:
   "lb_set {x} = {y. x \<ge> y}"
   by (simp add: set_eq_iff lb_set_mem_iff)
+
+subsection Misc
+
+lemma ub_lb_extensive:
+  fixes A X::"'a::ord set"
+  assumes "A \<subseteq> X"
+  shows "A \<subseteq> (ub_set_in (lb_set_in A X) X)"
+  by (meson assms lb_set_in_mem_iff subset_iff ub_set_in_mem_iff)
+
+lemma lb_ub_extensive:
+  fixes A X::"'a::ord set"
+  assumes "A \<subseteq> X"
+  shows "A \<subseteq> (lb_set_in (ub_set_in A X) X)"
+  by (meson assms ub_set_in_mem_iff subset_iff lb_set_in_mem_iff)
+
 
 section MaxMin      
 subsection Max
@@ -1265,6 +1310,7 @@ proof
     by (metis IntD2 R inf_commute is_min_if1 is_sup_in_def lb_set_in_lb_inter)
 qed
 
+
 lemma sup_complete_has_max:
   "\<And>(X::'a::order set). X \<noteq> {} \<Longrightarrow> is_sup_complete X \<Longrightarrow> (is_max (SupIn X X) X)"
   by (simp add: is_sup_complete_def sup_in_max)
@@ -1492,6 +1538,43 @@ proof
       by (meson B1 B2 has_inf_in_imp2 has_min_iff has_sup_in_def)
   qed
 qed
+
+lemma sup_in_eq_inf_in_ub:
+  fixes A X::"'a::order set"
+  assumes A0:"A \<subseteq> X" and A1:"has_inf_in (ub_set_in A X) X"
+  shows "has_sup_in A X \<and> SupIn A X = InfIn(ub_set_in A X) X"
+proof-
+  let ?U="ub_set_in A X"
+  let ?i="InfIn ?U X"
+  have B0:"A \<subseteq> lb_set_in ?U X"
+    by (simp add: A0 lb_ub_extensive)
+  have B1:"\<forall>a. a \<in> A \<longrightarrow> a \<le> ?i"
+    by (meson A0 A1 has_inf_in_imp3 subsetD ub_set_in_imp)
+  have B2:"?i \<in> ?U"
+    by (simp add: A1 B1 has_inf_in_in_set ub_set_in_elm)
+  have B3:"is_min ?i ?U"
+    by (simp add: A1 B2 has_inf_in_imp2 is_min_if2)
+  show ?thesis
+    using B3 has_sup_in_def has_sup_in_imp1 is_min_imp_has_min min_unique by blast
+qed
+
+lemma inf_in_eq_sup_in_lb:
+  fixes A X::"'a::order set"
+  assumes A0:"A \<subseteq> X" and A1:"has_sup_in (lb_set_in A X) X"
+  shows "has_inf_in A X \<and> InfIn A X = SupIn(lb_set_in A X) X"
+proof-
+  let ?L="lb_set_in A X"
+  let ?s="SupIn ?L X"
+  have B0:"A \<subseteq> ub_set_in ?L X"
+    by (meson A0 lb_set_in_imp subset_eq ub_set_in_elm)
+  have B1:"?s \<in> lb_set_in A X"
+    by (meson A1 B0 has_sup_in_imp1 has_sup_in_in_set is_min_iff lb_set_in_elm subset_eq)
+  have B2:"is_max ?s ?L"
+    by (simp add: A1 B1 has_sup_in_imp2 is_max_if2)
+  show ?thesis
+    by (metis B2 has_inf_in_def has_max_iff2 is_inf_in_iff is_inf_in_inf_eq)
+qed
+
 
 
 section AbsoluteExtrema
@@ -1970,14 +2053,14 @@ lemma sup_complete_bounded_inf_eq2:
   fixes X::"'a::order set"
   assumes A0:"is_sup_complete X"
   shows "\<And>A. (A \<subseteq> X \<and>  lb_set_in A X \<noteq> {}) \<longrightarrow> (InfIn A X = SupIn (lb_set_in A X) X)"
-  by (meson Pow_iff assms is_sup_complete_def lb_set_in_subset sup_complete_bounded_inf_eq1)
+  by (metis assms bot.extremum_uniqueI lb_set_in_subset lb_ub_extensive sup_complete_bounded_inf sup_complete_bounded_inf_eq1 sup_in_eq_inf_in_ub ub_set_in_subset)
 
 
 lemma inf_complete_bounded_sup_eq2:
   fixes X::"'a::order set"
   assumes A0:"is_inf_complete X"
   shows "\<And>A. (A \<subseteq> X \<and>  ub_set_in A X \<noteq> {}) \<longrightarrow> (SupIn A X = InfIn (ub_set_in A X) X)"
-  by (meson Pow_iff assms is_inf_complete_def ub_set_in_subset inf_complete_bounded_sup_eq1)
+  by (metis assms bot.extremum_uniqueI inf_complete_bounded_sup inf_complete_bounded_sup_eq1 inf_in_eq_sup_in_lb lb_set_in_subset ub_lb_extensive ub_set_in_subset)
 
 
 
@@ -2052,6 +2135,11 @@ lemma is_upclosed_imp:
   assumes "is_upclosed X"
   shows "\<And>a b. (a \<le> b \<and> a \<in> X) \<Longrightarrow> b \<in> X"
   using assms is_upclosed_def by blast
+
+lemma is_upclosed_in_imp:
+  assumes "is_upclosed_in A x"
+  shows "(\<And>a b. a \<le> b \<and>  b \<le> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
+  using assms is_upclosed_in_def by blast
 
 lemma is_pisystem_imp:
   assumes "is_pisystem X"
@@ -2166,6 +2254,22 @@ lemma semilattice_sup_bsup_eq_sup:
   shows "sup a b = bsup a b"
   by (simp add: bsup_def semilattice_sup_fsup_eq)
 
+lemma fpow_ne_imp:
+  "A \<in> Fpow_ne X \<Longrightarrow> (finite A) \<and> (A \<noteq> {}) \<and> (A \<subseteq> X)"
+  by (simp add: Fpow_Pow_finite)
+
+
+lemma fpow_ne_if:
+  " (finite A) \<and> (A \<noteq> {}) \<and> (A \<subseteq> X) \<Longrightarrow> A \<in> Fpow_ne X "
+  by (simp add: Fpow_Pow_finite)
+
+lemma finite_subcover_imp:
+  "is_finite_subcover S A x \<Longrightarrow> (S \<subseteq> A) \<and> (S \<noteq> {}) \<and> (finite S)"
+  using fpow_ne_imp is_finite_subcover_def by blast
+
+lemma finite_subcover_imp2:
+  "is_finite_subcover S A x \<Longrightarrow> S \<in> Fpow_ne A"
+  using fpow_ne_imp is_finite_subcover_def by blast
 
 
 lemma is_pi_system_imp:
@@ -2321,7 +2425,74 @@ lemma upclosed_in_lattice_iff:
   assumes "X \<noteq> {}"
   shows "is_upclosed X \<longleftrightarrow> (\<forall>x z. x \<in> X \<longrightarrow> (sup x z) \<in> X)"
   by (metis inf_sup_ord(3) is_upclosed_def sup.commute sup.orderE)
- 
+
+lemma fpow_ne_singleton:
+  "x \<in> A \<Longrightarrow> {x} \<in> Fpow_ne A"
+  by (meson empty_subsetI finite.emptyI finite_insert fpow_ne_if insert_not_empty insert_subset)
+
+lemma fpow_ne_union:
+  assumes "X \<noteq> {}" and "EF \<noteq> {}" and "finite EF" and "\<forall>F \<in> EF. F \<in> Fpow_ne X"
+  shows "(\<Union>EF) \<in> Fpow_ne X"
+  by (metis Sup_le_iff all_not_in_conv assms(2) assms(3) assms(4) empty_Union_conv finite_Union fpow_ne_if fpow_ne_imp) 
+
+lemma covers_imp:
+  "\<And>A b. covers A b \<Longrightarrow> A \<noteq> {} \<and> (\<forall>a. a \<in> A \<longrightarrow> b \<le> a)"
+  by (simp add: covers_def lb_set_mem_iff)
+
+lemma covers_if:
+  "\<And>A b.  A \<noteq> {} \<and> (\<forall>a. a \<in> A \<longrightarrow> b \<le> a) \<Longrightarrow> covers A b"
+  by (simp add: covers_def lb_set_mem_iff)
+
+
+lemma is_finite_subcover_imp1:
+  "\<And>S A b. is_finite_subcover S A b \<Longrightarrow> (\<forall>s. s \<in> S \<longrightarrow> b \<le> s)"
+  by (simp add: is_finite_subcover_def lb_set_mem_iff)
+
+lemma is_finite_subcover_imp2:
+  "\<And>S A b. is_finite_subcover S A b \<Longrightarrow> (S \<subseteq> A \<and> S \<noteq> {} \<and> finite S)"
+  by (simp add: finite_subcover_imp)
+
+lemma is_finite_subcover_if:
+  "\<And>S A b. (S \<subseteq> A \<and> S \<noteq> {} \<and> finite S) \<and>  (\<forall>s. s \<in> S \<longrightarrow> b \<le> s) \<Longrightarrow>  is_finite_subcover S A b"
+  by (metis fpow_ne_if imp_in_lower_bounds is_finite_subcover_def)
+
+lemma is_compact_imp:
+  "\<And>A b.  is_compact b \<Longrightarrow> (covers A b) \<Longrightarrow>  (\<exists>S. is_finite_subcover S A b)"
+  using is_compact_def by auto
+
+lemma is_compact_if:
+  "\<And>b.  (\<And>A.  (covers A b) \<Longrightarrow>  (\<exists>S. is_finite_subcover S A b))  \<Longrightarrow>  is_compact b"
+  using is_compact_def by auto
+
+lemma directed_imp1:
+  "is_directed D \<Longrightarrow> D \<noteq> {}"
+  by (simp add: is_directed_def)
+
+lemma directed_imp2:
+  "\<And>D A. is_directed D \<Longrightarrow> A \<in> Fpow_ne D \<Longrightarrow>  (\<exists>u \<in> D. u \<in> ub_set A)"
+  by (simp add: is_directed_def)
+
+lemma directed_if:
+  "\<And>D. (\<And>A.  A \<in> Fpow_ne D \<Longrightarrow>  (\<exists>u \<in> D. u \<in> ub_set A)) \<Longrightarrow> D \<noteq> {} \<Longrightarrow> is_directed D"
+  by (simp add: is_directed_def)
+
+
+lemma directed_covering_imp:
+  "\<And>a D. directed_covering a D \<Longrightarrow> (covers D a) \<and> is_directed D"
+  by (simp add: directed_covering_def)
+
+lemma directed_covering_if:
+  "\<And>a D. (covers D a) \<and> is_directed D \<Longrightarrow> directed_covering a D "
+  by (simp add: directed_covering_def)
+
+lemma is_compactly_generated_imp:
+  "\<And>X. is_compactly_generated  X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>Cx. (\<forall>c \<in> Cx. is_compact c) \<and> (is_sup x Cx))"
+  using is_compactly_generated_def by blast
+
+lemma is_compactly_generated_if:
+  "\<And>X. (\<And>x.  x \<in> X \<Longrightarrow> (\<exists>Cx. (\<forall>c \<in> Cx. is_compact c) \<and> (is_sup x Cx))) \<Longrightarrow>  is_compactly_generated  X "
+  using is_compactly_generated_def by blast
+
 
 lemma compact_lattice_imp:
   fixes c::"'a::order"
@@ -2334,9 +2505,9 @@ proof
   obtain S where A2:"is_finite_subcover S D c"
     using B0 assms is_compact_def by blast
   have B1:"(S \<subseteq> D) \<and> (S \<noteq> {}) \<and> (finite S)"
-    by (metis A2 is_finite_subcover_def)
+    using A2 is_finite_subcover_imp2 by blast
   obtain d where A3:"d \<in> D \<and>  d \<in> ub_set S"
-    by (meson A1 B1 PowI directed_covering_def is_directed_def)
+    by (meson A1 A2 directed_covering_imp directed_imp2 is_finite_subcover_def)
   show "(\<exists>d \<in> D. c \<le> d)"
     by (meson A3 B0 covers_def lb_set_mem)
 qed
@@ -2350,32 +2521,37 @@ proof-
   have B0:"(\<And>A. (covers A c) \<longrightarrow> (\<exists>S. is_finite_subcover S A c))"
   proof
     fix A assume A1:"covers A c"
-    define B where A2:"B \<equiv> {x. (\<exists>S. S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> (x=fSup S))}"
+    define B where A2:"B \<equiv> {x. (\<exists>S \<in> Fpow_ne A. (x=fSup S))}"
     have B1:"is_directed B"
     proof-
       have B2:"B \<noteq> {}"
-        by (smt (z3) A1 A2 covers_def empty_Collect_eq empty_not_insert empty_subsetI equals0I finite.emptyI finite_insert insert_subset)
-      have B3:"\<And>S. (S \<in> Pow B \<and> S \<noteq> {} \<and> finite S) \<longrightarrow> (\<exists>u \<in> B.  u \<in> ub_set S)"
+      proof-
+        have A3:"A \<noteq> {}"
+          using A1 covers_def by blast
+        obtain S where A4:"S \<in> Fpow_ne A"
+          by (metis A3 empty_subsetI ex_in_conv finite.intros(1) finite_insert fpow_ne_if insert_subset)
+        show ?thesis
+          using A2 A4 by blast
+      qed
+      have B3:"\<And>S. (S \<in> Fpow_ne B) \<longrightarrow> (\<exists>u \<in> B.  u \<in> ub_set S)"
       proof
-        fix S assume A4:"S \<in> Pow B \<and> S \<noteq> {} \<and> finite S"
-        have B4:"\<forall>s \<in> S. \<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> s=fSup F"
-          using A2 A4 PowD by auto
-        define f where "f=(\<lambda>s. SOME F. ( F \<subseteq> A  \<and> finite F \<and> F \<noteq> {} \<and> s=fSup F) )"
+        fix S assume A5:"S \<in> Fpow_ne B"
+        have B4:"\<forall>s \<in> S. \<exists>F. F \<in> Fpow_ne A \<and> s=fSup F"
+          using A2 A5 fpow_ne_imp by auto
+        define f where "f=(\<lambda>s. SOME F. (F \<in> Fpow_ne A  \<and> s=fSup F) )"
         define fS where "fS=\<Union>(f`S)"
-        have B5:"\<forall>s \<in> S. finite (f s) \<and> (f s) \<noteq> {} \<and> (f s) \<subseteq> A \<and> s=fSup (f s)"
-        proof
-            fix s assume A5:"s \<in> S"
-            show "finite (f s) \<and> (f s) \<noteq> {} \<and> (f s) \<subseteq> A \<and> (s = (fSup (f s)))"
-              by (smt (verit, del_insts) B4 A5 f_def someI_ex)
-        qed
-        have B6:"finite fS \<and> fS \<noteq> {} \<and> fS \<subseteq> A"
-          by (simp add: A4 B5 SUP_le_iff fS_def)
+        have B5:"\<forall>s \<in> S.  (f s) \<in> Fpow_ne A \<and> s=fSup (f s)"
+          by (metis (mono_tags, lifting) B4 f_def someI_ex)
+        have B50:"finite (f`S) \<and> (f`S \<noteq> {})"
+          using A5 fpow_ne_imp by blast
+        have B6:"fS \<in> Fpow_ne A"
+          by (metis A1 B5 B50 covers_def fS_def fpow_ne_union imageE)
         have B7:"fSup fS \<in> B"
           using A2 B6 by blast
         have B8:"\<forall>s \<in> S. f s \<subseteq> fS"
           by (simp add: SUP_upper fS_def)
         have B9:"\<forall>s \<in> S. (fSup fS) \<ge> fSup (f s)"
-          by (meson B5 B6 B8 le_iff_sup semilattice_sup_class.subset)
+          by (metis B5 B6 B8 fpow_ne_imp semilattice_sup_class.subset_imp)
         have B10:"\<forall>s \<in> S. s \<le> fSup fS"
         proof
           fix s assume A6:"s \<in> S"
@@ -2395,8 +2571,8 @@ proof-
     have B11:"A \<subseteq> B"
     proof
       fix x assume A7:"x \<in> A"
-      have B12:"finite {x} \<and> {x} \<subseteq> A \<and> {x} \<noteq> {} \<and> fSup {x} = x"
-        by (simp add: A7)
+      have B12:"{x} \<in> Fpow_ne A  \<and> fSup {x} = x"
+        using A7 fpow_ne_singleton by force
       show "x \<in> B"
         by (metis (mono_tags, lifting) A2 B12 CollectI) 
     qed
@@ -2406,14 +2582,14 @@ proof-
       by (metis A1 B13 Inf_le_Sup complete_lattice_inf_greatest covers_def dual_order.trans)
     obtain b where A8:"b \<in> B \<and> c \<le> b"
       by (metis A1 B11 covers_def lb_set_mem_iff subset_empty subset_eq)
-    obtain S where A9:"S \<subseteq> A \<and> finite S \<and> S \<noteq> {} \<and> fSup S = b"
+    obtain S where A9:"S \<in> Fpow_ne A \<and>  fSup S = b"
       using A2 A8 by blast
     have B15:"c \<le> fSup S"
       by (simp add: A8 A9)
     have B16:"fSup S = Sup S"
-      using A9 complete_lattice_class.fsup_complete_lattice by blast
+      by (metis A9 complete_lattice_class.fsup_complete_lattice fpow_ne_imp)
     have B16:"is_finite_subcover S A c"
-      by (meson A1 A9 covers_def is_finite_subcover_def lb_set_mem_iff subset_eq)
+      by (metis A1 A9 Int_iff covers_def fpow_ne_imp inf.absorb_iff2 is_finite_subcover_if lb_set_mem_iff)
     show "(\<exists>S. is_finite_subcover S A c)"
       using B16 by blast
   qed
@@ -2594,6 +2770,116 @@ proof
   next
   assume R:?R  show ?L
      by (metis R dual_order.refl is_inf_in_if3)
+qed
+
+
+
+lemma inf_from_sup:
+  "(InfUn A)  = (SupUn (lb_set A))"
+  by (metis (full_types) Collect_empty_eq Collect_empty_eq_bot InfUn_def SupUn_def has_max_def 
+      has_max_has_sup has_min_def has_sup_def inf_eq_sup_lb is_inf_def is_sup_def)
+
+lemma sup_from_inf:
+  "(SupUn A)  = (InfUn (ub_set A))"
+  by (metis (no_types, lifting) Collect_empty_eq Collect_empty_eq_bot InfUn_def SupUn_def has_inf_def
+       has_min_has_inf is_inf_def is_max_imp_has_max is_min_imp_has_min is_sup_iff sup_eq_inf_ub)
+
+lemma inter_complete_lat:
+  fixes A::"'a set set" and X::"'a set"
+  assumes A0:"A \<subseteq> (Pow X)"
+  shows "InfIn A (Pow X) = X \<inter> (\<Inter> A)"
+proof-
+  define I where "I=X \<inter> (\<Inter> A)"
+  have B0:"I \<in> lb_set_in A (Pow X)"
+    using I_def lb_set_in_mem_iff by auto
+  have B1:"\<forall>l. l \<in> (lb_set_in A (Pow X)) \<longrightarrow> l \<le> I"
+    by (simp add: I_def Inf_greatest lb_set_in_mem_iff)
+  have B2:"is_inf_in I A (Pow X)"
+    by (simp add: B0 B1 is_inf_in_def is_max_if2)
+  show ?thesis
+    using B2 I_def is_inf_in_inf_eq by blast
+qed
+
+
+lemma empty_inter_is_carrier:
+  fixes X::"'a set"
+  shows "InfIn {} (Pow X) = X"
+  by (simp add: inter_complete_lat)
+
+
+
+lemma inf_comp_un_ind:
+  fixes F::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"I \<noteq> {}" and A1:"\<And>i. i \<in> I  \<Longrightarrow> has_inf (F i)" and A2:"has_inf (InfUn`(F`I))"
+  shows "(has_inf (\<Union>i \<in> I. F i)) \<and> InfUn (InfUn`(F`I)) = InfUn (\<Union>i \<in> I. F i)"
+proof-
+  define A where A3:"A=(\<Union>i \<in> I. F i)"
+  define G where A4:"G= InfUn`(F`I)"
+  have B0:"\<And>i. i \<in> I \<longrightarrow> (F i) \<subseteq> A"
+    by (simp add: A3 SUP_upper)
+  have B1:"\<And>i. i \<in> I \<longrightarrow> (\<forall>l. l \<in>(lb_set A) \<longrightarrow> l \<le> InfUn (F i))"
+    by (meson A1 B0 inf_is_inf is_inf_imp1 is_max_iff lb_set_antitone1 subsetD)
+  have B2:"\<And>i. i \<in> I \<longrightarrow> lb_set A \<subseteq> lb_set {(InfUn (F i))}"
+    by (simp add: B1 lb_set_mem_iff subset_eq)
+  have B3:"lb_set A \<subseteq> lb_set G"
+    by (simp add: A4 B1 imp_in_lower_bounds subsetI)
+  have B4:"\<And>l. l \<in> lb_set A \<longrightarrow> l  \<le> InfUn G"
+    using A2 A4 B3 inf_is_inf is_inf_imp3 lb_set_imp by blast
+  have B5:"\<And>a. a \<in> A \<longrightarrow> InfUn G \<le> a"
+  proof
+    fix a assume A5:"a \<in> A"
+    obtain i where A6:"i \<in> I \<and> a \<in> F i"
+      using A3 A5 by blast
+    have B6:"InfUn (F i) \<le> a"
+      using A1 A6 inf_is_inf is_inf_imp2 by blast
+    show "InfUn G \<le> a"
+      by (metis A2 A4 A6 B6 imageI inf_is_inf is_inf_imp1 lb_set_mem order_trans)
+  qed
+  have B8:"is_inf (InfUn G) A"
+    by (simp add: B4 B5 imp_in_lower_bounds is_inf_if3)
+  have B9:"has_inf A"
+    using B8 has_inf_def has_max_def is_inf_def by blast
+  have B10:"InfUn G = InfUn A"
+    by (simp add: B8 B9 is_inf_inf_eq)
+  show ?thesis
+    using A3 A4 B9 B10 by blast
+qed
+  
+lemma inf_comp_un:
+  fixes F::"'a::order set set"
+  assumes A0:"F \<noteq> {}" and A1:"\<And>A. A \<in> F \<Longrightarrow> has_inf A" and A2:"has_inf (InfUn`(F))"
+  shows "(has_inf (\<Union>F)) \<and> (InfUn (InfUn`(F)) = InfUn (\<Union>F))"
+proof-
+  define A where A3:"A=\<Union>F"
+  define G where A4:"G=InfUn`(F)"
+  have B0:"\<And>E. E \<in> F \<Longrightarrow> E \<subseteq> A"
+    by (simp add: A3 Union_upper)
+  have B1:"\<And>E. E \<in> F \<Longrightarrow> (\<forall>l. l \<in>(lb_set A) \<longrightarrow> l \<le> InfUn (E))"
+    by (meson A1 B0 inf_is_inf is_inf_imp1 is_max_iff lb_set_antitone1 subsetD)
+  have B2:"\<And>E. E \<in> F \<Longrightarrow> lb_set A \<subseteq> lb_set {(InfUn E)}"
+    by (simp add: B1 lb_set_mem_iff subset_eq)
+  have B3:"lb_set A \<subseteq> lb_set G"
+    by (simp add: A4 B1 imp_in_lower_bounds subsetI)
+  have B4:"\<And>l. l \<in> lb_set A \<longrightarrow> l  \<le> InfUn G"
+    using A2 A4 B3 inf_is_inf is_inf_imp3 lb_set_imp by blast
+  have B5:"\<And>a. a \<in> A \<longrightarrow> InfUn G \<le> a"
+  proof
+    fix a assume A5:"a \<in> A"
+    obtain E  where A6:"E \<in> F \<and> a \<in> E"
+      using A3 A5 by blast
+    have B6:"InfUn E \<le> a"
+      using A1 A6 inf_is_inf is_inf_imp2 by blast
+    show "InfUn G \<le> a"
+      by (metis A2 A4 A6 B6 imageI inf_is_inf is_inf_imp1 lb_set_mem order_trans)
+  qed
+  have B8:"is_inf (InfUn G) A"
+    by (simp add: B4 B5 imp_in_lower_bounds is_inf_if3)
+  have B9:"has_inf A"
+    using B8 has_inf_def has_max_def is_inf_def by blast
+  have B10:"InfUn G = InfUn A"
+    by (simp add: B8 B9 is_inf_inf_eq)
+  show ?thesis
+    using A3 A4 B9 B10 by blast
 qed
 
 
