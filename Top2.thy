@@ -144,7 +144,7 @@ lemma topologies_bot:
 
 lemma topologies_inf_closed:
   assumes A0:"ET \<noteq> {}" and A1:"\<forall>T \<in> ET. T \<in> topologies_on X"
-  shows  "(\<Inter>ET) \<in> topologies_on X"
+  shows  "(\<Inter>ET) \<in> topologies_on X \<and> is_inf_in (\<Inter>ET) ET (topologies_on X)"
  proof-
   have B0:"\<forall>T \<in> ET. is_topology_on T X"
     using A1 topologies_on_def by fastforce
@@ -187,8 +187,16 @@ lemma topologies_inf_closed:
   qed
   have T3:"X \<in> I"
     by (simp add: B1 I_def)
+  have B3:"I \<in> topologies_on X"
+    by (metis T0 T1 T2 T3 is_topology_on_def mem_Collect_eq topologies_on_def)
+  have B4:"\<forall>T. T \<in> ET \<longrightarrow> I \<le> T"
+    by (simp add: I_def Inter_lower)
+  have B5:"\<And>S. (\<And>T. T \<in> ET \<Longrightarrow> S\<le> T) \<Longrightarrow> S \<le> I"
+    by (simp add: I_def Inter_greatest)
+  have B6:"is_inf_in I ET (topologies_on X)"
+    by (simp add: B3 B4 B5 is_inf_in_if3)
   show ?thesis
-    by (metis I_def T0 T1 T2 T3 is_topology_on_def mem_Collect_eq topologies_on_def)
+    using B3 B6 I_def by blast
 qed
 
 lemma topologies_sup_closed:
@@ -420,56 +428,7 @@ proof-
 qed
 
 
-lemma example_top1_is_top:
-  fixes X::"'a set" 
-  assumes "X \<noteq> {}"
-  defines "T \<equiv> (Pow X)"
-  shows "is_topology_on T X"
-proof-
-  have T0:"(T \<in> Pow(Pow X)) \<and> (X \<in> T) \<and> ({} \<in>  T)"
-    using T_def by auto
-  have T1:"top_u1 T"
-    using T_def top_u1_def by fastforce
-  have T2:"top_i3 T"
-  proof-
-    have T20:"(\<And>E. E \<in> Fpow_ne T \<longrightarrow> (\<Inter>E) \<in> T)"
-    proof
-      fix E assume A0:"E \<in> Fpow_ne T"
-      show "(\<Inter>E) \<in> T"
-        by (metis A0 T_def discrete_top is_topology_on_def top_i3_finite_ne)
-    qed
-    show ?thesis
-      using T_def discrete_top is_topology_on_def by blast
-  qed
-  show ?thesis
-    using T0 T1 T2 is_topology_on_def by auto
-qed
 
-
-lemma example_top2_is_top:
-  fixes X::"'a set" 
-  assumes "X \<noteq> {}"
-  defines "T \<equiv> {{}, X}"
-  shows "is_topology_on T X"
-proof-
- have T0:"(T \<in> Pow(Pow X)) \<and> (X \<in> T) \<and> ({} \<in>  T)"
-    using T_def by auto
-  have T1:"(top_u1 T)"
-    using T_def top_u1_def by fastforce
-  have T2:"top_i3 T"
-  proof-
-    have T20:"(\<And>E. E \<in> Fpow_ne T \<longrightarrow> (\<Inter>E) \<in> T)"
-    proof
-      fix E assume A0:"E \<in> Fpow_ne T"
-      show "(\<Inter>E) \<in> T"
-        by (metis A0 T_def is_topology_on_def top_i3_finite_ne trivial_top)
-    qed
-    show ?thesis
-      using T_def is_topology_on_def trivial_top by auto
-  qed
-  show ?thesis
-    using T0 T1 T2 is_topology_on_def by auto
-qed
 
 
 
