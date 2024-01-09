@@ -427,13 +427,91 @@ proof-
     using B0 B7 L_def by blast
 qed
 
+lemma finite_inter_finite:
+  fixes EF::"'a set set"
+  assumes A0:"\<And>E. E \<in> EF \<Longrightarrow> finite E" and A1:"EF \<noteq> {}"
+  shows "finite (\<Inter>EF)"
+  using A0 A1 by blast
+
+definition cofinite_sets_in::"'a set \<Rightarrow> 'a set set" where
+  "cofinite_sets_in X \<equiv> {U. U \<in> Pow X \<and>  (finite (X - U) \<or> U={})}"
+
+lemma in_cofinite_sets_in_imp1:
+  "\<And>U. U \<in> cofinite_sets_in X \<Longrightarrow> U \<in> Pow X \<and> (finite (X - U) \<or> U={})"
+  by (simp add: cofinite_sets_in_def)
+
+lemma in_cofinite_sets_in_imp2:
+  "\<And>U. U \<in> cofinite_sets_in X \<Longrightarrow> U \<noteq> {} \<Longrightarrow> finite(X - U)"
+  by (simp add: cofinite_sets_in_def)
+
+lemma in_cofinite_iff1:
+  assumes A0:"infinite X" and A1:"U \<in> Pow X"
+  shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> finite (X - U))"
+  using A1 cofinite_sets_in_def by auto
+
+lemma in_cofinite_iff2:
+  assumes A0:"infinite X" and A1:"U \<in> Pow X"
+  shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U = {} \<or> finite (X - U))"
+  using A1 cofinite_sets_in_def by auto
 
 
-
-
-
-
-
-
-                                             
+lemma cofinite_top_is_top:
+  "is_topology_on (cofinite_sets_in X) X"
+proof-
+  define T where "T= (cofinite_sets_in X)"
+  have T0:"T \<in> Dpow X"
+    by (simp add: Collect_mono Pow_def cofinite_sets_in_def T_def)
+  have T1:" (top_u1 T)"
+  proof-
+    have T10:"\<And>E.  E \<subseteq> T \<longrightarrow> (\<Union>u \<in> E. u) \<in> T"
+    proof
+      fix E assume A0:"E \<subseteq> T"
+      have B0:"\<forall>u. u \<in> E \<longrightarrow>  u \<in> Pow X \<and> (finite (X - u) \<or> u={})"
+        using A0 T_def cofinite_sets_in_def by auto
+      define U where "U=(\<Union>u \<in> E. u)"
+      have B1:"X - (\<Inter>u \<in> E. (X- u)) = (\<Union>u \<in> E. (X - (X - u)))"
+        by simp
+      have B2:"... = U"
+        using B0 U_def by blast
+      have B3:"U \<noteq> {} \<Longrightarrow> finite (X - U)"
+      proof-
+        assume A2:"U \<noteq> {}"
+        have B4:"X - U = (\<Inter>u \<in> E. (X- u))"
+          using A2 U_def by blast
+        have B5:"finite (\<Inter>u \<in> E. (X- u))"
+          using A2 B0 U_def by blast
+        show ?thesis
+          using B4 B5 by auto
+      qed
+      show " (\<Union>u \<in> E. u) \<in> T"
+        using B2 B3 T_def U_def cofinite_sets_in_def by fastforce
+    qed
+    show ?thesis
+      using T10 top_u1_def by auto
+   qed
+  have T2:"top_i3 T"
+  proof-
+    have T20:"\<And>(a1::'a set) (a2::'a set). a1 \<in> T \<and> a2 \<in> T \<longrightarrow> a1 \<inter> a2 \<in> T"
+    proof
+      fix a1 a2 assume A3:"a1 \<in> T \<and> a2 \<in> T"
+      have B6:"a1 \<inter> a2 \<noteq> {} \<Longrightarrow> finite (X-(a1 \<inter> a2))"
+      proof-
+        assume A4:"a1 \<inter> a2 \<noteq> {}" 
+         have B7:"finite (X-a1) \<and> (finite (X-a2))"
+          using A3 A4 T_def cofinite_sets_in_def by auto
+        show "finite (X-(a1 \<inter> a2))"
+          by (simp add: B7 Diff_Int)
+      qed
+      show "a1 \<inter> a2 \<in> T"
+        using A3 B6 T_def cofinite_sets_in_def by fastforce
+   qed
+   show ?thesis
+     by (simp add: T20 top_i3_def)
+  qed
+  have T3:"X \<in> T"
+    by (simp add: T_def cofinite_sets_in_def)
+  show ?thesis
+    using T0 T1 T2 T3 T_def is_topology_on_def by auto
+qed
+                                         
 end
