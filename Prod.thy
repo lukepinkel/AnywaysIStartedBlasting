@@ -267,5 +267,139 @@ qed
 definition is_countable :: "'a set \<Rightarrow> bool" where
   "is_countable I \<equiv> (\<exists>f::'a \<Rightarrow> nat. inj_on f I)"
 
+definition is_countably_infinite :: "'a set \<Rightarrow> bool" where
+  "is_countably_infinite I \<equiv> is_countable I \<and> infinite I"
 
+lemma countable_subset:
+  "is_countable A \<Longrightarrow> B \<subseteq> A \<Longrightarrow> is_countable B"
+  apply(simp add: is_countable_def)
+  using inj_on_subset by blast
+
+lemma inj_countable_codom:
+  "inj_on f A \<Longrightarrow> f`A=B \<Longrightarrow> is_countable B \<Longrightarrow> is_countable A"
+  by (meson comp_inj_on is_countable_def)
+
+lemma surj_countable_dom:
+  "f`A=B \<Longrightarrow> is_countable A \<Longrightarrow> is_countable B"
+  by (metis countable_subset inj_countable_codom inj_on_empty inj_on_iff_surj is_countable_def)
+
+lemma countably_infinite_bij_nat:
+  "is_countably_infinite A \<Longrightarrow> (\<exists>f. bij_betw f A (UNIV::nat set))"
+  by (meson Schroeder_Bernstein infinite_iff_countable_subset is_countable_def is_countably_infinite_def subset_UNIV)
+
+lemma countably_infinite_obtain_bij_nat:
+  assumes "is_countably_infinite A"
+  obtains f where "bij_betw f A (UNIV::nat set)"
+  using assms countably_infinite_bij_nat by blast
+(*
+(*scuffed*)
+lemma countably_infinite_disjoint_bsup:
+  "is_countably_infinite A  \<and> is_countably_infinite B \<and> (A \<inter> B = {}) \<Longrightarrow> is_countably_infinite (A \<union> B)"
+proof-
+  assume A0:"is_countably_infinite A  \<and> is_countably_infinite B \<and>  (A \<inter> B = {})"
+  obtain f g where B0:"bij_betw f (UNIV::nat set) A" and B1:"bij_betw g (UNIV::nat set) B"
+    by (meson A0 bij_betw_inv countably_infinite_bij_nat)
+  define h::"nat \<Rightarrow> 'a" where  "h = (\<lambda>(n::nat). (if (even n) then f(n div 2) else g((n-1) div 2)))"
+  have B2:"\<And>n. h n \<in> A \<longrightarrow> even n"
+  proof
+     fix n::"nat" assume A1:"h n \<in> A"
+     show "even n"
+    proof(rule ccontr)
+      assume A2:"\<not>(even n)"
+      have B20:"h n = g ((n - 1) div 2)"
+        using A2 h_def by presburger
+      have B21:"h n \<in> B"
+        using B1 B20 bij_betw_imp_surj_on by blast
+      show "False"
+        using A0 A1 B21 by blast
+    qed
+  qed
+  have B3:"inj_on h (UNIV::nat set)"
+  proof-
+    have B30:"\<And>(n1::nat) n2. h n1 = h n2 \<longrightarrow> n1 = n2"
+    proof
+      fix n1 n2 assume A3:"h n1 = h n2"
+      consider "((h n1) \<in> B \<and> (h n2) \<in> B) | ((h n1) \<in> A \<and> (h n2) \<in> A)"
+        by (metis A3 B0 B1 bij_betw_imp_surj_on h_def range_eqI)
+      show "n1 = n2"
+      proof(cases "((h n1) \<in> A \<and> (h n2) \<in> A)")
+        assume A4:"((h n1) \<in> A \<and> (h n2) \<in> A)"
+        have B04:"even n1 \<and> even n2"
+          by (simp add: A4 B2)
+        then show ?thesis
+          by (metis (full_types) A3 B0 UNIV_I bij_betw_iff_bijections bit_eq_rec h_def)
+      next
+        case False
+        have B05:"((h n1) \<in> B \<and> (h n2) \<in> B)"
+          using False \<open>\<And>thesis::bool. ((h::nat \<Rightarrow> 'a) (n1::nat) \<in> (B::'a set) \<and> h (n2::nat) \<in> B \<or> h n1 \<in> (A::'a set) \<and> h n2 \<in> A \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> by blast
+        have B06:"h n1 = g ((n1-1) div 2)"
+          by (metis A3 B0 False bij_betw_imp_surj_on h_def range_eqI)
+        have B07:"h n2 = g ((n2 -1) div 2)"
+          by (metis A3 B0 False bij_betw_imp_surj_on h_def range_eqI)
+        have B08:" g ((n1 -1) div 2) =  g ((n2 -1) div 2)"
+          using A3 B06 B07 by presburger
+        have B09:"(n1 - 1) div 2 = (n2 - 1) div 2"
+          by (smt (verit) B08 B1 UNIV_I bij_betw_iff_bijections)
+        then show ?thesis
+          by (metis A3 B0 False One_nat_def bij_betw_imp_surj_on dvd_mult_div_cancel dvd_triv_left h_def odd_Suc_minus_one odd_two_times_div_two_nat range_eqI)
+      qed
+   qed
+   show ?thesis
+     by (simp add: B30 injI)
+  qed
+  have B4:"(h`(UNIV::nat set)) = (A \<union> B)"
+  proof-
+    have B40:"\<And>y. y \<in> (A \<union> B) \<longrightarrow> (\<exists>(n::nat). h n = y)"
+    proof
+      fix y assume A5:"y \<in> A \<union> B"
+      show "\<exists>(n::nat). h n = y"
+      proof(cases "y \<in> A")
+        case True
+        obtain k::"nat" where "f k = y"
+          by (meson B0 True bij_betw_iff_bijections)
+        have "h (2 * k) = y"
+          by (simp add: \<open>(f::nat \<Rightarrow> 'a) (k::nat) = (y::'a)\<close> h_def)
+        then show ?thesis
+          by blast
+      next
+        case False
+        have "y \<in> B"
+          using A5 False by auto
+        obtain k::"nat" where "g k = y"
+          by (meson A5 B1 False Un_iff bij_betw_iff_bijections)
+        have "h (2 * k +1) = y"
+          by (simp add: \<open>(g::nat \<Rightarrow> 'a) (k::nat) = (y::'a)\<close> h_def)
+        then show ?thesis
+          by auto
+      qed
+    qed
+  have B41:"A \<union> B \<subseteq> h`(UNIV::nat set)"
+    using B40 by blast
+  have B42:"h`(UNIV::nat set) \<subseteq> A \<union> B"
+    by (metis B0 B1 UnI1 UnI2 bij_betw_imp_surj_on h_def image_subset_iff range_eqI)
+  show ?thesis
+    using B41 B42 by blast
+  qed
+  show "is_countably_infinite (A \<union> B)"
+    by (metis A0 B4 \<open>\<And>thesis::bool. (\<And>(f::nat \<Rightarrow> 'a) g::nat \<Rightarrow> 'a. \<lbrakk>bij_betw f UNIV (A::'a set); bij_betw g UNIV (B::'a set)\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> bij_betw_def infinite_Un inj_countable_codom is_countably_infinite_def surj_countable_dom)
+qed
+
+lemma infinite_iso:
+  "infinite A \<Longrightarrow> A \<subseteq> B \<Longrightarrow> infinite B"
+  using finite_subset by blast
+
+lemma countably_infinite_bsup:
+  assumes "is_countably_infinite A  \<and> is_countably_infinite B"  
+  shows "is_countably_infinite (A \<union> B)"
+proof-
+  have B0:"infinite (A \<union> B)"
+    using assms is_countably_infinite_def by auto
+  define X where "X = (A \<union> B) -B"
+  have "X \<union> B = A \<union> B"
+    by (simp add: X_def)
+  have "X \<inter> B = {}"
+    by (simp add: Int_commute X_def)
+  have 
+  have B1:"is_countable (A \<union> B)"
+*)
 end
