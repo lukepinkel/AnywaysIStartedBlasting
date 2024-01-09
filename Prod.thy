@@ -264,4 +264,8 @@ proof-
     using A2 A3 LR RL by blast
 qed
 
+definition is_countable :: "'a set \<Rightarrow> bool" where
+  "is_countable I \<equiv> (\<exists>f::'a \<Rightarrow> nat. inj_on f I)"
+
+
 end
