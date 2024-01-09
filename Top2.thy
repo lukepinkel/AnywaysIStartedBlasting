@@ -457,21 +457,75 @@ lemma in_cofinite_iff1:
   shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> finite (X - U))"
   using A0 cofinite_sets_in_def by auto
 
+lemma in_cocountable_iff1:
+  assumes A0:"U \<in> Pow X"
+  shows "U \<in> cocountable_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> is_countable (X - U))"
+  using assms cocountable_sets_in_def by auto
+
 lemma in_cofinite_iff2:
   assumes A0:"U \<in> Pow X"
   shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U = {} \<or> finite (X - U))"
   using A0 cofinite_sets_in_def by auto
 
+lemma imp_in_cofinite:
+  "U \<in> Pow X \<Longrightarrow> U \<noteq> {} \<Longrightarrow>  finite (X - U) \<Longrightarrow> U \<in> cofinite_sets_in X"
+  by (simp add: in_cofinite_iff1)
 
-lemma in_cocountable_iff1:
-  assumes  A0:"U \<in> Pow X"
-  shows "U \<in> cocountable_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> is_countable (X - U))"
-  using A0 cocountable_sets_in_def by auto
+lemma cofinite_union_comp:
+  assumes A0:"C \<subseteq> cofinite_sets_in X"
+  shows "\<Union>C \<in> cofinite_sets_in X"
+proof-
+    let ?U="(\<Union>C)"
+    have B0:"?U \<in> Pow X"
+      using assms in_cofinite_sets_in_imp1 by fastforce
+    have B1:"?U \<noteq> {} \<Longrightarrow> finite (X-?U)"
+    proof-
+      assume A1:"?U \<noteq> {}"
+      have B2:"X-?U=(\<Inter>u \<in> C. (X-u))"
+        using A1 by blast
+      show "finite (X-?U)"
+        by (metis A1 B2 assms empty_Union_conv finite_INT in_cofinite_sets_in_imp1 subset_iff)
+    qed
+  show ?thesis
+    by (metis B0 B1 in_cofinite_iff1)
+qed
 
-lemma in_cocountable_iff2:
-  assumes A0:"U \<in> Pow X"
-  shows "U \<in> cocountable_sets_in X \<longleftrightarrow> (U = {} \<or> is_countable (X - U))"
-  using A0 cocountable_sets_in_def by auto
+lemma cocountable_un_closed:
+  assumes A0:"C \<subseteq> cocountable_sets_in X"
+  shows "\<Union>C \<in> cocountable_sets_in X"
+proof-
+    let ?U="(\<Union>C)"
+    have B0:"?U \<in> Pow X"
+      apply(auto simp add: assms cocountable_sets_in_def)
+      by (smt (verit, ccfv_threshold) UnionI Union_Pow_eq assms cocountable_sets_in_def mem_Collect_eq subset_eq)
+    have B1:"?U \<noteq> {} \<Longrightarrow> is_countable (X-?U)"
+    proof-
+      assume A1:"?U \<noteq> {}"
+      have B2:"X-?U=(\<Inter>u \<in> C. (X-u))"
+        using A1 by blast
+      show "is_countable (X-?U)"
+        by (metis A1 B2 Diff_Diff_Int Inter_lower Union_empty_conv assms image_eqI in_cocountable_sets_in_imp1 inf.absorb_iff2 inj_on_diff is_countable_def subset_eq)
+    qed
+  show ?thesis
+    using B0 B1 cocountable_sets_in_def by blast
+qed
+
+lemma cofinite_binf_closed:
+  assumes A0:"a1 \<in> cofinite_sets_in X \<and> a2 \<in> cofinite_sets_in X"
+  shows "a1 \<inter> a2 \<in> cofinite_sets_in X"
+proof-
+  have B6:"a1 \<inter> a2 \<noteq> {} \<Longrightarrow> finite (X-(a1 \<inter> a2))"
+  proof-
+    assume A1:"a1 \<inter> a2 \<noteq> {}" 
+     have B7:"finite (X-a1) \<and> (finite (X-a2))"
+       using A1 assms in_cofinite_sets_in_imp1 by blast
+    show "finite (X-(a1 \<inter> a2))"
+      by (simp add: B7 Diff_Int)
+  qed
+  show "a1 \<inter> a2 \<in> cofinite_sets_in X"
+    by (metis B6 PowD PowI assms in_cofinite_iff1 in_cofinite_sets_in_imp1 le_infI2)
+qed
+  
 
 lemma countable_subset_is_countable1:
   "A \<subseteq> B \<and> is_countable B \<Longrightarrow> is_countable A"
@@ -497,56 +551,30 @@ proof-
   have T0:"T \<in> Dpow X"
     by (simp add: Collect_mono Pow_def cofinite_sets_in_def T_def)
   have T1:" (top_u1 T)"
-  proof-
-    have T10:"\<And>E.  E \<subseteq> T \<longrightarrow> (\<Union>u \<in> E. u) \<in> T"
-    proof
-      fix E assume A0:"E \<subseteq> T"
-      have B0:"\<forall>u. u \<in> E \<longrightarrow>  u \<in> Pow X \<and> (finite (X - u) \<or> u={})"
-        using A0 T_def cofinite_sets_in_def by auto
-      define U where "U=(\<Union>u \<in> E. u)"
-      have B1:"X - (\<Inter>u \<in> E. (X- u)) = (\<Union>u \<in> E. (X - (X - u)))"
-        by simp
-      have B2:"... = U"
-        using B0 U_def by blast
-      have B3:"U \<noteq> {} \<Longrightarrow> finite (X - U)"
-      proof-
-        assume A2:"U \<noteq> {}"
-        have B4:"X - U = (\<Inter>u \<in> E. (X- u))"
-          using A2 U_def by blast
-        have B5:"finite (\<Inter>u \<in> E. (X- u))"
-          using A2 B0 U_def by blast
-        show ?thesis
-          using B4 B5 by auto
-      qed
-      show " (\<Union>u \<in> E. u) \<in> T"
-        using B2 B3 T_def U_def cofinite_sets_in_def by fastforce
-    qed
-    show ?thesis
-      using T10 top_u1_def by auto
-   qed
+    by (simp add: T_def cofinite_union_comp top_u1_def)
   have T2:"top_i3 T"
-  proof-
-    have T20:"\<And>(a1::'a set) (a2::'a set). a1 \<in> T \<and> a2 \<in> T \<longrightarrow> a1 \<inter> a2 \<in> T"
-    proof
-      fix a1 a2 assume A3:"a1 \<in> T \<and> a2 \<in> T"
-      have B6:"a1 \<inter> a2 \<noteq> {} \<Longrightarrow> finite (X-(a1 \<inter> a2))"
-      proof-
-        assume A4:"a1 \<inter> a2 \<noteq> {}" 
-         have B7:"finite (X-a1) \<and> (finite (X-a2))"
-          using A3 A4 T_def cofinite_sets_in_def by auto
-        show "finite (X-(a1 \<inter> a2))"
-          by (simp add: B7 Diff_Int)
-      qed
-      show "a1 \<inter> a2 \<in> T"
-        using A3 B6 T_def cofinite_sets_in_def by fastforce
-   qed
-   show ?thesis
-     by (simp add: T20 top_i3_def)
-  qed
+    by (simp add: T_def cofinite_binf_closed top_i3_def)
   have T3:"X \<in> T"
     by (simp add: T_def cofinite_sets_in_def)
   show ?thesis
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
-                                         
+(*
+lemma cocountable_binf_closed:
+  assumes A0:"a1 \<in> cocountable_sets_in X \<and> a2 \<in> cocountable_sets_in X"
+  shows "a1 \<inter> a2 \<in> cocountable_sets_in X"
+proof-
+  have B6:"a1 \<inter> a2 \<noteq> {} \<Longrightarrow> is_countable (X-(a1 \<inter> a2))"
+  proof-
+    assume A1:"a1 \<inter> a2 \<noteq> {}" 
+     have B7:"is_countable (X-a1) \<and> (is_countable (X-a2))"
+       using A1 assms in_cocountable_sets_in_imp2 by auto
+      have B8:"is_countable ((X - a1) \<union> (X - a2))"
+    show "is_countable (X-(a1 \<inter> a2))"
+      by (simp add: B7 Diff_Int)
+  qed
+  show "a1 \<inter> a2 \<in> cofinite_sets_in X"
+    by (metis B6 PowD PowI assms in_cofinite_iff1 in_cofinite_sets_in_imp1 le_infI2)
+qed
+*)                                         
 end
