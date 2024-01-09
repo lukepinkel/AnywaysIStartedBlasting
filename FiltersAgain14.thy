@@ -1,5 +1,5 @@
 theory FiltersAgain14
-  imports Main "./PartialOrders"
+  imports Main "./PartialOrders" "./Prod"
 begin
 hide_const(open) List.list.Nil
 no_notation List.list.Nil ("[]")  
