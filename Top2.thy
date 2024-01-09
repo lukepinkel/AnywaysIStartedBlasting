@@ -436,23 +436,58 @@ lemma finite_inter_finite:
 definition cofinite_sets_in::"'a set \<Rightarrow> 'a set set" where
   "cofinite_sets_in X \<equiv> {U. U \<in> Pow X \<and>  (finite (X - U) \<or> U={})}"
 
+definition cocountable_sets_in::"'a set \<Rightarrow> 'a set set" where
+  "cocountable_sets_in X \<equiv> {U. U \<in> Pow X \<and>  (is_countable (X - U) \<or> U={})}"
+
+
 lemma in_cofinite_sets_in_imp1:
   "\<And>U. U \<in> cofinite_sets_in X \<Longrightarrow> U \<in> Pow X \<and> (finite (X - U) \<or> U={})"
   by (simp add: cofinite_sets_in_def)
 
-lemma in_cofinite_sets_in_imp2:
-  "\<And>U. U \<in> cofinite_sets_in X \<Longrightarrow> U \<noteq> {} \<Longrightarrow> finite(X - U)"
-  by (simp add: cofinite_sets_in_def)
+lemma in_cocountable_sets_in_imp1:
+  "\<And>U. U \<in> cocountable_sets_in X \<Longrightarrow> U \<in> Pow X \<and> (is_countable (X - U) \<or> U={})"
+  by (simp add: cocountable_sets_in_def)
+
+lemma in_cocountable_sets_in_imp2:
+  "\<And>U. U \<in> cocountable_sets_in X \<Longrightarrow> U \<noteq> {} \<Longrightarrow> is_countable(X - U)"
+  by (simp add: cocountable_sets_in_def)
 
 lemma in_cofinite_iff1:
-  assumes A0:"infinite X" and A1:"U \<in> Pow X"
+  assumes A0:"U \<in> Pow X"
   shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> finite (X - U))"
-  using A1 cofinite_sets_in_def by auto
+  using A0 cofinite_sets_in_def by auto
 
 lemma in_cofinite_iff2:
-  assumes A0:"infinite X" and A1:"U \<in> Pow X"
+  assumes A0:"U \<in> Pow X"
   shows "U \<in> cofinite_sets_in X \<longleftrightarrow> (U = {} \<or> finite (X - U))"
-  using A1 cofinite_sets_in_def by auto
+  using A0 cofinite_sets_in_def by auto
+
+
+lemma in_cocountable_iff1:
+  assumes  A0:"U \<in> Pow X"
+  shows "U \<in> cocountable_sets_in X \<longleftrightarrow> (U \<noteq> {} \<longrightarrow> is_countable (X - U))"
+  using A0 cocountable_sets_in_def by auto
+
+lemma in_cocountable_iff2:
+  assumes A0:"U \<in> Pow X"
+  shows "U \<in> cocountable_sets_in X \<longleftrightarrow> (U = {} \<or> is_countable (X - U))"
+  using A0 cocountable_sets_in_def by auto
+
+lemma countable_subset_is_countable1:
+  "A \<subseteq> B \<and> is_countable B \<Longrightarrow> is_countable A"
+  apply(auto simp: is_countable_def)
+  using inj_on_subset by blast
+
+lemma countable_subset_is_countable2:
+  "A \<subseteq> X \<and> (is_countable X) \<Longrightarrow> is_countable (X - A)"
+  apply(auto simp add: is_countable_def)
+  using inj_on_diff by blast
+
+lemma countable_then_cocountable_discrete:
+  assumes "is_countable X"
+  shows "cocountable_sets_in X = Pow X "
+  apply(simp add: cocountable_sets_in_def)
+  by (simp add: Collect_mono Pow_def assms countable_subset_is_countable2 subset_antisym)
 
 
 lemma cofinite_top_is_top:
