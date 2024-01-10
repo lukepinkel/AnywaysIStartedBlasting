@@ -559,7 +559,7 @@ proof-
   show ?thesis
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
-(*
+
 lemma cocountable_binf_closed:
   assumes A0:"a1 \<in> cocountable_sets_in X \<and> a2 \<in> cocountable_sets_in X"
   shows "a1 \<inter> a2 \<in> cocountable_sets_in X"
@@ -570,11 +570,29 @@ proof-
      have B7:"is_countable (X-a1) \<and> (is_countable (X-a2))"
        using A1 assms in_cocountable_sets_in_imp2 by auto
       have B8:"is_countable ((X - a1) \<union> (X - a2))"
-    show "is_countable (X-(a1 \<inter> a2))"
-      by (simp add: B7 Diff_Int)
+        by (simp add: B7 is_countable_if_countable is_countable_imp_countable)
+     show "is_countable (X-(a1 \<inter> a2))"
+       by (simp add: B8 Diff_Int)
   qed
-  show "a1 \<inter> a2 \<in> cofinite_sets_in X"
-    by (metis B6 PowD PowI assms in_cofinite_iff1 in_cofinite_sets_in_imp1 le_infI2)
+  show "a1 \<inter> a2 \<in> cocountable_sets_in X"
+    by (metis B6 Pow_iff assms in_cocountable_iff1 in_cocountable_sets_in_imp1 le_infI2)
 qed
-*)                                         
+
+
+lemma cocountable_top_is_top:
+  " is_topology_on (cocountable_sets_in X) X"
+proof-
+  define T where "T= (cocountable_sets_in X)"
+  have T0:"T \<in> Dpow X"
+    using T_def in_cocountable_sets_in_imp1 by auto
+  have T1:" (top_u1 T)"
+    by (simp add: T_def cocountable_un_closed top_u1_def)
+  have T2:"top_i3 T"
+    by (simp add: T_def cocountable_binf_closed top_i3_def)
+  have T3:"X \<in> T"
+    by (simp add: T_def empty_countable in_cocountable_iff1)
+  show ?thesis
+    using T0 T1 T2 T3 T_def is_topology_on_def by auto
+qed
+                                       
 end
