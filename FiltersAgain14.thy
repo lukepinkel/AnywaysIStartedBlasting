@@ -2701,6 +2701,20 @@ definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set" where
 definition arb_sup_cl::"'a::order set \<Rightarrow> 'a::order set" where
   "arb_sup_cl A \<equiv> {x. \<exists>F \<in> Pow A. has_sup F \<and> x = SupUn F}"
 
+lemma sup_un_sets:
+  "SupUn (A::'a set set) = \<Union>A"
+  by (simp add: complete_lattice_sup_exists)
+
+lemma has_sup_un_sets:
+  "has_sup (A::'a set set)"
+  by (metis UNIV_I bot.extremum complete_lattice_sup_is_sup has_min_iff has_sup_def is_min_imp_has_min is_sup_def ub_set_degenerate)
+
+lemma arb_sup_cl_sets:
+  "arb_sup_cl (A::'a set set) = {x. \<exists>F \<in> Pow A. x=\<Union> F }"
+  apply(simp add:arb_sup_cl_def)
+  by (simp add: has_sup_un_sets sup_un_sets)
+  
+
 lemma fin_inf_cl_imp0:
   "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
   using fin_inf_cl_def by blast
@@ -2952,6 +2966,16 @@ lemma f_inf_cl_idemp2:
 lemma arb_sup_cl_idemp2:
   "\<forall>A. arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
   using arb_sup_cl_idemp by blast
+
+
+lemma arb_sup_cl_idemp3:
+  "\<And>E. E \<subseteq> arb_sup_cl (A::'a set set) \<longrightarrow> \<Union>E \<in>  arb_sup_cl A "
+proof
+   fix E assume A0:"E \<subseteq> arb_sup_cl (A::'a set set)" 
+   show" \<Union>E \<in>  arb_sup_cl A"
+   by (metis A0 PowI arb_sup_cl_idemp arb_sup_cl_if1 complete_lattice_sup_exists has_sup_un_sets)
+qed
+
 
 
 lemma fin_inf_cl_is_cl:
