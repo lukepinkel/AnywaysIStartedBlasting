@@ -640,6 +640,229 @@ proof-
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
 
-                                       
-                              
+definition is_base1_for_topology::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" where
+  "is_base1_for_topology B T \<equiv> B \<subseteq> T \<and> (\<forall>U \<in>T.  (\<exists>E \<in> Pow B. U=\<Union>E))"
+
+definition is_base_3_covering::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_base_3_covering B X \<equiv>   (B \<in> Dpow X) \<and> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
+
+definition is_base_3_intercont::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_base_3_intercont B X \<equiv> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
+
+definition is_base3_for_topology::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_base3_for_topology B X \<equiv> is_base_3_covering B X \<and> is_base_3_intercont B X"
+
+
+lemma is_base1_for_topology_imp:
+   "is_base1_for_topology B T \<Longrightarrow> U \<in> T \<Longrightarrow> (\<exists>E \<in> Pow B. U=\<Union>E)"
+  by (simp add: is_base1_for_topology_def)
+
+
+lemma is_base_3_covering_imp1:
+  "is_base_3_covering B X \<Longrightarrow>  (B \<in> Dpow X)"
+  by (simp add: is_base_3_covering_def)
+
+lemma is_base_3_covering_imp2:
+  "is_base_3_covering B X  \<Longrightarrow> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
+  by (simp add: is_base_3_covering_def)
+
+lemma is_base_3_covering_obtains:
+  assumes "is_base_3_covering B X"  and "x \<in> X" obtains U where "U \<in> B \<and> x \<in> U"
+  using assms(1) assms(2) is_base_3_covering_imp2 by blast
+
+lemma is_base_3_covering_if:
+  "(B \<in> Dpow X) \<Longrightarrow>  (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U) \<Longrightarrow>  is_base_3_covering B X"
+  by (simp add: is_base_3_covering_def)
+
+
+lemma is_base_3_intercont_imp1:
+  "is_base_3_intercont B X \<Longrightarrow> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
+  by (simp add: is_base_3_intercont_def)
+
+lemma is_base_3_intercont_if:
+  " (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2)) \<Longrightarrow> is_base_3_intercont B X "
+  by (simp add: is_base_3_intercont_def)
+
+lemma is_base_3_intercont_obtains1:
+  assumes "is_base_3_intercont B X" and "U1 \<in> B \<and> U2 \<in> B" and "x \<in> U1 \<inter> U2"
+  obtains U3 where "U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
+  by (meson assms(1) assms(2) assms(3) is_base_3_intercont_imp1)
+
+
+lemma is_base3_for_topology_imp0:
+  "is_base3_for_topology B X \<Longrightarrow> is_base_3_intercont B X"
+  by (simp add: is_base3_for_topology_def)
+
+lemma is_base3_for_topology_imp1:
+  "is_base3_for_topology B X \<Longrightarrow> is_base_3_covering B X"
+  by (simp add: is_base3_for_topology_def)
+
+lemma is_base3_for_topology_imp2:
+   "is_base3_for_topology B X \<Longrightarrow> B \<in> Dpow X"
+   by (simp add: is_base3_for_topology_def is_base_3_covering_def)
+
+lemma is_base3_for_topology_imp3:
+   "is_base3_for_topology B X \<Longrightarrow> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
+    by (simp add: is_base3_for_topology_def is_base_3_covering_def)
+
+lemma is_base3_for_topology_imp3b:
+  "is_base3_for_topology B X \<Longrightarrow> x \<in> X  \<Longrightarrow>  \<exists>U \<in> B. x \<in> U"
+  by (simp add: is_base3_for_topology_imp3)
+
+
+lemma is_base3_for_topology_imp4:
+   "is_base3_for_topology B X \<Longrightarrow> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
+    by (simp add: is_base3_for_topology_def is_base_3_intercont_def)
+
+lemma is_base3_for_topology_imp4b:
+   "is_base3_for_topology B X \<Longrightarrow>  U1 \<in> B \<and> U2 \<in> B \<and> x \<in> U1 \<inter> U2 \<Longrightarrow> (\<exists>U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2)"
+    by (simp add: is_base3_for_topology_def is_base_3_intercont_def)
+
+lemma is_base_3_intercont_imp4c:
+  assumes "is_base_3_intercont B X" and "U1 \<in> B \<and> U2 \<in> B \<and> x \<in> U1 \<inter> U2"
+  shows "\<exists>U3. U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
+  by (meson assms(1) assms(2) is_base_3_intercont_imp1)
+
+lemma is_base3_for_topology_imp5:
+  "is_base3_for_topology B X \<Longrightarrow> b \<in> B \<Longrightarrow> b \<subseteq> X"
+  using is_base3_for_topology_imp2 by fastforce
+
+lemma is_base3_for_topology_if:
+   " is_base_3_covering B X \<Longrightarrow> is_base_3_intercont B X   \<Longrightarrow>is_base3_for_topology B X"
+    by (simp add: is_base3_for_topology_def)
+
+
+definition basis_element_int_npt::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a set \<Rightarrow> 'a set \<Rightarrow> 'a  \<Rightarrow> 'a set)" where
+  "basis_element_int_npt B X \<equiv>  \<lambda>U1 U2 x. SOME U3. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2 \<and>  U3 \<in> B"
+
+definition basis_element_npt::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a set \<Rightarrow> 'a  \<Rightarrow> 'a set)" where
+  "basis_element_npt B X \<equiv>  \<lambda>U x. SOME B3. x \<in> B3 \<and> B3 \<subseteq> U \<and>  B3 \<in> B"
+
+definition basis_element_pt::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a  \<Rightarrow> 'a set)" where
+  "basis_element_pt B X \<equiv>  \<lambda>x. SOME B3. x \<in> B3 \<and>  B3 \<in> B"
+
+
+lemma basis_element_npt_props:
+  assumes "is_base3_for_topology B X"
+  defines "f \<equiv> basis_element_pt B X"
+  shows "\<And>x. x \<in> X \<longrightarrow> (f x) \<in> B \<and> x \<in> (f x)"
+proof
+    fix x assume A0:"x \<in> X"
+    show "(f x) \<in> B \<and> x \<in> (f x)"
+    apply(simp add:f_def basis_element_pt_def)
+      by (metis (no_types, lifting) A0 assms(1) is_base3_for_topology_imp3 someI_ex)
+qed
+
+lemma basis_element_int_npt_props0:
+  assumes "is_base3_for_topology B X"
+  defines "f \<equiv> basis_element_int_npt B X"
+  shows "\<And>U1 U2 x. U1 \<in> B \<and> U2 \<in> B  \<and> x \<in> U1 \<inter> U2 \<longrightarrow> ((f U1 U2 x) \<in> B \<and> ((f U1 U2 x) \<subseteq> U1 \<inter> U2) \<and> x \<in> (f U1 U2 x))"
+proof
+    fix U1 U2 x assume A0:"U1 \<in> B \<and> U2 \<in> B  \<and> x \<in> U1 \<inter> U2"
+    let ?U3="(f U1 U2 x)"
+    have B0:"\<exists>U3. U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
+      by (meson A0 assms(1) is_base3_for_topology_imp4b)
+    have B1:"is_base_3_intercont B X"
+      by (simp add: assms(1) is_base3_for_topology_imp0)
+    show "?U3 \<in> B \<and> (?U3 \<subseteq> U1 \<inter> U2) \<and> x \<in> ?U3"
+    apply(simp add:f_def basis_element_int_npt_def)
+      by (metis (mono_tags, lifting) B0 Int_subset_iff tfl_some)
+qed
+
+lemma un_all_pts:
+  assumes "\<And>x. x \<in> U \<longrightarrow> (x \<in> V x) \<and> (V x \<subseteq> U)"
+  shows "(\<Union>x \<in> U. V x) = U"
+  using assms by fastforce
+
+lemma basis_element_int_npt_props1:
+  assumes "is_base3_for_topology B X" "(b1 \<in> B \<and> b2 \<in> B)"
+  shows "\<exists>V \<in> Pow B.  b1 \<inter> b2 = (\<Union>V)"
+proof-
+  define V where A2:"V = (\<lambda>x. (basis_element_int_npt B X) b1 b2 x)"
+  have B0:"\<And>x. x \<in> b1 \<inter> b2 \<longrightarrow> (x \<in> V x) \<and> (V x \<subseteq> b1 \<inter> b2)"
+    by (metis A2 assms(1) assms(2) basis_element_int_npt_props0)
+  have B1:"(\<Union>x \<in> b1 \<inter> b2. V x) = b1 \<inter> b2 "
+    using B0 by blast
+  have B2:"V`(b1 \<inter> b2) \<in> Pow B \<and>   b1 \<inter> b2 = (\<Union>(V`(b1 \<inter> b2)))"
+    by (metis B1 PowI \<open>V::'a::type \<Rightarrow> 'a::type set \<equiv> basis_element_int_npt (B::'a::type set set) (X::'a::type set) (b1::'a::type set) (b2::'a::type set)\<close> assms(1) assms(2) basis_element_int_npt_props0 image_subset_iff)
+  show ?thesis
+    using B2 by auto
+qed  
+
+lemma is_base3_for_topology_imp6:
+  assumes A0:"is_base3_for_topology B X" 
+  shows "X \<in> (arb_sup_cl B)"
+proof-
+  define U where "U=basis_element_pt B X"
+  have B0:"\<And>x. x \<in> X \<longrightarrow> x \<in> U x \<and>  U x \<in> B"
+    by (simp add: U_def assms basis_element_npt_props)
+  have B1:"\<And>x. x \<in> X \<longrightarrow> (U x) \<subseteq> X"
+    using B0 assms is_base3_for_topology_imp5 by blast
+  have B2:"(\<Union>x \<in> X. U x) = X"
+    using B0 B1 by blast
+  have B8:"U`X \<subseteq> B"
+    using B0 by blast
+  show ?thesis
+    by (metis B2 B8 arb_sup_cl_extensive arb_sup_cl_idemp3 dual_order.trans)
+qed
+  
+lemma base34_generates_top:
+  assumes "is_base3_for_topology B X"
+  shows " is_topology_on (arb_sup_cl B) X" 
+proof-
+  define T where "T=(arb_sup_cl B)"
+  have T0:"X \<in> arb_sup_cl B"
+    by (simp add: assms is_base3_for_topology_imp6)
+  have T1:"top_u1 T"
+    apply(simp add: top_u1_def)
+    by (simp add: T_def arb_sup_cl_idemp3)
+  have T2:"top_i3 T"
+  proof-
+    have "\<And>a1 a2. a1 \<in> T \<and> a2 \<in> T \<longrightarrow> a1 \<inter> a2 \<in> T "
+    proof
+      fix a1 a2 assume A0:"a1 \<in> T \<and> a2 \<in> T" 
+      obtain B1 B2 where B1:"a1 = (\<Union>B1) \<and> B1 \<subseteq> B  \<and> a2=\<Union>B2 \<and> B2 \<in> Pow B"
+        by (metis A0 PowD T_def arb_sup_cl_mem_iff sup_un_sets)
+      have B2:"a1 \<inter> a2 = (\<Union>b1 \<in> B1. (\<Union>b2 \<in> B2. b1 \<inter> b2 ))"
+        using B1 by auto
+       define f where "f= basis_element_int_npt B X"
+      have B3:"\<And>b1 b2. (b1 \<in> B1 \<and> b2 \<in> B2) \<longrightarrow> (\<exists>V \<in> Pow B.  b1 \<inter> b2 = (\<Union>V))"
+        by (meson B1 PowD assms basis_element_int_npt_props1 subsetD)
+      have "\<And>b1 b2. (b1 \<in> B1 \<and> b2 \<in> B2) \<longrightarrow> b1 \<inter> b2 \<in> arb_sup_cl B"
+      show " a1 \<inter> a2 \<in> T"
+
+  
+
+lemma is_base1_for_topology_imp2:
+   "is_base1_for_topology B T \<Longrightarrow> U \<in> T \<Longrightarrow> (\<exists>E \<in> Pow B. has_sup E \<and> U= SupUn E)"
+  by (simp add: complete_lattice_sup_exists has_sup_un_sets is_base1_for_topology_def)
+
+      
+lemma is_base1_for_topology_if:
+  "(\<And>U. U \<in> T \<Longrightarrow> (\<exists>E \<in> Pow B. U=\<Union>E)) \<Longrightarrow> B \<subseteq> T \<Longrightarrow> is_base1_for_topology B T "
+  by (simp add: is_base1_for_topology_def)
+         
+lemma is_base1_for_topology_if_arb_sup_cl:
+  assumes"is_base1_for_topology B T" and "is_topology_on T X"
+  shows "T=arb_sup_cl B"        
+proof-
+  have L:"T \<subseteq> arb_sup_cl B"
+    using arb_sup_cl_mem_iff assms is_base1_for_topology_imp2 by fastforce
+  have R:"arb_sup_cl B \<subseteq> T"
+  proof
+    fix V assume A0:"V \<in> arb_sup_cl B"
+    obtain E where B0:"E \<in> Pow B \<and> V=(\<Union>E)"
+      by (metis A0 arb_sup_cl_mem_iff sup_un_sets)
+    have B1:"E \<in> Pow T"
+      using B0 assms(1) is_base1_for_topology_def by blast
+    show "V \<in> T"
+      by (metis B0 B1 PowD assms(2) is_topology_on_def top_u1_def)
+  qed
+  show ?thesis
+    using L R by blast
+qed
+
+
+    
+         
 end
