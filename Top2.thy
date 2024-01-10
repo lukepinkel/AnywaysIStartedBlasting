@@ -439,6 +439,12 @@ definition cofinite_sets_in::"'a set \<Rightarrow> 'a set set" where
 definition cocountable_sets_in::"'a set \<Rightarrow> 'a set set" where
   "cocountable_sets_in X \<equiv> {U. U \<in> Pow X \<and>  (is_countable (X - U) \<or> U={})}"
 
+definition particular_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
+  "particular_point_top a X \<equiv> {U. U \<in> Pow X \<and>  ((a \<in> U) \<or> U={})}"
+
+definition excluded_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
+  "excluded_point_top a X \<equiv> {U. U \<in> Pow X \<and>  a \<notin>  U \<or> U=X}"
+
 
 lemma in_cofinite_sets_in_imp1:
   "\<And>U. U \<in> cofinite_sets_in X \<Longrightarrow> U \<in> Pow X \<and> (finite (X - U) \<or> U={})"
@@ -594,5 +600,46 @@ proof-
   show ?thesis
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
+
+lemma particular_point__top_is_top:
+  assumes "X \<noteq> {} \<and> a \<in> X"
+  shows "is_topology_on (particular_point_top a X) X"
+proof-
+  define T where "T= (particular_point_top a X)"
+  have T0:"T \<in> Dpow X"
+    apply(simp add:  particular_point_top_def T_def)
+    by blast
+  have T1:" (top_u1 T)"
+    apply(simp add:top_u1_def T_def particular_point_top_def)
+    by blast
+  have T2:"top_i3 T"
+    apply(simp add:top_i3_def T_def particular_point_top_def)
+    by auto
+  have T3:"X \<in> T"
+    by (simp add: T_def assms particular_point_top_def)
+  show ?thesis
+    using T0 T1 T2 T3 T_def is_topology_on_def by auto
+qed
+
+lemma excluded_point_top_is_top:
+   "is_topology_on (excluded_point_top a X) X"
+proof-
+  define T where "T= (excluded_point_top a X)"
+  have T0:"T \<in> Dpow X"
+    apply(simp add:  excluded_point_top_def T_def)
+    by blast
+  have T1:" (top_u1 T)"
+    apply(simp add:top_u1_def T_def excluded_point_top_def)
+    by blast
+  have T2:"top_i3 T"
+    apply(simp add:top_i3_def T_def excluded_point_top_def)
+    by auto
+  have T3:"X \<in> T"
+    by (simp add: T_def excluded_point_top_def)
+  show ?thesis
+    using T0 T1 T2 T3 T_def is_topology_on_def by auto
+qed
+
                                        
+                              
 end
