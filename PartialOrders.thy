@@ -398,7 +398,9 @@ abbreviation Dpow::"'a set \<Rightarrow> 'a set set set" where
 abbreviation Pow_ne::"'a set \<Rightarrow> 'a set set" where
   "Pow_ne A \<equiv> (Pow A) - {{}}"
 
-
+lemma in_dpow_iff:
+  "a \<in> Dpow A \<longleftrightarrow> (\<forall>x  \<in> a. x \<in> Pow A)"
+  by blast
 
 section Definitions
 subsection Bounds
