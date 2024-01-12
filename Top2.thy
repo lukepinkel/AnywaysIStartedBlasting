@@ -1315,5 +1315,30 @@ lemma ideal_complement_top:
   show ?thesis
     by (simp add: B0 B1 is_base3_for_topology_def)
 qed
-    
+   
+
+lemma base_is_finf_closed:
+  assumes "is_base3_for_topology B X"
+  shows "arb_sup_cl B = topology_generated_by_in B X" (is "?L=?R")
+  proof-
+    have B0:"is_topology_on ?L X"
+      by (simp add: assms base34_generates_top)
+    have B1:"B \<subseteq> ?L"
+      by (simp add: arb_sup_cl_extensive)
+    have B2:"?R \<le> ?L"
+      by (meson B0 arb_sup_cl_extensive assms generated_topology_least1 is_base3_for_topology_imp2)
+    have B3:"?L \<le> ?R"
+    proof
+      fix x assume A0:"x \<in> ?L"
+      obtain E where B30:"E \<subseteq> B \<and> x = \<Union> E"
+        by (metis A0 arb_sup_cl_imp1 sup_un_sets)
+      have B31:"E \<subseteq> ?R"
+        by (meson B30 assms dual_order.trans generated_topology_upper0 is_base3_for_topology_imp2)
+      show "x \<in> ?R"
+        using B30 B31 generated_topology2 top_u1_def by blast
+  qed
+  show ?thesis
+    by (simp add: B2 B3 order_class.order_eq_iff)
+qed
+
 end
