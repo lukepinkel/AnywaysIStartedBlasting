@@ -1317,7 +1317,7 @@ lemma ideal_complement_top:
 qed
    
 
-lemma base_is_finf_closed:
+lemma arb_sup_cl_generates_top_if_base:
   assumes "is_base3_for_topology B X"
   shows "arb_sup_cl B = topology_generated_by_in B X" (is "?L=?R")
   proof-
