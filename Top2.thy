@@ -1254,4 +1254,61 @@ proof-
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
 
+lemma ideal_contains_bot:
+  assumes "is_ideal (I::'a set set)"
+  shows "{} \<in> I"
+  by (meson assms empty_subsetI is_downclosed_def is_ideal_def is_inhabited_imp)
+
+lemma set_ideal_bsup_closed:
+  assumes "is_ideal (I::'a set set)" and "I1 \<in> I \<and> I2 \<in> I"
+  shows " I1 \<union> I2 \<in> I"
+  using assms(1) assms(2) is_ideal_def updir_sup by auto
+
+lemma ideal_complement_top:
+  fixes T I::"'a set set" and  X::"'a set" 
+  assumes A0:"I \<subseteq> Pow X" and A1:"is_ideal I" and A2:"is_topology_on T X"
+  defines "B \<equiv> {x \<in> Pow X.   \<exists>u \<in> T. \<exists>i \<in> I. x = u - i }" 
+  shows "is_base3_for_topology B X"
+  proof-
+    have B0:"is_base_3_covering B X"
+    proof-
+      have B01:"B \<subseteq> Pow X"
+        apply(simp add: B_def)
+        by blast
+      have B02:"(\<And>(x::'a). x\<in>X \<longrightarrow> (\<exists>U::'a set\<in>B. x \<in> U))"
+      proof
+        fix x assume A3:"x \<in> X"
+        have B020:"{} \<in> I \<and> X \<in> T"
+          using A2 ideal_contains_bot is_topology_on_def local.A1 by blast
+        have B030:"X \<in> B"
+          using B020 B_def by blast
+        show "\<exists>U::'a set\<in>B. x \<in> U" 
+          using B030 A3 by blast
+      qed
+      show ?thesis
+        by (simp add: B01 B02 is_base_3_covering_if)
+    qed
+    have B1:"is_base_3_intercont B X"
+    proof-  
+      have B14:"\<And>B1 B2 x. (B1 \<in> B \<and> B2 \<in> B \<and> x \<in> B1 \<inter> B2) \<longrightarrow> (\<exists>B3 \<in> B.  x \<in> B3 \<and> B3 \<subseteq> B1 \<and> B3 \<subseteq> B2)"
+      proof
+        fix B1 B2 x assume A4:"(B1 \<in> B \<and> B2 \<in> B \<and> x \<in> B1 \<inter> B2)"
+        obtain U1 I1 U2 I2 where B10:"U1 \<in> T \<and> U2 \<in> T \<and> I1 \<in> I \<and> I2 \<in> I \<and> B1=U1-I1 \<and> B2=U2-I2"
+          using A4 B_def by blast
+        have B11:"B1 \<inter> B2 = (U1 \<inter> U2) - (I1 \<union> I2)"
+          using B10 by fastforce
+        have B12:" (U1 \<inter> U2)  \<in> T \<and> (I1 \<union> I2) \<in> I"
+          by (meson A2 B10 is_topology_on_def local.A1 set_ideal_bsup_closed top_i3_def)
+        have B13:"(B1 \<inter> B2 \<in> B)"
+          by (metis (mono_tags, lifting) A2 B11 B12 B_def CollectI Diff_subset PowI Sup_upper2 carrier_is_top_un)
+        show  "(\<exists>B3 \<in> B.  x \<in> B3 \<and> B3 \<subseteq> B1 \<and> B3 \<subseteq>B2)"
+          by (meson A4 B13 inf.cobounded2 inf_sup_ord(1))
+      qed
+    show ?thesis
+      by (simp add: B14 is_base_3_intercont_if)
+  qed
+  show ?thesis
+    by (simp add: B0 B1 is_base3_for_topology_def)
+qed
+    
 end
