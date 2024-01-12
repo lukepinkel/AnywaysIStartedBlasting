@@ -2698,6 +2698,9 @@ lemma grill_is_galois:
 definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set" where
   "fin_inf_cl A \<equiv> {x. \<exists>F \<in> Fpow_ne A. has_inf F \<and> x = InfUn F}"
 
+definition fin_inf_cl_in::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
+  "fin_inf_cl_in A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. has_inf_in F X \<and> x = InfIn F X}"
+
 definition arb_sup_cl::"'a::order set \<Rightarrow> 'a::order set" where
   "arb_sup_cl A \<equiv> {x. \<exists>F \<in> Pow A. has_sup F \<and> x = SupUn F}"
 
@@ -2719,6 +2722,10 @@ lemma fin_inf_cl_imp0:
   "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
   using fin_inf_cl_def by blast
 
+lemma fin_inf_cl_in_imp0:
+  "\<And>A X x. x \<in>  fin_inf_cl_in A X \<Longrightarrow> (\<exists>F \<in>  Fpow A. has_inf_in F X \<and> x = InfIn F X)"
+  using fin_inf_cl_in_def by blast
+
 lemma arb_sup_cl_imp0:
   "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
   using arb_sup_cl_def by blast
@@ -2726,6 +2733,10 @@ lemma arb_sup_cl_imp0:
 lemma fin_inf_cl_imp1:
   "\<And>A x. x \<in>  fin_inf_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> has_inf F \<and>  x = InfUn F)"
   by (metis fin_inf_cl_imp0 fpow_ne_imp)
+
+lemma fin_inf_cl_in_imp1:
+  "\<And>A X x. x \<in>  fin_inf_cl_in A X \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> finite F \<and> has_inf_in F X \<and>  x = InfIn F X)"
+   by (metis DiffI fin_inf_cl_in_imp0 finite.emptyI fpow_ne_imp order_bot_class.bot_least singletonD)
 
 lemma arb_sup_cl_imp1:
   "\<And>A x. x \<in>  arb_sup_cl A \<Longrightarrow> (\<exists>F. F \<subseteq> A  \<and> has_sup F \<and> x = SupUn F)"
@@ -2735,6 +2746,11 @@ lemma fin_inf_cl_if1:
   "\<And>A x.  (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F) \<Longrightarrow> x \<in> fin_inf_cl A"
   by (simp add: fin_inf_cl_def)
 
+lemma fin_inf_cl_in_if1:
+  "\<And>A X x.  (\<exists>F \<in>  Fpow A. has_inf_in F X \<and> x = InfIn F X) \<Longrightarrow> x \<in> fin_inf_cl_in A X"
+  using fin_inf_cl_in_def has_inf_in_in_set by blast
+
+
 lemma arb_sup_cl_if1:
   "\<And>A x.  (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F) \<Longrightarrow> x \<in> arb_sup_cl A"
   by (simp add: arb_sup_cl_def)
@@ -2742,6 +2758,10 @@ lemma arb_sup_cl_if1:
 lemma fin_inf_cl_mem_iff:
   "x \<in> fin_inf_cl A \<longleftrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
   by (simp add: fin_inf_cl_def)
+
+lemma fin_inf_cl_in_mem_iff:
+  "x \<in> fin_inf_cl_in A X \<longleftrightarrow> (\<exists>F \<in>  Fpow A. has_inf_in F X \<and> x = InfIn F X)"
+  using fin_inf_cl_in_if1 fin_inf_cl_in_imp0 by blast
 
 lemma  arb_sup_cl_mem_iff:
   "x \<in> arb_sup_cl A \<longleftrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
@@ -2752,10 +2772,19 @@ lemma fpow_ne_iso:
   "A \<subseteq> B \<Longrightarrow> Fpow_ne A \<subseteq> Fpow_ne B"
   by (simp add: Diff_mono Fpow_mono)
 
+lemma fpow_iso:
+  "A \<subseteq> B \<Longrightarrow> Fpow A \<subseteq> Fpow B"
+  by (simp add: Diff_mono Fpow_mono)
+
 lemma fpow_ne_finite_union:
   assumes A0:"EF \<in> Fpow_ne (Fpow_ne A)"
   shows "(\<Union>EF) \<in> Fpow_ne A"
   by (metis DiffD2 Pow_empty Pow_iff assms fpow_ne_equiv fpow_ne_union subset_eq)
+
+lemma fpow_finite_union:
+  assumes A0:"EF \<in> Fpow (Fpow A)"
+  shows "(\<Union>EF) \<in> Fpow A"
+  by (smt (verit, ccfv_threshold) Fpow_def Sup_least assms finite_Union mem_Collect_eq subset_eq)
 
 
 lemma arb_sup_cl_extensive:
@@ -2776,6 +2805,33 @@ proof
     by (metis A0 fpow_ne_singleton has_inf_singleton inf_singleton)
   show "a \<in> fin_inf_cl A"
     using B0 fin_inf_cl_def by blast
+qed
+
+lemma inf_in_singleton0:
+  fixes X::"'a::order set"
+  assumes A0:"a \<in> X"
+  shows "is_inf_in a {a} X"
+  by (simp add: assms inf_equiv1)
+
+lemma inf_in_singleton2:
+  fixes X::"'a::order set"
+  assumes A0:"a \<in> X"
+  shows "has_inf_in {a} X \<and> a = InfIn {a} X"
+  by (meson assms has_inf_in_def has_max_def inf_in_singleton0 is_inf_in_def is_inf_in_inf_eq)
+
+
+lemma fin_inf_cl_in_extensive:
+  fixes X::"'a::order set"
+  assumes "A \<subseteq> X"
+  shows "A \<subseteq> fin_inf_cl_in A X"
+proof
+  fix a assume A0:"a \<in> A"
+  have B00:"a \<in> X"
+    using A0 assms by blast
+  have B0:"{a} \<in> Fpow A \<and> has_inf_in {a} X \<and> a = InfIn {a} X"
+    by (simp add: A0 B00 Fpow_def inf_in_singleton2)
+  show "a \<in> fin_inf_cl_in A X"
+    using B0 fin_inf_cl_in_if1 by blast
 qed
 
 
