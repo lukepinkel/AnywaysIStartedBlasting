@@ -1341,4 +1341,20 @@ lemma arb_sup_cl_generates_top_if_base:
     by (simp add: B2 B3 order_class.order_eq_iff)
 qed
 
+(*
+lemma finf_cl_yields_base:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  defines "B \<equiv> Pow X \<inter> fin_inf_cl E"
+  shows "is_base3_for_topology B X"
+  apply(auto simp add:is_base3_for_topology_def)
+  proof-
+    show "is_base_3_covering B X"
+    apply(simp add: is_base_3_covering_def)
+    proof-
+      have "B \<le> Pow X"
+        by (simp add: B_def)
+       have "X \<in> B"
+       have "\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U"
+*)
+
 end
