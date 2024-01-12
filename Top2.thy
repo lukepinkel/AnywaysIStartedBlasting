@@ -385,7 +385,12 @@ lemma generated_topology_is_sup_in:
     show ?thesis
       by (simp add: B2 B3)
 qed
-  
+
+lemma generated_topology_is_sup_in2:
+ assumes A0:"E \<in> Dpow X"
+ shows  "(topology_generated_by_in E X) = (topology_generated_in E X)"
+  by (metis assms generated_topology_is_sup_in is_sup_in_sup_eq topology_generated_in_def)
+
 
 lemma topologies_sup_closed:
   assumes A0:"ET \<noteq> {}" and A1:"\<forall>T \<in> ET. T \<in> topologies_on X"
