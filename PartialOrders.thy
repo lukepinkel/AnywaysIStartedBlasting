@@ -576,17 +576,30 @@ definition is_inhabited::"'a set  \<Rightarrow> bool" where
 definition is_downdir::"'a::ord set \<Rightarrow> bool" where
    "is_downdir X \<equiv> (\<forall>a b. (a \<in> X) \<longrightarrow> ( b \<in> X) \<longrightarrow> (\<exists>c  \<in> X. (c \<le> a) \<and>  (c \<le> b)))"
 
+definition is_updir::"'a::ord set \<Rightarrow> bool" where
+   "is_updir X \<equiv> (\<forall>a b. (a \<in> X) \<longrightarrow> ( b \<in> X) \<longrightarrow> (\<exists>c  \<in> X. (c \<ge> a) \<and>  (c \<ge> b)))"
+
 definition is_upclosed::"'a::ord set \<Rightarrow> bool" where
    "is_upclosed X \<equiv> (\<forall>a b. a \<le> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
 
+definition is_downclosed::"'a::ord set \<Rightarrow> bool" where
+   "is_downclosed X \<equiv> (\<forall>a b. a \<ge> b \<longrightarrow>  a \<in> X \<longrightarrow>  b \<in> X)"
+
 definition is_upclosed_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
    "is_upclosed_in A x \<equiv> (\<forall>a b. a \<le> b \<and>  b \<le> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
+
+definition is_downclosed_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
+   "is_downclosed_in A x \<equiv> (\<forall>a b. a \<ge> b \<and>  b \<ge> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
 
 definition is_pisystem::"'a::order set \<Rightarrow> bool" where
    "is_pisystem X \<equiv> (\<forall>a b. a \<in> X  \<longrightarrow> b \<in> X \<longrightarrow> (binf a b)  \<in> X)"
 
 definition is_filter::"'a::ord set \<Rightarrow> bool" where 
   "is_filter F \<equiv> (is_downdir F \<and> is_upclosed F \<and> is_inhabited F)"
+
+definition is_ideal::"'a::ord set \<Rightarrow> bool" where 
+  "is_ideal F \<equiv> (is_updir F \<and> is_downclosed F \<and> is_inhabited F)"
+
 
 definition is_filter_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where 
   "is_filter_in F x \<equiv> (is_downdir F \<and> is_upclosed_in F x \<and> is_inhabited F \<and> (\<forall>f. f \<in> F \<longrightarrow> f \<le> x))"
@@ -2133,10 +2146,21 @@ lemma is_downdir_imp:
   shows "\<And>a b. (a \<in> X \<and> b \<in> X) \<Longrightarrow> (\<exists>c  \<in> X. (c \<le> a) \<and>  (c \<le> b))"
   using assms is_downdir_def by blast
 
+lemma is_updir_imp:
+  assumes "is_updir X"
+  shows "\<And>a b. (a \<in> X \<and> b \<in> X) \<Longrightarrow> (\<exists>c  \<in> X. (c \<ge> a) \<and>  (c \<ge> b))"
+  using assms is_updir_def by blast
+
+
 lemma is_upclosed_imp:
   assumes "is_upclosed X"
   shows "\<And>a b. (a \<le> b \<and> a \<in> X) \<Longrightarrow> b \<in> X"
   using assms is_upclosed_def by blast
+
+lemma is_downclosed_imp:
+  assumes "is_downclosed X"
+  shows "\<And>a b. (a \<ge> b \<and> a \<in> X) \<Longrightarrow> b \<in> X"
+  using assms is_downclosed_def by blast
 
 lemma is_upclosed_in_imp:
   assumes "is_upclosed_in A x"
@@ -2291,6 +2315,20 @@ proof
      by (simp add: A3)
   show "(inf a b) \<in> X"
     using A1 A3 B0 is_upclosed_imp by blast
+qed
+
+lemma updir_sup:
+  fixes X::"'X::semilattice_sup set"
+  assumes A0:"is_updir X" and A1:"is_downclosed X"
+  shows "\<And>(a::'X) b. (a \<in> X \<and> b \<in> X) \<longrightarrow> ((sup a b) \<in> X)"
+proof
+  fix a b assume A2:"(a \<in> X \<and> b \<in> X)"
+  obtain c where A3:"c \<in> X \<and> (c \<ge> a) \<and> (c \<ge> b)"
+    using A0 A2 is_updir_imp by blast
+  have B0:"c \<ge> (sup a b)"
+     by (simp add: A3)
+  show "(sup a b) \<in> X"
+    using A1 A3 B0 is_downclosed_def by blast
 qed
 
 lemma downdir_up_pisystem:
