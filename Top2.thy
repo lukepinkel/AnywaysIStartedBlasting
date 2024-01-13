@@ -1387,5 +1387,74 @@ lemma finf_cl_yields_base:
    qed   
 qed 
 
+lemma topology_generated_by_is_cl1:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows " is_topology_on (arb_sup_cl (fin_inf_cl_in E (Pow X))) X"
+  by (meson assms(1) assms(2) base34_generates_top finf_cl_yields_base)
+
+lemma topology_generated_by_is_cl2:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows " E \<le> (arb_sup_cl (fin_inf_cl_in E (Pow X)))"
+  using arb_sup_cl_extensive assms(1) fin_inf_cl_in_extensive by fastforce
+
+lemma topology_generated_by_is_cl3:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows "(arb_sup_cl (fin_inf_cl_in E (Pow X))) \<ge> topology_generated_in E X"
+  by (metis assms(1) assms(2) generated_topology_is_sup_in2 generated_topology_least1 topology_generated_by_is_cl1 topology_generated_by_is_cl2)
+
+lemma topology_generated_by_is_cl4:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows "(arb_sup_cl (fin_inf_cl_in E (Pow X))) \<ge> topology_generated_by_in E X"
+  by (meson assms(1) assms(2) generated_topology_least1 topology_generated_by_is_cl1 topology_generated_by_is_cl2)
+
+lemma topology_generated_by_is_cl5:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows "(arb_sup_cl (fin_inf_cl_in E (Pow X))) \<le> topology_generated_by_in E X"
+proof
+  fix A assume A2:"A \<in> (arb_sup_cl (fin_inf_cl_in E (Pow X)))"
+  show "A \<in>topology_generated_by_in E X"
+  proof-
+    obtain EA1 where B0:"EA1 \<subseteq> (fin_inf_cl_in E (Pow X)) \<and> A=(\<Union>EA1)"
+      by (metis A2 arb_sup_cl_imp1 sup_un_sets)
+    have B1:"\<And>x. x \<in> EA1 \<longrightarrow> (\<exists>Fx \<in> Fpow E. x=InfIn Fx (Pow X))"
+      using B0 fin_inf_cl_in_imp0 by blast
+    have B2:"\<And>Fx. Fx \<in> Fpow_ne E \<longrightarrow> InfIn Fx (Pow X) \<in>  topology_generated_by_in E X"
+    proof
+      fix Fx assume B2A0:"Fx \<in> Fpow_ne E"
+      have B20:"\<And>x. x \<in> Fx \<longrightarrow>  \<Inter>Fx \<le> x"
+        by (simp add: Inter_lower)
+      have B21:"\<And>x. x \<in> Fx \<longrightarrow> x \<in> Pow X"
+        using B2A0 Fpow_subset_Pow assms(1) by blast
+      have B22:"\<Inter>Fx \<in> Pow X"
+        using B21 B2A0 by blast
+      have B23:" \<Inter>Fx \<in> lb_set_in Fx (Pow X)"
+        using B22 lb_set_in_mem_iff by blast
+      have B20:"InfIn Fx (Pow X) = \<Inter>Fx"
+        by (metis B21 B22 Pow_iff inf.absorb_iff2 inter_complete_lat subsetI)
+       show "InfIn Fx (Pow X) \<in>  topology_generated_by_in E X"
+         by (metis B20 B2A0 assms(1) fpow_ne_imp generated_topology4 generated_topology_upper0 subset_trans top_i3_induct)
+    qed
+    have B3:"\<And>x. x \<in> EA1 \<longrightarrow> x \<in> (topology_generated_by_in E X)"
+    proof
+      fix x assume B3A0:"x \<in> EA1"
+      obtain Fx where B30:"Fx\<in> Fpow E \<and>  x=InfIn Fx (Pow X)"
+        using B1 B3A0 by blast
+      show "x \<in> (topology_generated_by_in E X)"
+      proof(cases "Fx = {}")
+        case True
+        have B31:"x=X"
+          by (simp add: B30 True empty_inter_is_carrier)
+        then show ?thesis
+          using generated_topology1 by blast
+      next
+        case False
+        then show ?thesis
+          by (simp add: B2 B30)
+      qed
+    qed
+    show ?thesis
+      by (metis B0 B3 generated_topology2 subsetI top_u1_def)
+  qed
+qed
 
 end
