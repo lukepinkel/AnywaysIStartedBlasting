@@ -1245,10 +1245,23 @@ lemma is_supin_singleton:
   "is_sup_in (x::'a::order) {x} UNIV"
   by(simp add:is_sup_in_def ub_set_in_def is_min_def lb_set_in_def)
 
+lemma is_supin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> is_sup_in x {x} X"
+  by (simp add: is_sup_in_def ub_set_in_def is_min_def lb_set_in_def)
+
+lemma has_supin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> has_sup_in {x} X"
+  using has_sup_in_def is_min_imp_has_min is_sup_in_def is_supin_singleton2 by blast
+
 lemma supin_singleton:
   "SupIn {x::'a::order} UNIV = x"
   apply(simp add: SupIn_def)
   using is_supin_singleton sup_in_unique by blast
+
+lemma supin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> SupIn {x} X = x"
+  by (meson has_supin_singleton2 sup_in_unique supin_is_sup is_supin_singleton2)
+
 
 lemma sup_in_max:
   fixes X::"'a::order set"
@@ -1443,10 +1456,23 @@ lemma is_infin_singleton:
   "is_inf_in (x::'a::order) {x} UNIV"
   by(simp add: is_inf_in_def lb_set_in_def is_max_def ub_set_in_def)
 
+lemma is_infin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> is_inf_in x {x} X"
+  by (simp add: is_inf_in_def lb_set_in_def is_max_def ub_set_in_def)
+
+lemma has_infin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> has_inf_in {x} X"
+  by (meson has_inf_in_def is_inf_in_imp1 is_infin_singleton2 is_max_imp_has_max)
+
+
 lemma infin_singleton:
   "InfIn {x::'a::order} UNIV = x"
   apply(simp add: InfIn_def)
   using is_infin_singleton inf_in_unique by blast
+
+lemma infin_singleton2:
+  "(x::'a::order) \<in> X \<Longrightarrow> InfIn {x} X = x"
+  by (meson has_infin_singleton2 inf_in_unique infin_is_inf is_infin_singleton2)
 
 lemma infin_eq_infun:
   assumes A0:"has_inf_in (A::'a::order set) UNIV"
@@ -2470,6 +2496,10 @@ lemma fpow_ne_singleton:
   "x \<in> A \<Longrightarrow> {x} \<in> Fpow_ne A"
   by (meson empty_subsetI finite.emptyI finite_insert fpow_ne_if insert_not_empty insert_subset)
 
+lemma fpow_singleton:
+  "x \<in> A \<Longrightarrow> {x} \<in> Fpow A"
+  using fpow_ne_singleton by force
+
 lemma fpow_ne_union:
   assumes "X \<noteq> {}" and "EF \<noteq> {}" and "finite EF" and "\<forall>F \<in> EF. F \<in> Fpow_ne X"
   shows "(\<Union>EF) \<in> Fpow_ne X"
@@ -2847,6 +2877,47 @@ lemma empty_inter_is_carrier:
   by (simp add: inter_complete_lat)
 
 
+lemma inf_in_comp_un_ind:
+  fixes F::"'b \<Rightarrow> 'a::order set" and I::"'b set" and X::"'a set"
+  defines "InfX \<equiv> (\<lambda>A. InfIn A X)"
+  assumes A0:"I \<noteq> {}" and
+          A1:"\<And>i. i \<in> I  \<Longrightarrow> has_inf_in (F i) X" and
+          A2:"has_inf_in (InfX`(F`I)) X"
+  shows "(has_inf_in (\<Union>i \<in> I. F i)) X \<and> InfIn (InfX`(F`I)) X = InfIn (\<Union>i \<in> I. F i) X"
+proof-
+  define A where A3:"A=(\<Union>i \<in> I. F i)"
+  define G where A4:"G= InfX`(F`I)"
+  have B0:"\<And>i. i \<in> I \<longrightarrow> (F i) \<subseteq> A"
+    by (simp add: A3 SUP_upper)
+  have B1:"\<And>i. i \<in> I \<longrightarrow> (\<forall>l. l \<in>(lb_set_in A X) \<longrightarrow> l \<le> InfIn (F i) X)"
+    using A1 B0 has_inf_in_imp3 lb_set_in_mem_iff by fastforce
+  have B2:"\<And>i. i \<in> I \<longrightarrow> lb_set_in A X \<subseteq> lb_set_in {(InfIn (F i) X)} X"
+    by (simp add: B1 lb_set_in_mem_iff subset_eq)
+  have B3:"lb_set_in A X \<subseteq> lb_set_in G X"
+    apply(simp add:A3 A4 InfX_def)
+    by (smt (verit, del_insts) A3 B1 imageE lb_set_in_mem_iff subset_eq)
+  have B4:"\<And>l. l \<in> lb_set_in A X \<longrightarrow> l  \<le> InfIn G X"
+    using A2 A4 B3 has_inf_in_imp1 is_max_iff by blast
+  have B5:"\<And>a. a \<in> A \<longrightarrow> InfIn G X \<le> a"
+  proof
+    fix a assume A5:"a \<in> A"
+    obtain i where A6:"i \<in> I \<and> a \<in> F i"
+      using A3 A5 by blast
+    have B6:"InfIn (F i) X \<le> a"
+      by (simp add: A1 A6 has_inf_in_imp2)
+    show "InfIn G X \<le> a"
+      by (metis A2 A4 A6 B6 InfX_def dual_order.trans has_inf_in_imp2 image_eqI)
+  qed
+  have B8:"is_inf_in (InfIn G X) A X"
+    by (metis A2 A4 B4 B5 has_inf_in_in_set is_inf_in_def is_max_iff lb_set_in_elm)
+  have B9:"has_inf_in A X"
+    using B8 has_inf_in_def is_inf_in_imp1 is_max_imp_has_max by blast
+  have B10:"InfIn G X = InfIn A X"
+    by (simp add: B8 is_inf_in_inf_eq)
+  show ?thesis
+    using A3 A4 B10 B9 by blast
+qed
+  
 
 lemma inf_comp_un_ind:
   fixes F::"'b \<Rightarrow> 'a::order set" and I::"'b set"
@@ -2995,5 +3066,9 @@ proof-
   show ?thesis
     using A3 A4 B9 B10 by blast
 qed
+
+
+
+
 
 end
