@@ -2807,29 +2807,17 @@ proof
     using B0 fin_inf_cl_def by blast
 qed
 
-lemma inf_in_singleton0:
-  fixes X::"'a::order set"
-  assumes A0:"a \<in> X"
-  shows "is_inf_in a {a} X"
-  by (simp add: assms inf_equiv1)
 
-lemma inf_in_singleton2:
-  fixes X::"'a::order set"
-  assumes A0:"a \<in> X"
-  shows "has_inf_in {a} X \<and> a = InfIn {a} X"
-  by (meson assms has_inf_in_def has_max_def inf_in_singleton0 is_inf_in_def is_inf_in_inf_eq)
-
+lemma fin_inf_cl_in_range:
+  "fin_inf_cl_in A X \<subseteq> X"
+  by (simp add: fin_inf_cl_in_def)
 
 lemma fin_inf_cl_in_extensive:
-  fixes X::"'a::order set"
-  assumes "A \<subseteq> X"
-  shows "A \<subseteq> fin_inf_cl_in A X"
+  "A \<inter> X \<subseteq> fin_inf_cl_in A X"
 proof
-  fix a assume A0:"a \<in> A"
-  have B00:"a \<in> X"
-    using A0 assms by blast
+  fix a assume A0:"a \<in> A \<inter> X"
   have B0:"{a} \<in> Fpow A \<and> has_inf_in {a} X \<and> a = InfIn {a} X"
-    by (simp add: A0 B00 Fpow_def inf_in_singleton2)
+    by (metis A0 IntD2 Int_commute fpow_singleton has_infin_singleton2 infin_singleton2)
   show "a \<in> fin_inf_cl_in A X"
     using B0 fin_inf_cl_in_if1 by blast
 qed
@@ -2860,6 +2848,21 @@ proof
   show "a \<in> fin_inf_cl B"
     using B0 fin_inf_cl_def by blast
 qed
+
+lemma fin_inf_in_cl_iso:
+  assumes "A \<subseteq> B"
+  shows "fin_inf_cl_in A X  \<subseteq> fin_inf_cl_in B X"
+proof
+  fix a assume A0:"a \<in> fin_inf_cl_in A X"
+  obtain F where A1:"F \<in> Fpow A \<and> has_inf_in F X \<and> a = InfIn F X"
+    using A0 fin_inf_cl_in_imp0 by blast
+  have B0:"F \<in> Fpow B \<and> has_inf_in F X \<and>  a = InfIn F X"
+    using A1 assms fpow_iso by blast
+  show "a \<in> fin_inf_cl_in B X"
+    using B0 fin_inf_cl_in_if1 by blast
+qed
+
+
 
 
 (*these got out of hand and are just FUBAR*)
@@ -2926,6 +2929,72 @@ proof-
   show ?thesis
     using C_def L R by force
 qed
+
+lemma fin_inf_cl_in_idemp:
+    "fin_inf_cl_in A X = fin_inf_cl_in (fin_inf_cl_in A X) X"
+proof-
+  define C where "C=(fin_inf_cl_in A X)"
+  have L:"C \<subseteq> fin_inf_cl_in C X"
+    by (metis C_def fin_inf_cl_in_extensive fin_inf_cl_in_range inf.orderE)
+  have R:"fin_inf_cl_in C X \<subseteq> C"
+  proof
+    fix x assume A0:"x \<in> fin_inf_cl_in C X"
+    obtain Fx where A1:"Fx \<in> Fpow C \<and> has_inf_in Fx X \<and> x = InfIn Fx X"
+      using A0 fin_inf_cl_in_imp0 by blast
+    have B0:"\<forall>y. y \<in> Fx \<longrightarrow> (\<exists>Fy \<in> Fpow A. has_inf_in Fy X \<and>  y = InfIn Fy X)"
+      using A1 C_def fin_inf_cl_in_imp0 fpow_ne_imp by blast
+    define F where "F=(\<lambda>y. SOME Fy. Fy \<in> Fpow A \<and> has_inf_in Fy X \<and>  y= InfIn Fy X)"
+    define FFx where "FFx=F`Fx"
+    have B1:"\<And>y. y \<in> Fx  \<longrightarrow>  has_inf_in (F y) X" 
+    proof
+      fix y assume A2:"y \<in> Fx"
+      obtain Fy where A3:"Fy \<in> Fpow A \<and> has_inf_in Fy X \<and>  y= InfIn Fy X"
+        by (meson A2 B0)
+      show "has_inf_in (F y) X"
+        by (metis (mono_tags, lifting) A3 F_def someI_ex)
+     qed
+    define InfX where "InfX \<equiv> (\<lambda>A. InfIn A X)"
+    have B2:"Fx = (InfX`FFx)"
+    proof-
+      have B3:"Fx \<subseteq> InfX`FFx"
+      proof
+        fix y assume A4:"y \<in> Fx"
+        have B4:"(InfIn (F y) X = y)"
+        apply(simp add:F_def)
+          by (smt (verit, best) A4 B0 someI_ex)
+        show "y \<in> (InfX`FFx)"
+          by (metis A4 B4 FFx_def InfX_def image_eqI)
+      qed
+      have B4:"InfX`FFx \<subseteq> Fx"
+        by (smt (verit, del_insts) A1 B3 CollectD FFx_def Fpow_def card_image_le card_seteq finite_imageI order.trans)
+      show ?thesis
+        using B3 B4 by blast
+    qed
+   define G where "G=\<Union>FFx"
+    have B6:"has_inf_in (InfX`FFx) X"
+      using A1 B2 by blast
+    have B7:"InfIn Fx X  = InfX(InfX`FFx)"
+      using B2 InfX_def by blast
+    have B8:"... = InfX G"
+      apply(simp add:InfX_def)
+      by (metis B1 B6 FFx_def G_def InfX_def Union_empty image_cong image_empty inf_in_comp_un_ind)
+    have B9:"\<And>y. y \<in> Fx  \<longrightarrow> (F y) \<in> Fpow A"
+      by (smt (verit, ccfv_threshold) B0 F_def someI_ex)
+    have B10:"\<forall>Fy \<in> FFx. Fy \<in> Fpow A"
+      using B9 FFx_def by auto
+    have B11:"FFx \<in> Fpow (Fpow A)"
+      by (metis (no_types, lifting) A1 B10 FFx_def Fpow_def finite_imageI mem_Collect_eq subsetI)
+    have B12:"G \<in> Fpow A"
+      by (simp add: B11 G_def fpow_finite_union)
+    have B13:"has_inf_in G X \<and> x = InfIn G X"
+      by (metis A1 B1 B2 FFx_def G_def InfX_def Union_empty image_cong image_empty inf_in_comp_un_ind)
+    show "x \<in> C"
+      using B12 B13 C_def fin_inf_cl_in_if1 by blast
+    qed
+  show ?thesis
+    using C_def L R by force
+qed
+
 
 lemma arb_sup_cl_idemp:
     "arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
@@ -3019,6 +3088,10 @@ lemma f_inf_cl_idemp2:
   "\<forall>A. fin_inf_cl A = fin_inf_cl (fin_inf_cl A)"
   using fin_inf_cl_idemp by blast
 
+lemma f_inf_cl_in_idemp2:
+  "\<forall>A. fin_inf_cl_in A X = fin_inf_cl_in (fin_inf_cl_in A X) X"
+  using fin_inf_cl_in_idemp by blast
+
 lemma arb_sup_cl_idemp2:
   "\<forall>A. arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
   using arb_sup_cl_idemp by blast
@@ -3048,6 +3121,19 @@ lemma arb_sup_cl_is_cl:
   apply(simp add: is_extensive_def arb_sup_cl_extensive is_isotone_def arb_sup_cl_iso)
   apply(simp add:is_idempotent_def)
   using arb_sup_cl_idemp2 by blast
+
+lemma fin_inf_cl_in_top:
+  "X \<in> fin_inf_cl_in A (Pow X)"
+proof-
+  have B0:"{} \<in> Fpow A"
+    by (simp add: empty_in_Fpow)
+  have B1:"(InfIn {} (Pow X)) = X"
+    by (simp add: empty_inter_is_carrier)
+   have B2:"has_inf_in {} (Pow X)"
+     by (metis Pow_top Sup_upper Union_Pow_eq has_inf_in_def has_max_iff lb_set_in_degenerate)
+    show ?thesis
+      using B0 B1 B2 fin_inf_cl_in_if1 by blast
+qed
 
 lemma comp_extensive:
   fixes f1 f2::"'a::order \<Rightarrow> 'a::order" 
