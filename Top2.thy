@@ -1341,20 +1341,51 @@ lemma arb_sup_cl_generates_top_if_base:
     by (simp add: B2 B3 order_class.order_eq_iff)
 qed
 
-(*
+
 lemma finf_cl_yields_base:
   assumes "E \<in> Dpow X" and "E \<noteq> {}"
-  defines "B \<equiv> Pow X \<inter> fin_inf_cl E"
+  defines "B \<equiv> fin_inf_cl_in E (Pow X)"
   shows "is_base3_for_topology B X"
   apply(auto simp add:is_base3_for_topology_def)
   proof-
     show "is_base_3_covering B X"
-    apply(simp add: is_base_3_covering_def)
     proof-
-      have "B \<le> Pow X"
-        by (simp add: B_def)
-       have "X \<in> B"
-       have "\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U"
-*)
+      have B0:"B \<le> Pow X"
+        by (simp add: B_def fin_inf_cl_in_range)
+       have B1:"X \<in> B"
+         by (simp add: B_def fin_inf_cl_in_top)
+       have B2:"\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U"
+         using B1 by blast
+        show ?thesis
+          by (simp add: B0 B2 is_base_3_covering_def)
+    qed
+    show "is_base_3_intercont B X"
+    proof-
+      have B0:"\<And>B1 B2 x. (B1 \<in> B) \<and> (B2 \<in> B) \<and> (x \<in> B1 \<inter> B2) \<longrightarrow> (\<exists>B3 \<in> B. x \<in> B3 \<and> B3 \<subseteq> B1 \<inter> B2)"
+      proof
+        fix B1 B2 x assume A0:"(B1 \<in> B) \<and> (B2 \<in> B) \<and> (x \<in> B1 \<inter> B2)"
+        obtain E1 where B3:"E1 \<in> Fpow E \<and> has_inf_in E1 (Pow X) \<and> InfIn E1 (Pow X) = B1"
+          using A0 B_def fin_inf_cl_in_imp0 by blast
+        obtain E2 where B4:"E2 \<in> Fpow E \<and> has_inf_in E2 (Pow X) \<and> InfIn E2 (Pow X) = B2"
+          using A0 B_def fin_inf_cl_in_imp0 by blast
+        have B5:"E1 \<union> E2 \<in> Fpow E"
+          by (metis (mono_tags, lifting) B3 B4 Fpow_def Un_subset_iff finite_Un mem_Collect_eq)
+        have B6:"is_inf_in (B1 \<inter> B2) (E1 \<union> E2) (Pow X)"
+          by (smt (verit, del_insts) B3 B4 PowD PowI Un_iff inf_equiv1 infin_is_inf le_infI1 le_inf_iff)
+        have B7:"has_inf_in (E1 \<union> E2) (Pow X)"
+          by (meson B6 has_inf_in_def has_max_iff is_inf_in_imp1 is_max_iff)
+        have B8:"InfIn (E1 \<union> E2) (Pow X) = (B1 \<inter> B2)"
+          using B6 is_inf_in_inf_eq by blast
+        have B9:"B1 \<inter> B2 \<in> B"
+        apply(simp add:B_def)
+          using B5 B7 B8 fin_inf_cl_in_if1 by blast
+        show "(\<exists>B3 \<in> B. x \<in> B3 \<and> B3 \<subseteq> B1 \<inter> B2)"
+          by (meson A0 B9 dual_order.eq_iff)
+      qed
+    show ?thesis
+      by (meson B0 is_base_3_intercont_if)
+   qed   
+qed 
+
 
 end
