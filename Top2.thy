@@ -126,6 +126,8 @@ definition interior2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Ri
 definition closure2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
   "closure2 E T X \<equiv> {x \<in> X. is_adherent_point x E T X}"
 
+definition continuous_at::"('a \<Rightarrow> 'b) \<Rightarrow> 'a \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'b set set \<Rightarrow> 'b set \<Rightarrow> bool" where
+  "continuous_at f x T X S Y \<equiv> (\<forall>V \<in> nhoods_of (f x) S Y. \<exists>U \<in> nhoods_of x T X. f`U \<le> V)"
 
 lemma top_u1_imp_contains_empty:
   "\<And>T. top_u1 T \<Longrightarrow> {} \<in> T"
@@ -1591,19 +1593,55 @@ lemma closure_is_extensive:
   shows "is_extensive (\<lambda>A. closure1 A T X)"
   by (metis (no_types, lifting) Inter_greatest closure1_def is_extensive_def mem_Collect_eq)
 
+
+lemma closure_is_isotone0:
+  assumes "is_topology_on T X" and "A \<le> B"
+  shows "closure1 A T X \<le> closure1 B T X"
+  apply(simp add:closure1_def)
+  using assms(2) by auto
+
 lemma closure_is_isotone:
   assumes "is_topology_on T X"
   shows "is_isotone (\<lambda>A. closure1 A T X)"
-  by (smt (verit, del_insts) Collect_mono_iff Inf_superset_mono closure1_def is_isotone_def subset_trans)
+  by (simp add: assms closure_is_isotone0 is_isotone_def)
+
+lemma closure_is_idempotent0:
+  assumes "is_topology_on T X"
+  shows "closure1 (closure1 A T X) T X = closure1 A T X"
+  apply(simp add:closure1_def)
+  by auto
 
 lemma closure_is_idempotent:
   assumes "is_topology_on T X"
   shows "is_idempotent (\<lambda>A. closure1 A T X)"
-  by (smt (z3) Collect_mono_iff Inf_superset_mono assms closure1_def closure_is_extensive closure_is_isotone closure_of_closed is_extensive_def is_idempotent_def is_isotone_def subset_antisym)
+  by (simp add: assms closure_is_idempotent0 is_idempotent_def)
 
 lemma closure_is_closure:
   assumes "is_topology_on T X"
   shows "is_closure (\<lambda>A. closure1 A T X)"
   by (simp add: assms closure_is_extensive closure_is_idempotent closure_is_isotone is_closure_def)
+
+
+lemma continuous_at_imp_open_preimage:
+  fixes T::"'a set set" and X::"'a set" and 
+        S::"'b set set" and Y::"'b set" and
+        f::"'a \<Rightarrow> 'b"
+  assumes A0:"is_topology_on T X" and A1:"is_topology_on S Y" and A2:"f-`Y = X" and A3:"\<forall>x \<in> X. continuous_at f x T X S Y"  
+  shows "\<forall>V \<in> S. f-`V \<in> T"
+proof
+  fix V assume A4:"V \<in> S"
+  have B0:"\<forall>x \<in> f-`V. f x \<in> V"
+    by simp
+  have B1:"\<forall>x \<in> f-`V. V \<in> nhoods_of (f x) S Y"
+    using A4 nhoods_of_def by fastforce
+  have B2:"\<forall>x \<in> f-`V. \<exists>Vx \<in> nhoods_of x T X. f`Vx \<le> V"
+    by (metis A2 A3 A4 B1 UN_I carrier_is_top_un continuous_at_def local.A1 vimage_Union)
+  have B3:"\<forall>x \<in> f-`V. \<exists>Ux \<in> T. x \<in> Ux \<and> f`Ux \<le> V"
+    by (meson B2 dual_order.trans image_subset_iff_subset_vimage nhoods_of_mem_iff)
+  have B4:"f-`V \<in> Pow X"
+    by (metis A2 A4 PowI Union_upper carrier_is_top_un local.A1 vimage_mono)
+  show"f-`V \<in> T"
+    by (meson A0 B3 B4 image_subset_iff_subset_vimage open_iff_nhp)
+qed
 
 end
