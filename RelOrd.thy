@@ -261,6 +261,14 @@ lemma inf_unique2:
   "has_inf R A X Y \<Longrightarrow> \<exists>!i. inf R A X Y = i"
   by simp
 
+lemma sup_mayb0:
+  "is_sup s R A X Y \<longleftrightarrow>  is_min s R (U R A X Y) X Y"
+  by (simp add: sup_set_def is_min_def is_sup_def min_set_def)
+
+lemma inf_mayb0:
+  "is_inf i R A X Y \<longleftrightarrow>  is_max i R (L R A X Y) X Y"
+  by (simp add: inf_set_def is_inf_def is_max_def max_set_def)
+
 lemma sup_maybe1:
   "is_sup s R A X Y \<Longrightarrow> s \<in>  U R (L R (U R A X Y) X Y) X Y"
   by (meson UNIV_I asym_onD is_asym is_refl refl_onD)
