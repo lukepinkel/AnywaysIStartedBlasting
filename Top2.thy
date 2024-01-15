@@ -102,6 +102,30 @@ definition particular_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set s
 definition excluded_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
   "excluded_point_top a X \<equiv> {U. U \<in> Pow X \<and>  a \<notin>  U \<or> U=X}"
 
+definition is_limit_point::"'a  \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_limit_point x A T X \<equiv> (\<forall>V. V \<in>  nhoods_of x T X \<longrightarrow> A \<inter> (V - {x}) \<noteq> {})"
+
+definition is_adherent_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_adherent_point x A T X \<equiv> (\<forall>V. V \<in> nhoods_of x T X \<longrightarrow> A \<inter> V \<noteq> {})"
+
+definition is_isolated_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_isolated_point x A T X \<equiv> (\<exists>V. V \<in> nhoods_of x T X \<and> V \<inter> A = {x})"
+
+definition is_interior_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_interior_point x A T X \<equiv> (A \<in> nhoods_of x T X)"
+
+definition interior1::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
+  "interior1 E T X \<equiv> \<Union>{U \<in> T. U \<subseteq> E}"
+
+definition closure1::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
+  "closure1 E T X \<equiv> \<Inter>{F. (X-F) \<in> T \<and> E \<subseteq> F}"
+
+definition interior2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
+  "interior2 E T X \<equiv> {x \<in> X. is_interior_point x E T X}"
+
+definition closure2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
+  "closure2 E T X \<equiv> {x \<in> X. is_adherent_point x E T X}"
+
 
 lemma top_u1_imp_contains_empty:
   "\<And>T. top_u1 T \<Longrightarrow> {} \<in> T"
@@ -1456,5 +1480,130 @@ proof
       by (metis B0 B3 generated_topology2 subsetI top_u1_def)
   qed
 qed
+
+lemma topology_generated_by_is_cl6:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows "(arb_sup_cl (fin_inf_cl_in E (Pow X))) = topology_generated_by_in E X"
+  by (meson assms(1) assms(2) subset_antisym topology_generated_by_is_cl4 topology_generated_by_is_cl5)
+
+lemma topology_generated_by_is_cl7:
+  assumes "E \<in> Dpow X" and "E \<noteq> {}"
+  shows "(arb_sup_cl (fin_inf_cl_in E (Pow X))) = topology_generated_in E X"
+  by (metis assms(1) assms(2) generated_topology_is_sup_in2 topology_generated_by_is_cl6)
+
+
+lemma interior_equiv:
+  assumes "A \<subseteq> X"
+  shows "interior1 A T X = interior2 A T X"
+proof-
+  have B0:"interior1 A T X \<le> interior2 A T X"
+  apply(simp add:interior1_def interior2_def is_interior_point_def nhoods_of_def)
+    using assms subsetD by auto
+ have B1:"interior2 A T X \<le> interior1 A T X"
+  apply(simp add:interior1_def interior2_def is_interior_point_def nhoods_of_def)
+   by blast
+  show ?thesis
+    by (simp add: B0 B1 set_eq_subset)
+qed
+
+
+
+lemma closure_equiv1:
+  assumes A0:"A \<subseteq> X" and A1:"is_topology_on T X"
+  shows "\<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F} \<subseteq>  {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}}"
+  proof
+    fix x assume A2:"x \<in> \<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F}"
+    show "x \<in> {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}}"
+    proof-
+      have B0:"x \<in> X"
+        using A0 A2 local.A1 trivial_in_top by fastforce
+      have B1:"(\<And>V. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {})"
+      proof
+        fix V assume A3:"\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V"
+        obtain U where A4:"U \<in> T \<and> x \<in> U \<and> U \<subseteq> V"
+          using A3 by blast
+        define F where "F = X - U"
+        have B2:"X - F \<in> T"
+          by (metis A4 Diff_Diff_Int F_def Union_upper carrier_is_top_un inf.absorb_iff2 local.A1)
+        show "A \<inter> V \<noteq> {}"
+          using A0 A2 A4 B2 F_def by fastforce
+      qed
+    show ?thesis
+      using B0 B1 by blast
+  qed
+qed
+  
+
+
+lemma closure_equiv2:
+  assumes A0:"A \<subseteq> X" and A1:"is_topology_on T X"
+  shows " {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}} \<subseteq> \<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F}"
+  proof
+    fix x assume A2:"x \<in> {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}}"
+    show "x \<in> \<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F}"
+    proof-
+      have B0:"\<And>F. X - F \<in> T \<and> A \<subseteq> F \<longrightarrow> x \<in> F"
+        proof
+          fix F assume A3:"X - F \<in> T \<and> A \<subseteq> F"
+          show "x \<in> F"
+            by (smt (verit, del_insts) A0 A2 A3 CollectD DiffI Diff_eq_empty_iff Int_Diff inf.order_iff order_refl)
+        qed
+      show ?thesis
+        using B0 by blast
+     qed
+qed
+
+  
+
+lemma closure_equiv:
+  assumes A0:"A \<subseteq> X" and A1:"is_topology_on T X"
+  shows "closure1 A T X = closure2 A T X"
+proof-
+  have B0:"closure1 A T X \<le> closure2 A T X"
+  apply(simp add:closure1_def closure2_def is_adherent_point_def nhoods_of_def)
+    by (simp add: A0 closure_equiv1 local.A1)
+ have B1:"closure2 A T X \<le> closure1 A T X"
+  apply(simp add:closure1_def closure2_def is_adherent_point_def nhoods_of_def)
+   by (simp add: A0 closure_equiv2 local.A1)
+  show ?thesis
+    by (simp add: B0 B1 set_eq_subset)
+qed
+
+lemma closure_of_closed:
+  assumes "is_topology_on T X" and "(X-F) \<in> T"
+  shows "closure1 F T X = F"
+  apply(simp add:closure1_def)
+  using assms(2) by blast
+
+lemma interior_of_open:
+  assumes "is_topology_on T X" and "U \<in> T"
+  shows "interior1 U T X = U"
+  apply(simp add:interior1_def)
+  using assms(2) by blast
+
+lemma finite_closure_in_cofinite:
+  assumes "finite F"
+  shows "closure1 F (cofinite_sets_in X) X = F"
+  by (simp add: Diff_Diff_Int assms closure_of_closed cofinite_top_is_top in_cofinite_iff1) 
+
+lemma closure_is_extensive:
+  assumes "is_topology_on T X"
+  shows "is_extensive (\<lambda>A. closure1 A T X)"
+  by (metis (no_types, lifting) Inter_greatest closure1_def is_extensive_def mem_Collect_eq)
+
+lemma closure_is_isotone:
+  assumes "is_topology_on T X"
+  shows "is_isotone (\<lambda>A. closure1 A T X)"
+  by (smt (verit, del_insts) Collect_mono_iff Inf_superset_mono closure1_def is_isotone_def subset_trans)
+
+lemma closure_is_idempotent:
+  assumes "is_topology_on T X"
+  shows "is_idempotent (\<lambda>A. closure1 A T X)"
+  by (smt (z3) Collect_mono_iff Inf_superset_mono assms closure1_def closure_is_extensive closure_is_isotone closure_of_closed is_extensive_def is_idempotent_def is_isotone_def subset_antisym)
+
+lemma closure_is_closure:
+  assumes "is_topology_on T X"
+  shows "is_closure (\<lambda>A. closure1 A T X)"
+  by (simp add: assms closure_is_extensive closure_is_idempotent closure_is_isotone is_closure_def)
 
 end
