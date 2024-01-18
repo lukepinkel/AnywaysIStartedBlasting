@@ -1,5 +1,5 @@
 theory Prod
-  imports Main "HOL-Library.Nat_Bijection" "HOL-Library.FuncSet" "HOL-Library.Countable_Set"
+  imports Main
 begin
 
 declare [[show_types]]
@@ -529,7 +529,7 @@ qed
 lemma infinite_iso:
   "infinite A \<Longrightarrow> A \<subseteq> B \<Longrightarrow> infinite B"
   using finite_subset by blast
-
+(*
 lemma is_countable_imp_countable:
   "is_countable A \<Longrightarrow> countable A"
   by (simp add: countable_def is_countable_def)
@@ -537,11 +537,11 @@ lemma is_countable_imp_countable:
 lemma is_countable_if_countable:
   "countable A \<Longrightarrow> is_countable A"
   by (simp add: countable_def is_countable_def)
-
+*)
 lemma infinite_imp_infinite_union:
   "infinite A \<Longrightarrow> infinite B \<Longrightarrow> infinite (A \<union> B)"
   by simp
-
+(*
 lemma cinfinite_union:
   assumes "is_countably_infinite A \<and> is_countably_infinite B"
   shows "is_countably_infinite (A \<union> B)"
@@ -561,7 +561,7 @@ proof-
   show ?thesis
     by (simp add: \<open>is_countably_infinite ((A::'a set) \<union> (B::'a set))\<close>)
 qed
-
+*)
 lemma empty_countable:
   "is_countable {}"
   by (simp add: is_countable_def)
