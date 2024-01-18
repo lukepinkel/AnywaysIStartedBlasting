@@ -1741,7 +1741,7 @@ proof
     by (meson R assms(1) assms(2) assms(3) notin_closur_imp_exists_nhood_disjoint)
 qed
 
-lemma closure_equiv1:
+lemma closure_equiv:
   assumes "A \<subseteq> X" and "is_topology_on T X"
   shows "closure1 A T X = closure2 A T X"
 proof-
@@ -1781,41 +1781,7 @@ qed
 
 
 
-
-
-lemma closure_equiv2:
-  assumes A0:"A \<subseteq> X" and A1:"is_topology_on T X"
-  shows " {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}} \<subseteq> \<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F}"
-  proof
-    fix x assume A2:"x \<in> {x::'a \<in> X. \<forall>V::'a set. (\<exists>U::'a set. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V) \<longrightarrow> A \<inter> V \<noteq> {}}"
-    show "x \<in> \<Inter>{F.  X - F \<in> T \<and> A \<subseteq> F}"
-    proof-
-      have B0:"\<And>F. X - F \<in> T \<and> A \<subseteq> F \<longrightarrow> x \<in> F"
-        proof
-          fix F assume A3:"X - F \<in> T \<and> A \<subseteq> F"
-          show "x \<in> F"
-            by (smt (verit, del_insts) A0 A2 A3 CollectD DiffI Diff_eq_empty_iff Int_Diff inf.order_iff order_refl)
-        qed
-      show ?thesis
-        using B0 by blast
-     qed
-qed
-
   
-
-lemma closure_equiv:
-  assumes A0:"A \<subseteq> X" and A1:"is_topology_on T X"
-  shows "closure1 A T X = closure2 A T X"
-proof-
-  have B0:"closure1 A T X \<le> closure2 A T X"
-  apply(simp add:closure1_def closure2_def is_adherent_point_def nhoods_of_def)
-    by (simp add: A0 closure_equiv1 local.A1)
- have B1:"closure2 A T X \<le> closure1 A T X"
-  apply(simp add:closure1_def closure2_def is_adherent_point_def nhoods_of_def)
-   by (simp add: A0 closure_equiv2 local.A1)
-  show ?thesis
-    by (simp add: B0 B1 set_eq_subset)
-qed
 
 lemma closure_of_closed:
   assumes "is_topology_on T X" and "(X-F) \<in> T" and "F \<subseteq> X"
@@ -1832,7 +1798,7 @@ lemma interior_of_open:
   using assms(2) by blast
 
 lemma finite_closure_in_cofinite:
-  assumes "finite F"
+  assumes "finite F" and "F \<subseteq> X"
   shows "closure1 F (cofinite_sets_in X) X = F"
   by (simp add: Diff_Diff_Int assms closure_of_closed cofinite_top_is_top in_cofinite_iff1) 
 
@@ -1877,16 +1843,66 @@ lemma larger_closed_always_ne:
 lemma closure_inter_larger_closed:
   assumes "is_topology_on T X" and "A \<le> X" 
   shows "closure1 A T X = \<Inter>(larger_closed_sets A T X)"
-  apply(simp add:closure1_def larger_closed_sets_def)
+  by(simp add:closure1_def larger_closed_sets_def)
 
-lemma interior_closure_ids:
+lemma smaller_open_set_iff:
+  assumes "is_topology_on T X" and "A \<le> X" and "F \<subseteq> X"
+  shows "F \<in> larger_closed_sets A T X \<longleftrightarrow> (X - F) \<in> smaller_open_sets (X - A) T X" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L
+  show ?R
+    by (meson Diff_mono Diff_subset L assms(1) assms(2) larger_closed_sets_mem_iff order_refl smaller_open_sets_mem_iff)
+  next
+  assume R:?R
+  show ?L
+  proof-
+    have B0:"(X - F) \<in> smaller_open_sets (X - A) T X"
+      by (simp add: R)
+    have B1:"(X - F) \<in> T \<and> (X - A) \<supseteq> (X - F)"
+      using R smaller_open_sets_def by auto
+    have B2:"F \<supseteq> A"
+      using B1 assms(2) by auto
+    show ?thesis
+      by (simp add: B1 B2 assms(1) assms(2) assms(3) larger_closed_sets_mem_iff)
+  qed
+qed
+
+lemma complement_of_interior_is_closure_of_complement:
   assumes "is_topology_on T X" and "A \<le> X" 
   shows "X - (interior1 A T X) = closure1 (X - A) T X"
-  apply(simp add:interior1_def closure1_def)
 proof-
-  define UF where "UF = "
-  have B0:"X - \<Union> {U::'a set \<in> T. U \<subseteq> A} = \<Inter> {F::'a set. X - F \<in> T \<and> X - A \<subseteq> F}"
+  have B0:"\<forall>F \<in> Pow X. F \<in> (larger_closed_sets (X - A) T X) \<longleftrightarrow> (X - F) \<in> (smaller_open_sets A T X)"
+    by (simp add: Diff_Diff_Int assms(1) assms(2) inf.absorb2 larger_closed_sets_complement)
+  have B1:"X-(interior1 A T X) = X - (\<Union>(smaller_open_sets A T X))"
+    by (simp add: interior1_def smaller_open_sets_def)
+  have B2:"... = X - (\<Union>U \<in> smaller_open_sets A T X. U)"
+    by simp
+  have B3:"... = (\<Inter>U \<in> smaller_open_sets A T X. X - U)"
+    by (smt (verit, ccfv_threshold) Diff_eq_empty_iff Diff_subset INT_extend_simps(4) Inter_lower SUP_upper Sup.SUP_cong Union_empty assms(1) assms(2) image_is_empty smaller_open_sets_mem_iff trivial_in_top)
+ have B4:"closure1 (X - A) T X = (\<Inter>F \<in> larger_closed_sets (X - A) T X. F)"
+   by (simp add: assms(1) closure_inter_larger_closed)
+  have B5:"... = (\<Inter>U \<in> smaller_open_sets A T X. X - U)"
+    by (smt (z3) B0 Diff_subset INF_eq Pow_iff Sup_upper assms(1) assms(2) carrier_is_top_un double_diff equalityE larger_closed_sets_mem_iff smaller_open_sets_mem_iff)
+  show ?thesis
+    using B1 B2 B3 B4 B5 by presburger
+qed
 
+lemma complement_of_closure_is_interior_of_complement:
+  assumes "is_topology_on T X" and "A \<le> X" 
+  shows "X - (closure1 A T X) = interior1 (X - A) T X"
+  by (smt (verit) Diff_Diff_Int assms(1) assms(2) complement_of_interior_is_closure_of_complement inf.absorb_iff2 interior_deflationary subset_trans)
+
+
+lemma interior_from_closure:
+  assumes "is_topology_on T X" and "A \<le> X" 
+  shows "interior1 A T X = X - (closure1 (X - A) T X)"
+  by (metis Diff_Diff_Int assms(1) assms(2) complement_of_closure_is_interior_of_complement inf.absorb_iff2)
+
+
+lemma closure_from_interior:
+  assumes "is_topology_on T X" and "A \<le> X" 
+  shows "closure1 A T X = X - (interior1 (X - A) T X)"
+  by (metis Diff_Diff_Int assms(1) assms(2) complement_of_interior_is_closure_of_complement inf.absorb_iff2)
 
 lemma continuous_at_imp_open_preimage:
   fixes T::"'a set set" and X::"'a set" and 
@@ -1971,11 +1987,11 @@ proof
     have B2:"... \<subseteq>  f-`(ClfA)"
       using B0 by blast
     have B3:"X -  f-`(ClfA) \<in> T"
-      by (metis A0 A2 A3 ClfA_def closure_id_on_closed closure_is_idempotent0 continuous_at_imp_open_preimage local.A1 vimage_Diff)
+      by (metis A0 A2 A3 A4 ClfA_def Diff_subset PowD closure_from_interior closure_id_on_closed closure_is_idempotent0 continuous_at_imp_open_preimage fA_def image_subset_iff_subset_vimage local.A1 vimage_Diff)
     have B4:"A \<subseteq> f-`(ClfA)"
       using B1 B2 by auto
     have B5:"ClA \<subseteq>  f-`(ClfA)"
-      by (metis A0 A4 B3 B4 ClA_def PowD closure_smallest_closed_simp)
+      by (metis A0 A2 A4 B3 B4 ClA_def ClfA_def Inter_lower Sup_upper Union_Pow_eq closure_inter_larger_closed closure_smallest_closed_simp fA_def image_subset_iff_subset_vimage larger_closed_always_ne local.A1 vimage_mono)
     show ?thesis
       using B5 ClA_def by blast
   qed
@@ -2001,7 +2017,7 @@ proof
 qed
 
 
-lemma continuous_then_closure_vimage_subseteq_vimage_closure:
+lemma continuous_then_vimage_interior_subseteq_interior_vimage:
   fixes T::"'a set set" and X::"'a set" and 
         S::"'b set set" and Y::"'b set" and
         f::"'a \<Rightarrow> 'b"
@@ -2014,6 +2030,20 @@ proof
     by (simp add: A3 YB_def)
   have B1:"X - (f-`(closure1 YB S Y)) \<subseteq> X - (closure1 (f-`(YB)) T X)"
     by (simp add: B0 Diff_mono)
-  have B2:"(f-`(YB)) T X"
+  have B2:"f-`(interior1 B S Y) = (f-`(Y - (closure1 (Y - B) S Y)))"
+    by (metis A4 PowD interior_from_closure local.A1)
+  have B3:"... = X - (f-`(closure1 (Y - B) S Y))"
+    by (simp add: A2 vimage_Diff)
+  have B4:"... \<subseteq> X - (closure1 (f-`(Y - B)) T X)"
+    using B1 YB_def by blast
+  have B5:"... = X - (closure1 (X - (f-`B)) T X)"
+    by (simp add: A2 vimage_Diff)
+  have B6:"... = interior1 (f-`B) T X"
+    by (metis A0 A2 A4 PowD interior_from_closure vimage_mono)
+  show "f-`(interior1 B S Y)  \<subseteq> interior1 (f-`B) T X"
+    using B1 B2 B3 B5 B6 YB_def by auto
+qed
+
+
 
 end
