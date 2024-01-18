@@ -9,6 +9,10 @@ definition top_u1::"'a set set \<Rightarrow> bool" where
 (*top_i1 cannot work for the local definition as \<Inter>\<emptyset> is interpreted as InfIn \<emptyset> UNIV = UNIV so 
   thats one choice out of the way
 *)
+(*
+the topology is identified with the set of open sets so thats...a choice...im not sure if its the 
+right one but oh well.  
+*)
 
 definition top_i1::"'a set set \<Rightarrow> bool" where
   "top_i1 T \<equiv> (\<forall>E. (finite E \<and> E \<subseteq> T) \<longrightarrow> \<Inter>E \<in> T )"
@@ -484,6 +488,9 @@ lemma nhood_system_imp_subset:
   shows "\<And>x V. x \<in> X \<Longrightarrow> V \<in> (N x) \<Longrightarrow> V \<subseteq> X"
   by (meson assms is_filter_in_def is_nhood_system_in_def is_pfilter_in_def)
 
+lemma open_is_nhood:
+  "\<And>V x. x \<in> X \<Longrightarrow> x \<in> V \<Longrightarrow> V \<in> T \<Longrightarrow> V \<in> nhoods_of x T X"
+  by (meson nhoods_of_mem_iff subset_refl)
 
 lemma nhoods_is_pfilter:
   fixes X::"'a set" and T::"'a set set" and x::"'a"
@@ -1577,6 +1584,29 @@ lemma closure_of_closed:
   apply(simp add:closure1_def)
   using assms(2) by blast
 
+
+lemma closure_id_on_closed:
+  assumes "is_topology_on T X" and "closure1 F T X = F" 
+  shows "(X-F) \<in> T"
+proof-
+  define C where "C={K. (X-K) \<in> T \<and> F \<subseteq> K}"
+  have B0:"F=\<Inter>C"
+    by (metis (mono_tags, lifting) C_def assms(2) closure1_def)
+  have B1:"(X-F) = (\<Union>c \<in> C. (X - c))"
+    using B0 by auto
+  have B2:"\<forall>c \<in> C. (X - c) \<in> T"
+    using C_def by fastforce
+  have B3:"\<forall>c \<in> C. (X - c) \<subseteq> (X - F)"
+    by (simp add: B0 Diff_mono Inter_lower)
+  define U where "U = {U. \<exists>c \<in> C. U = X - c}"
+  have B4:"U \<subseteq> T"
+    using C_def U_def by blast
+  have B5:"(X-F) = \<Union>U"
+    by (simp add: B1 U_def image_def)
+  show "(X-F) \<in> T"
+    by (metis B4 B5 assms(1) is_topology_on_def top_u1_def)
+qed
+
 lemma interior_of_open:
   assumes "is_topology_on T X" and "U \<in> T"
   shows "interior1 U T X = U"
@@ -1642,6 +1672,107 @@ proof
     by (metis A2 A4 PowI Union_upper carrier_is_top_un local.A1 vimage_mono)
   show"f-`V \<in> T"
     by (meson A0 B3 B4 image_subset_iff_subset_vimage open_iff_nhp)
+qed
+
+
+lemma open_preimage_imp_continuous_at:
+  fixes T::"'a set set" and X::"'a set" and 
+        S::"'b set set" and Y::"'b set" and
+        f::"'a \<Rightarrow> 'b"
+  assumes A0:"is_topology_on T X" and A1:"is_topology_on S Y" and A2:"f-`Y = X" and A3:"\<forall>V \<in> S. f-`V \<in> T"
+  shows "\<forall>x \<in> X. continuous_at f x T X S Y"
+proof
+  fix x assume A4:"x \<in> X"
+  show "continuous_at f x T X S Y"
+  apply(simp add:continuous_at_def)
+    by (meson A3 image_vimage_subset nhoods_of_mem_iff vimageI2 vimage_mono)
+qed
+
+lemma interior_deflationary:
+  assumes "is_topology_on T X" and "A \<le> X"
+  shows "interior1 A T X \<le> A"
+  by (simp add: Sup_le_iff interior1_def)
+
+lemma interior_monotone:
+  assumes "is_topology_on T X" and "A \<le> X" and "B \<le> X" and "A \<le> B"
+  shows "interior1 A T X \<le> interior1 B T X"
+  by (smt (verit) Union_iff assms(4) dual_order.trans interior1_def mem_Collect_eq subsetI)
+
+lemma interior_idempotent:
+  assumes "is_topology_on T X" and "A \<le> X"
+  shows "interior1 (interior1 A T X) T X = interior1 A T X"
+  by (smt (verit) Sup_le_iff assms(1) assms(2) dual_order.refl dual_order.trans interior1_def interior_deflationary mem_Collect_eq subset_antisym)
+
+lemma interior_id_iff:
+  assumes "is_topology_on T X" and "A \<le> X"
+  shows "interior1 A T X = A \<longleftrightarrow> A \<in> T" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L
+  show ?R
+    by (smt (verit, best) CollectD L PowI Union_iff assms(1) assms(2) interior1_def open_iff_nhp)
+  next
+  assume R:?R
+  show ?L
+    by (simp add: R assms(1) interior_of_open)
+qed
+
+
+lemma exists_nhood_disjoint_imp_notin_closure:
+  assumes "is_topology_on T X" and "A \<le> X" and "x \<in> X" and
+          "\<exists>U \<in> nhoods_of x T X. U \<inter> A = {}"
+  shows "x \<notin> (closure1 A T X)"
+proof-
+  obtain V where B0:"V \<in> nhoods_of x T X \<and> V \<inter> A = {}"
+    using assms(4) by blast
+  obtain U where B1:"U \<in> T \<and> x \<in> U \<and> U \<subseteq> V"
+    by (meson B0 nhoods_of_imp3)
+  define F where "F = X - U"
+  have B2:"A \<subseteq> F"
+    using B0 B1 F_def assms(2) by auto
+  have B3:"x \<in> U"
+    by (simp add: B1)
+  have B4:"x \<notin> F"
+    by (simp add: B1 F_def)
+  have B5:"X-F \<in> T"
+    by (metis B1 F_def Union_upper assms(1) carrier_is_top_un double_diff trivial_in_top)
+  have B6:"(closure1 A T X) \<subseteq> F"
+    by (simp add: B2 B5 Inf_lower closure1_def)
+  show "x \<notin> (closure1 A T X)"
+    using B4 B6 by blast
+qed
+
+lemma notin_closur_imp_exists_nhood_disjoint:
+  assumes "is_topology_on T X" and "A \<le> X" and "x \<in> X" and
+          "x \<notin> (closure1 A T X)"
+  shows "\<exists>U \<in> nhoods_of x T X. U \<inter> A = {}"
+proof-
+  define U where "U=X - (closure1 A T X)"
+  have B0:"U \<in> T"
+    by (simp add: U_def assms(1) closure_id_on_closed closure_is_idempotent0)
+  have B1:"x \<in> U"
+    by (simp add: U_def assms(3) assms(4))
+  have B2:"U \<in> nhoods_of x T X"
+    by (simp add: B0 B1 assms(3) open_is_nhood)
+  have B3:"A \<subseteq> (closure1 A T X)"
+    by (metis assms(1) closure_is_extensive is_extensive_def)
+  have "U \<inter> A = {}"
+    using B3 U_def by blast
+  show "\<exists>U \<in> nhoods_of x T X. U \<inter> A = {}"
+    using B2 \<open>(U::'a::type set) \<inter> (A::'a::type set) = {}\<close> by blast
+qed
+
+
+lemma closure_iff:
+  assumes "is_topology_on T X" and "A \<le> X" and "x \<in> X"
+  shows "x \<in> closure1 A T X \<longleftrightarrow> (\<forall>U \<in> nhoods_of x T X. U \<inter> A \<noteq> {})" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L
+  show ?R
+    by (meson L assms(1) assms(2) assms(3) exists_nhood_disjoint_imp_notin_closure)
+  next
+  assume R:?R
+  show ?L
+    by (meson R assms(1) assms(2) assms(3) notin_closur_imp_exists_nhood_disjoint)
 qed
 
 end
