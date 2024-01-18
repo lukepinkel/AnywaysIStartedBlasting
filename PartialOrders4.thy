@@ -3743,7 +3743,6 @@ lemma up_closure_on_idempotent:
  apply(simp add:up_closure_in_def)
  using order_trans by auto
 
-
 lemma upset_if_eq_upclosure_on:
   assumes "A = up_closure_in A X"
   shows "is_upclosed_in A X"
@@ -3807,55 +3806,67 @@ lemma is_upclosed_in_imp2:
   by (simp add: upsets_in_def)
 
 lemma downset_transitive:
-  fixes D E X::"'a::order set"
-  assumes "E \<in> downsets_in X" and "D \<in> downsets_in E"
-  shows "D \<in> downsets_in X"
+  fixes A B X::"'a::order set"
+  assumes A0:"A \<in> downsets_in X" and A1:"B  \<in> downsets_in A"
+  shows "B \<in> downsets_in X"
 proof-
-  have B0:"D \<subseteq> E"
-    by (simp add: assms(2) in_downsets_in_imp_subset)
-  have B1:"E \<subseteq> X"
-    by (simp add: assms(1) in_downsets_in_imp_subset)
-  have B2:"D \<subseteq> X"
-    using B0 B1 by auto
-  have B1:" is_downclosed_in D X"
+  have B0:"B \<subseteq> A \<and> A \<subseteq> X" 
+    by (simp add: A0 A1 in_downsets_in_imp_subset)
+  have B1:"\<forall>a \<in> A. \<forall>b \<in> B. (a \<le> b) \<longrightarrow> a \<in> B"
+    using A1 is_downclosed_in_def is_downclosed_in_imp2 by blast
+  have B2:"\<forall>x \<in> X. \<forall>a \<in> A. (x \<le> a) \<longrightarrow> x \<in> A"
+    using B0 A0 is_downclosed_in_imp is_downclosed_in_imp2 by blast
+  have B3:"is_downclosed_in B X"
   proof-
-    have B10:"\<And>(a::'a) b::'a. b \<le> a \<and> a \<in> D \<and> b \<in> X \<longrightarrow> b \<in> D"
+    have B30:"\<And>x b. (x \<in>X \<and> b \<in> B \<and>  x \<le> b) \<longrightarrow> x \<in> B"
     proof
-      fix a b assume A0:"b \<le> a \<and> a \<in> D \<and> b \<in> X "
-      show "b \<in> D"
-        by (meson A0 B0 B1 assms(1) assms(2) in_mono is_downclosed_in_imp is_downclosed_in_imp2)
+      fix x b  assume A2:"x \<in>  X \<and> b \<in> B \<and> x \<le> b" 
+      have B21:"b \<in> A"
+        using A2 B0 by blast
+      have B22:"x \<in> X \<and> b \<in> A \<and> x \<le> b"
+        by (simp add: A2 B21)
+      show "x \<in> B"
+        using A2 B1 B2 B21 by blast
     qed
     show ?thesis
-      by (meson B10 is_downclosed_in_def)
+      using B30 is_downclosed_in_def by blast
   qed
+  have B4:"B \<subseteq> X"
+    using B0 by blast
   show ?thesis
-    by (simp add: B1 B2 downsets_in_def)
+    by (simp add: B3 B4 downsets_in_def)
 qed
-  
+
 lemma upset_transitive:
-  fixes U E X :: "'a::order set"
-  assumes "E \<in> upsets_in X" and "U \<in> upsets_in E"
-  shows "U \<in> upsets_in X"
-proof -
-  have B0: "U \<subseteq> E"
-    by (simp add: assms(2) in_upsets_in_imp_subset)
-  have B1: "E \<subseteq> X"
-    by (simp add: assms(1) in_upsets_in_imp_subset)
-  have B2: "U \<subseteq> X"
-    using B0 B1 by auto
-  have B3: "is_upclosed_in U X"
+fixes A B X::"'a::order set"
+assumes A0:"A \<in> upsets_in X" and A1:"B \<in> upsets_in A"
+shows "B \<in> upsets_in X"
+proof-
+  have B0:"B \<subseteq> A \<and> A \<subseteq> X" 
+    by (simp add: A0 A1 in_upsets_in_imp_subset)
+  have B1:"\<forall>a \<in> A. \<forall>b \<in> B. (b \<le> a) \<longrightarrow> a \<in> B"
+    using A1 is_upclosed_in_def is_upclosed_in_imp2 by blast
+  have B2:"\<forall>x \<in> X. \<forall>a \<in> A. (a \<le> x) \<longrightarrow> x \<in> A"
+    using B0 A0 is_upclosed_in_imp is_upclosed_in_imp2 by blast
+  have B3:"is_upclosed_in B X"
   proof-
-    have B30: "\<And>a b. a \<le> b \<and> a \<in> U \<and> b \<in> X \<longrightarrow> b \<in> U"
+    have B30:"\<And>x b. (x \<in> X \<and> b \<in> B \<and> b \<le> x) \<longrightarrow> x \<in> B"
     proof
-      fix a b assume A0: "a \<le> b \<and> a \<in> U \<and> b \<in> X"
-      show "b \<in> U"
-        by (meson A0 B0 B1 assms(1) assms(2) in_mono is_upclosed_in_imp is_upclosed_in_imp2)
+      fix x b assume A2:"x \<in> X \<and> b \<in> B \<and> b \<le> x" 
+      have B21:"b \<in> A"
+        using A2 B0 by blast
+      have B22:"x \<in> X \<and> b \<in> A \<and> b \<le> x"
+        by (simp add: A2 B21)
+      show "x \<in> B"
+        using A2 B1 B2 B21 by blast
     qed
     show ?thesis
       using B30 is_upclosed_in_def by blast
   qed
+  have B4:"B \<subseteq> X"
+    using B0 by blast
   show ?thesis
-    by (simp add: B2 B3 upsets_in_def)
+    by (simp add: B3 B4 upsets_in_def)
 qed
 
 lemma in_downsets_imp_complement_in_upsets:
