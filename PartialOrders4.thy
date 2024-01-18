@@ -3893,11 +3893,23 @@ lemma upsets_in_inter_closed:
   by (metis Inf_less_eq assms(1) assms(2) in_mono in_upsets_in_imp_subset is_upclosed_in_imp is_upclosed_in_imp2)
 
 
+lemma upsets_in_un_closed:
+  assumes "EF \<subseteq> upsets_in X" and "EF \<noteq> {}"
+  shows "\<Union>EF \<in> upsets_in X"
+  apply(simp add:upsets_in_def is_upclosed_in_def)
+  by (metis assms(1) assms(2) csls.CSup_least in_mono in_upsets_in_imp_subset is_upclosed_in_imp is_upclosed_in_imp2)
+
 lemma downsets_in_un_closed:
   assumes "EF \<subseteq> downsets_in X" and "EF \<noteq> {}"
   shows "\<Union>EF \<in> downsets_in X"
   apply(simp add:downsets_in_def is_downclosed_in_def)
   by (metis assms(1) assms(2) csls.CSup_least in_downsets_in_imp_subset is_downclosed_in_imp is_downclosed_in_imp2 subsetD)
+
+lemma downsets_in_inter_closed:
+  assumes "EF \<subseteq> downsets_in X" and "EF \<noteq> {}"
+  shows "\<Inter>EF \<in> downsets_in X"
+  apply(simp add:downsets_in_def is_downclosed_in_def)
+  by (metis Inf_less_eq assms(1) assms(2) in_downsets_in_imp_subset in_mono is_downclosed_in_imp is_downclosed_in_imp2)
 
 lemma is_filter_in_imp:
   "\<And>F X. is_filter_in F X \<Longrightarrow> (F \<subseteq> X \<and> is_downdir F \<and> is_upclosed_in F X \<and> is_inhabited F)"
@@ -4997,46 +5009,8 @@ proof-
 qed
 
 
+
 subsection FilterOnLattice
-
-lemma filter_on_lattice_inf:
-  assumes A0:"is_filter (F1::('X::lattice set))" and 
-          A2:"is_filter (F2::('X::lattice set))"
-  shows "is_filter (inf F1 F2)"
-proof-
-  let ?I="inf F1 F2"
-  have P0:"is_inhabited ?I"
-  proof-
-    have B00:"is_inhabited F1 \<and> is_inhabited F2"
-      by (simp add: A0 A2 is_filter_imp)
-    obtain x1 x2 where A01:"x1 \<in> F1 \<and> x2 \<in> F2"
-      using B00 is_inhabited_imp by blast
-    define x where A02:"x=sup x1 x2"
-    have B01:"x1 \<le> x \<and> x2 \<le> x"
-      by (simp add: A02)
-    have B02:"x \<in> inf F1 F2"
-      by (meson A0 A01 A2 B01 IntI UNIV_I is_filter_imp is_upclosed_in_imp)
-    show ?thesis
-      using B02 is_inhabited_def by auto
-  qed
-  have P1:"is_downdir ?I"
-  proof-
-    have P10:"\<And>a b. (a \<in> ?I \<and> b \<in> ?I) \<longrightarrow> (\<exists>c  \<in> ?I. (c \<le> a) \<and>  (c \<le> b))"
-    proof
-      fix a b assume P1A0:"a \<in>?I \<and> b \<in> ?I"
-      show "\<exists>c \<in> ?I. c \<le> a \<and> c \<le> b"
-        by (metis A0 A2 Int_iff P1A0 emptyE filter_in_semilattice_inf_iff inf_le1 inf_le2)
-    qed
-    show ?thesis
-      by (simp add: P10 is_downdir_def)
-  qed
-  have P3:"is_upclosed ?I"
-    by (smt (verit, best) A0 A2 Int_iff is_filter_imp is_upclosed_def is_upclosed_in_def)
-  show ?thesis
-    by (simp add: P0 P1 P3 is_filter_if up_closure_in_univ_imp)
-qed
-    
-
 
 lemma filter_inlattice_inf_closed:
   assumes "is_filter (F::'X::lattice set)"
@@ -5048,6 +5022,73 @@ lemma filter_on_lattice_binf_is_lb:
           A2:"is_filter (F2::('X::lattice set))"
   shows "inf F1 F2 \<le> F1 \<and> inf F1 F2 \<le> F2"
   by simp
+
+lemma filter_on_lattice_inhabited:
+  assumes A0:"is_filter (F1::('a::lattice set))" and 
+          A1:"is_filter (F2::('a::lattice set))"
+  shows "is_inhabited (inf F1 F2)"
+proof-
+  have B00:"is_inhabited F1 \<and> is_inhabited F2"
+    by (simp add: A0 A1 is_filter_imp)
+  obtain x1 x2 where A01:"x1 \<in> F1 \<and> x2 \<in> F2"
+    using B00 is_inhabited_imp by blast
+  define x where A02:"x=sup x1 x2"
+  have B01:"x1 \<le> x \<and> x2 \<le> x"
+    by (simp add: A02)
+  have B02:"x \<in> inf F1 F2"
+    by (meson A0 A01 A1 B01 IntI UNIV_I is_filter_imp is_upclosed_in_imp)
+  show ?thesis
+    using B02 is_inhabited_def by auto
+qed
+
+lemma filter_on_lattice_is_downdir:
+  assumes A0:"is_filter (F1::('a::lattice set))" and 
+          A1:"is_filter (F2::('a::lattice set))"
+  shows "is_downdir (inf F1 F2)"
+proof-
+  have P10:"\<And>a b. (a \<in> (inf F1 F2) \<and> b \<in> (inf F1 F2)) \<longrightarrow> (\<exists>c  \<in> (inf F1 F2). (c \<le> a) \<and>  (c \<le> b))"
+  proof
+    fix a b assume P1A0:"a \<in> (inf F1 F2) \<and> b \<in>  (inf F1 F2)"
+    show "\<exists>c \<in>  (inf F1 F2). c \<le> a \<and> c \<le> b"
+      by (metis A0 A1 Int_iff P1A0 emptyE filter_in_semilattice_inf_iff inf_le1 inf_le2)
+  qed
+  show ?thesis
+    by (simp add: P10 is_downdir_def)
+qed
+
+lemma filter_on_lattice_is_upclosed:
+  assumes A0:"is_filter (F1::('a::lattice set))" and 
+          A1:"is_filter (F2::('a::lattice set))"
+  shows "is_upclosed (inf F1 F2)"
+proof-
+  have B0:"\<And>a b. a \<le> b \<and> a \<in> F1 \<and> a \<in> F2 \<longrightarrow> b \<in> F1 \<and> b \<in> F2"
+  proof
+    fix a b assume A2:"a \<le> b \<and> a \<in> F1 \<and> a \<in> F2"
+    show "b \<in> F1 \<and> b \<in> F2"
+      by (meson A0 A1 A2 UNIV_I is_filter_imp is_upclosed_in_imp)
+  qed
+  show ?thesis
+    by (metis A0 A1 B0 Int_iff filter_on_lattice_inhabited is_inhabited_def sup_ge1 upclosed_in_lattice_iff)
+qed
+  
+
+lemma filter_on_lattice_inf:
+  assumes A0:"is_filter (F1::('a::lattice set))" and 
+          A2:"is_filter (F2::('a::lattice set))"
+  shows "is_filter (inf F1 F2)"
+proof-
+  let ?I="inf F1 F2"
+  have P0:"is_inhabited ?I"
+    by (simp add: A0 A2 filter_on_lattice_inhabited)
+  have P1:"is_downdir ?I"
+    by (simp add: A0 A2 filter_on_lattice_is_downdir)
+  have P3:"is_upclosed ?I"
+    by (simp add: A0 A2 filter_on_lattice_is_upclosed)
+  show ?thesis
+    by (simp add: P0 P1 P3 is_filter_if up_closure_in_univ_imp)
+qed
+    
+
 
 lemma filter_on_lattice_glb:
   assumes A0:"is_filter (F1::('X::lattice set))" and 
@@ -6208,7 +6249,7 @@ proof-
     by (simp add: coarser_ultrafilters_def)
 qed
 
-
+section GaloisConnections
 
 lemma gc2_iff_gc4:
   fixes f::"'a::order \<Rightarrow> 'b::order" and g::"'b::order \<Rightarrow> 'a::order"
@@ -6567,6 +6608,8 @@ lemma grill_is_galois:
   "is_gc2 grill grill"
   by (simp add: gc2_iff_gc4 is_gc4_def mesh_prop11)
      
+section SomeClosures
+
 
 definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set" where
   "fin_inf_cl A \<equiv> {x. \<exists>F \<in> Fpow_ne A. has_inf F \<and> x = InfUn F}"
