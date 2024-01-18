@@ -2045,5 +2045,28 @@ proof
 qed
 
 
+lemma vimage_interior_subseteq_interior_vimage_imp_open_vimage:
+  fixes T::"'a set set" and X::"'a set" and 
+        S::"'b set set" and Y::"'b set" and
+        f::"'a \<Rightarrow> 'b"
+  assumes A0:"is_topology_on T X" and A1:"is_topology_on S Y" and A2:"f-`Y = X"  and A3: "\<forall>B \<in> Pow Y. f-`(interior1 B S Y)  \<subseteq> interior1 (f-`B) T X"
+  shows "\<forall>V \<in> S. f-`V \<in> T"
+proof
+  fix V assume A4:"V \<in> S"
+  have B0:"interior1 V S Y = V"
+    by (simp add: A4 interior_of_open local.A1)
+  have B1:"f-`V = f-`(interior1 V S Y)"
+    by (simp add: B0)
+  have B2:"... \<subseteq> interior1 (f-`(V)) T X"
+    using A3 A4 carrier_is_top_un local.A1 by force
+  have B3:" interior1 (f-`(V)) T X \<subseteq> (f-`(V))"
+    by (metis A0 A2 A4 Union_upper carrier_is_top_un interior_deflationary local.A1 vimage_mono)
+  have B4:"(f-`(V)) = interior1 (f-`(V)) T X"
+    using B0 B2 B3 by auto
+  show "f-`V \<in> T"
+    by (metis A0 A2 A4 B4 Sup_upper carrier_is_top_un interior_id_iff local.A1 vimage_mono)
+qed
+  
+
 
 end
