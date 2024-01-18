@@ -14,6 +14,11 @@ the topology is identified with the set of open sets so thats...a choice...im no
 right one but oh well.  
 *)
 
+(*
+so being a subset of the carrier subset is NOT baked into the type info so this has to be manually
+added as an assumption very often
+*)
+
 definition top_i1::"'a set set \<Rightarrow> bool" where
   "top_i1 T \<equiv> (\<forall>E. (finite E \<and> E \<subseteq> T) \<longrightarrow> \<Inter>E \<in> T )"
 
@@ -2066,7 +2071,66 @@ proof
   show "f-`V \<in> T"
     by (metis A0 A2 A4 B4 Sup_upper carrier_is_top_un interior_id_iff local.A1 vimage_mono)
 qed
-  
+
+lemma subspace_is_top:
+  assumes "is_topology_on T X" and "A \<le> X"
+  defines "TA \<equiv> {UA \<in> Pow A. \<exists>U \<in> T. UA = U \<inter> A}"
+  shows "is_topology_on TA A"
+  proof-
+    have T0:"TA \<subseteq> Pow A"
+      using TA_def by fastforce
+    have T1:"top_u1 TA"
+    proof-
+      have T10:"\<And>E. E \<subseteq> TA \<longrightarrow> \<Union> E \<in> TA"
+      proof
+        fix E assume A0:"E\<subseteq>TA" 
+        define F where "F = (\<lambda>UA. SOME U. U \<in> T \<and> UA = U \<inter> A)"
+        have B0:"\<forall>UA \<in> E.  UA \<in> Pow A \<and> (\<exists>U \<in> T. UA = U \<inter> A)"
+          using A0 TA_def by blast
+        have B1:"\<forall>UA \<in> E. ((F UA) \<in> T \<and>  UA = (F UA) \<inter> A)"
+          by (smt (verit, best) B0 F_def someI)
+        have B2:"F`E \<subseteq> T"
+          using B1 by blast
+        have B3:"\<Union>(F`E) \<in> T"
+          by (meson B2 assms(1) is_topology_on_def top_u1_def)
+        have B4:"A \<inter> (\<Union>(F`E)) = A \<inter> (\<Union>UA \<in> E. F UA)"
+          by blast
+        have B5:"... = (\<Union>UA \<in> E. (A \<inter> F UA))"
+          by blast
+        have B6:"\<forall>UA \<in> E. UA = (F UA) \<inter> A"
+          by (simp add: B1)
+        have B7:" (\<Union>UA \<in> E. (A \<inter> F UA)) = (\<Union>UA \<in> E. UA)"
+          using B6 by blast
+        have B8:"... = \<Union>E"
+          by simp 
+        show "(\<Union>E) \<in> TA"
+          using B3 B7 B8 PowI TA_def by auto
+      qed
+      show ?thesis
+        by (simp add: T10 top_u1_def)
+    qed
+  have T2:"top_i3 TA"    
+  proof-  
+    have T20:"\<And>a1 a2. a1 \<in> TA \<and> a2 \<in> TA \<longrightarrow> a1 \<inter> a2 \<in> TA"
+    proof
+      fix a1 a2 assume A1:"a1 \<in> TA \<and> a2 \<in> TA "
+      obtain U1 U2 where B0:"U1 \<in> T \<and> U2 \<in> T \<and> a1 = U1 \<inter> A \<and> a2 = U2 \<inter> A"
+        using TA_def local.A1 by blast
+      have B1:"a1 \<inter> a2 = (U1 \<inter> U2) \<inter> A"
+        using B0 by fastforce
+      have B2:"U1 \<inter> U2 \<in> T"
+        by (meson B0 assms(1) is_topology_on_def top_i3_def)
+      show "a1 \<inter> a2 \<in> TA"
+        using B1 B2 TA_def by blast
+    qed
+     show ?thesis
+       by (simp add: T20 top_i3_def)
+  qed
+  have T3:"A \<in> TA"
+    by (metis (mono_tags, lifting) CollectI Pow_top TA_def assms(1) assms(2) inf.absorb_iff2 trivial_in_top)
+  show ?thesis
+    by (simp add: T0 T1 T2 T3 is_topology_on_def)
+qed
 
 
 end
