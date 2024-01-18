@@ -588,6 +588,9 @@ definition is_downclosed::"'a::ord set \<Rightarrow> bool" where
 definition is_upclosed_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
    "is_upclosed_in A x \<equiv> (\<forall>a b. a \<le> b \<and>  b \<le> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
 
+definition is_upclosed_on::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+   "is_upclosed_on A X \<equiv> (\<forall>a b. a \<le> b \<and>  b \<in> X  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
+
 definition is_downclosed_in::"'a::ord set \<Rightarrow> 'a::ord \<Rightarrow> bool" where
    "is_downclosed_in A x \<equiv> (\<forall>a b. a \<ge> b \<and>  b \<ge> x  \<and>  a \<in> A \<longrightarrow>  b \<in> A)"
 
@@ -643,6 +646,9 @@ definition filter_closure_in::"'a::order set \<Rightarrow>'a::order \<Rightarrow
 
 definition up_closure::"'a::order set \<Rightarrow> 'a::order set" where
   "up_closure A \<equiv> {x. \<exists>a \<in> A. a \<le> x}"
+
+definition up_closure_on::"'a::order set \<Rightarrow> 'a::order set  \<Rightarrow> 'a::order set" where
+  "up_closure_on A X \<equiv> {x \<in> X. \<exists>a \<in> A. a \<le> x}"
 
 definition up_closure_in::"'a::order set \<Rightarrow> 'a::order \<Rightarrow>  'a::order set" where
   "up_closure_in A x \<equiv> {y. \<exists>a \<in> A. a \<le> y \<and> y \<le> x}"
@@ -3067,7 +3073,115 @@ proof-
     using A3 A4 B9 B10 by blast
 qed
 
+lemma up_closure_on_restricted:
+  "X \<inter> (up_closure A) = up_closure_on A X"
+  apply(simp add:up_closure_def up_closure_on_def)
+  by blast
 
+lemma up_closure_imp:
+  "\<And>A x. (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_closure A"
+  by (simp add: up_closure_def)
+
+
+lemma up_closure_on_imp:
+  "\<And>A x. x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_closure_on A X"
+  by (simp add: up_closure_on_def)
+
+
+lemma up_closure_if:
+  "\<And>A x.  x \<in> up_closure A \<Longrightarrow> (\<exists>a \<in> A. a \<le> x)"
+  by (simp add: up_closure_def)
+
+lemma up_closure_on_if:
+  "\<And>A x.  x \<in> X \<Longrightarrow> x \<in> up_closure_on A X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x)"
+  by (simp add: up_closure_on_def)
+
+
+lemma up_closure_on_in_carrier1:
+  "\<And>A x.  x \<in> up_closure_on A X \<Longrightarrow> (x \<in> A \<or> x \<in> X)"
+  by (simp add: up_closure_on_def)
+
+lemma up_closure_on_in_carrier2:
+  "\<And>A x.  x \<in> up_closure_on A X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>  x \<in> X"
+  using up_closure_on_def by auto
+
+
+lemma up_closure_obtain:
+  assumes "x \<in> up_closure A"
+  obtains a where "a \<in> A \<and> a \<le> x"
+  using assms up_closure_if by auto
+
+
+lemma up_closure_on_obtain:
+  assumes "x \<in> up_closure_on A X"
+  obtains a where "a \<in> A \<and> a \<le> x"
+  by (metis Int_iff assms up_closure_on_if up_closure_on_restricted)
+
+lemma up_closure_extensive:
+  "A \<subseteq> up_closure A"
+  apply(simp add:up_closure_def)
+  by blast
+
+lemma up_closure_on_extensive:
+ assumes "A \<subseteq> X"
+ shows "A \<subseteq> up_closure_on A X"
+  using assms up_closure_on_def by fastforce
+
+
+lemma up_closure_isotone:
+ assumes "A \<subseteq> B"
+ shows "up_closure A \<subseteq> up_closure B"
+ apply(simp add:up_closure_def)
+  using assms by fastforce
+
+
+lemma up_closure_on_isotone:
+ assumes "B \<subseteq> X" and "A \<subseteq> B"
+ shows "up_closure_on A X \<subseteq> up_closure_on B X"
+ apply(simp add:up_closure_on_def)
+ using assms(2) by force
+
+lemma up_closure_idempotent:
+ shows "up_closure A = up_closure (up_closure A)"
+ apply(simp add:up_closure_def)
+ using dual_order.trans by auto
+
+lemma up_closure_on_idempotent:
+ assumes "A \<subseteq> X"
+ shows "up_closure_on A X = up_closure_on (up_closure_on A X) X"
+ apply(simp add:up_closure_on_def)
+ using order_trans by auto
+
+
+lemma upset_if_eq_upclosure_on:
+  assumes "A = up_closure_on A X"
+  shows "is_upclosed_on A X"
+  apply(simp add: is_upclosed_on_def)
+  using assms up_closure_on_def by fastforce
+
+lemma upset_if_eq_upclosure:
+  assumes "A = up_closure A"
+  shows "is_upclosed A"
+  apply(simp add: is_upclosed_def up_closure_def)
+  using assms up_closure_imp by auto
+
+lemma eq_upclosure_imp_upset:
+  assumes "is_upclosed A"
+  shows "A = up_closure A"
+  by (meson assms is_upclosed_def subsetI subset_antisym up_closure_extensive up_closure_if)
+
+
+lemma eq_upclosure_on_imp_upset:
+  assumes "A \<subseteq> X" and "is_upclosed_on A X"
+  shows "A = up_closure_on A X"
+proof-
+  have B0:"A \<subseteq> up_closure_on A X"
+    by (simp add: assms(1) up_closure_on_extensive)
+  have B1:"up_closure_on A X \<subseteq> A"
+    by (meson assms(2) is_upclosed_on_def subset_eq up_closure_on_in_carrier1 up_closure_on_obtain)
+  show ?thesis
+    by (simp add: B0 B1 subset_antisym)
+qed
 
 
 
