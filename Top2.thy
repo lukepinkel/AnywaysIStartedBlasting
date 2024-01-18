@@ -1325,7 +1325,7 @@ proof-
   show ?thesis
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
-
+(*
 lemma cocountable_binf_closed:
   assumes A0:"a1 \<in> cocountable_sets_in X \<and> a2 \<in> cocountable_sets_in X"
   shows "a1 \<inter> a2 \<in> cocountable_sets_in X"
@@ -1360,8 +1360,8 @@ proof-
   show ?thesis
     using T0 T1 T2 T3 T_def is_topology_on_def by auto
 qed
-
-lemma particular_point__top_is_top:
+*)
+lemma particular_point_top_is_top:
   assumes "X \<noteq> {} \<and> a \<in> X"
   shows "is_topology_on (particular_point_top a X) X"
 proof-
@@ -2131,6 +2131,7 @@ lemma subspace_is_top:
   show ?thesis
     by (simp add: T0 T1 T2 T3 is_topology_on_def)
 qed
+
 
 
 end
