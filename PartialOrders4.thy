@@ -1103,6 +1103,12 @@ lemma ub_set_in_singleton:
   "ub_set_in {x} C  = {y \<in> C. x \<le> y}"
   by (simp add: set_eq_iff ub_set_in_mem_iff)
 
+lemma ub_set_in_from_principal:
+  assumes "A \<noteq> {}"
+  shows "ub_set_in A X = (\<Inter>a \<in> A. ub_set_in {a} X)"
+  apply(auto simp add:ub_set_in_def)
+  using assms by auto
+
 subsubsection Absolute
 
 lemma ub_set_mem:
@@ -1190,6 +1196,15 @@ lemma lb_set_in_univ_absorb:
 lemma lb_set_in_singleton:
   "lb_set_in {x} C  = {y \<in> C. x \<ge> y}"
   by (simp add: set_eq_iff lb_set_in_mem_iff)
+
+
+lemma lb_set_in_from_principal:
+  assumes "A \<noteq> {}"
+  shows "lb_set_in A X = (\<Inter>a \<in> A. lb_set_in {a} X)"
+  apply(auto simp add:lb_set_in_def)
+  using assms by auto
+
+
 
 subsubsection Absolute
 
@@ -1833,6 +1848,8 @@ lemma sup_in_eq2:
   shows "(m::'a::order) \<in> X \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> (f i) \<le> m) \<Longrightarrow> (\<And>u. u \<in> X \<Longrightarrow>  (\<And>i. i \<in> I \<Longrightarrow> f i \<le> u) \<Longrightarrow> m \<le> u) \<Longrightarrow> m = SupIn (f`I) X"
   by (simp add: sup_in_eqI is_sup_in_sup_eq)
 
+
+
 subsection Infima
 
 lemma is_inf_in_iff:
@@ -2227,7 +2244,20 @@ lemma inf_in_eq2:
   shows "(m::'a::order) \<in> X \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> m \<le> (f i)) \<Longrightarrow> (\<And>l. l \<in> X \<Longrightarrow>  (\<And>i. i \<in> I \<Longrightarrow> l \<le>  f i) \<Longrightarrow> l \<le> m) \<Longrightarrow> m = InfIn (f`I) X"
   by (simp add: inf_in_eqI is_inf_in_inf_eq)
 
-  
+lemma lb_set_inf_from_principal:
+  fixes A X::"'a::order set"
+  assumes A0:"A \<noteq> {}" and A1:"has_inf_in A X" and A2:"A \<subseteq> X"
+  shows "lb_set_in {(InfIn A X)} X = (\<Inter>a \<in> A. lb_set_in {a} X)"
+proof-
+  obtain i where B0:"i = InfIn A X"
+    by simp
+  show "lb_set_in { InfIn A X} X = (\<Inter>a \<in> A. lb_set_in {a} X)"
+     apply(auto simp add:lb_set_in_def)
+    apply (metis A1 B0 dual_order.trans infin_is_inf is_inf_in_imp2)
+    apply (metis A0 A1 B0 equals0I has_inf_in_imp3)
+    using A0 by blast
+qed
+
 subsection ExtremaFromDual
 
 lemma sup_in_eq_inf_in_ub:
@@ -3994,19 +4024,35 @@ lemma empty_inter_is_carrier:
 
 
 section Closures
+
 lemma up_closure_in_restricted:
   "X \<inter> (up_closure A) = up_closure_in A X"
   apply(simp add:up_closure_def up_closure_in_def)
+  by blast
+
+
+lemma down_closure_in_restricted:
+  "X \<inter> (down_closure A) = down_closure_in A X"
+  apply(simp add:down_closure_def down_closure_in_def)
   by blast
 
 lemma up_closure_imp:
   "\<And>A x. (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_closure A"
   by (simp add: up_closure_def up_closure_in_def)
 
+lemma down_closure_imp:
+  "\<And>A x. (\<exists>a \<in> A. x \<le> a) \<Longrightarrow> x \<in> down_closure A"
+  by (simp add: down_closure_def down_closure_in_def)
+
 
 lemma up_closure_in_imp:
   "\<And>A x. x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_closure_in A X"
   by (simp add: up_closure_in_def up_closure_def)
+
+lemma down_closure_in_imp:
+  "\<And>A x. x \<in> X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a) \<Longrightarrow> x \<in> down_closure_in A X"
+  by (simp add: down_closure_in_def)
+                   
                    
 lemma up_closure_in_univ_imp:
   "is_upclosed_in A UNIV \<longleftrightarrow> is_upclosed A"
@@ -4016,14 +4062,21 @@ lemma down_closure_in_univ_imp:
   "is_downclosed_in A UNIV \<longleftrightarrow> is_downclosed A"
   by (simp add: is_downclosed_def)
 
-
 lemma up_closure_if:
   "\<And>A x.  x \<in> up_closure A \<Longrightarrow> (\<exists>a \<in> A. a \<le> x)"
   by (simp add: up_closure_def up_closure_in_def)
 
+lemma down_closure_if:
+  "\<And>A x.  x \<in> down_closure A \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
+  by (simp add: down_closure_def down_closure_in_def)
+
 lemma up_closure_in_if:
   "\<And>A x.  x \<in> X \<Longrightarrow> x \<in> up_closure_in A X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x)"
   by (simp add: up_closure_in_def)
+
+lemma down_closure_in_if:
+  "\<And>A x.  x \<in> X \<Longrightarrow> x \<in> down_closure_in A X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
+  by (simp add: down_closure_in_def)
 
 
 lemma up_closure_in_in_carrier1:
@@ -4034,17 +4087,35 @@ lemma up_closure_in_in_carrier2:
   "\<And>A x.  x \<in> up_closure_in A X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>  x \<in> X"
   using up_closure_in_def by auto
 
+lemma down_closure_in_in_carrier1:
+  "\<And>A x.  x \<in> down_closure_in A X \<Longrightarrow> (x \<in> A \<or> x \<in> X)"
+  by (simp add: down_closure_in_def)
+
+lemma down_closure_in_in_carrier2:
+  "\<And>A x.  x \<in> down_closure_in A X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>  x \<in> X"
+  using down_closure_in_def by auto
+
 
 lemma up_closure_obtain:
   assumes "x \<in> up_closure A"
   obtains a where "a \<in> A \<and> a \<le> x"
   using assms up_closure_if by auto
 
-
 lemma up_closure_in_obtain:
   assumes "x \<in> up_closure_in A X"
   obtains a where "a \<in> A \<and> a \<le> x"
   by (metis Int_iff assms up_closure_in_if up_closure_in_restricted)
+
+
+lemma down_closure_in_obtain:
+  assumes "x \<in> down_closure_in A X"
+  obtains a where "a \<in> A \<and> x \<le> a"
+  by (metis Int_iff assms down_closure_in_if down_closure_in_restricted)
+
+lemma down_closure_obtain:
+  assumes "x \<in> down_closure A"
+  obtains a where "a \<in> A \<and> x \<le> a"
+  using assms down_closure_if by auto
 
 lemma up_closure_extensive:
   "A \<subseteq> up_closure A"
@@ -4056,13 +4127,14 @@ lemma up_closure_in_extensive:
  shows "A \<subseteq> up_closure_in A X"
   using assms up_closure_in_def by fastforce
 
+lemma down_closure_in_extensive:
+ assumes "A \<subseteq> X"
+ shows "A \<subseteq> down_closure_in A X"
+  using assms down_closure_in_def by fastforce
 
-lemma up_closure_isotone:
- assumes "A \<subseteq> B"
- shows "up_closure A \<subseteq> up_closure B"
- apply(simp add:up_closure_def up_closure_in_def)
-  using assms by fastforce
-
+lemma down_closure_extensive:
+  "A \<subseteq>down_closure A"
+  by (simp add: down_closure_def down_closure_in_extensive)
 
 lemma up_closure_in_isotone:
  assumes "B \<subseteq> X" and "A \<subseteq> B"
@@ -4070,10 +4142,22 @@ lemma up_closure_in_isotone:
  apply(simp add:up_closure_in_def)
  using assms(2) by force
 
-lemma up_closure_idempotent:
- shows "up_closure A = up_closure (up_closure A)"
- apply(simp add:up_closure_def up_closure_in_def)
- using dual_order.trans by auto
+lemma down_closure_in_isotone:
+ assumes "B \<subseteq> X" and "A \<subseteq> B"
+ shows "down_closure_in A X \<subseteq> down_closure_in B X"
+ apply(simp add:down_closure_in_def)
+ using assms(2) by force
+
+lemma up_closure_isotone:
+ assumes "A \<subseteq> B"
+ shows "up_closure A \<subseteq> up_closure B"
+ by (simp add: assms up_closure_def up_closure_in_isotone)
+
+lemma down_closure_isotone:
+ assumes "A \<subseteq> B"
+ shows "down_closure A \<subseteq> down_closure B"
+ by (simp add: assms down_closure_def down_closure_in_isotone)
+
 
 lemma up_closure_on_idempotent:
  assumes "A \<subseteq> X"
@@ -4081,11 +4165,33 @@ lemma up_closure_on_idempotent:
  apply(simp add:up_closure_in_def)
  using order_trans by auto
 
+lemma down_closure_in_idempotent:
+ assumes "A \<subseteq> X"
+ shows "down_closure_in A X = down_closure_in (down_closure_in A X) X"
+ apply(simp add:down_closure_in_def)
+ using order_trans by auto
+
+lemma up_closure_idempotent:
+ shows "up_closure A = up_closure (up_closure A)"
+ apply(simp add:up_closure_def up_closure_in_def)
+ using dual_order.trans by auto
+
+lemma down_closure_idempotent:
+ shows "down_closure A = down_closure (down_closure A)"
+ apply(simp add:down_closure_def down_closure_in_def)
+ using dual_order.trans by auto
+
 lemma upset_if_eq_upclosure_on:
   assumes "A = up_closure_in A X"
   shows "is_upclosed_in A X"
   apply(simp add: is_upclosed_in_def)
   using assms up_closure_in_imp by blast
+
+lemma downset_if_eq_downclosure_in:
+  assumes "A = down_closure_in A X"
+  shows "is_downclosed_in A X"
+  apply(simp add: is_downclosed_in_def)
+  using assms down_closure_in_imp by blast
 
 lemma upset_if_eq_upclosure:
   assumes "A = up_closure A"
@@ -4093,10 +4199,11 @@ lemma upset_if_eq_upclosure:
   apply(simp add: is_upclosed_def up_closure_def)
   by (metis assms up_closure_def upset_if_eq_upclosure_on)
 
-lemma eq_upclosure_imp_upset:
-  assumes "is_upclosed A"
-  shows "A = up_closure A"
-  by (meson assms is_upclosed_imp subsetI subset_antisym up_closure_extensive up_closure_if)
+lemma downset_if_eq_upclosure:
+  assumes "A = down_closure A"
+  shows "is_downclosed A"
+  apply(simp add: is_downclosed_def down_closure_def)
+  by (metis assms down_closure_def downset_if_eq_downclosure_in)
 
 
 lemma eq_upclosure_on_imp_upset:
@@ -4110,6 +4217,31 @@ proof-
   show ?thesis
     by (simp add: B0 B1 subset_antisym)
 qed
+
+lemma eq_upclosure_imp_upset:
+  assumes "is_upclosed A"
+  shows "A = up_closure A"
+  by (simp add: assms eq_upclosure_on_imp_upset up_closure_def up_closure_in_univ_imp)
+
+
+lemma eq_downclosure_on_imp_downset:
+  assumes "A \<subseteq> X" and "is_downclosed_in A X"
+  shows "A = down_closure_in A X"
+proof-
+  have B0:"A \<subseteq> down_closure_in A X"
+    by (simp add: assms(1) down_closure_in_extensive)
+  have B1:"down_closure_in A X \<subseteq> A"
+    by (meson assms(2) is_downclosed_in_def subset_eq down_closure_in_in_carrier1 down_closure_in_obtain)
+  show ?thesis
+    by (simp add: B0 B1 subset_antisym)
+qed
+
+lemma eq_downclosure_imp_downset:
+  assumes "is_downclosed A"
+  shows "A = down_closure A"
+  by (simp add: assms down_closure_def down_closure_in_univ_imp eq_downclosure_on_imp_downset)
+
+
 
 lemma in_downsets_in_imp_subset:
   "E \<in> downsets_in X  \<Longrightarrow> E \<subseteq> X"
@@ -4154,7 +4286,7 @@ proof-
     using A1 is_downclosed_in_def is_downclosed_in_imp2 by blast
   have B2:"\<forall>x \<in> X. \<forall>a \<in> A. (x \<le> a) \<longrightarrow> x \<in> A"
     using B0 A0 is_downclosed_in_imp is_downclosed_in_imp2 by blast
-  have B3:"is_downclosed_in B X"
+  have B3:"is_downclosed_in B X" (*by (meson A1 B0 B2 in_mono is_downclosed_in_def is_downclosed_in_imp2)*)
   proof-
     have B30:"\<And>x b. (x \<in>X \<and> b \<in> B \<and>  x \<le> b) \<longrightarrow> x \<in> B"
     proof
@@ -4186,7 +4318,7 @@ proof-
     using A1 is_upclosed_in_def is_upclosed_in_imp2 by blast
   have B2:"\<forall>x \<in> X. \<forall>a \<in> A. (a \<le> x) \<longrightarrow> x \<in> A"
     using B0 A0 is_upclosed_in_imp is_upclosed_in_imp2 by blast
-  have B3:"is_upclosed_in B X"
+  have B3:"is_upclosed_in B X" (*using B0 B1 B2 is_upclosed_in_def by fastforce*)
   proof-
     have B30:"\<And>x b. (x \<in> X \<and> b \<in> B \<and> b \<le> x) \<longrightarrow> x \<in> B"
     proof
@@ -4248,6 +4380,41 @@ lemma downsets_in_inter_closed:
   shows "\<Inter>EF \<in> downsets_in X"
   apply(simp add:downsets_in_def is_downclosed_in_def)
   by (metis Inf_less_eq assms(1) assms(2) in_downsets_in_imp_subset in_mono is_downclosed_in_imp is_downclosed_in_imp2)
+
+lemma down_closure_has_same_ub:
+  assumes "A \<subseteq> X"
+  shows "ub_set_in (down_closure_in A X) X = ub_set_in A X"
+  apply(auto simp add:ub_set_in_def down_closure_in_def)
+  using assms by blast
+
+lemma up_closure_has_same_lb:
+  assumes "A \<subseteq> X"
+  shows "lb_set_in (up_closure_in A X) X = lb_set_in A X"
+  apply(auto simp add:lb_set_in_def up_closure_in_def)
+  using assms by blast
+
+lemma has_sup_in_imp_downclosure_has_sup_in:
+  assumes A0:"has_sup_in A X" and A1:"A \<subseteq> X"
+  shows "has_sup_in (down_closure_in A X) X \<and> SupIn A X = SupIn (down_closure_in A X) X"
+proof-
+  obtain s where B0:"s = SupIn A X"
+    by simp
+  have B1:"ub_set_in (down_closure_in A X) X = ub_set_in A X"
+    by (simp add: A1 down_closure_has_same_ub)
+  show "has_sup_in (down_closure_in A X) X \<and>  SupIn A X = SupIn (down_closure_in A X) X"
+    by (metis A0 B1 has_sup_in_def has_sup_in_imp1 min_unique)
+qed
+
+
+lemma has_inf_in_imp_upclosure_has_inf_in:
+  assumes A0:"has_inf_in A X" and A1:"A \<subseteq> X"
+  shows "has_inf_in (up_closure_in A X) X \<and> InfIn A X = InfIn (up_closure_in A X) X"
+proof-
+  have B1:"lb_set_in (up_closure_in A X) X = lb_set_in A X"
+    by (simp add: A1 up_closure_has_same_lb)
+  show "has_inf_in (up_closure_in A X) X \<and> InfIn A X = InfIn (up_closure_in A X) X"
+    by (metis A0 B1 has_inf_in_def has_inf_in_imp1 max_unique)
+qed
 
 lemma is_filter_in_imp:
   "\<And>F X. is_filter_in F X \<Longrightarrow> (F \<subseteq> X \<and> is_downdir F \<and> is_upclosed_in F X \<and> is_inhabited F)"
@@ -7007,6 +7174,9 @@ lemma arb_sup_cl_in_imp1:
   "\<And>A X x. x \<in>  arb_sup_cl_in A X \<Longrightarrow> (\<exists>F. F \<subseteq> A \<and> has_sup_in F X \<and>  x = SupIn F X)"
   by (meson PowD arb_sup_cl_in_imp0)
 
+lemma arb_sup_cl_in_imp2:
+  "\<And>A X x. x \<in>  arb_sup_cl_in A X \<Longrightarrow> x \<in> X"
+  using arb_sup_cl_in_def by blast
 
 lemma fin_inf_cl_if1:
   "\<And>A x.  (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F) \<Longrightarrow> x \<in> fin_inf_cl A"
@@ -7016,10 +7186,14 @@ lemma fin_inf_cl_in_if1:
   "\<And>A X x.  (\<exists>F \<in>  Fpow A. has_inf_in F X \<and> x = InfIn F X) \<Longrightarrow> x \<in> fin_inf_cl_in A X"
   using fin_inf_cl_in_def has_inf_in_in_set by blast
 
-
 lemma arb_sup_cl_if1:
   "\<And>A x.  (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F) \<Longrightarrow> x \<in> arb_sup_cl A"
   by (simp add: arb_sup_cl_def)
+
+lemma arb_sup_cl_in_if1:
+  "\<And>A X x.  (\<exists>F \<in> Pow A. has_sup_in F X \<and> x = SupIn F X) \<Longrightarrow> x \<in> arb_sup_cl_in A X"
+  using arb_sup_cl_in_def has_sup_in_in_set by blast
+
 
 lemma fin_inf_cl_mem_iff:
   "x \<in> fin_inf_cl A \<longleftrightarrow> (\<exists>F \<in>  Fpow_ne A. has_inf F \<and> x = InfUn F)"
@@ -7032,6 +7206,11 @@ lemma fin_inf_cl_in_mem_iff:
 lemma  arb_sup_cl_mem_iff:
   "x \<in> arb_sup_cl A \<longleftrightarrow> (\<exists>F \<in>  Pow A. has_sup F \<and> x = SupUn F)"
   by (simp add: arb_sup_cl_def)
+
+lemma arb_sup_cl_in_mem_iff:
+  "x \<in> arb_sup_cl_in A X \<longleftrightarrow> (\<exists>F \<in>  Pow A. has_sup_in F X \<and> x = SupIn F X)"
+  using arb_sup_cl_in_if1 arb_sup_cl_in_imp0
+  by metis
 
 
 lemma fpow_ne_iso:
@@ -7078,6 +7257,10 @@ lemma fin_inf_cl_in_range:
   "fin_inf_cl_in A X \<subseteq> X"
   by (simp add: fin_inf_cl_in_def)
 
+lemma arb_sup_cl_in_range:
+  "arb_sup_cl_in A X \<subseteq> X"
+  by (simp add: arb_sup_cl_in_def)
+
 lemma fin_inf_cl_in_extensive:
   "A \<inter> X \<subseteq> fin_inf_cl_in A X"
 proof
@@ -7086,6 +7269,16 @@ proof
     by (metis A0 IntD2 Int_commute fpow_singleton has_infin_singleton2 infin_singleton2)
   show "a \<in> fin_inf_cl_in A X"
     using B0 fin_inf_cl_in_if1 by blast
+qed
+
+lemma arb_sup_cl_in_extensive:
+  "A \<inter> X \<subseteq> arb_sup_cl_in A X"
+proof
+  fix a assume A0:"a \<in> A \<inter> X"
+  have B0:"{a} \<in> Pow A \<and> has_sup_in {a} X \<and> a = SupIn {a} X"
+    by (metis A0 IntD1 IntD2 fpow_ne_equiv fpow_ne_singleton has_supin_singleton2 supin_singleton2)
+  show "a \<in> arb_sup_cl_in A X"
+    using B0 arb_sup_cl_in_if1 by blast
 qed
 
 
@@ -7127,6 +7320,20 @@ proof
   show "a \<in> fin_inf_cl_in B X"
     using B0 fin_inf_cl_in_if1 by blast
 qed
+
+lemma arb_sup_cl_in_iso:
+  assumes "A \<subseteq> B"
+  shows "arb_sup_cl_in A X  \<subseteq> arb_sup_cl_in B X"
+proof
+  fix a assume A0:"a \<in> arb_sup_cl_in A X"
+  obtain F where A1:"F \<in> Pow A \<and> has_sup_in F X \<and> a = SupIn F X"
+    using A0 arb_sup_cl_in_imp0 by blast
+  have B0:"F \<in> Pow B \<and> has_sup_in F X \<and>  a = SupIn F X"
+    using A1 assms by blast
+  show "a \<in> arb_sup_cl_in B X"
+    using B0 arb_sup_cl_in_if1 has_sup_in_in_set by blast
+qed
+
 
 
 
