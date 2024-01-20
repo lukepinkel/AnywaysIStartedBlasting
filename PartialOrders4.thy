@@ -1579,6 +1579,30 @@ lemma is_sup_in_sup_eq:
   "\<And>(s::'a::order) A X. is_sup_in s A X \<Longrightarrow> (s = SupIn A X)"
   by (simp add: SupIn_def sup_in_unique the_equality)
 
+context   
+fixes A B C::"'a::order set"
+  assumes A0:"A \<noteq> {} \<and> A \<subseteq> B \<and> B \<subseteq> C" and
+          A1:"has_sup_in A C" and
+          A2:"has_sup_in A B"
+begin
+
+lemma sup_geq_rsup:
+  "SupIn A C \<le> SupIn A B"
+  by (simp add: A0 A1 A2 sup_in_antitone2)
+
+lemma sup_leq_rsup_if:
+  "SupIn A C \<ge> SupIn A B \<longleftrightarrow> (SupIn A C \<in> B)" (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L show ?R
+    by (metis A0 A1 A2 L dual_order.antisym has_sup_in_in_set sup_in_antitone2)
+  next
+  assume R:?R show ?L
+    by (simp add: A1 A2 R has_sup_in_imp2 has_sup_in_imp3)
+qed
+
+end
+
+(*
 lemma sup_geq_rsup:
   fixes A B C::"'a::order set"
   assumes A0:"A \<noteq> {} \<and> A \<subseteq> B \<and> B \<subseteq> C" and
@@ -1600,7 +1624,7 @@ proof
   assume R:?R show ?L
     by (simp add: A1 A2 R has_sup_in_imp2 has_sup_in_imp3)
 qed
-
+*)
 
 (*
   this is more familiar if we take B=Y and C=UNIV so that 
