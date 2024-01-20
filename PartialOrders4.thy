@@ -7128,6 +7128,45 @@ definition arb_sup_cl::"'a::order set \<Rightarrow> 'a::order set" where
 definition arb_sup_cl_in::"'a::order set \<Rightarrow>'a::order set \<Rightarrow> 'a::order set" where
   "arb_sup_cl_in A X \<equiv> {x \<in> X. \<exists>F \<in> Pow A. has_sup_in F X \<and> x = SupIn F X}"
 
+definition is_supin_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_supin_closed A X \<equiv> (\<forall>B \<in> Pow_ne A. has_sup_in B X \<longrightarrow> SupIn B X \<in> A)"
+
+definition is_infin_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_infin_closed A X \<equiv> (\<forall>B \<in> Pow_ne A. has_inf_in B X \<longrightarrow> InfIn B X \<in> A)"
+
+lemma up_closed_supin_closed:
+  assumes A0:"is_upclosed_in A X"
+  shows "is_supin_closed A X"
+  unfolding is_supin_closed_def
+proof
+  fix B assume A1:"B \<in> Pow_ne A"
+  show "has_sup_in B X \<longrightarrow> SupIn B X \<in> A"
+  proof
+    assume A2:"has_sup_in B X"
+    have B0:"\<exists>x \<in> B. x \<in> A \<and> x \<le> SupIn B X"
+      using A1 A2 has_sup_in_imp2 by fastforce
+   show "SupIn B X \<in> A"
+     using A2 B0 assms has_sup_in_in_set is_upclosed_in_def by blast
+  qed
+qed
+
+
+lemma down_closed_infin_closed:
+  assumes A0:"is_downclosed_in A X"
+  shows "is_infin_closed A X"
+  unfolding is_infin_closed_def
+proof
+  fix B assume A1: "B \<in> Pow_ne A"
+  show "has_inf_in B X \<longrightarrow> InfIn B X \<in> A"
+  proof
+    assume A2: "has_inf_in B X"
+    have B0: "\<exists>x \<in> B. x \<in> A \<and> InfIn B X \<le> x"
+      using A1 A2 has_inf_in_imp2 by fastforce
+    show "InfIn B X \<in> A"
+      using A2 B0 assms has_inf_in_in_set is_downclosed_in_def by blast
+  qed
+qed
+
 lemma sup_un_sets:
   "SupUn (A::'a set set) = \<Union>A"
   by (simp add: complete_lattice_sup_exists)
@@ -7470,10 +7509,6 @@ qed
 
 
 
-lemma arb_sup_cl_idemp0:
-    assumes "E0 \<subseteq> arb_sup_cl A"
-    obtains E1 where "E1 \<subseteq> A \<and>  has_sup E1 \<and> SupUn E0 = "
-proof-
 
 lemma arb_sup_cl_idemp:
     "arb_sup_cl A = arb_sup_cl (arb_sup_cl A)"
