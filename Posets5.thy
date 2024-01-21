@@ -1716,7 +1716,61 @@ qed
 
 end
 
+lemma sup_cl_extensive:
+  assumes A0:"A \<subseteq> X"
+  shows "A \<subseteq> sup_cl A X"
+proof
+  fix a assume A1:"a \<in> A"
+  have B0:"is_sup a {a} X"
+    using A1 assms is_sup_singleton2 by blast
+  have B1:" Sup {a} X = a"
+    using B0 is_sup_sup_eq by fastforce
+  have B2:"{a} \<in> Pow_ne A"
+    by (simp add: A1)
+  show "a \<in> sup_cl A X"
+  apply(simp add:sup_cl_def)
+    by (metis B0 B1 B2 has_sup_singleton2 is_sup_in_set)
+qed
 
+
+lemma inf_cl_extensive:
+  assumes A0:"A \<subseteq> X"
+  shows "A \<subseteq> inf_cl A X"
+proof
+  fix a assume A1:"a \<in> A"
+  have B0:"is_inf a {a} X"
+    using A1 assms is_inf_singleton2 by blast
+  have B1:" Inf {a} X = a"
+    using B0 is_inf_inf_eq by fastforce
+  have B2:"{a} \<in> Pow_ne A"
+    by (simp add: A1)
+  show "a \<in> inf_cl A X"
+  apply(simp add:inf_cl_def)
+    by (metis B0 B1 B2 has_inf_singleton2 is_inf_in_set)
+qed
+
+lemma sup_cl_isotone:
+  assumes A0:"A \<subseteq> B \<and> B \<subseteq> X"
+  shows "sup_cl A X \<subseteq> sup_cl B X"
+  apply(simp add:sup_cl_def)
+  using assms mem_Collect_eq order_trans by fastforce
+
+lemma inf_cl_isotone:
+  assumes A0:"A \<subseteq> B \<and> B \<subseteq> X"
+  shows "inf_cl A X \<subseteq> inf_cl B X"
+  apply(simp add:inf_cl_def)
+  using assms mem_Collect_eq order_trans by fastforce
+
+lemma sup_cl_idempotent:
+  shows " sup_cl (sup_cl A X) X \<subseteq> sup_cl A X "
+proof-
+  fix E assume A0:"E \<in> Pow_ne (sup_cl A X)"
+  define f where "f \<equiv> (\<lambda>x. SOME Ex. Ex  \<in> Pow_ne A \<and> has_sup Ex X \<and> Sup Ex X = x)"
+  have B0:"\<forall>x \<in> E. (f x) \<in> Pow_ne A \<and> has_sup (f x) X \<and> Sup (f x) X = x"
+  proof
+    fix x assume A1:"x \<in> E"
+    have B01:"x \<in> (sup_cl A X)"
+    obtain Ex where A2:" Ex  \<in> Pow_ne A \<and> has_sup Ex X \<and> Sup Ex X = x"
 
 
 definition fin_inf_cl_in::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
