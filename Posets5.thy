@@ -1378,6 +1378,24 @@ definition inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::
   "inf_cl A X \<equiv> {x \<in> X. \<exists>E \<in> Pow_ne A. has_inf E X \<and> x = Inf E X}"
 
 
+lemma sup_cl_imp0:
+  "x \<in> sup_cl A X \<Longrightarrow> x \<in> X "
+  by (simp add: sup_cl_def)
+
+lemma sup_cl_imp1:
+  "x \<in> sup_cl A X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_sup E X \<and> x = Sup E X)"
+   by (simp add: sup_cl_def) 
+
+lemma sup_cl_if1:
+  " x \<in> X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_sup E X \<and> x = Sup E X) \<Longrightarrow> x \<in> sup_cl A X"
+   by (simp add: sup_cl_def) 
+
+lemma sup_cl_obtains:
+  assumes "x \<in> sup_cl A X"
+  obtains Ex where "Ex \<in> Pow_ne A \<and> has_sup Ex X \<and> x = Sup Ex X"
+  by (meson assms sup_cl_imp1)
+
+
 definition is_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_sup_cl A X \<equiv> (\<forall>E \<in> Pow_ne A. has_sup E X \<longrightarrow> Sup E X \<in> A)"
 
@@ -1592,7 +1610,7 @@ qed
 
 
 lemma sup_sup_imp_has_sup_eq:
-  assumes "has_sup (\<Union>A) X"
+  assumes "has_sup {s \<in> X. \<exists>Ai \<in> A. s = Sup Ai X } X"
   shows "has_sup  (\<Union>A) X \<and> Sup  {s \<in> X. \<exists>Ai \<in> A. s = Sup Ai X } X = Sup  (\<Union>A) X"
 proof-
   let ?B= "(\<Union>A)" let ?S="{s \<in> X. \<exists>Ai \<in> A. s = Sup Ai X }"
@@ -1600,17 +1618,17 @@ proof-
  have B0:"\<forall>x \<in> ?B. \<exists>Ai \<in> A. x \<in>Ai"
    by blast
   have B1:"\<forall>x \<in> ?B. ?i \<ge> x"
-    by (simp add: assms has_sup_imp_eq_sup_sup has_sup_in_imp2)
+    using assms has_sup_in_imp1 ub_set_imp ub_sup_ub_un by blast
   have B2:"?i \<in> ub_set ?B X"
-    by (simp add: assms has_sup_imp_eq_sup_sup has_sup_in_imp1)
+    using assms has_sup_in_imp1 ub_sup_ub_un by blast
   have B3:"\<forall>l \<in> ub_set ?B X. l \<in> ub_set ?S X"
     using ub_un_ub_sup by blast
   have B4:"\<forall>l \<in> ub_set ?B X. l \<ge> ?i"
-    by (metis (no_types, lifting) assms has_sup_imp_eq_sup_sup sup_is_sup is_sup_in_imp1 is_min_iff)
+    using B3 assms has_sup_in_imp1 is_min_iff by blast
   have B5:"is_sup ?i ?B X"
-    using assms has_sup_imp_eq_sup_sup sup_is_sup by auto
+    by (simp add: B2 B4 is_min_if2 is_sup_def)
    have B6:"has_sup ?B X \<and> ?i = Sup ?B X"
-    using B5 has_sup_def has_sup_imp_eq_sup_sup has_min_def is_sup_in_imp1 by blast
+     using B5 has_sup_def is_min_imp_has_min is_sup_def is_sup_sup_eq by blast
   show ?thesis
   using B6 by blast
 qed
@@ -1763,15 +1781,77 @@ lemma inf_cl_isotone:
 
 lemma sup_cl_idempotent:
   shows " sup_cl (sup_cl A X) X \<subseteq> sup_cl A X "
-proof-
-  fix E assume A0:"E \<in> Pow_ne (sup_cl A X)"
-  define f where "f \<equiv> (\<lambda>x. SOME Ex. Ex  \<in> Pow_ne A \<and> has_sup Ex X \<and> Sup Ex X = x)"
-  have B0:"\<forall>x \<in> E. (f x) \<in> Pow_ne A \<and> has_sup (f x) X \<and> Sup (f x) X = x"
+proof
+  fix s assume P0:"s \<in>sup_cl (sup_cl A X) X"
+  obtain E where P1:"E \<in> Pow_ne (sup_cl A X) \<and> has_sup E X \<and> Sup E X = s"
+    by (metis P0 sup_cl_imp1)
+  let ?P="\<lambda>E x. E \<in> Pow_ne A \<and> has_sup E X \<and> Sup E X = x"
+  have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)" 
   proof
     fix x assume A1:"x \<in> E"
     have B01:"x \<in> (sup_cl A X)"
+      using P1 A1 by blast
     obtain Ex where A2:" Ex  \<in> Pow_ne A \<and> has_sup Ex X \<and> Sup Ex X = x"
+      by (metis B01 sup_cl_obtains)
+    show "(\<exists> Ex. Ex  \<in> Pow_ne A \<and>   has_sup Ex X \<and> Sup Ex X = x)"
+      using A2 by blast
+  qed
+  let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+  have B1:"\<forall>x \<in> E.  ?P (?f x) x"
+  proof
+    fix x assume A2:"x \<in> E"
+    show "?P (?f x) x"
+    apply(rule someI_ex)
+      using A2 B0 by blast
+  qed
+  have B2:"\<forall>x \<in> E. x = Sup (?f x) X"
+    using B1 by force
+  have B3:"\<forall>x \<in> E. \<exists>Ai \<in> (?f`E). x = Sup Ai X"
+    using B2 by blast
+  have B4:"\<forall>x \<in> X.  \<exists>Ai \<in> (?f`E). x = Sup Ai X \<longrightarrow> x \<in> E"
+    using P1 B3 by fastforce
+  have B5:" E \<subseteq>  {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X }"
+    using B1 has_sup_in_set by fastforce
+  have B6:" {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X }  \<subseteq> E"
+    proof
+      fix s assume B6A0:"s \<in> {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X }"
+      have B60:"\<exists>Ai \<in> (?f`E). s = Sup Ai X"
+        using B6A0 by blast
+      show "s \<in> E"
+        using B2 B60 by auto
+  qed
+  have B7:"E =  {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X }"
+    using B5 B6 by blast
+  have B8:"(?f`E) \<noteq> {}"
+    using P1 by blast
+  have B9:"(\<forall>Ai \<in> (?f`E). Ai \<noteq> {})"
+    using B1 by fastforce
+  have B10:"\<forall>Ai \<in>  (?f`E). has_sup  Ai X"
+    using B1 by blast
+ have B11A0:"has_sup E X "
+    by (simp add: P1)
+  have B110:"has_sup {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X } X"
+    using B11A0 B7 by presburger
+  have B111:"has_sup  (\<Union>(?f`E)) X \<and>  Sup (\<Union>(?f`E)) X = Sup  {s \<in> X. \<exists>Ai \<in> (?f`E). s = Sup Ai X } X"
+  using sup_sup_imp_has_sup_eq B10 B11A0 B7 B8 B9
+    by (smt (verit, ccfv_SIG) Collect_cong)
+  have B11:"has_sup  (\<Union>(?f`E)) X \<and>  Sup (\<Union>(?f`E)) X = Sup E X"
+    using B111 B7 by presburger
+  have B12:" Sup E X = s"
+    by (simp add: P1)
+  have B13:"... = Sup (\<Union>(?f`E)) X"
+    using B11 B12 by presburger
+  have B14:"\<forall>Ai \<in>(?f`E). Ai \<in> Pow_ne A"
+    using B1 by force
+  have B15:"(\<Union>(?f`E)) \<in> Pow_ne A"
+    using B14 B8 by auto
+  have B16:"\<exists>Ex \<in> Pow_ne A. has_sup Ex X \<and> Sup Ex X = s"
+    using B111 B13 B15 by blast
+  show "s \<in> (sup_cl A X)"
+    using B16 has_sup_in_set sup_cl_if1 by blast
+qed
 
+  
 
 definition fin_inf_cl_in::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
   "fin_inf_cl_in A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. has_inf F X \<and> x = Inf F X}"
