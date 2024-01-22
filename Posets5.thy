@@ -1857,10 +1857,80 @@ lemma inf_cl_isotone:
   apply(simp add:inf_cl_def)
   using assms mem_Collect_eq order_trans by fastforce
 
-
-(*well so much for simplifying*)
 lemma sup_cl_idempotent:
-  shows " sup_cl (sup_cl A X) X \<subseteq> sup_cl A X "
+  shows "sup_cl (sup_cl A X) X \<subseteq> sup_cl A X "
+proof
+  fix s assume P0:"s \<in>sup_cl (sup_cl A X) X"
+  show "s \<in> (sup_cl A X)"
+  proof-
+    obtain E where P1:"E \<in> Pow_ne (sup_cl A X) \<and> has_sup E X \<and> Sup E X = s"
+      by (metis P0 sup_cl_imp1)
+    let ?P="\<lambda>E x. E \<in> Pow_ne A \<and> has_sup E X \<and> Sup E X = x"
+    have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)" 
+    proof
+      fix x assume A1:"x \<in> E"
+      have B01:"x \<in> (sup_cl A X)"
+        using P1 A1 by blast
+      obtain Ex where A2:" Ex  \<in> Pow_ne A \<and> has_sup Ex X \<and> Sup Ex X = x"
+        by (metis B01 sup_cl_obtains)
+      show "(\<exists> Ex. Ex  \<in> Pow_ne A \<and>   has_sup Ex X \<and> Sup Ex X = x)"
+        using A2 by blast
+    qed
+    let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+    define fE where "fE = ?f`E"
+    define S where "S= {s \<in> X. \<exists>Ai \<in> fE. s = Sup Ai X} "
+    have B1:"\<forall>x \<in> E.  ?P (?f x) x"
+    proof
+      fix x assume A2:"x \<in> E"
+      show "?P (?f x) x"
+      apply(rule someI_ex)
+        using A2 B0 by blast
+    qed
+    have B2:"\<forall>x \<in> E. x = Sup (?f x) X"
+      using B1 by force
+    have B3:"\<forall>x \<in> E. \<exists>Ai \<in> fE. x = Sup Ai X"
+      using B2 fE_def by blast
+    have B4:"\<forall>x \<in> X.  \<exists>Ai \<in> fE. x = Sup Ai X \<longrightarrow> x \<in> E"
+      using P1 B3 by fastforce
+    have B5:" E \<subseteq> S"
+      using B1 has_sup_in_set fE_def S_def by fastforce
+    have B6:"S  \<subseteq> E"
+      proof
+        fix s assume B6A0:"s \<in>S"
+        have B60:"\<exists>Ai \<in> fE. s = Sup Ai X"
+          using B6A0 S_def by blast
+        show "s \<in> E"
+          using B2 B60 fE_def by auto
+    qed
+    have B7:"E = S"
+      using B5 B6 by blast
+    have B8:"is_ne fE \<and> (\<forall>Ai \<in> fE. is_ne Ai)"
+      using B1 P1 fE_def by force
+    have B10:"\<forall>Ai \<in> fE. has_sup  Ai X"
+      using B1 fE_def by blast
+   have B11A0:"has_sup E X "
+      by (simp add: P1)
+    have B110:"has_sup S X"
+      using B11A0 B7 by blast
+    have B111:"has_sup  (\<Union>fE) X \<and>  Sup (\<Union>fE) X = Sup S X"
+      using B8 sup_sup_imp_has_sup_eq[of "fE"] using B10 B110 S_def by auto
+    have B12:" Sup E X = s"
+      by (simp add: P1)
+    have B13:"... = Sup (\<Union>fE) X"
+      using B111 B12 B7 by auto
+    have B14:"\<forall>Ai \<in>fE. Ai \<in> Pow_ne A"
+      using B1 fE_def by force
+    have B15:"(\<Union>fE) \<in> Pow_ne A"
+      using B14 B8 by auto
+    have B16:"\<exists>Ex \<in> Pow_ne A. has_sup Ex X \<and> Sup Ex X = s"
+      using B111 B13 B15 by blast
+    show "s \<in> (sup_cl A X)"
+      using B16 has_sup_in_set sup_cl_if1 by blast
+  qed
+qed
+(*well so much for simplifying*)
+lemma sup_cl_idempotent1:
+  shows "sup_cl (sup_cl A X) X \<subseteq> sup_cl A X "
 proof
   fix s assume P0:"s \<in>sup_cl (sup_cl A X) X"
   obtain E where P1:"E \<in> Pow_ne (sup_cl A X) \<and> has_sup E X \<and> Sup E X = s"
@@ -1928,9 +1998,7 @@ proof
     using B16 has_sup_in_set sup_cl_if1 by blast
 qed
 
-
 definition fin_inf_cl_in::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
   "fin_inf_cl_in A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. has_inf F X \<and> x = Inf F X}"
-
 
 end
