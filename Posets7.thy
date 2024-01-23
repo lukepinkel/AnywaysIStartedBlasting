@@ -1052,6 +1052,11 @@ lemma is_closure_simp:
   "is_closure f \<longleftrightarrow>  is_closure_on f UNIV"
   by (simp add: is_closure_def)
 
+lemma antitone_comp:
+  "is_map f X Y \<Longrightarrow> is_map g Y X \<Longrightarrow> is_antitone_on f X \<Longrightarrow> is_antitone_on g Y \<Longrightarrow> is_isotone_on (g \<circ> f) X"
+  apply(simp add:is_map_def is_antitone_on_def is_isotone_on_def)
+  by (simp add: image_subset_iff)
+
 lemma is_proj_on_imp1:
   "is_proj_on f X \<Longrightarrow> is_idempotent_on f X" 
   by(simp add:is_proj_on_def) 
@@ -2836,6 +2841,27 @@ lemma is_galois_connection_imp4:
   "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> (f \<circ> g) y "
   by(simp add:is_galois_connection_def is_extensive_on_def)
 
+lemma galois_equiv_imp1:
+  "galois_equiv f X g Y \<Longrightarrow> (is_map f X Y) \<Longrightarrow> (is_antitone_on f X)"
+  apply(auto simp add:is_antitone_on_def galois_equiv_def is_map_def)
+  by (metis dual_order.trans image_subset_iff order_refl)
+
+lemma galois_equiv_imp2:
+  "galois_equiv f X g Y \<Longrightarrow> (is_map g Y X) \<Longrightarrow> (is_antitone_on g Y)"
+  apply(auto simp add:is_antitone_on_def galois_equiv_def is_map_def)
+  by (metis dual_order.trans image_subset_iff order_refl)
+
+lemma galois_equiv_imp3:
+  "galois_equiv f X g Y \<Longrightarrow> (is_map f X Y) \<Longrightarrow>  (is_map g Y X) \<Longrightarrow>(is_extensive_on (f \<circ> g) Y)"
+  apply(auto simp add:is_extensive_on_def  galois_equiv_def is_map_def)
+  by (simp add: image_subset_iff)
+
+lemma galois_equiv_imp4:
+  "galois_equiv f X g Y \<Longrightarrow> (is_map f X Y) \<Longrightarrow>  (is_map g Y X) \<Longrightarrow>(is_extensive_on (g \<circ> f) X)"
+  apply(auto simp add:is_extensive_on_def  galois_equiv_def is_map_def)
+  by (simp add: image_subset_iff)
+
+
 lemma gc_imp_ge:
   assumes A0:"is_galois_connection f X g Y"
   shows   "galois_equiv f X g Y"
@@ -2867,7 +2893,60 @@ proof-
 qed
     
   
+lemma ge_imp_gc:
+  assumes A0:"galois_equiv f X g Y \<and>  (is_map f X Y) \<and> (is_map g Y X)"
+  shows "is_galois_connection f X g Y"
+proof-
+  have B0:" (is_antitone_on f X) \<and> (is_antitone_on g Y)"
+    using assms galois_equiv_imp1 galois_equiv_imp2 by blast
+  have B1:"(is_extensive_on (f \<circ> g) Y) \<and> (is_extensive_on (g \<circ> f) X)"
+    using assms galois_equiv_imp3 galois_equiv_imp4 by blast 
+  show ?thesis
+    by (simp add: B0 B1 assms is_galois_connection_def)
+qed
+ 
+lemma galois_triple_comp1:
+  assumes A0:"is_galois_connection f X g Y"
+  shows "\<And>x. x \<in> X \<longrightarrow> (f \<circ> g \<circ> f) x = f x"
+proof
+  fix x assume A1:"x \<in> X"
+  have B1:"f x \<le> (f \<circ> g \<circ>f) x"
+    by (metis A1 assms comp_apply image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
+  have B2:"f x \<ge> (f \<circ> g \<circ>f) x"
+    by (metis A1 assms comp_apply is_antitone_on_def is_extensive_on_def is_galois_connection_def is_self_map_imp2)
+  show "(f \<circ> g \<circ> f) x = f x"
+    using B1 B2 by auto
+qed
 
+lemma galois_triple_comp2:
+  assumes A0:"is_galois_connection f X g Y"
+  shows "\<And>y. y\<in> Y \<longrightarrow> (g \<circ> f \<circ> g) y = g y"
+proof
+  fix y assume A1:"y \<in> Y"
+  have B1:"g y \<le> (g \<circ> f \<circ>g) y"
+    by (metis A1 assms comp_apply image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
+  have B2:"g y \<ge> (g \<circ> f \<circ> g) y"
+    by (metis A1 assms comp_apply is_antitone_on_def is_extensive_on_def is_galois_connection_def is_self_map_imp2)
+  show "(g \<circ> f \<circ> g) y = g y"
+    using B1 B2 by auto
+qed
 
+lemma galois_double_comp1_is_cl:
+  assumes A0:"is_galois_connection f X g Y"
+  shows "is_closure_on (f \<circ> g) Y \<and> is_closure_on (g \<circ> f) X"
+proof-
+  have B0:"is_extensive_on (f \<circ> g) Y \<and> is_extensive_on (g \<circ> f) X"
+    using assms is_galois_connection_def by auto
+  have B1:"is_isotone_on (f \<circ> g) Y \<and> is_isotone_on (g \<circ> f) X"
+    by (metis antitone_comp assms is_galois_connection_def)
+  have B2:"is_idempotent_on (f \<circ> g) Y \<and> is_idempotent_on (g \<circ> f) X"
+    apply(auto simp add:is_idempotent_on_def )
+    using assms galois_triple_comp2 apply fastforce
+    apply (simp add: B0 is_extensive_on_imp_map)
+    using assms galois_triple_comp1 apply fastforce
+    by (simp add: B0 is_extensive_on_imp_map)
+  show ?thesis
+    by (simp add: B0 B1 B2 is_closure_on_def is_proj_on_def)
+qed
 
 end
