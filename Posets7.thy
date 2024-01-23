@@ -443,6 +443,9 @@ lemma is_max_sanity_check:
   "is_max m A \<longleftrightarrow> (m \<in> A \<and> (\<forall>a \<in> A. m \<ge> a))"
   by (auto simp add:max_def is_max_def ub_set_def ub_def)
 
+lemma ub_set_max:
+  "is_max m X \<Longrightarrow> ub_set {m} X = {m}"
+  by( auto simp add:is_max_def ub_set_def ub_def)
 
 section SupInf
 
@@ -2015,150 +2018,7 @@ proof
     by (metis A0 A1 A2 A3 closure_from_clr_def is_clr_imp2 min_antitone2 ub_set_in_isotone2)
 qed
 
-
-
-definition Cl::"'a::order \<Rightarrow> 'a::order" where
-  "Cl x = min (ub_set {x} C)"
-
-lemma crange_is_ne:
-  "C \<noteq> {}"
-  using clr is_clr_imp1 by blast
-
-lemma space_is_ne:
-  "X \<noteq> {}"
-  using crange_is_ne is_clr_def
-  using clr by blast 
-
-lemma Cl_maps_to:
-  "Cl`X \<subseteq> X"
-proof
-  fix c assume A0:"c \<in> Cl`X"
-  obtain x where B0:"c = Cl x" and B1:"x \<in> X" using A0 imageE[of "c" "Cl" "X"] by blast
-  have B2:"is_min c (ub_set {x} C)" using B0  Cl_def[of "x"]
-    by (metis B1 clr clr_obtains1 min_if)
-  have B3:"c \<in> C"
-    using B2 is_sup_in_iff is_sup_in_set by blast
-  show "c \<in> X"
-    using B3 clr is_clr_imp1 by blast
-qed
-
-lemma cl_is_self_map:
-  "is_self_map Cl X"
-  by(simp add:is_map_def Cl_maps_to space_is_ne)
-
-lemma pr_fil_iso1:
-  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (ub_set {y} C) \<subseteq> (ub_set {x} C)"
-  by (simp add: ub_set_singleton_antitone)
-
-lemma cl_is_iso:
-  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (Cl x)  \<le>  (Cl y)"
-  apply(auto simp add: Cl_def) using is_clr_imp2 min_antitone2 by (metis clr pr_fil_iso1)
-
-lemma cl_is_iso_on:
-  "is_isotone_on Cl X"
-  by(simp add:is_isotone_on_def cl_is_iso)
-
-lemma cl_is_ext:
-  "x \<in> X \<Longrightarrow> x \<le> Cl x"
-  by (metis Posets7.Cl_def clr clr_obtains1 is_min_imp min_if singletonI ub_set_imp)
-
-lemma cl_is_ext_on:
-  "is_extensive_on Cl X"
-  by(auto simp add:is_extensive_on_def cl_is_ext cl_is_self_map)
-
-lemma cl_fp:
-  "c \<in> C \<Longrightarrow> Cl c = c"
-  proof-
-    fix c assume A0:"c \<in> C"
-    have B0:"is_min c (ub_set {c} C)"
-      by(auto simp add:A0 is_min_def ub_set_def lb_set_def ub_def lb_def)
-    show " Cl c =c"
-      using B0 Cl_def min_if by force
-qed
-
-lemma cl_is_idm:
-  "x \<in> X \<Longrightarrow> (Cl (Cl x)) = Cl x "
-proof-
-  fix x assume A0:"x \<in> X"
-  have B0:"Cl x \<in> C"
-    by (metis A0 Cl_def clr clr_obtains1 min_if)
-  show "(Cl (Cl x)) = Cl x " using A0 B0 cl_fp[of "Cl x"]
-    by fastforce
-qed
-
-lemma cl_is_idm_on:
-  "is_idempotent_on Cl X"
-  by(simp add:cl_is_self_map is_idempotent_on_def cl_is_idm) 
-
-lemma cl_is_closure:
-  "is_closure_on Cl X"
-  by(simp add:is_closure_on_def is_proj_on_def cl_is_idm_on cl_is_iso_on cl_is_ext_on)
-
-end
-
-context 
-fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
-  assumes is_cl:"is_closure_on f X"
-begin
-
-definition Cf::"'a::order set" where
-  "Cf \<equiv> f`X"
-
-lemma Cf_is_ne:
-  "Cf \<noteq> {}"
-  using Cf_def is_cl is_closure_on_imp2 is_map_def by fastforce
-
-lemma Cf_subseteq_space:
-  "Cf \<subseteq> X"
-  by (metis Cf_def closure_if_cl_eq is_cl is_self_map_imp) 
-
-lemma cl_ub_im:
-  "x \<in> X \<Longrightarrow> (f x) \<in> ub_set {x} Cf"
-proof-
-  fix x assume A0:"x \<in> X"
-  have B0:"f x \<in> Cf" 
-    by  (simp add:Cf_def A0 imageI[of "x" "X" "f"])
-  have B1:"x \<le> f x" using is_cl is_closure_on_def is_extensive_on_def A0 by blast
-  show "(f x) \<in> ub_set {x} Cf"
-    by (simp add: B0 B1 ub_set_mem_iff)
-qed
-
-lemma cl_ub_is_ne:
-  "x \<in> X \<Longrightarrow> ub_set {x} Cf \<noteq> {}"
-  using cl_ub_im by blast
-
-lemma cl_ub_min:
-  "x \<in> X \<Longrightarrow> y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
-proof-
-  fix x assume A0:"x \<in> X" show "y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
-  proof-
-    fix y assume A1:"y \<in>  ub_set {x} Cf"
-    have B0:"x \<le> y" 
-      using A1 ub_set_def ub_def  by (simp add: ub_set_imp)
-    have B1:"y \<in> Cf " 
-       using A1 ub_set_imp2 by blast
-    have B2:"y \<in> X"  
-      using B1 Cf_subseteq_space by blast 
-    have B3:"f x \<le> f y" 
-      using A0 B2 B0 is_cl is_closure_imp_iso_imp1[of "f" "X" "x" "y"] by blast
-    have B4:"... = y"
-      using B1 Cf_def cl_eq_imp_idm2 closure_if_cl_eq is_cl by fastforce
-    show "f x \<le> y"
-      using B3 B4 by auto
-  qed
-qed
-   
-
-lemma cl_is_min_ub:
-  "x \<in> X \<Longrightarrow>  has_min (ub_set {x} Cf)"
-  by (meson cl_ub_im cl_ub_min has_min_iff)
-
-lemma Cf_is_clr:
-  "is_clr Cf X"
-  by(simp add:is_clr_def Cf_subseteq_space cl_is_min_ub Cf_is_ne)
-
-
-end 
+  
 
 
 section SupInfClosures
@@ -2900,6 +2760,54 @@ proof
         using B16 has_inf_in_set fne_inf_cl_if1 by blast
     qed
   qed
+qed
+
+
+
+
+lemma top_is_closed1:
+  assumes "is_closure_on f X" and "is_max m X"
+  shows "f m = m"
+  by (meson assms(1) assms(2) cl_eq_imp_ext1 closure_eq_if_closure is_closure_on_imp2 is_max_iff is_self_map_imp2 order_antisym)
+
+lemma top_is_closed2:
+  assumes "is_clr C X" and "is_max m X"
+  shows "m \<in> C"
+proof-
+  have B0:"m \<in> X"
+    using assms(2) is_max_imp by blast
+  have B1:"ub_set {m} C = {m}"
+    by (metis B0 assms(1) assms(2) is_clr_imp1 is_clr_imp3 subset_singletonD ub_set_in_isotone2 ub_set_max)
+  show ?thesis
+    using B1 ub_set_mem_iff by auto
+qed
+
+lemma clr_inf_closed:
+  assumes "is_clr C X" and "A \<subseteq> C" and "has_inf A X"
+  shows "Inf A X \<in> C"
+proof(cases "A = {}")
+  case True
+  have B0:"has_max X"
+    by (metis True assms(3) has_inf_def lb_set_in_degenerate)
+  obtain m where "is_max m X"
+    using B0 has_max_iff2 by blast
+  then show ?thesis
+    by (metis True assms(1) inf_in_degenerate max_if top_is_closed2) 
+next
+  case False
+  let ?f="closure_from_clr C"
+  have B0:"\<forall>a. a \<in> A \<longrightarrow> Inf A X \<le> a"
+    using assms(3) has_inf_in_imp2 by blast
+  have B1:"\<forall>a. a \<in> A \<longrightarrow> ?f(Inf A X ) \<le> ?f a"
+    by (meson B0 assms(1) assms(2) assms(3) closure_range.cl_is_iso closure_range.intro has_inf_in_set in_mono is_clr_imp1)
+  have B2:"\<forall>a. a \<in> A\<longrightarrow>  ?f(Inf A X ) \<le> a"
+    by (metis B1 assms(1) assms(2) closure_range.cl_fp closure_range.intro in_mono)
+  have B3:"?f(Inf A X ) \<le> Inf A X "
+    by (simp add: B2 assms(1) assms(3) closure_range.cl_is_self_map closure_range.intro has_inf_imp3 has_inf_in_set is_self_map_imp2)
+  have B4:"?f (Inf A X ) = (Inf A X )"
+    using B3 assms(1) assms(3) closure_range.cl_is_ext closure_range.intro has_inf_in_set order_antisym_conv by blast
+  then show ?thesis
+    by (metis assms(1) assms(3) closure_from_clr_def clr_obtains1 has_inf_in_set min_if)
 qed
 
 end
