@@ -192,9 +192,17 @@ lemma ub_set_in_singleton:
   "ub_set {a} X  = {x \<in> X. a \<le> x}"
   by (simp add: set_eq_iff ub_set_mem_iff)
 
+lemma ub_set_singleton_antitone:
+  "(a::'a::order) \<le> b \<Longrightarrow> ub_set {b} X \<subseteq> ub_set {a} X"
+  by(auto simp add:ub_set_def ub_def)
+
 lemma lb_set_in_singleton:
   "lb_set {a} X  = {x \<in> X. x \<le> a}"
   by (simp add: set_eq_iff lb_set_mem_iff)
+
+lemma lb_set_singleton_isotone:
+  "(a::'a::order) \<le> b \<Longrightarrow> lb_set {a} X \<subseteq> lb_set {b} X"
+  by(auto simp add:lb_set_def lb_def)
 
 lemma ub_set_in_from_principal:
   assumes "A \<noteq> {}"
@@ -414,8 +422,8 @@ lemma max_isotone2:
   by (metis if_has_max_max_unique max_if max_isotone1)
 
 lemma min_antitone2:
-  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_min A) \<and> ( has_min B) \<longrightarrow>  min B \<le> min B"
-  by(auto simp add:if_has_max_max_unique max_isotone1)
+  "\<And>(A::'a::order set) B. A \<subseteq> B \<and> (has_min A) \<and> ( has_min B) \<longrightarrow>  min B \<le> min A"
+  by(metis if_has_min_min_unique min_if min_antitone1)
 
 lemma max_singleton[simp]:
   "max {x::'a::order} = x"
@@ -905,6 +913,241 @@ lemma same_lower_bounds_imp_sup_eq:
   apply(auto simp add:has_inf_def Inf_def)
   by (simp add: is_inf_in_iff)
 
+section Closures
+(*Probably should develop the theory of closures before trying to develop closures*)
+
+definition is_map::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow>bool" where
+  "is_map f X Y \<equiv> ((f`X) \<subseteq> Y) \<and> (X \<noteq> {})"
+
+abbreviation is_self_map::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_self_map f X \<equiv> is_map f X X"
+
+definition is_idempotent_on::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_idempotent_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> f (f x) = f x) \<and> is_self_map f X"
+
+definition is_extensive_on::"('a::order \<Rightarrow> 'a::order)  \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_extensive_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (x \<le> (f x))) \<and>  is_self_map f X"
+
+definition is_isotone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
+  "is_isotone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<le> (f x2))"
+
+definition is_antitone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
+  "is_antitone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<ge> (f x2))"
+
+definition is_idempotent::"('a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_idempotent f \<equiv> is_idempotent_on f UNIV"
+
+definition is_extensive::"('a::order \<Rightarrow> 'a::order)  \<Rightarrow> bool" where
+  "is_extensive f \<equiv> is_extensive_on f UNIV"
+
+definition is_isotone::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
+  "is_isotone f \<equiv> is_isotone_on f UNIV"
+
+definition is_antitone::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
+  "is_antitone f \<equiv> is_antitone_on f UNIV"
+
+definition is_proj_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_proj_on f X \<equiv> (is_idempotent_on f X) \<and> (is_isotone_on f X)"
+
+
+definition is_proj::"('a::order \<Rightarrow> 'a::order) \<Rightarrow>  bool" where
+  "is_proj f \<equiv>is_proj_on f UNIV"
+
+
+definition is_closure_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_closure_on f X \<equiv> is_proj_on f X \<and> (is_extensive_on f X)"
+
+definition is_closure::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> bool" where
+  "is_closure f \<equiv> is_closure_on f UNIV"
+
+definition closure_eq::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "closure_eq f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (( x1 \<le> f x2) \<longleftrightarrow> (f x1 \<le> f x2)))"
+
+lemma closure_eq_imp1:
+  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
+  by (simp add: closure_eq_def)
+
+lemma closure_eq_imp2:
+  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
+  by (simp add: closure_eq_def)
+
+lemma is_idempotent_simp:
+  "is_idempotent f \<longleftrightarrow>  is_idempotent_on f UNIV"
+  by (simp add: is_idempotent_def)
+
+lemma is_self_map_imp:
+  "is_self_map f X \<Longrightarrow> f`X \<subseteq> X"
+  by (simp add: is_map_def)
+
+lemma is_self_map_imp2:
+  "is_self_map f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<in> X"
+  by (simp add: image_subset_iff is_map_def)
+
+lemma is_self_map_if:
+  "X \<noteq> {} \<Longrightarrow> f`X \<subseteq> X \<Longrightarrow> is_self_map f X "
+  by (simp add: is_map_def)
+
+lemma is_isotone_simp:
+  "is_isotone f \<longleftrightarrow>  is_isotone_on f UNIV"
+  by (simp add: is_isotone_def)
+
+lemma is_extensive_simp:
+  "is_extensive f \<longleftrightarrow>  is_extensive_on f UNIV"
+  by (simp add: is_extensive_def)
+
+lemma is_extensive_on_imp_map:
+  "is_extensive_on f X \<Longrightarrow> is_self_map f X"
+  by (simp add: is_extensive_on_def)
+
+lemma is_antitone_simp:
+  "is_antitone f \<longleftrightarrow>  is_antitone_on f UNIV"
+  by (simp add: is_antitone_def)
+
+lemma is_proj_simp:
+  "is_proj f \<longleftrightarrow>  is_proj_on f UNIV"
+  by (simp add: is_proj_def)
+
+lemma is_isotone_imp1:
+  "is_isotone_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  by(simp add:is_isotone_on_def)
+
+lemma is_closure_imp_iso_imp1:
+  "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  apply(simp add:is_closure_on_def is_proj_on_def) using is_isotone_imp1
+  by blast
+
+lemma is_ext_imp1:
+  "is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
+  apply(simp add:is_extensive_on_def)
+  using order.trans by blast
+
+lemma is_iso_ext_imp1:
+  "is_isotone_on f X \<Longrightarrow> is_extensive_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> f (f x)"
+  by(simp add:is_isotone_on_def is_extensive_on_def image_subset_iff is_map_def)
+
+lemma is_iso_idem_imp1:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> f (f x)"
+  by(simp add:is_isotone_on_def is_idempotent_on_def image_subset_iff is_map_def)
+
+lemma is_iso_ext_imp2:
+  "is_isotone_on f X \<Longrightarrow> is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
+  by(simp add:is_isotone_on_def is_extensive_on_def image_subset_iff is_map_def)
+
+lemma is_idempotent_imp1:
+  "is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x = (f (f x))"
+  by(simp add:is_idempotent_on_def)
+
+lemma is_idempotent_imp2:
+  "is_idempotent_on f X \<Longrightarrow> x \<in> f`X \<Longrightarrow> f x =x"
+  by(auto simp add:is_idempotent_on_def)
+
+lemma is_idempotent_imp3:
+  "is_idempotent_on f X \<Longrightarrow> is_self_map f X"
+  by(simp add:is_idempotent_on_def)
+
+lemma is_closure_simp:
+  "is_closure f \<longleftrightarrow>  is_closure_on f UNIV"
+  by (simp add: is_closure_def)
+
+lemma is_proj_on_imp1:
+  "is_proj_on f X \<Longrightarrow> is_idempotent_on f X" 
+  by(simp add:is_proj_on_def) 
+
+lemma is_proj_on_imp2:
+  "is_proj_on f X \<Longrightarrow> is_isotone_on f X" 
+  by(simp add:is_proj_on_def) 
+
+lemma is_proj_on_imp3:
+  "is_proj_on f X \<Longrightarrow> is_self_map f X" 
+  by(simp add:is_idempotent_imp3 is_proj_on_imp1)
+ 
+lemma is_iso_idem_imp2:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
+  by (simp add: is_idempotent_imp3 is_isotone_imp1 is_self_map_imp2)
+
+lemma is_iso_idem_imp3:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> (f x2)"
+   using is_iso_idem_imp2[of "f" "X" "x1" "x2"] is_idempotent_imp1[of "f" "X" "x2"] by fastforce 
+
+lemma proj_imp_lt_cl_lt:
+  "is_proj_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
+  using is_iso_idem_imp3 is_proj_on_imp1 is_proj_on_imp2 by blast
+
+context fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
+    assumes ismap:"is_self_map f X" and cl_eq:"closure_eq f X"
+begin
+lemma cl_eq_imp_ext1:
+  "x \<in> X \<Longrightarrow>  x \<le> f x"
+  by (simp add: cl_eq closure_eq_imp2[of "f" "X" "x" "x"])
+            
+
+lemma cl_eq_imp_iso1:
+  shows "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> x1 \<le> f x2"
+  using cl_eq_imp_ext1[of "x2"]  dual_order.trans by auto
+
+lemma cl_eq_imp_iso2:
+  "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
+  using cl_eq closure_eq_imp1 by blast
+
+lemma cl_eq_imp_iso3:
+  shows "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  using cl_eq_imp_iso2[of "x1" "x2"] cl_eq_imp_iso1[of "x1" "x2"] by auto
+
+lemma cl_eq_imp_idm1:
+  "x \<in> X \<Longrightarrow> (f (f x)) \<le> (f x)"
+  using ismap is_self_map_imp2[of "f" "X" "x"] cl_eq closure_eq_imp1[of "f" "X" "f x" "x"] by auto
+
+lemma cl_eq_imp_idm2:
+  "x \<in> X \<Longrightarrow> f (f x) = f x"
+  using cl_eq_imp_idm1[of "x"] ismap is_iso_idem_imp2[of "f" "X" "x" "f x"]
+  by (simp add: cl_eq_imp_ext1 is_self_map_imp2 order_antisym)
+
+lemma cl_eq_imp_ext2:
+  "is_extensive_on f X"
+  by (simp add: is_extensive_on_def ismap cl_eq_imp_ext1)
+
+lemma cl_eq_imp_iso4:
+  "is_isotone_on f X"
+  by (simp add:is_isotone_on_def cl_eq_imp_iso3)
+
+lemma cl_eq_imp_idm3:
+  "is_idempotent_on f X"
+  by (simp add: cl_eq_imp_idm2 is_idempotent_on_def ismap)
+
+end
+
+lemma is_closure_on_imp1:
+  "is_closure_on f X \<Longrightarrow> is_extensive_on f X" 
+  by (simp add:is_closure_on_def)
+
+lemma is_closure_on_imp2:
+  "is_closure_on f X \<Longrightarrow> is_self_map f X" 
+  using is_closure_on_imp1[of "f" "X"] is_extensive_on_imp_map[of "f" "X"] by blast
+
+lemma closure_eq_if_closure_l:
+  "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
+  using is_ext_imp1 is_closure_on_def by blast
+
+lemma closure_eq_if_closure_r:
+  "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow>  x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
+  by(simp add:is_closure_on_def is_closure_on_imp2[of "f" "X"] proj_imp_lt_cl_lt[of "f" "X" "x1" "x2"])
+
+
+lemma closure_eq_if_closure:
+  "is_closure_on f X \<Longrightarrow> closure_eq f X"
+  by(auto simp add:closure_eq_def closure_eq_if_closure_l closure_eq_if_closure_r)
+
+lemma closure_eq_imp_closure:
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> is_closure_on f X"
+  by (simp add: cl_eq_imp_ext2 cl_eq_imp_idm3 cl_eq_imp_iso4 is_closure_on_def is_proj_on_def)
+
+
+lemma closure_if_cl_eq:
+   "is_closure_on f X \<longleftrightarrow> (is_self_map f X \<and> closure_eq f X)"
+  using closure_eq_if_closure closure_eq_imp_closure is_closure_on_imp2 by blast
+
+definition cl_sup_cond1::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "cl_sup_cond1 f X \<equiv> (\<forall>A \<in> Pow X. has_sup A X \<longrightarrow> Sup A X \<le> f(Sup A X) \<and> f(Sup A X) = (Sup (f`A) (f`X)))"
 
 section Directedness
 
@@ -1363,7 +1606,11 @@ qed
 section FilterIdeals
 subsection Filters
 definition is_filter::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "is_filter F X \<equiv> is_dwdir F \<and> is_up_cl F X"
+  "is_filter F X \<equiv> F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X"
+
+definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+   "is_principal_filter F X \<equiv> F \<subseteq> X \<and> is_filter F X \<and> has_min F "
+
 
 
 lemma is_filter_imp0:
@@ -1385,9 +1632,64 @@ lemma is_filter_imp1:
   by (simp add: is_filter_def)
 
 lemma is_filter_if:
-  "is_dwdir F \<Longrightarrow> is_up_cl F X \<Longrightarrow> is_filter F X"
+  "F \<subseteq> X \<Longrightarrow> is_dwdir F \<Longrightarrow> is_up_cl F X \<Longrightarrow> is_filter F X"
   by (simp add: is_filter_def)
 
+lemma principal_filter_imp1:
+  "is_principal_filter F X \<Longrightarrow> (\<exists>m. is_min m F)"
+  using has_min_def is_principal_filter_def by blast
+
+lemma principal_filter_obtains:
+  assumes "is_principal_filter F X"
+  obtains m where "m = min F"
+  by simp
+
+
+lemma principal_filter_imp2:
+  "is_principal_filter F X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<ge> min F \<Longrightarrow> x \<in> F"
+  by (metis is_filter_imp1 is_min_imp is_principal_filter_def is_up_cl_imp2 min_if principal_filter_imp1) 
+
+lemma principal_filter_imp3:
+  "is_principal_filter F X \<Longrightarrow> x \<in> F \<Longrightarrow> x \<ge> min F"
+  using is_min_imp lb_set_imp min_if principal_filter_imp1 by blast
+
+lemma principal_filter_imp4:
+  "is_principal_filter F X \<Longrightarrow> F \<subseteq> X"
+  by (simp add: is_principal_filter_def)
+
+lemma principal_filter_imp5:
+  assumes "is_principal_filter F X"
+  shows "\<forall>x. x \<in> F \<longleftrightarrow> (x \<in> X \<and> x \<ge> min F)"
+  using assms principal_filter_imp2 principal_filter_imp3 principal_filter_imp4 by blast
+
+
+lemma principal_filter_imp6:
+  "is_principal_filter F X \<Longrightarrow> F = {x \<in> X. x \<ge> min F}"
+  by (simp add: Orderings.order_eq_iff principal_filter_imp5 subset_iff)
+
+lemma ub_set_min0:
+  "a \<in> X \<Longrightarrow> is_min a(ub_set {a} X)"
+  by (simp add: is_sup_in_imp1 is_sup_singleton2)
+
+lemma ub_set_min1:
+  "a \<in> X \<Longrightarrow> is_min a {x \<in> X. x \<ge> a}"
+  by (metis is_sup_def is_sup_singleton2 ub_set_in_singleton)
+
+  
+lemma principal_filter_if1:
+  "a \<in> X \<Longrightarrow> is_principal_filter (ub_set {a} X) X"
+  apply(auto simp add:is_principal_filter_def is_filter_def is_dwdir_def is_up_cl_def)
+  using ub_set_imp2 apply blast
+  using is_sup_def is_sup_singleton2 min_imp_ne apply blast
+  apply (metis empty_subsetI has_lb_def has_lb_iff has_sup_def has_sup_singleton2 insert_subset is_inf_def is_sup_lb_imp_is_inf max_imp_ne sup_is_sup ub_set_in_degenerate)
+  apply (simp add: is_upcl_in_imp0 ub_is_upset)
+  apply (simp add: is_upcl_in_imp0 ub_is_upset)
+  by (simp add: has_sup_has_lub has_sup_singleton2)
+  
+
+lemma principal_filter_if2:
+  "a \<in> X \<Longrightarrow> is_principal_filter {x \<in> X. x \<ge> a} X"
+  by (metis principal_filter_if1 ub_set_in_singleton)
 
 
 definition is_ideal::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
@@ -1400,8 +1702,6 @@ definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 
 definition is_pideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
    "is_pideal I X \<equiv> is_ideal I X \<and> I \<noteq> X " 
 
-definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-   "is_principal_filter F X \<equiv> is_filter F X \<and> has_min F "
 
 definition is_principal_ideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
    "is_principal_ideal I X \<equiv> is_ideal I X \<and> has_max I "
@@ -1417,9 +1717,7 @@ lemma is_pfilter_if:
 
 lemma is_pfilter_in_imp2:
   "\<And>F X. is_pfilter F X \<Longrightarrow>  (F \<noteq> X \<and> F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X)"
-  apply(auto simp add: is_pfilter_def is_filter_def)
-  using is_upclosed_in_imp1 apply fastforce
-  using is_upclosed_in_imp1 by auto
+  by (auto simp add: is_pfilter_def is_filter_def)
 
 lemma is_pfilter_in_if2:
   "\<And>F X.  (F \<noteq> X \<and>  F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X) \<Longrightarrow> is_pfilter F X "
@@ -1433,6 +1731,10 @@ lemma is_principal_filter_obtains:
   assumes "is_principal_filter F X"  obtains m where  "is_min m F"
   using assms is_principal_filter_imp1 by auto
 
+lemma up_cl_ub:
+  "up_cl {x} X = ub_set {x} X"
+  by(simp add:up_cl_def ub_set_def ub_def)
+  
 
 lemma is_principal_filter_equiv:
   assumes A0:"F \<subseteq> X"
@@ -1444,7 +1746,7 @@ proof
   have B1:"\<forall>x \<in> F. m \<le> x"
     by (meson B0 is_min_iff)
   have B2:"\<forall>x \<in> X. m \<le> x \<longrightarrow> x \<in> F"
-    using B0 L is_filter_def is_min_imp is_principal_filter_def is_up_cl_imp2 by blast
+    using B0 L min_if principal_filter_imp2 by blast
   have B3:"F \<subseteq> up_cl {m} X"
     by (meson B1 assms singletonI subset_eq up_closure_in_imp)
   have B4:"up_cl {m} X \<subseteq> F"
@@ -1457,9 +1759,407 @@ proof
     using R by blast
   have B6:"is_min x ( up_cl {x} X)"
     by (metis B5 dual_order.refl is_min_iff singletonD singletonI up_cl_in_obtai1 up_closure_in_imp)
+  have B7:"is_min x (ub_set {x} X)"
+    using B6 up_cl_ub[of "x" "X"] by force
+  have B8:"F = ub_set {x} X"
+    using B5 up_cl_ub[of "x" "X"]
+    by meson
   show ?L
-    by (metis B5 B6 is_filter_def empty_iff empty_subsetI insert_subsetI is_dwdir_if2 is_min_imp is_min_imp_has_min is_principal_filter_def is_up_cl_def lb_set_mem up_cl_idempotent)
+    by (metis B5 B8 principal_filter_if1)
 qed
+
+section ClosureRanges
+
+definition is_clr::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_clr C X \<equiv> (C \<noteq> {}) \<and> (C \<subseteq> X) \<and> (\<forall>x. x \<in> X \<longrightarrow> has_min (ub_set {x} C))"
+
+lemma is_clr_imp1:
+  "is_clr C X \<Longrightarrow> (C \<noteq> {}) \<and> (C \<subseteq> X)"
+  by(simp add:is_clr_def)
+
+lemma is_clr_imp2:
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> has_min (ub_set {x} C)"
+  by(simp add:is_clr_def)
+
+lemma is_clr_imp3:
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (ub_set {x} C) \<noteq> {}"
+  apply(simp add:is_clr_def) by (metis empty_iff has_min_iff)
+
+lemma clr_obtains0:
+  assumes "is_clr C X" and " x \<in> X "
+  obtains m where "is_min m (ub_set {x} C)"
+  using assms(1) assms(2) has_min_iff2 is_clr_imp2 by blast
+
+lemma clr_obtains1:
+  assumes "is_clr C X" and " x \<in> X "
+  obtains m where "m \<in> C \<and> is_min m (ub_set {x} C)"
+  by (meson assms(1) assms(2) clr_obtains0 is_min_imp ub_set_imp2)
+
+
+definition closure_from_clr::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
+  "closure_from_clr C \<equiv> (\<lambda>x. min (ub_set {x} C))"
+
+definition clr_from_closure::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "clr_from_closure f X \<equiv> (f`X)"
+
+locale closure_range=
+  fixes C X::"'a::order set"                     
+  assumes clr:"is_clr C X"
+begin
+
+abbreviation Cl::"'a::order \<Rightarrow> 'a::order" where
+  "Cl x \<equiv> (closure_from_clr C) x"
+
+lemma crange_is_ne:
+  "C \<noteq> {}"
+  using clr is_clr_imp1 by blast
+
+lemma space_is_ne:
+  "X \<noteq> {}"
+  using crange_is_ne is_clr_def
+  using clr by blast 
+
+lemma Cl_maps_to:
+  "Cl`X \<subseteq> X"
+proof
+  fix c assume A0:"c \<in> Cl`X"
+  obtain x where B0:"c = Cl x" and B1:"x \<in> X" using A0 imageE[of "c" "Cl" "X"] by blast
+  have B2:"is_min c (ub_set {x} C)" using B0 closure_from_clr_def
+    by (metis B1 clr clr_obtains1 min_if)
+  have B3:"c \<in> C"
+    using B2 is_sup_in_iff is_sup_in_set by blast
+  show "c \<in> X"
+    using B3 clr is_clr_imp1 by blast
+qed
+
+lemma cl_is_self_map:
+  "is_self_map Cl X"
+  by(simp add:is_map_def Cl_maps_to space_is_ne)
+
+lemma pr_fil_iso1:
+  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (ub_set {y} C) \<subseteq> (ub_set {x} C)"
+  by (simp add: ub_set_singleton_antitone)
+
+lemma cl_is_iso:
+  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (Cl x)  \<le>  (Cl y)"
+  apply(auto simp add: closure_from_clr_def) using is_clr_imp2 min_antitone2 by (metis clr pr_fil_iso1)
+
+lemma cl_is_iso_on:
+  "is_isotone_on Cl X"
+  by(simp add:is_isotone_on_def cl_is_iso)
+
+lemma cl_is_ext:
+  "x \<in> X \<Longrightarrow> x \<le> Cl x"
+  by (metis closure_from_clr_def clr clr_obtains1 is_min_imp min_if singletonI ub_set_imp)
+
+lemma cl_is_ext_on:
+  "is_extensive_on Cl X"
+  by(auto simp add:is_extensive_on_def cl_is_ext cl_is_self_map)
+
+lemma cl_fp:
+  "c \<in> C \<Longrightarrow> Cl c = c"
+  proof-
+    fix c assume A0:"c \<in> C"
+    have B0:"is_min c (ub_set {c} C)"
+      by(auto simp add:A0 is_min_def ub_set_def lb_set_def ub_def lb_def)
+    show " Cl c =c"
+      using B0 closure_from_clr_def min_if by metis
+qed
+
+lemma cl_is_idm:
+  "x \<in> X \<Longrightarrow> (Cl (Cl x)) = Cl x "
+proof-
+  fix x assume A0:"x \<in> X"
+  have B0:"Cl x \<in> C"
+    by (metis A0 closure_from_clr_def clr clr_obtains1 min_if)
+  show "(Cl (Cl x)) = Cl x " using A0 B0 cl_fp[of "Cl x"]
+    by fastforce
+qed
+
+lemma cl_is_idm_on:
+  "is_idempotent_on Cl X"
+  by(simp add:cl_is_self_map is_idempotent_on_def cl_is_idm) 
+
+lemma cl_is_closure:
+  "is_closure_on Cl X"
+  by(simp add:is_closure_on_def is_proj_on_def cl_is_idm_on cl_is_iso_on cl_is_ext_on)
+
+end
+
+locale closure= 
+  fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
+  assumes is_cl:"is_closure_on f X"
+begin
+
+abbreviation Cf::"'a::order set" where
+  "Cf \<equiv> clr_from_closure f X"
+
+lemma Cf_is_ne:
+  "Cf \<noteq> {}"
+  using clr_from_closure_def is_cl is_closure_on_imp2 is_map_def  by (metis image_is_empty)
+
+lemma Cf_subseteq_space:
+  "Cf \<subseteq> X"
+  by (metis clr_from_closure_def closure_if_cl_eq is_cl is_self_map_imp) 
+
+lemma cl_ub_im:
+  "x \<in> X \<Longrightarrow> (f x) \<in> ub_set {x} Cf"
+proof-
+  fix x assume A0:"x \<in> X"
+  have B0:"f x \<in> Cf" 
+    by  (simp add:clr_from_closure_def A0 imageI[of "x" "X" "f"])
+  have B1:"x \<le> f x" using is_cl is_closure_on_def is_extensive_on_def A0 by blast
+  show "(f x) \<in> ub_set {x} Cf"
+    by (simp add: B0 B1 ub_set_mem_iff)
+qed
+
+lemma cl_ub_is_ne:
+  "x \<in> X \<Longrightarrow> ub_set {x} Cf \<noteq> {}"
+  using cl_ub_im by blast
+
+lemma cl_ub_min:
+  "x \<in> X \<Longrightarrow> y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
+proof-
+  fix x assume A0:"x \<in> X" show "y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
+  proof-
+    fix y assume A1:"y \<in>  ub_set {x} Cf"
+    have B0:"x \<le> y" 
+      using A1 ub_set_def ub_def  by (simp add: ub_set_imp)
+    have B1:"y \<in> Cf " 
+       using A1 ub_set_imp2 by blast
+    have B2:"y \<in> X"  
+      using B1 Cf_subseteq_space by blast 
+    have B3:"f x \<le> f y" 
+      using A0 B2 B0 is_cl is_closure_imp_iso_imp1[of "f" "X" "x" "y"] by blast
+    have B4:"... = y"
+      by (metis B1 clr_from_closure_def is_cl is_closure_on_def is_idempotent_imp2 is_proj_on_def)
+    show "f x \<le> y"
+      using B3 B4 by auto
+  qed
+qed
+   
+
+lemma cl_is_min_ub:
+  "x \<in> X \<Longrightarrow>  has_min (ub_set {x} Cf)"
+  by (meson cl_ub_im cl_ub_min has_min_iff)
+
+lemma Cf_is_clr:
+  "is_clr Cf X"
+  by(simp add:is_clr_def Cf_subseteq_space cl_is_min_ub Cf_is_ne)
+
+end 
+
+lemma cl_cr_cl_eq_cl:
+  assumes A0:"is_closure_on f X" and A1:"a \<in> X"
+  shows "closure_from_clr (clr_from_closure f X) a = f a"
+proof-
+    have B0:"f`X \<subseteq> X"
+      by (simp add: A0 is_closure_on_imp2 is_self_map_imp)
+    have B1:"min (ub_set {a} (f ` X)) = min {y \<in> f`X. a \<le> y}"
+      by (simp add: ub_set_in_singleton)
+    have B2:"f a \<in> f`X \<and> a \<le> f a "
+      using A0 A1 closure_eq_if_closure closure_eq_imp2 by blast
+    have B3:"\<forall>y. y\<in> f`X \<and> a \<le> y \<longrightarrow> f a \<le> y"
+      using A0 A1 closure_eq_if_closure_r by blast
+    have B4:"is_min (f a) (ub_set {a} (f ` X))"
+      by (simp add: B2 B3 is_min_iff ub_set_mem_iff)
+    show ?thesis
+      by (metis B4 closure_from_clr_def clr_from_closure_def min_if)
+qed
+    
+lemma cr_cl_cr_eq_cr:
+  assumes A0:"is_clr C X"
+  shows "clr_from_closure (closure_from_clr C) X = C"
+proof-
+  have T:"\<forall>y. y \<in> clr_from_closure (closure_from_clr C) X  \<longleftrightarrow> y \<in> C"
+  proof
+    fix y
+    have B0:"y \<in> clr_from_closure (closure_from_clr C) X \<longleftrightarrow> (\<exists>x \<in> X.  (closure_from_clr C) x = y)"
+      using clr_from_closure_def by auto
+    have B1:"... \<longleftrightarrow> (\<exists>x \<in> X. y = min (ub_set {x} C))"
+      by (metis closure_from_clr_def)
+    have B2:"... \<longleftrightarrow> y \<in> C"
+      by (metis assms has_min_iff2 is_clr_def is_min_iff min_if subsetD ub_set_imp2 ub_set_min0)
+    show " y \<in> clr_from_closure (closure_from_clr C) X  \<longleftrightarrow> y \<in> C"
+      by (simp add: B0 B1 B2)
+  qed
+  show ?thesis
+    using T by blast
+qed
+
+lemma cl_order_iso:
+  fixes f1 f2::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
+  assumes A0:"is_closure_on f1 X"  and A1:"is_closure_on f2 X" and A3:"\<forall>x. x \<in> X \<longrightarrow> f1 x \<le> f2 x"
+  shows "clr_from_closure f2 X \<subseteq> clr_from_closure f1 X"
+proof
+  fix x assume A4:"x \<in> clr_from_closure f2 X"
+  have B0:"x \<le> f1 x"
+    using A0 A1 A4 closure.Cf_subseteq_space closure.intro closure_eq_if_closure_l by blast
+  have B1:"... \<le> f2 x"
+    using A1 A3 A4 closure.Cf_subseteq_space closure.intro by blast
+  have B2:"... = x"
+    by (metis A1 A4 clr_from_closure_def is_closure_on_def is_idempotent_imp2 is_proj_on_def)
+  have B3:"f1 x = x"
+    using B0 B1 B2 by fastforce
+  show "x \<in> clr_from_closure f1 X"
+    by (metis A1 A4 B3 closure.Cf_subseteq_space closure.intro clr_from_closure_def image_iff subsetD)
+qed
+
+lemma clr_order_iso:
+  fixes C1 C2 X::"'a::order set"
+  assumes A0:"is_clr C1 X" and A1:"is_clr C2 X" and A2:"C2 \<subseteq> C1"
+  shows "\<And>x. x \<in> X \<longrightarrow> closure_from_clr C1 x \<le> closure_from_clr C2 x"
+proof
+  fix x assume A3:"x \<in> X"
+  show "closure_from_clr C1 x \<le> closure_from_clr C2 x"
+    by (metis A0 A1 A2 A3 closure_from_clr_def is_clr_imp2 min_antitone2 ub_set_in_isotone2)
+qed
+
+
+
+definition Cl::"'a::order \<Rightarrow> 'a::order" where
+  "Cl x = min (ub_set {x} C)"
+
+lemma crange_is_ne:
+  "C \<noteq> {}"
+  using clr is_clr_imp1 by blast
+
+lemma space_is_ne:
+  "X \<noteq> {}"
+  using crange_is_ne is_clr_def
+  using clr by blast 
+
+lemma Cl_maps_to:
+  "Cl`X \<subseteq> X"
+proof
+  fix c assume A0:"c \<in> Cl`X"
+  obtain x where B0:"c = Cl x" and B1:"x \<in> X" using A0 imageE[of "c" "Cl" "X"] by blast
+  have B2:"is_min c (ub_set {x} C)" using B0  Cl_def[of "x"]
+    by (metis B1 clr clr_obtains1 min_if)
+  have B3:"c \<in> C"
+    using B2 is_sup_in_iff is_sup_in_set by blast
+  show "c \<in> X"
+    using B3 clr is_clr_imp1 by blast
+qed
+
+lemma cl_is_self_map:
+  "is_self_map Cl X"
+  by(simp add:is_map_def Cl_maps_to space_is_ne)
+
+lemma pr_fil_iso1:
+  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (ub_set {y} C) \<subseteq> (ub_set {x} C)"
+  by (simp add: ub_set_singleton_antitone)
+
+lemma cl_is_iso:
+  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (Cl x)  \<le>  (Cl y)"
+  apply(auto simp add: Cl_def) using is_clr_imp2 min_antitone2 by (metis clr pr_fil_iso1)
+
+lemma cl_is_iso_on:
+  "is_isotone_on Cl X"
+  by(simp add:is_isotone_on_def cl_is_iso)
+
+lemma cl_is_ext:
+  "x \<in> X \<Longrightarrow> x \<le> Cl x"
+  by (metis Posets7.Cl_def clr clr_obtains1 is_min_imp min_if singletonI ub_set_imp)
+
+lemma cl_is_ext_on:
+  "is_extensive_on Cl X"
+  by(auto simp add:is_extensive_on_def cl_is_ext cl_is_self_map)
+
+lemma cl_fp:
+  "c \<in> C \<Longrightarrow> Cl c = c"
+  proof-
+    fix c assume A0:"c \<in> C"
+    have B0:"is_min c (ub_set {c} C)"
+      by(auto simp add:A0 is_min_def ub_set_def lb_set_def ub_def lb_def)
+    show " Cl c =c"
+      using B0 Cl_def min_if by force
+qed
+
+lemma cl_is_idm:
+  "x \<in> X \<Longrightarrow> (Cl (Cl x)) = Cl x "
+proof-
+  fix x assume A0:"x \<in> X"
+  have B0:"Cl x \<in> C"
+    by (metis A0 Cl_def clr clr_obtains1 min_if)
+  show "(Cl (Cl x)) = Cl x " using A0 B0 cl_fp[of "Cl x"]
+    by fastforce
+qed
+
+lemma cl_is_idm_on:
+  "is_idempotent_on Cl X"
+  by(simp add:cl_is_self_map is_idempotent_on_def cl_is_idm) 
+
+lemma cl_is_closure:
+  "is_closure_on Cl X"
+  by(simp add:is_closure_on_def is_proj_on_def cl_is_idm_on cl_is_iso_on cl_is_ext_on)
+
+end
+
+context 
+fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
+  assumes is_cl:"is_closure_on f X"
+begin
+
+definition Cf::"'a::order set" where
+  "Cf \<equiv> f`X"
+
+lemma Cf_is_ne:
+  "Cf \<noteq> {}"
+  using Cf_def is_cl is_closure_on_imp2 is_map_def by fastforce
+
+lemma Cf_subseteq_space:
+  "Cf \<subseteq> X"
+  by (metis Cf_def closure_if_cl_eq is_cl is_self_map_imp) 
+
+lemma cl_ub_im:
+  "x \<in> X \<Longrightarrow> (f x) \<in> ub_set {x} Cf"
+proof-
+  fix x assume A0:"x \<in> X"
+  have B0:"f x \<in> Cf" 
+    by  (simp add:Cf_def A0 imageI[of "x" "X" "f"])
+  have B1:"x \<le> f x" using is_cl is_closure_on_def is_extensive_on_def A0 by blast
+  show "(f x) \<in> ub_set {x} Cf"
+    by (simp add: B0 B1 ub_set_mem_iff)
+qed
+
+lemma cl_ub_is_ne:
+  "x \<in> X \<Longrightarrow> ub_set {x} Cf \<noteq> {}"
+  using cl_ub_im by blast
+
+lemma cl_ub_min:
+  "x \<in> X \<Longrightarrow> y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
+proof-
+  fix x assume A0:"x \<in> X" show "y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
+  proof-
+    fix y assume A1:"y \<in>  ub_set {x} Cf"
+    have B0:"x \<le> y" 
+      using A1 ub_set_def ub_def  by (simp add: ub_set_imp)
+    have B1:"y \<in> Cf " 
+       using A1 ub_set_imp2 by blast
+    have B2:"y \<in> X"  
+      using B1 Cf_subseteq_space by blast 
+    have B3:"f x \<le> f y" 
+      using A0 B2 B0 is_cl is_closure_imp_iso_imp1[of "f" "X" "x" "y"] by blast
+    have B4:"... = y"
+      using B1 Cf_def cl_eq_imp_idm2 closure_if_cl_eq is_cl by fastforce
+    show "f x \<le> y"
+      using B3 B4 by auto
+  qed
+qed
+   
+
+lemma cl_is_min_ub:
+  "x \<in> X \<Longrightarrow>  has_min (ub_set {x} Cf)"
+  by (meson cl_ub_im cl_ub_min has_min_iff)
+
+lemma Cf_is_clr:
+  "is_clr Cf X"
+  by(simp add:is_clr_def Cf_subseteq_space cl_is_min_ub Cf_is_ne)
+
+
+end 
+
 
 section SupInfClosures
 definition sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
@@ -1468,6 +2168,8 @@ definition sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::
 definition inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "inf_cl A X \<equiv> {x \<in> X. \<exists>E \<in> Pow_ne A. has_inf E X \<and> x = Inf E X}"
 
+definition fne_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
+  "fne_inf_cl A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow_ne A. has_inf F X \<and> x = Inf F X}"
 
 lemma sup_cl_imp0:
   "x \<in> sup_cl A X \<Longrightarrow> x \<in> X "
@@ -1477,6 +2179,14 @@ lemma inf_cl_imp0:
   "x \<in> inf_cl A X \<Longrightarrow> x \<in> X "
   by (simp add: inf_cl_def)
 
+lemma fin_inf_cl_imp0:
+  "x \<in> fin_inf_cl A X \<Longrightarrow> x \<in> X"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_imp0:
+  "x \<in> fne_inf_cl A X \<Longrightarrow> x \<in> X"
+  by (simp add: fne_inf_cl_def)
+
 lemma sup_cl_imp1:
   "x \<in> sup_cl A X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_sup E X \<and> x = Sup E X)"
    by (simp add: sup_cl_def) 
@@ -1485,6 +2195,14 @@ lemma inf_cl_imp1:
   "x \<in> inf_cl A X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_inf E X \<and> x = Inf E X)"
    by (simp add: inf_cl_def) 
 
+lemma fin_inf_cl_imp1:
+  "x \<in> fin_inf_cl A X \<Longrightarrow> (\<exists>F \<in> Fpow A. has_inf F X \<and> x = Inf F X)"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_imp1:
+  "x \<in> fne_inf_cl A X \<Longrightarrow> (\<exists>F \<in> Fpow_ne A. has_inf F X \<and> x = Inf F X)"
+  by (simp add: fne_inf_cl_def)
+
 lemma sup_cl_if1:
   " x \<in> X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_sup E X \<and> x = Sup E X) \<Longrightarrow> x \<in> sup_cl A X"
    by (simp add: sup_cl_def) 
@@ -1492,6 +2210,14 @@ lemma sup_cl_if1:
 lemma inf_cl_if1:
   " x \<in> X \<Longrightarrow>  (\<exists>E \<in> Pow_ne A. has_inf E X \<and> x = Inf E X) \<Longrightarrow> x \<in> inf_cl A X"
    by (simp add: inf_cl_def) 
+
+lemma fin_inf_cl_if1:
+  "x \<in> X \<Longrightarrow> (\<exists>F \<in> Fpow A. has_inf F X \<and> x = Inf F X) \<Longrightarrow> x \<in> fin_inf_cl A X"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_if1:
+  "x \<in> X \<Longrightarrow> (\<exists>F \<in> Fpow_ne A. has_inf F X \<and> x = Inf F X) \<Longrightarrow> x \<in> fne_inf_cl A X"
+  by (simp add: fne_inf_cl_def)
 
 lemma sup_cl_obtains:
   assumes "x \<in> sup_cl A X"
@@ -1503,12 +2229,29 @@ lemma inf_cl_obtains:
   obtains Ex where "Ex \<in> Pow_ne A \<and> has_inf Ex X \<and> x = Inf Ex X"
   by (meson assms inf_cl_imp1)
 
+lemma fin_inf_cl_obtains:
+  assumes "x \<in> fin_inf_cl A X"
+  obtains F where "F \<in> Fpow A \<and> has_inf F X \<and> x = Inf F X"
+  by (meson assms fin_inf_cl_imp1)
+
+lemma fne_inf_cl_obtains:
+  assumes "x \<in> fne_inf_cl A X"
+  obtains F where "F \<in> Fpow_ne A \<and> has_inf F X \<and> x = Inf F X"
+  by (meson assms fne_inf_cl_imp1)
+
 
 definition is_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_sup_cl A X \<equiv> (\<forall>E \<in> Pow_ne A. has_sup E X \<longrightarrow> Sup E X \<in> A)"
 
 definition is_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_inf_cl A X \<equiv> (\<forall>E \<in> Pow_ne A. has_inf E X \<longrightarrow> Inf E X \<in> A)"
+
+definition is_fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_fin_inf_cl A X \<equiv> (\<forall>F \<in> Fpow A. has_inf F X \<longrightarrow> Inf F X \<in> A)"
+
+definition is_fne_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_fne_inf_cl A X \<equiv> (\<forall>F \<in> Fpow_ne A. has_inf F X \<longrightarrow> Inf F X \<in> A)"
+
 
 lemma up_closed_supin_closed0:
   "is_up_cl A X \<Longrightarrow> E \<in> Pow_ne A \<Longrightarrow> has_sup E X  \<Longrightarrow> Sup E X \<in> A"
@@ -1518,7 +2261,6 @@ lemma up_closed_supin_closed:
   assumes A0:"is_up_cl A X"
   shows "is_sup_cl A X"
   using assms is_sup_cl_def up_closed_supin_closed0 by blast
-
 
 lemma dw_closed_infin_closed0:
   "is_dw_cl A X \<Longrightarrow> E \<in> Pow_ne A \<Longrightarrow> has_inf E X  \<Longrightarrow> Inf E X \<in> A"
@@ -1776,6 +2518,39 @@ proof
     by (metis B0 B1 B2 has_inf_singleton2 is_inf_in_set)
 qed
 
+lemma fin_inf_cl_extensive:
+  assumes A0: "A \<subseteq> X"
+  shows "A \<subseteq> fin_inf_cl A X"
+proof
+  fix a assume A1: "a \<in> A"
+  have B0: "is_inf a {a} X"
+    using A1 assms is_inf_singleton2 by blast
+  have B1: "Inf {a} X = a"
+    using B0 is_inf_inf_eq by fastforce
+  have B2: "{a} \<in> Fpow A"
+    by (simp add: A1 Fpow_def)
+  show "a \<in> fin_inf_cl A X"
+    apply(simp add:fin_inf_cl_def)
+    by (metis B0 B1 B2 has_inf_singleton2 is_inf_in_set)
+qed
+
+lemma fne_inf_cl_extensive:
+  assumes A0: "A \<subseteq> X"
+  shows "A \<subseteq> fne_inf_cl A X"
+proof
+  fix a assume A1: "a \<in> A"
+  have B0: "is_inf a {a} X"
+    using A1 assms is_inf_singleton2 by blast
+  have B1: "Inf {a} X = a"
+    using B0 is_inf_inf_eq by fastforce
+  have B2: "{a} \<in> Fpow_ne A"
+    by (simp add: A1 Fpow_def)
+  show "a \<in> fne_inf_cl A X"
+    apply(simp add:fne_inf_cl_def)
+    by (metis B0 B1 B2 has_inf_singleton2 is_inf_in_set)
+qed
+
+
 lemma sup_cl_isotone:
   assumes A0:"A \<subseteq> B \<and> B \<subseteq> X"
   shows "sup_cl A X \<subseteq> sup_cl B X"
@@ -1788,6 +2563,18 @@ lemma inf_cl_isotone:
   apply(simp add:inf_cl_def)
   using assms mem_Collect_eq order_trans by fastforce
 
+lemma fin_inf_cl_isotone:
+  assumes A0: "A \<subseteq> B \<and> B \<subseteq> X"
+  shows "fin_inf_cl A X \<subseteq> fin_inf_cl B X"
+  apply(auto  simp add:fin_inf_cl_def)
+  using Fpow_mono assms by auto
+
+lemma fne_inf_cl_isotone:
+  assumes A0: "A \<subseteq> B \<and> B \<subseteq> X"
+  shows "fne_inf_cl A X \<subseteq> fne_inf_cl B X"
+  apply(auto  simp add:fne_inf_cl_def)
+  using Fpow_mono assms by auto
+
 lemma sup_cl_idempotent0:
   assumes "s \<in> sup_cl (sup_cl A X) X"
   obtains E where "E \<in> Pow_ne (sup_cl A X) \<and> has_sup E X \<and> Sup E X = s"
@@ -1797,6 +2584,16 @@ lemma inf_cl_idempotent0:
   assumes "s \<in> inf_cl (inf_cl A X) X"
   obtains E where "E \<in> Pow_ne (inf_cl A X) \<and> has_inf E X \<and> Inf E X = s"
   by (metis assms inf_cl_imp1)
+
+lemma fin_inf_cl_idempotent0:
+  assumes "s \<in> fin_inf_cl (fin_inf_cl A X) X"
+  obtains F where "F \<in> Fpow (fin_inf_cl A X) \<and> has_inf F X \<and> Inf F X = s"
+  by (metis assms fin_inf_cl_imp1)
+
+lemma fne_inf_cl_idempotent0:
+  assumes "s \<in> fne_inf_cl (fne_inf_cl A X) X"
+  obtains F where "F \<in> Fpow_ne (fne_inf_cl A X) \<and> has_inf F X \<and> Inf F X = s"
+  by (metis assms fne_inf_cl_imp1)
 
 lemma sup_cl_idempotent1:
   assumes "E \<in> Pow_ne (sup_cl A X)"
@@ -1808,7 +2605,15 @@ lemma inf_cl_idempotent1:
   shows "\<forall>x \<in> E. \<exists>Ex. Ex \<in> Pow_ne A \<and> has_inf Ex X \<and> Inf Ex X = x"
   by (metis DiffD1 Pow_iff assms subset_iff inf_cl_imp1)
 
+lemma fin_inf_cl_idempotent1:
+  assumes "F \<in> Fpow (fin_inf_cl A X)"
+  shows "\<forall>x \<in> F. \<exists>Fx. Fx \<in> Fpow A \<and> has_inf Fx X \<and> Inf Fx X = x"
+  by (metis Fpow_Pow_finite Pow_iff assms fin_inf_cl_imp1 inf_le1 insert_absorb insert_subset)
 
+lemma fne_inf_cl_idempotent1:
+  assumes "F \<in> Fpow (fne_inf_cl A X)"
+  shows "\<forall>x \<in> F. \<exists>Fx. Fx \<in> Fpow_ne A \<and> has_inf Fx X \<and> Inf Fx X = x"
+  by (metis Fpow_Pow_finite Pow_iff assms fne_inf_cl_imp1 inf_le1 insert_absorb insert_subset)
 
 lemma sup_cl_idempotent:
    "sup_cl (sup_cl A X) X = sup_cl A X "
@@ -1946,10 +2751,155 @@ lemma inf_cl_idempotent:
     qed
   qed
 qed
-  
-        
 
-definition fin_inf_cl_in::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
-  "fin_inf_cl_in A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. has_inf F X \<and> x = Inf F X}"
+lemma fin_inf_cl_idempotent:
+  "fin_inf_cl (fin_inf_cl A X) X = fin_inf_cl A X"
+proof
+  show "fin_inf_cl A X \<subseteq> fin_inf_cl (fin_inf_cl A X) X"
+    by (meson subset_iff fin_inf_cl_extensive fin_inf_cl_imp0)
+  next
+  show "fin_inf_cl (fin_inf_cl A X) X \<subseteq> fin_inf_cl A X"
+  proof
+    fix s assume P0: "s \<in> fin_inf_cl (fin_inf_cl A X) X"
+    show "s \<in> (fin_inf_cl A X)"
+    proof-
+      let ?P = "\<lambda>F x. F \<in> Fpow A \<and> has_inf F X \<and> Inf F X = x"
+      let ?f = "(\<lambda>x. SOME Fx. ?P Fx x)"
+      obtain F where P1: "F \<in> Fpow (fin_inf_cl A X) \<and> has_inf F X \<and> Inf F X = s"
+        by (meson P0 fin_inf_cl_idempotent0)
+      have B0: "\<forall>x \<in> F. (\<exists>Fx. ?P Fx x)"
+        using P1 fin_inf_cl_obtains using fin_inf_cl_idempotent1 by blast
+      let ?fF = "?f`F" let ?S = "{s \<in> X. \<exists>Ai \<in> ?fF. s = Inf Ai X}"
+      have B1: "\<forall>x \<in> F. ?P (?f x) x"
+        proof
+          fix x assume A2: "x \<in> F"
+          have B10: "\<exists>Fx. ?P Fx x"
+            using A2 B0 by fastforce
+          show "?P (?f x) x"
+            using someI_ex[OF B10] by blast
+        qed
+      have B2: "?S = F"
+      proof
+        show "?S \<subseteq> F"
+          proof
+            fix s assume B6A0: "s \<in> ?S"
+            have B60: "\<exists>Ai \<in> ?fF. s = Inf Ai X"
+              using B6A0 by blast
+            show "s \<in> F"
+              using B1 B60 by auto
+          qed
+        next  
+        show "F \<subseteq> ?S"
+          proof
+            fix s assume B6A1: "s \<in> F"
+            show "s \<in> ?S" using B1 B6A1 has_inf_in_set by fastforce
+        qed
+      qed
+      have B11A0: "has_inf F X"
+        by (simp add: P1)
+      have B110: "has_inf ?S X"
+      using B11A0 B2 by presburger
+      have B8: "\<forall>Ai \<in> ?fF. has_inf Ai X"
+        using B1 by blast
+      have B111: "has_inf (\<Union>?fF) X \<and> Inf (\<Union>?fF) X = Inf ?S X" 
+        using B8 B110 inf_inf_imp_has_inf_eq[of "?fF" "X"] by simp
+      have B12: "Inf (\<Union>?fF) X = s"
+        using B111 B2 P1 by fastforce
+      have B13: "(\<Union>?fF) \<in> Fpow A"
+      proof-
+        have B130: "(\<forall>Ai \<in> ?fF. Ai \<in> Fpow A)"
+          using B1 P1 by blast
+        have B131:"finite ?fF"
+          using Fpow_def P1 by blast
+        have B132:"finite (\<Union>?fF)"
+          using B130 B131 Fpow_def by blast
+        have B133:"(\<Union>?fF) \<in> Pow A"
+          by (metis (mono_tags, lifting) B130 Fpow_Pow_finite Int_Collect PowD PowI Sup_le_iff)
+        show ?thesis
+          using B132 B133 Fpow_Pow_finite by blast
+      qed
+      have B16: "\<exists>Ex. ?P Ex s"
+        by (meson B111 B12 B13)
+      show "s \<in> (fin_inf_cl A X)"
+        using B16 has_inf_in_set fin_inf_cl_if1 by blast
+    qed
+  qed
+qed
+
+lemma fne_inf_cl_idempotent:
+  "fne_inf_cl (fne_inf_cl A X) X = fne_inf_cl A X"
+proof
+  show "fne_inf_cl A X \<subseteq> fne_inf_cl (fne_inf_cl A X) X"
+    by (meson subset_iff fne_inf_cl_extensive fne_inf_cl_imp0)
+  next
+  show "fne_inf_cl (fne_inf_cl A X) X \<subseteq> fne_inf_cl A X"
+  proof
+    fix s assume P0: "s \<in> fne_inf_cl (fne_inf_cl A X) X"
+    show "s \<in> (fne_inf_cl A X)"
+    proof-
+      let ?P = "\<lambda>F x. F \<in> Fpow_ne A \<and> has_inf F X \<and> Inf F X = x"
+      let ?f = "(\<lambda>x. SOME Fx. ?P Fx x)"
+      obtain F where P1: "F \<in> Fpow_ne (fne_inf_cl A X) \<and> has_inf F X \<and> Inf F X = s"
+        by (meson P0 fne_inf_cl_idempotent0)
+      have B0: "\<forall>x \<in> F. (\<exists>Fx. ?P Fx x)"
+        using P1 fne_inf_cl_obtains using fne_inf_cl_idempotent1 by blast
+      let ?fF = "?f`F" let ?S = "{s \<in> X. \<exists>Ai \<in> ?fF. s = Inf Ai X}"
+      have B1: "\<forall>x \<in> F. ?P (?f x) x"
+        proof
+          fix x assume A2: "x \<in> F"
+          have B10: "\<exists>Fx. ?P Fx x"
+            using A2 B0 by fastforce
+          show "?P (?f x) x"
+            using someI_ex[OF B10] by blast
+        qed
+      have B2: "?S = F"
+      proof
+        show "?S \<subseteq> F"
+          proof
+            fix s assume B6A0: "s \<in> ?S"
+            have B60: "\<exists>Ai \<in> ?fF. s = Inf Ai X"
+              using B6A0 by blast
+            show "s \<in> F"
+              using B1 B60 by auto
+          qed
+        next  
+        show "F \<subseteq> ?S"
+          proof
+            fix s assume B6A1: "s \<in> F"
+            show "s \<in> ?S" using B1 B6A1 has_inf_in_set by fastforce
+        qed
+      qed
+      have B11A0: "has_inf F X"
+        by (simp add: P1)
+      have B110: "has_inf ?S X"
+      using B11A0 B2 by presburger
+      have B8: "\<forall>Ai \<in> ?fF. has_inf Ai X"
+        using B1 by blast
+      have B111: "has_inf (\<Union>?fF) X \<and> Inf (\<Union>?fF) X = Inf ?S X" 
+        using B8 B110 inf_inf_imp_has_inf_eq[of "?fF" "X"] by simp
+      have B12: "Inf (\<Union>?fF) X = s"
+        using B111 B2 P1 by fastforce
+      have B13: "(\<Union>?fF) \<in> Fpow_ne A"
+      proof-
+        have B130: "(\<forall>Ai \<in> ?fF. Ai \<in> Fpow_ne A)"
+          using B1 P1 by blast
+        have B131:"finite ?fF"
+          using Fpow_Pow_finite P1 by fastforce
+        have B132:"finite (\<Union>?fF)"
+          by (metis (no_types, lifting) B130 B131 DiffD1 Fpow_Pow_finite Int_Collect finite_Union)
+        have B133:"(\<Union>?fF) \<in> Pow A"
+          by (metis (no_types, lifting) B130 Fpow_Pow_finite Int_Collect PowD PowI Sup_le_iff empty_in_Fpow insertCI insert_Diff)
+        have B134:"is_ne ?fF"
+          using P1 by blast
+        show ?thesis
+          using B130 B132 B133 B134 Fpow_Pow_finite by auto
+      qed
+      have B16: "\<exists>Ex. ?P Ex s"
+        by (meson B111 B12 B13)
+      show "s \<in> (fne_inf_cl A X)"
+        using B16 has_inf_in_set fne_inf_cl_if1 by blast
+    qed
+  qed
+qed
 
 end
