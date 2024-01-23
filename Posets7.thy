@@ -2810,4 +2810,64 @@ next
     by (metis assms(1) assms(3) closure_from_clr_def clr_obtains1 has_inf_in_set min_if)
 qed
 
+
+
+definition is_galois_connection::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
+  "is_galois_connection f X g Y \<equiv> (is_map f X Y) \<and> (is_map g Y X) \<and> 
+                                   (is_antitone_on f X) \<and> (is_antitone_on g Y) \<and>
+                                   (is_extensive_on (f \<circ> g) Y) \<and> (is_extensive_on (g \<circ> f) X)" 
+
+definition galois_equiv::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
+  "galois_equiv f X g Y \<equiv> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
+
+lemma is_galois_connection_imp1:
+  "is_galois_connection f X g Y \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x2 \<le> f x1"
+  by(simp add:is_galois_connection_def is_antitone_on_def)
+
+lemma is_galois_connection_imp2:
+  "is_galois_connection f X g Y \<Longrightarrow> y1 \<in> Y \<Longrightarrow> y2 \<in> Y \<Longrightarrow> y1 \<le> y2 \<Longrightarrow> g y2 \<le> g y1"
+  by(simp add:is_galois_connection_def is_antitone_on_def)
+
+lemma is_galois_connection_imp3:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le> (g \<circ> f) x "
+  by(simp add:is_galois_connection_def is_extensive_on_def)
+
+lemma is_galois_connection_imp4:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> (f \<circ> g) y "
+  by(simp add:is_galois_connection_def is_extensive_on_def)
+
+lemma gc_imp_ge:
+  assumes A0:"is_galois_connection f X g Y"
+  shows   "galois_equiv f X g Y"
+proof-
+  have B0:"\<And>x y. (x \<in> X \<and> y \<in> Y) \<longrightarrow> (x \<le> g y \<longleftrightarrow> y \<le> f x)"
+  proof
+    fix x y assume A1:"(x \<in> X \<and> y \<in> Y)"  
+    show "(x \<le> g y \<longleftrightarrow> y \<le> f x)"
+  proof
+    assume A2:"x \<le> g y"
+    have B1:"y \<le> (f \<circ> g) y"
+      using A1 assms is_galois_connection_imp4 by blast
+    have B2:"... \<le> f x"
+      by (metis A1 A2 assms comp_apply image_subset_iff is_galois_connection_def is_galois_connection_imp1 is_map_def)
+    show "y \<le> f x"
+      using B1 B2 by auto
+  next
+    assume A3:"y \<le> f x"
+    have B3:"x \<le> (g \<circ> f) x"
+      using A1 assms is_galois_connection_imp3 by blast
+    have B4:"... \<le> g y"
+      by (metis A1 A3 assms comp_apply image_subset_iff is_galois_connection_def is_galois_connection_imp2 is_map_def)
+    show "x \<le> g y"
+      using B3 B4 by auto
+    qed
+  qed
+  show ?thesis
+    by (simp add: B0 galois_equiv_def)
+qed
+    
+  
+
+
+
 end
