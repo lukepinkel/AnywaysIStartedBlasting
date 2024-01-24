@@ -1791,7 +1791,16 @@ lemma is_clr_imp2:
 
 lemma is_clr_imp3:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (ub_set {x} C) \<noteq> {}"
-  apply(simp add:is_clr_def) by (metis empty_iff has_min_iff)
+  apply(simp add:is_clr_def) 
+  by (metis empty_iff has_min_iff)
+
+lemma is_clr_imp4:
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> has_inf (ub_set {x} C) C"
+  by (simp add: has_min_imp_has_inf is_clr_imp2 ub_set_subset)
+
+lemma is_clr_imp5:
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> Inf (ub_set {x} C) C \<in> C"
+  by (simp add: has_inf_in_set is_clr_imp4)
 
 lemma clr_obtains0:
   assumes "is_clr C X" and " x \<in> X "
@@ -1802,7 +1811,6 @@ lemma clr_obtains1:
   assumes "is_clr C X" and " x \<in> X "
   obtains m where "m \<in> C \<and> is_min m (ub_set {x} C)"
   by (meson assms(1) assms(2) clr_obtains0 is_min_imp ub_set_imp2)
-
 
 definition closure_from_clr::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
   "closure_from_clr C \<equiv> (\<lambda>x. min (ub_set {x} C))"
@@ -2949,4 +2957,93 @@ proof-
     by (simp add: B0 B1 B2 is_closure_on_def is_proj_on_def)
 qed
 
+context fixes  A::"'a set set" and  X::"'a set"
+begin
+
+lemma sets_have_inf1:
+  "is_inf (\<Inter>A) A UNIV"
+  by(auto simp add:Inf_def is_inf_def is_max_def lb_set_def ub_set_def lb_def ub_def)
+
+lemma sets_have_inf2:
+  "has_inf A UNIV"
+  using sets_have_inf1 has_inf_def is_inf_in_imp1 is_max_imp_has_max by blast
+
+lemma sets_have_inf3:
+  "Inf A UNIV = \<Inter>A"
+  using is_inf_inf_eq sets_have_inf1 by blast
+
+lemma sets_have_inf4:
+  "is_inf ((\<Inter>A)\<inter> X) A (Pow X)"
+  by(auto simp add:Inf_def is_inf_def is_max_def lb_set_def ub_set_def lb_def ub_def)
+
+lemma sets_have_inf5:
+  "has_inf A (Pow X)"
+  using has_inf_def is_inf_in_imp1 is_max_imp_has_max sets_have_inf4 by blast
+
+
+lemma sets_have_inf6:
+  "Inf A (Pow X) = (\<Inter>A)\<inter> X"
+  using is_inf_inf_eq sets_have_inf4 by blast
+
+lemma sets_have_inf7:
+  "is_inf UNIV {} UNIV"
+  by(auto simp add: is_inf_def is_max_def lb_set_def ub_set_def lb_def ub_def)
+
+lemma sets_have_sup1:
+  "is_sup (\<Union>A) A UNIV"
+  by(auto simp add:is_sup_def is_min_def lb_set_def ub_set_def lb_def ub_def)
+      
+lemma sets_have_sup2:
+  "has_sup A UNIV"
+  by (simp add: Posets7.sets_have_inf2 inf_ub_imp_has_sup)
+
+
+lemma sets_have_sup3:
+  "Sup A UNIV  =  (\<Union>A) "
+  using is_sup_sup_eq sets_have_sup1 by blast
+      
 end
+
+
+definition is_inter_system::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_inter_system A X \<equiv> (A \<subseteq> Pow X) \<and> (\<forall>a \<in> Pow(A). \<Inter>a \<in> A)"
+
+lemma inter_sys_ne:
+  "is_inter_system A  X \<Longrightarrow> A \<noteq> {}"
+  by (meson Pow_bottom empty_iff is_inter_system_def)
+
+lemma inter_sys_imp1:
+  "is_inter_system A  X \<Longrightarrow>  (A \<subseteq> Pow X)"
+  by (simp add:is_inter_system_def)
+
+lemma inter_sys_imp2:
+ assumes A0:"is_inter_system A X"
+  shows"(\<And>x. x\<subseteq>X \<Longrightarrow> is_min (\<Inter>(ub_set {x} A)) (ub_set {x} A))"
+proof-
+  fix x assume A1:"x \<subseteq> X"
+  let ?i="\<Inter>(ub_set {x} A)"
+  have B0:"?i \<in> A"
+    by (meson Pow_iff assms is_inter_system_def ub_set_subset)
+  have B1:"?i lb  (ub_set {x} A)"
+    by (simp add: Inf_lower is_lb_simp2)
+  have B2:"?i \<in> (ub_set {x} A)"
+    by (meson B0 le_Inf_iff ub_set_elm ub_set_imp)
+  have B3:"is_min ?i  (ub_set {x} A)"
+    by (simp add: B2 is_inf_in_imp1 is_min_if1 sets_have_inf1)
+  show "is_min (\<Inter>(ub_set {x} A)) (ub_set {x} A)"
+    by (simp add: B3)
+qed
+
+
+lemma inter_sys_imp3:
+ assumes A0:"is_inter_system A X"
+  shows"(\<And>x. x\<subseteq>X \<Longrightarrow> has_min (ub_set {x} A))"
+  using assms has_min_def inter_sys_imp2 by blast
+
+lemma inter_system_is_clr:
+  "is_inter_system A X \<Longrightarrow> is_clr A (Pow X)"
+  by(auto simp add:is_clr_def inter_sys_ne inter_sys_imp1 inter_sys_imp3)
+
+
+end
+
