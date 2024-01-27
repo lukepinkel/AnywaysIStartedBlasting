@@ -3610,11 +3610,13 @@ next
 qed
 
 end
+
 lemma closure_sups1:
   fixes f::"'a::order \<Rightarrow> 'a::order" and A X::"'a::order set" 
-  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X"
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and  A2:"is_complete_lattice X" and A3:"X \<noteq> {}"
   shows "f (Sup A X) = (Sup (f`A) (f`X))"
-
+  using complete_clr_sup3[of "X" "f" "A"] A0 A1 A2 A3
+  by (metis closure_range_is_clr complete_clr_sup2 has_sup_in_set image_mono is_closure_on_def is_closure_on_imp2 is_idempotent_imp2 is_proj_on_def is_self_map_imp)
   
 
 
