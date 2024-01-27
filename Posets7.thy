@@ -240,6 +240,22 @@ lemma lu_isotone:
   "\<And>A B X.  A \<subseteq> B \<Longrightarrow>  (lb_set (ub_set A X) X) \<subseteq> (lb_set (ub_set B X) X)"
   by (simp add: lb_set_antitone1 ub_set_antitone1)
 
+lemma ulu_eq_u:
+  "A \<subseteq> X \<Longrightarrow> ub_set (lb_set (ub_set A X) X) X = ub_set A X"
+  by (simp add: lu_extensive subset_antisym ub_set_antitone1 ub_set_subset ul_extensive)
+
+lemma lul_eq_l:
+  "A \<subseteq> X \<Longrightarrow> lb_set (ub_set (lb_set A X) X) X = lb_set A X"
+  by (simp add: lb_set_antitone1 lb_set_subset lu_extensive subset_antisym ul_extensive)
+
+lemma lu_idempotent:
+  "lb_set (ub_set (lb_set (ub_set A X) X ) X) X = lb_set (ub_set A X) X "
+  by (simp add: lul_eq_l ub_set_subset)         
+
+lemma ul_idempotent:
+  "ub_set (lb_set (ub_set (lb_set A X) X ) X) X = ub_set (lb_set A X) X "
+  by (simp add: ulu_eq_u lb_set_subset)
+
 section LeastGreatest
 
 definition is_max::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" where
@@ -921,6 +937,10 @@ section Closures
 
 definition is_map::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow>bool" where
   "is_map f X Y \<equiv> ((f`X) \<subseteq> Y) \<and> (X \<noteq> {})"
+
+lemma is_map_comp:
+  "is_map f X Y \<Longrightarrow> is_map g Y Z \<Longrightarrow> is_map (g \<circ> f) X Z"
+  by (simp add: image_subset_iff is_map_def)
 
 abbreviation is_self_map::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_self_map f X \<equiv> is_map f X X"
@@ -2957,6 +2977,58 @@ proof-
     by (simp add: B0 B1 B2 is_closure_on_def is_proj_on_def)
 qed
 
+
+context fixes X::"'a::order set"
+begin
+
+abbreviation L::"'a::order set \<Rightarrow> 'a::order set" where
+  "L A \<equiv> lb_set A X"
+
+abbreviation U::"'a::order set \<Rightarrow> 'a::order set" where
+  "U A \<equiv> ub_set A X"
+
+lemma l_is_map:
+  "is_map L (Pow X) (Pow X)"
+  by (simp add: Pow_not_empty image_subset_iff is_map_def lb_set_subset)
+
+lemma u_is_map:
+  "is_map U (Pow X) (Pow X)"
+  by (simp add: Pow_not_empty image_subset_iff is_map_def ub_set_subset)
+
+lemma l_is_antitone:
+  "is_antitone_on L (Pow X)"
+  by (simp add: is_antitone_on_def lb_set_antitone1)
+
+lemma u_is_antitone:
+  "is_antitone_on U (Pow X)"
+  by (simp add: is_antitone_on_def ub_set_antitone1)
+
+lemma lu_is_map:
+  "is_self_map (L \<circ> U) (Pow X)"
+  using is_map_comp l_is_map u_is_map by blast
+
+lemma ul_is_map:
+  "is_self_map (U \<circ> L) (Pow X)"
+  using is_map_comp l_is_map u_is_map by blast
+
+lemma lu_is_extensive:
+  "is_extensive_on (L \<circ> U) (Pow X)"
+  by (simp add: is_extensive_on_def lu_extensive lu_is_map)
+
+lemma ul_is_extensive:
+  "is_extensive_on (U \<circ> L) (Pow X)"
+  by (simp add: is_extensive_on_def ul_extensive ul_is_map)
+
+lemma ul_is_galois:
+  "is_galois_connection L (Pow X) U (Pow X)"
+  by (simp add: is_galois_connection_def l_is_antitone l_is_map lu_is_extensive u_is_antitone u_is_map ul_is_extensive)
+
+lemma lu_is_galois:
+  "is_galois_connection U (Pow X) L (Pow X)"
+  by (simp add: is_galois_connection_def l_is_antitone l_is_map lu_is_extensive u_is_antitone u_is_map ul_is_extensive)
+
+end
+
 context fixes  A::"'a set set" and  X::"'a set"
 begin
 
@@ -3008,6 +3080,9 @@ end
 definition is_inter_system::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_inter_system A X \<equiv> (A \<subseteq> Pow X) \<and> (\<forall>a \<in> Pow(A). \<Inter>a \<in> A)"
 
+definition inter_sys_cl::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a set \<Rightarrow> 'a set)" where
+  "inter_sys_cl A X \<equiv> (\<lambda>E. \<Inter>(ub_set {E} A))"
+
 lemma inter_sys_ne:
   "is_inter_system A  X \<Longrightarrow> A \<noteq> {}"
   by (meson Pow_bottom empty_iff is_inter_system_def)
@@ -3043,6 +3118,27 @@ lemma inter_sys_imp3:
 lemma inter_system_is_clr:
   "is_inter_system A X \<Longrightarrow> is_clr A (Pow X)"
   by(auto simp add:is_clr_def inter_sys_ne inter_sys_imp1 inter_sys_imp3)
+
+lemma inter_system_cl_is_cl1:
+  "is_inter_system A X \<Longrightarrow> is_extensive_on (inter_sys_cl A X) (Pow X)"
+  apply(auto simp add:is_extensive_on_def is_map_def inter_sys_cl_def is_inter_system_def)
+  by (meson insertI1 subsetD ub_set_imp)
+
+lemma inter_system_cl_is_cl2:
+  "is_inter_system A X \<Longrightarrow> is_isotone_on (inter_sys_cl A X) (Pow X)"
+  apply(auto simp add:is_isotone_on_def is_map_def inter_sys_cl_def is_inter_system_def)
+  by (meson subset_iff ub_set_singleton_antitone)
+
+lemma inter_system_cl_is_cl3:
+  "is_inter_system A X \<Longrightarrow> is_idempotent_on (inter_sys_cl A X) (Pow X)"
+  apply(auto simp add:is_idempotent_on_def is_map_def inter_sys_cl_def is_inter_system_def)
+  apply (metis Inf_lower singletonD ub_set_elm ub_set_imp2)
+  using subset_trans ub_set_imp by fastforce
+
+lemma inter_system_cl_is_cl:
+  "is_inter_system A X \<Longrightarrow> is_closure_on (inter_sys_cl A X) (Pow X)"
+  by(simp add:is_closure_on_def is_proj_on_def inter_system_cl_is_cl1 inter_system_cl_is_cl2 inter_system_cl_is_cl3)
+
 
 
 end
