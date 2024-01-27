@@ -936,7 +936,7 @@ section Closures
 (*Probably should develop the theory of closures before trying to develop closures*)
 
 definition is_map::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow>bool" where
-  "is_map f X Y \<equiv> ((f`X) \<subseteq> Y) \<and> (X \<noteq> {})"
+  "is_map f X Y \<equiv> ((f`X) \<subseteq> Y)"
 
 lemma is_map_comp:
   "is_map f X Y \<Longrightarrow> is_map g Y Z \<Longrightarrow> is_map (g \<circ> f) X Z"
@@ -972,10 +972,8 @@ definition is_antitone::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool"
 definition is_proj_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
   "is_proj_on f X \<equiv> (is_idempotent_on f X) \<and> (is_isotone_on f X)"
 
-
 definition is_proj::"('a::order \<Rightarrow> 'a::order) \<Rightarrow>  bool" where
   "is_proj f \<equiv>is_proj_on f UNIV"
-
 
 definition is_closure_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
   "is_closure_on f X \<equiv> is_proj_on f X \<and> (is_extensive_on f X)"
@@ -1924,7 +1922,7 @@ end
 
 locale closure= 
   fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
-  assumes is_cl:"is_closure_on f X"
+  assumes is_cl:"is_closure_on f X" and ne:"X \<noteq> {}"
 begin
 
 abbreviation Cf::"'a::order set" where
@@ -1932,7 +1930,7 @@ abbreviation Cf::"'a::order set" where
 
 lemma Cf_is_ne:
   "Cf \<noteq> {}"
-  using clr_from_closure_def is_cl is_closure_on_imp2 is_map_def  by (metis image_is_empty)
+  by (simp add: clr_from_closure_def ne)
 
 lemma Cf_subseteq_space:
   "Cf \<subseteq> X"
@@ -2030,15 +2028,17 @@ lemma cl_order_iso:
 proof
   fix x assume A4:"x \<in> clr_from_closure f2 X"
   have B0:"x \<le> f1 x"
-    using A0 A1 A4 closure.Cf_subseteq_space closure.intro closure_eq_if_closure_l by blast
+    using A0 A1 A4 closure.Cf_subseteq_space closure.intro closure_eq_if_closure_l
+    by (metis clr_from_closure_def image_is_empty order_refl subsetD) 
   have B1:"... \<le> f2 x"
-    using A1 A3 A4 closure.Cf_subseteq_space closure.intro by blast
+    using A1 A3 A4 closure.Cf_subseteq_space closure.intro
+    using clr_from_closure_def by blast
   have B2:"... = x"
     by (metis A1 A4 clr_from_closure_def is_closure_on_def is_idempotent_imp2 is_proj_on_def)
   have B3:"f1 x = x"
     using B0 B1 B2 by fastforce
   show "x \<in> clr_from_closure f1 X"
-    by (metis A1 A4 B3 closure.Cf_subseteq_space closure.intro clr_from_closure_def image_iff subsetD)
+    by (metis A1 A4 B3 clr_from_closure_def imageI is_closure_on_imp2 is_map_def subsetD)
 qed
 
 lemma clr_order_iso:
@@ -2882,6 +2882,7 @@ lemma galois_equiv_imp2:
 lemma galois_equiv_imp3:
   "galois_equiv f X g Y \<Longrightarrow> (is_map f X Y) \<Longrightarrow>  (is_map g Y X) \<Longrightarrow>(is_extensive_on (f \<circ> g) Y)"
   apply(auto simp add:is_extensive_on_def  galois_equiv_def is_map_def)
+  apply blast
   by (simp add: image_subset_iff)
 
 lemma galois_equiv_imp4:
@@ -3045,7 +3046,6 @@ lemma sets_have_inf5:
   "has_inf A (Pow X)"
   using has_inf_def is_inf_in_imp1 is_max_imp_has_max sets_have_inf4 by blast
 
-
 lemma sets_have_inf6:
   "Inf A (Pow X) = (\<Inter>A)\<inter> X"
   using is_inf_inf_eq sets_have_inf4 by blast
@@ -3061,7 +3061,6 @@ lemma sets_have_sup1:
 lemma sets_have_sup2:
   "has_sup A UNIV"
   by (simp add: Posets7.sets_have_inf2 inf_ub_imp_has_sup)
-
 
 lemma sets_have_sup3:
   "Sup A UNIV  =  (\<Union>A) "
