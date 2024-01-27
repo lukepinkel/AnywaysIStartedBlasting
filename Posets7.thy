@@ -2978,56 +2978,49 @@ proof-
 qed
 
 
-context fixes X::"'a::order set"
-begin
-
-abbreviation L::"'a::order set \<Rightarrow> 'a::order set" where
-  "L A \<equiv> lb_set A X"
-
-abbreviation U::"'a::order set \<Rightarrow> 'a::order set" where
-  "U A \<equiv> ub_set A X"
 
 lemma l_is_map:
-  "is_map L (Pow X) (Pow X)"
+  "is_map (\<lambda>A. lb_set A X) (Pow X) (Pow X)"
   by (simp add: Pow_not_empty image_subset_iff is_map_def lb_set_subset)
 
 lemma u_is_map:
-  "is_map U (Pow X) (Pow X)"
+  "is_map (\<lambda>A. ub_set A X) (Pow X) (Pow X)"
   by (simp add: Pow_not_empty image_subset_iff is_map_def ub_set_subset)
 
 lemma l_is_antitone:
-  "is_antitone_on L (Pow X)"
+  "is_antitone_on (\<lambda>A. lb_set A X) (Pow X)"
   by (simp add: is_antitone_on_def lb_set_antitone1)
 
 lemma u_is_antitone:
-  "is_antitone_on U (Pow X)"
+  "is_antitone_on (\<lambda>A. ub_set A X) (Pow X)"
   by (simp add: is_antitone_on_def ub_set_antitone1)
 
 lemma lu_is_map:
-  "is_self_map (L \<circ> U) (Pow X)"
+  "is_self_map ((\<lambda>A. lb_set A X) \<circ> (\<lambda>A. ub_set A X)) (Pow X)"
   using is_map_comp l_is_map u_is_map by blast
 
 lemma ul_is_map:
-  "is_self_map (U \<circ> L) (Pow X)"
+  "is_self_map ((\<lambda>A. ub_set A X) \<circ> (\<lambda>A. lb_set A X)) (Pow X)"
   using is_map_comp l_is_map u_is_map by blast
 
 lemma lu_is_extensive:
-  "is_extensive_on (L \<circ> U) (Pow X)"
+  "is_extensive_on ((\<lambda>A. lb_set A X) \<circ> (\<lambda>A. ub_set A X)) (Pow X)"
   by (simp add: is_extensive_on_def lu_extensive lu_is_map)
 
 lemma ul_is_extensive:
-  "is_extensive_on (U \<circ> L) (Pow X)"
+  "is_extensive_on ((\<lambda>A. ub_set A X) \<circ> (\<lambda>A. lb_set A X)) (Pow X)"
   by (simp add: is_extensive_on_def ul_extensive ul_is_map)
 
 lemma ul_is_galois:
-  "is_galois_connection L (Pow X) U (Pow X)"
+  "is_galois_connection (\<lambda>A. lb_set A X) (Pow X) (\<lambda>A. ub_set A X) (Pow X)"
   by (simp add: is_galois_connection_def l_is_antitone l_is_map lu_is_extensive u_is_antitone u_is_map ul_is_extensive)
 
 lemma lu_is_galois:
-  "is_galois_connection U (Pow X) L (Pow X)"
+  "is_galois_connection (\<lambda>A. ub_set A X) (Pow X) (\<lambda>A. lb_set A X) (Pow X)"
   by (simp add: is_galois_connection_def l_is_antitone l_is_map lu_is_extensive u_is_antitone u_is_map ul_is_extensive)
 
-end
+
+
 
 context fixes  A::"'a set set" and  X::"'a set"
 begin
