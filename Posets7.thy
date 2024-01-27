@@ -3239,7 +3239,6 @@ lemma is_complete_imp_min_and_sup:
   "is_complete_lattice X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> (is_sup_complete X \<and> has_min X)"
   by (simp add: is_complete_lattice_def inf_complete_min2)
 
-
 lemma inf_comp_max_imp_sup_comp_min:
   assumes A0:"(is_inf_complete X \<and> has_max X)"
   shows "(is_sup_complete X \<and> has_min X)"
@@ -3491,7 +3490,7 @@ context
           A2:"is_clr C X"
 begin
 
-lemma complete_clr_sup:
+lemma complete_clr_sup1:
   assumes "A \<subseteq> C"
   shows "is_sup (Inf (ub_set A C) X) A C \<and> Sup A C =  (Inf (ub_set A C) C)"
 proof-
@@ -3510,6 +3509,104 @@ proof-
     by (simp add: B3 assms inf_is_inf is_inf_ub_imp_is_sup)
   show ?thesis
     by (simp add: B2 B4 B5)
+qed
+
+lemma complete_clr_sup2:
+  assumes "A \<subseteq> C"
+  shows "has_sup A C"
+  by (meson A0 A1 A2 complete_clr_sup1 assms has_min_iff2 has_sup_def is_sup_in_imp1)
+
+end
+
+context
+ fixes f::"'a::order \<Rightarrow> 'a::order" and 
+       A X::"'a::order set" 
+  assumes A0:"X \<noteq> {}" and 
+          A1:"is_complete_lattice X" and
+          A2:"is_closure_on f X"      
+begin
+
+lemma closure_of_min:
+  "f (min X) = min (f`X)"
+proof-
+  let ?mx="min X" let ?Y="f`X" let ?my="min ?Y"
+  have B0:"f ?mx \<in> ?Y"
+    by (metis A0 A1 has_sup_def has_sup_in_set image_eqI is_complete_imp_min_and_sup sup_in_degenerate ub_set_in_degenerate)
+  have B1:"\<forall>y \<in> ?Y. (f ?mx) \<le> y"
+  proof
+    fix y assume A3:"y \<in> ?Y"
+    obtain x where B1:"x \<in> X \<and> y = f x"
+      using A3 by blast
+    have B2:"?mx \<le> x"
+      by (metis A0 A1 B1 has_min_iff2 is_complete_imp_min_and_sup is_min_iff min_if)
+    have B3:"f ?mx \<le> f x"
+      by (metis A0 A1 A2 B1 inf_complete_min1 is_closure_imp_iso_imp1 is_complete_lattice_def is_min_iff min_if)
+    show "(f ?mx) \<le> y"
+      by (simp add: B1 B3)
+  qed
+  have B2:"is_min (f ?mx) ?Y"
+    by (simp add: B0 B1 is_min_if2)
+  show ?thesis
+    using B2 min_if by auto
+qed
+
+lemma complete_clr_sup3:
+  assumes "A \<subseteq> X"
+  shows "f (Sup A X) = f (Sup (f`A) X) \<and> f (Sup (f`A) (f`X)) = f (Sup (f`A) X)"
+proof(cases "A={}")
+  case True
+  have B0:"Sup A X = min X"
+    by (simp add: True sup_in_degenerate)
+  have B1:"f`A = {}"
+    by (simp add: True)
+  have B2:"f (Sup (f`A) (f`X)) = f (Sup (f`A) X)"
+    by (metis A1 A2 B1 True cl_eq_imp_idm2 closure_eq_if_closure closure_of_min has_sup_def has_sup_in_set is_closure_on_imp2 is_complete_imp_min_and_sup sup_in_degenerate ub_set_in_degenerate)
+  then show ?thesis
+    using True by fastforce
+next
+  case False
+  have B2:"\<forall>a \<in> A. a \<le> f a"
+    using A2 assms closure_eq_if_closure_l by blast
+  have B3:"(f`A) \<subseteq> X"
+    by (meson A2 assms dual_order.trans image_mono is_closure_on_imp2 is_self_map_imp)
+  have B4:"has_sup (f`A) X"
+    by (meson A0 A1 B3 False PowI image_is_empty is_complete_imp_min_and_sup is_sup_complete_def pow_ne_if)
+  have B5:"\<forall>a \<in> A. f a \<le> Sup (f`A) X"
+    using B4 has_sup_in_imp2 by blast
+  have B6:"\<forall>a \<in> A. a \<le> Sup (f`A) X"
+    using B2 B5 dual_order.trans by blast
+  have B7:"Sup A X \<le> Sup (f`A) X"
+    by (meson A0 A1 B4 B6 False PowI assms has_sup_imp3 has_sup_in_set is_complete_imp_min_and_sup is_sup_complete_def pow_ne_if)
+  have B8:"f (Sup A X) \<le>  f (Sup (f`A) X)"
+    by (meson A1 A2 B4 B7 False Pow_iff assms has_sup_in_set is_closure_imp_iso_imp1 is_complete_lattice_def pow_ne_if sup_complete_imp1)
+  have B9:"f`X \<subseteq> X"
+    by (simp add: A2 is_closure_on_imp2 is_self_map_imp)
+  have B10:"Sup (f`A) X \<le> Sup (f`A) (f`X)"
+    by (metis A0 A1 A2 B4 B9 assms closure_range_is_clr complete_clr_sup1 image_mono is_sup_sup_eq sup_geq_rsup sup_is_sup)
+  have B11:"is_clr (f`X) X"
+    by (simp add: A0 A2 closure_range_is_clr)
+  have B12:"(f`A) \<subseteq> (f`X)"
+    by (simp add: assms image_mono)
+  have B13:"has_sup (f`A) (f`X)"
+    by (meson A1 B11 B12 B9 complete_clr_sup2)
+  have B14:"Sup (f`A) (f`X) \<in> X"
+    by (metis B13 B9 has_sup_in_set subsetD)
+  have B15:"f (Sup (f`A) X) \<le> f (Sup (f`A) (f`X))"
+    using A2 B10 B14 B4 has_sup_in_set is_closure_imp_iso_imp1 by blast
+  have B16:"\<forall>a \<in> A. a \<le> Sup A X"
+    by (meson A0 A1 False PowI assms has_sup_in_imp2 is_complete_imp_min_and_sup is_sup_complete_def pow_ne_if)
+  have B17:"\<forall>a \<in> A. f a \<le> f (Sup A X)"
+    by (meson A1 A2 B16 False Pow_iff assms in_mono is_closure_imp_iso_imp1 is_complete_lattice_def pow_ne_if sup_complete_imp1)
+  have B18:"f (Sup A X) \<in> (f`X)"
+    by (simp add: A0 A1 False assms is_complete_imp_min_and_sup sup_complete_imp1)
+  have B19:"Sup (f`A) (f`X) \<le> f (Sup A X)"
+    using B13 B17 B18 has_sup_imp3 by fastforce
+  have B20:"f (Sup (f`A) (f`X)) = f (Sup (f`A) X)"
+    by (meson A2 B14 B15 B19 B4 B8 closure_eq_if_closure_r has_sup_in_set order_antisym_conv order_trans)
+  have B21:"f (Sup A X) = f (Sup (f`A) X)"
+    by (meson A1 A2 B10 B19 B4 B8 False Orderings.order_eq_iff Pow_iff assms closure_eq_if_closure_r has_sup_in_set is_complete_lattice_def order_trans pow_ne_if sup_complete_imp1)
+  then show ?thesis
+    using B20 by blast
 qed
 
 end
