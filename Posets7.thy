@@ -357,6 +357,14 @@ lemma is_min_singleton:
   "is_min (x::'a::order) {x}"
   by (simp add: is_min_iff)
 
+lemma is_max_imp_set:
+  "A \<subseteq> X \<Longrightarrow> is_max m X \<Longrightarrow> m \<in> ub_set A X"
+  by (simp add: is_max_iff subset_eq ub_set_elm)
+
+lemma is_min_imp_set:
+  "A \<subseteq> X \<Longrightarrow> is_min m X \<Longrightarrow> m \<in> lb_set A X"
+  by (simp add: is_min_iff subset_eq lb_set_elm)
+
 subsection ExistentialHas
 
 lemma has_max_iff:
@@ -483,6 +491,12 @@ definition Sup::"'a::order set \<Rightarrow>'a::order set \<Rightarrow> 'a::orde
 
 definition Inf::"'a::order set \<Rightarrow>'a::order set \<Rightarrow> 'a::order" where
   "Inf A X = (THE i. is_inf i A X)"
+
+definition is_inf_complete::"'a::order set \<Rightarrow> bool" where
+  "is_inf_complete X \<equiv> (\<forall>A \<in> Pow_ne X. has_inf A X)"
+
+definition is_sup_complete::"'a::order set \<Rightarrow> bool" where
+  "is_sup_complete X \<equiv> (\<forall>A \<in> Pow_ne X. has_sup A X)"
 
 subsection PredicateIs 
 
@@ -1637,8 +1651,6 @@ definition is_filter::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool"
 definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
    "is_principal_filter F X \<equiv> F \<subseteq> X \<and> is_filter F X \<and> has_min F "
 
-
-
 lemma is_filter_imp0:
   "is_filter F X \<Longrightarrow> is_dwdir F"
   by (simp add: is_filter_def)
@@ -1652,10 +1664,25 @@ lemma is_filter_obtains:
   obtains c where  "c \<in> F \<and>  c \<le> a \<and> c \<le> b"
   by (meson assms(1) assms(2) assms(3) is_filter_imp01)
 
-
 lemma is_filter_imp1:
   "is_filter F X \<Longrightarrow> is_up_cl F X"
   by (simp add: is_filter_def)
+
+lemma is_filter_imp20:
+  "is_filter F X \<Longrightarrow> F \<subseteq> X"
+  by (simp add: is_filter_def)     
+
+lemma is_filter_imp21:
+  "is_filter F X \<Longrightarrow> F \<in> Pow X"
+  by (simp add: is_filter_def)
+
+lemma is_filter_imp3:
+  "is_filter F X \<Longrightarrow> F \<noteq> {}"
+  by (simp add: is_filter_def is_dwdir_imp1)
+
+lemma is_filter_imp4:
+  "is_filter F X \<Longrightarrow> F \<in> Pow_ne X"
+  by (simp add: is_filter_def is_dwdir_imp1)
 
 lemma is_filter_if:
   "F \<subseteq> X \<Longrightarrow> is_dwdir F \<Longrightarrow> is_up_cl F X \<Longrightarrow> is_filter F X"
@@ -1669,7 +1696,6 @@ lemma principal_filter_obtains:
   assumes "is_principal_filter F X"
   obtains m where "m = min F"
   by simp
-
 
 lemma principal_filter_imp2:
   "is_principal_filter F X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<ge> min F \<Longrightarrow> x \<in> F"
@@ -1688,10 +1714,17 @@ lemma principal_filter_imp5:
   shows "\<forall>x. x \<in> F \<longleftrightarrow> (x \<in> X \<and> x \<ge> min F)"
   using assms principal_filter_imp2 principal_filter_imp3 principal_filter_imp4 by blast
 
-
 lemma principal_filter_imp6:
   "is_principal_filter F X \<Longrightarrow> F = {x \<in> X. x \<ge> min F}"
   by (simp add: Orderings.order_eq_iff principal_filter_imp5 subset_iff)
+
+lemma principal_filter_imp7:
+  "is_principal_filter F X \<Longrightarrow> is_filter F X"
+  by (simp add: is_principal_filter_def)
+
+lemma principal_filter_imply70:
+  "is_principal_filter F X \<Longrightarrow> is_dwdir F"
+  using is_filter_imp0 principal_filter_imp7 by blast
 
 lemma ub_set_min0:
   "a \<in> X \<Longrightarrow> is_min a(ub_set {a} X)"
@@ -1701,7 +1734,6 @@ lemma ub_set_min1:
   "a \<in> X \<Longrightarrow> is_min a {x \<in> X. x \<ge> a}"
   by (metis is_sup_def is_sup_singleton2 ub_set_in_singleton)
 
-  
 lemma principal_filter_if1:
   "a \<in> X \<Longrightarrow> is_principal_filter (ub_set {a} X) X"
   apply(auto simp add:is_principal_filter_def is_filter_def is_dwdir_def is_up_cl_def)
@@ -1712,11 +1744,9 @@ lemma principal_filter_if1:
   apply (simp add: is_upcl_in_imp0 ub_is_upset)
   by (simp add: has_sup_has_lub has_sup_singleton2)
   
-
 lemma principal_filter_if2:
   "a \<in> X \<Longrightarrow> is_principal_filter {x \<in> X. x \<ge> a} X"
   by (metis principal_filter_if1 ub_set_in_singleton)
-
 
 definition is_ideal::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
   "is_ideal I X \<equiv> is_updir I \<and> is_dw_cl I X"
@@ -1812,6 +1842,10 @@ lemma is_clr_imp3:
   apply(simp add:is_clr_def) 
   by (metis empty_iff has_min_iff)
 
+lemma clr_is_cofinal:
+  "is_clr C X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ub_set {x} C \<noteq> {})"
+  by (simp add: is_clr_imp3)
+  
 lemma is_clr_imp4:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> has_inf (ub_set {x} C) C"
   by (simp add: has_min_imp_has_inf is_clr_imp2 ub_set_subset)
@@ -1982,6 +2016,18 @@ lemma Cf_is_clr:
   by(simp add:is_clr_def Cf_subseteq_space cl_is_min_ub Cf_is_ne)
 
 end 
+
+lemma closure_range_is_clr:
+  fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
+  assumes is_cl:"is_closure_on f X" and ne:"X \<noteq> {}"
+  shows "is_clr (f`X) X"
+  by (metis closure.Cf_is_clr closure.intro clr_from_closure_def is_cl ne)
+  
+lemma clr_induces_closure:
+  fixes C X::"'a::order set"                     
+  assumes clr:"is_clr C X"
+  shows "is_closure_on (closure_from_clr C) X"
+  by (simp add: closure_range.cl_is_closure closure_range.intro clr) 
 
 lemma cl_cr_cl_eq_cl:
   assumes A0:"is_closure_on f X" and A1:"a \<in> X"
@@ -2554,7 +2600,7 @@ lemma sup_cl_idempotent:
       have B11A0:"has_sup E X "
         by (simp add: P1)
       have B110:"has_sup ?S X"
-      using B11A0 B2 by presburger
+        using B11A0 B2 by presburger
       have B8:"\<forall>Ai \<in> ?fE. has_sup  Ai X"
         using B1 by blast
       have B111:"has_sup  (\<Union>?fE) X \<and>  Sup (\<Union>?fE) X = Sup ?S X" 
@@ -3131,7 +3177,348 @@ lemma inter_system_cl_is_cl:
   "is_inter_system A X \<Longrightarrow> is_closure_on (inter_sys_cl A X) (Pow X)"
   by(simp add:is_closure_on_def is_proj_on_def inter_system_cl_is_cl1 inter_system_cl_is_cl2 inter_system_cl_is_cl3)
 
+section Completeness
+
+lemma sup_complete_imp1:
+  "is_sup_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Sup A X \<in> X"
+  using has_sup_in_set is_sup_complete_def by blast
+
+lemma inf_complete_imp1:
+  "is_inf_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Inf A X \<in> X"
+  using has_inf_in_set is_inf_complete_def by blast
+
+lemma inf_complete_min1:
+   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_min (Inf X X) X"
+  by (simp add: inf_in_min is_inf_complete_def)
+
+lemma sup_complete_max1:
+   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_max (Sup X X) X"
+  by (simp add: sup_in_max is_sup_complete_def)
+
+lemma inf_complete_min2:
+   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_min X"
+  using has_min_def inf_complete_min1 by blast
+
+lemma sup_complete_max2:
+   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_max X"
+  using has_max_def sup_complete_max1 by auto
+
+lemma has_max_imp_ub_ne:
+  assumes A0:"has_max X" and A1:"A \<in> Pow X "
+  shows " ub_set A X \<noteq> {}"
+proof-
+  obtain m where A2:"is_max m X"
+    using A0 has_max_iff2 by auto
+  have B0:"m \<in> (ub_set A X)"
+    using A1 A2 is_max_imp_set by auto
+  show ?thesis
+    using B0 by auto
+qed
+
+lemma has_min_imp_lb_ne:
+  assumes A0:"has_min X" and A1:"A \<in> Pow X "
+  shows " lb_set A X \<noteq> {}"
+proof-
+  obtain m where A2:"is_min m X"
+    using A0 has_min_iff2 by auto
+  have B0:"m \<in> (lb_set A X)"
+    using A1 A2 is_min_imp_set by auto
+  show ?thesis
+    using B0 by auto
+qed
+
+
+definition is_complete_lattice::"'a::order set \<Rightarrow> bool" where
+  "is_complete_lattice X \<equiv> (is_sup_complete X) \<and> (is_inf_complete X)"
+
+lemma is_complete_imp_max_and_inf:
+  "is_complete_lattice X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> (is_inf_complete X \<and> has_max X)"
+  by (simp add: is_complete_lattice_def sup_complete_max2)
+
+lemma is_complete_imp_min_and_sup:
+  "is_complete_lattice X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> (is_sup_complete X \<and> has_min X)"
+  by (simp add: is_complete_lattice_def inf_complete_min2)
+
+
+lemma inf_comp_max_imp_sup_comp_min:
+  assumes A0:"(is_inf_complete X \<and> has_max X)"
+  shows "(is_sup_complete X \<and> has_min X)"
+proof-
+  have B0:"\<forall>A \<in> Pow_ne X. has_sup A X"
+  proof
+    fix A assume A1:"A \<in> Pow_ne X"
+    have B01:"ub_set A X \<noteq> {}"
+      using A1 assms has_max_imp_ub_ne by auto
+    show "has_sup A X"
+      by (meson A1 B01 DiffD1 Pow_iff assms inf_ub_imp_has_sup is_inf_complete_def pow_ne_if ub_set_subset)
+  qed
+  have B1:"is_sup_complete X"
+    using B0 is_sup_complete_def by blast
+  have B2:"has_min X"
+    using assms has_max_iff inf_complete_min2 by auto
+  show ?thesis
+    by (simp add: B1 B2)
+qed
+
+lemma sup_comp_max_imp_inf_comp_min:
+  assumes A0:"(is_sup_complete X \<and> has_min X)"
+  shows "(is_inf_complete X \<and> has_max X)"
+proof-
+  have B0:"\<forall>A \<in> Pow_ne X. has_inf A X"
+  proof
+    fix A assume A1:"A \<in> Pow_ne X"
+    have B01:"lb_set A X \<noteq> {}"
+      using A1 assms has_min_imp_lb_ne by auto
+    show "has_inf A X"
+      by (meson A1 B01 DiffD1 Pow_iff assms is_sup_complete_def lb_set_subset pow_ne_if sup_lb_imp_has_inf)
+  qed
+  have B1:"is_inf_complete X"
+    using B0 is_inf_complete_def by blast
+  have B2:"has_max X"
+    using assms has_min_iff sup_complete_max2 by auto
+  show ?thesis
+    by (simp add: B1 B2)
+qed
+
+lemma sup_comp_min_imp_comp:
+  "(is_sup_complete X \<and> has_min X) \<Longrightarrow> is_complete_lattice X"
+  by (simp add: is_complete_lattice_def sup_comp_max_imp_inf_comp_min)
+
+lemma inf_comp_max_imp_comp:
+  "(is_inf_complete X \<and> has_max X) \<Longrightarrow> is_complete_lattice X"
+  by (simp add: inf_comp_max_imp_sup_comp_min sup_comp_min_imp_comp)
+
+
+
+context
+  fixes C X::"'a::order set" 
+  assumes A0:"is_inf_complete X" and
+          A1:" C \<subseteq> X"
+begin
+lemma clr_inf_on_cinf:
+  assumes A2:"is_clr C X"
+  shows "\<forall>A \<in> Pow_ne C. Inf A C = Inf A X"
+proof
+  fix A assume A3:"A \<in> Pow_ne C"
+  have B0:"A \<subseteq> C \<and> A \<subseteq> X \<and> A \<noteq> {}"
+    using A1 A3 by blast
+  have B1:"has_inf A X"
+    using A0 B0 is_inf_complete_def by blast
+  have B2:"Inf A X \<in> C"
+    by (simp add: A2 B0 B1 clr_inf_closed)
+  show "Inf A C = Inf A X"
+    by (simp add: A1 B0 B1 B2 inf_subset_eq)
+qed
+
+lemma clr_inf_on_cinf_converse:
+  assumes A2:"\<forall>A \<in> Pow_ne C. has_inf A C \<and> Inf A C = Inf A X" and
+          A3:"\<forall>x \<in> X. ub_set {x} C \<noteq> {}" and
+          A4:"C \<noteq> {}"
+  shows "is_clr C X"
+proof-
+  have B0:"\<forall>x \<in> X. (has_min (ub_set {x} C))"
+  proof
+    fix x assume A5:"x \<in> X"
+    let ?P="ub_set {x} C"
+    have B0:"?P \<noteq> {}"
+      by (simp add: A3 A5)
+    have B1:"?P \<subseteq> C"
+      by (simp add: ub_set_subset)
+    have B2:"?P \<subseteq> X"
+      using A1 B1 by blast
+    have B3:"has_inf ?P X"
+      using A0 B0 B2 is_inf_complete_def by blast
+    have B4:" Inf ?P X = Inf ?P C"
+      by (simp add: A2 B0 B1)
+    have B5:"Inf ?P C \<in> C"
+      using A2 B0 B1 has_inf_in_set by blast
+    have B6:"Inf ?P C lb ?P"
+      by (metis B3 B4 has_inf_in_imp1 lb_set_imp1)
+    have B7:"x lb ?P"
+      by (simp add: is_lb_simp2 ub_set_imp)
+    have B8:"x \<le> Inf ?P C"
+      by (metis A5 B3 B4 B7 has_inf_imp3 lb_def)
+    have B9:"Inf ?P C \<in> ?P"
+      by (simp add: B5 B8 ub_set_mem_iff)
+    have B10:"is_min (Inf ?P C) ?P"
+      by (simp add: B6 B9 is_min_def lb_set_if)
+    show "has_min (ub_set {x} C)"
+      using B10 has_min_iff2 by blast
+  qed
+  show ?thesis
+    by (simp add: A1 A4 B0 is_clr_def)
+qed
+
+lemma clr_on_comp_semilattice:
+  assumes A2:"has_min X" and
+          A3:"is_closure_on f X"
+  shows "\<forall>x \<in> X. Inf {y \<in> (f`X). x \<le> f y} X = min (ub_set {x} (f`X))" 
+proof
+  fix x assume A2:"x \<in> X"
+  let ?E1="{y \<in> (f`X). x \<le> (f y)}" let ?E2="ub_set {x} (f`X)"
+  have B0:"?E1 = ?E2"
+    apply(auto simp add:ub_set_def ub_def)
+    using A3 cl_eq_imp_idm1 closure_if_cl_eq order_trans apply blast
+    by (metis A3 cl_eq_imp_idm2 closure_eq_if_closure is_closure_on_imp2)
+  have B1:"has_min ?E2"
+    using A2 A3 closure_range_is_clr is_clr_imp2 by blast
+  have B2:"(min ?E2) lb ?E2"
+    using B1 has_min_def is_sup_imp_lt_ub is_sup_in_iff min_if by blast
+  have B3:"(min ?E2) \<in> X"
+    by (metis A3 B1 has_sup_def has_sup_in_imp1 is_closure_on_imp2 is_self_map_imp min_if subsetD ub_set_subset)
+  have B4:"\<forall>l \<in> lb_set ?E2 X. l \<le> (min ?E2)"
+    by (metis B1 has_sup_def has_sup_in_imp1 lb_set_imp min_if)
+  have B5:"(min ?E2) \<in> lb_set ?E2 X"
+    using B2 B3 lb_set_if by blast
+  have B6:"is_max (min ?E2) (lb_set ?E2 X)"
+    by (simp add: B4 B5 is_max_if2)
+  have B7:"is_inf (min ?E2) ?E2 X"
+    by (simp add: B6 is_inf_def)
+  have B8:"is_inf (min ?E2) ?E1 X"
+    by (simp add: B0 B7)
+  show "Inf {y \<in> (f`X). x \<le> f y} X = min (ub_set {x} (f`X))"
+    using B8 is_inf_inf_eq by fastforce
+qed
+end
+
+lemma clr_on_comp_semilattice2:
+  fixes X::"'a::order set" 
+  assumes A0:"is_inf_complete X" and
+          A2:"has_min X" and
+          A3:"is_closure_on f X"
+  shows "\<forall>x \<in> X. Inf {y \<in> (f`X). x \<le> f y} X = f x" 
+proof-
+  have B0:"\<forall>x \<in> X. closure_from_clr (clr_from_closure f X) x = min (ub_set {x} (f`X))"
+    by (simp add: closure_from_clr_def clr_from_closure_def)
+  have B1:"\<forall>x \<in> X. closure_from_clr (clr_from_closure f X) x = f x"
+    using A3 cl_cr_cl_eq_cl by auto
+  have B2:"\<forall>x \<in> X. f x = min (ub_set {x} (f`X))"
+    using B0 B1 by fastforce
+  have B3:"\<forall>x \<in> X.  Inf {y \<in> (f`X). x \<le> f y} X =  min (ub_set {x} (f`X))"
+    using A0 A2 A3 clr_on_comp_semilattice by blast
+  have B4:"\<forall>x \<in> X. f x = min (ub_set {x} (f`X))"
+    using B2 by blast
+  show ?thesis
+    using B3 B4 by fastforce
+qed
+
+context
+  fixes C X::"'a::order set" 
+  assumes A0:"is_complete_lattice X" and
+          A1:" C \<subseteq> X"
+begin
+
+lemma complete_clr1:
+  assumes A2:"is_clr C X"
+  shows "\<And>A. A \<in> Pow C \<longrightarrow> Inf A X \<in> C"
+proof
+  fix A assume A3:"A \<in> Pow C"
+  have B0:"A \<subseteq> C \<and> A \<subseteq> X"
+    using A1 A3 by blast 
+  have B1:"has_inf A X"
+    proof(cases "A={}")
+      case True
+      then show ?thesis
+        by (metis A0 assms has_inf_def is_clr_imp1 is_complete_imp_max_and_inf lb_set_in_degenerate subset_empty)
+    next
+      case False
+      then show ?thesis
+        using A0 B0 is_complete_lattice_def is_inf_complete_def by blast
+    qed
+  show "Inf A X \<in> C"
+    by (simp add: B0 B1 assms clr_inf_closed)
+qed
+
+lemma complete_clr2:
+  assumes "is_clr C X"
+  shows "\<And>A. A \<in> Pow C \<longrightarrow> Inf A C = Inf A X"
+proof
+  fix A assume A3:"A \<in> Pow C"
+  have B0:"A \<subseteq> C \<and> A \<subseteq> X"
+    using A1 A3 by blast 
+  show "Inf A C = Inf A X"
+  proof(cases "A={}")
+    case True
+    then show ?thesis
+      by (metis A0 A1 Pow_bottom assms complete_clr1 empty_subsetI has_inf_def inf_subset_eq 
+          insert_absorb insert_not_empty insert_subset is_complete_imp_max_and_inf lb_set_in_degenerate)
+  next
+    case False
+    then show ?thesis
+      using A0 A1 A3 assms clr_inf_on_cinf is_complete_lattice_def by blast
+  qed
+qed
+
+lemma complete_clr3:
+  assumes "\<And>A. A \<in> Pow C \<longrightarrow> Inf A X \<in> C"
+  shows "is_clr C X"
+proof-
+  have B0:"\<forall>x \<in> X. has_min (ub_set {x} C)"
+  proof
+    fix x assume A3:"x \<in> X"
+    have B1:"(max X) \<in> C"
+      by (metis Pow_bottom assms inf_in_degenerate)
+    have B2:"(max X) \<in> ub_set {x} C"
+      by (metis A0 A3 B1 has_max_iff insert_absorb insert_not_empty is_complete_imp_max_and_inf max_if2 singletonD ub_set_elm)
+    have B3:"ub_set {x} C \<noteq> {}"
+      using B2 by auto
+    have B4:" Inf (ub_set {x} C) X \<in> C"
+      by (simp add: assms ub_set_subset)
+    have B5:"x \<in> lb_set (ub_set {x} C) X"
+      by (simp add: A3 lb_set_elm ub_set_imp)
+    have B6:"x \<le> Inf (ub_set {x} C) X"
+      by (metis (no_types, lifting) A0 A1 B3 B5 Pow_iff has_inf_imp3 is_complete_lattice_def
+           is_inf_complete_def lb_set_mem_iff le_infI1 pow_ne_if ub_set_restrict1)
+    have B7:"Inf (ub_set {x} C) X \<in> ub_set {x} C"
+      by (simp add: B4 B6 ub_set_mem_iff)
+    have B8:"Inf (ub_set {x} C) X lb (ub_set {x} C)"
+      by (meson A0 A1 B3 PowI dual_order.trans inf_is_inf is_complete_lattice_def is_inf_complete_def is_inf_in_imp2 lb_def pow_ne_if ub_set_subset)
+    have B9:"is_min (Inf (ub_set {x} C) X) (ub_set {x} C)"
+      by (simp add: B7 B8 is_min_def lb_set_if)
+    show "has_min (ub_set {x} C)"
+      using B9 is_min_imp_has_min by auto
+   qed
+  show ?thesis
+    by (metis A1 B0 Pow_not_empty assms ex_in_conv is_clr_def)
+qed
+    
+end
+
+context
+  fixes C X::"'a::order set" 
+  assumes A0:"is_complete_lattice X" and
+          A1:" C \<subseteq> X" and
+          A2:"is_clr C X"
+begin
+
+lemma complete_clr_sup:
+  assumes "A \<subseteq> C"
+  shows "is_sup (Inf (ub_set A C) X) A C \<and> Sup A C =  (Inf (ub_set A C) C)"
+proof-
+  let ?U="ub_set A C" let ?I="Inf ?U X"
+  have B0:"(ub_set A C \<noteq> {})"
+    by (metis A0 A1 A2 IntD2 assms closure_range.intro closure_range.space_is_ne empty_not_insert if_has_max_max_unique inf.order_iff insert_absorb is_complete_imp_min_and_sup is_max_imp_set is_max_sanity_check sup_comp_max_imp_inf_comp_min top_is_closed2)
+  have B1:"has_inf (ub_set A C) X"
+    by (meson A0 A1 B0 PowI dual_order.trans is_complete_lattice_def is_inf_complete_def pow_ne_if ub_set_subset)
+  have B2:"Inf (ub_set A C) X = Inf (ub_set A C) C "
+    by (metis A1 A2 B1 clr_inf_closed inf_subset_eq ub_set_subset)
+  have B3:"has_inf (ub_set A C) C"
+    by (meson A1 A2 B1 clr_inf_closed inf_subset_eq ub_set_subset)
+  have B4:"Sup A C =  (Inf (ub_set A C) C)"
+    by (simp add: B3 assms sup_in_eq_inf_in_ub)
+  have B5:"is_sup (Inf (ub_set A C) C) A C"
+    by (simp add: B3 assms inf_is_inf is_inf_ub_imp_is_sup)
+  show ?thesis
+    by (simp add: B2 B4 B5)
+qed
+
+end
+lemma closure_sups1:
+  fixes f::"'a::order \<Rightarrow> 'a::order" and A X::"'a::order set" 
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X"
+  shows "f (Sup A X) = (Sup (f`A) (f`X))"
+
+  
 
 
 end
-
