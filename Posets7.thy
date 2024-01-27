@@ -3100,6 +3100,12 @@ lemma sets_have_inf7:
   "is_inf UNIV {} UNIV"
   by(auto simp add: is_inf_def is_max_def lb_set_def ub_set_def lb_def ub_def)
 
+
+lemma sets_have_inf8:
+  "X \<noteq> {} \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<subseteq> Pow X \<Longrightarrow> Inf A (Pow X) = (\<Inter>A)"
+  using is_inf_inf_eq sets_have_inf4 by blast
+
+
 lemma sets_have_sup1:
   "is_sup (\<Union>A) A UNIV"
   by(auto simp add:is_sup_def is_min_def lb_set_def ub_set_def lb_def ub_def)
@@ -3113,6 +3119,7 @@ lemma sets_have_sup3:
   using is_sup_sup_eq sets_have_sup1 by blast
       
 end
+
 
 
 definition is_inter_system::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
@@ -3618,6 +3625,31 @@ lemma closure_sups1:
   using complete_clr_sup3[of "X" "f" "A"] A0 A1 A2 A3
   by (metis closure_range_is_clr complete_clr_sup2 has_sup_in_set image_mono is_closure_on_def is_closure_on_imp2 is_idempotent_imp2 is_proj_on_def is_self_map_imp)
   
+definition is_moore_family::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_moore_family C X \<equiv> C \<in> Pow (Pow X) \<and> (\<forall>A \<in> Pow_ne C. (Inf A (Pow X)) \<in> C) \<and> (X \<in> C)"
+
+
+
+lemma is_moore_family_imp1:
+  "is_moore_family C X \<Longrightarrow> a \<in> C \<Longrightarrow> a \<subseteq> X"
+  using PowD is_moore_family_def by auto
+
+lemma is_moore_family_imp2:
+  "is_moore_family C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> a \<in> A \<Longrightarrow> a \<subseteq> X"
+  by (meson PowD is_moore_family_def subsetD)
+
+lemma is_moore_family_inter:
+  assumes "is_moore_family C X" and "A \<in> Pow_ne C" 
+  shows " \<Inter>A \<in> C"
+proof-
+  have B0:"(Inf A (Pow X)) = \<Inter>A \<inter> X"
+    by (simp add: sets_have_inf6)
+  have B1:"... = \<Inter>A "
+    using assms(1) assms(2) is_moore_family_imp1 by fastforce
+  show ?thesis
+    by (metis B0 B1 assms(1) assms(2) is_moore_family_def)
+qed
+
 
 
 end
