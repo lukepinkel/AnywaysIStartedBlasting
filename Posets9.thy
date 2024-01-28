@@ -522,13 +522,13 @@ lemma ub_set_min1:
   "a \<in> X \<Longrightarrow> is_min a {x \<in> X. x \<ge> a}"
   by (metis ub_set_in_singleton ub_set_min0)
 
-lemma lb_set_min0:
+lemma lb_set_max0:
   "a \<in> X \<Longrightarrow> is_max a (lb_set {a} X)"
   by (simp add: is_max_iff singleton_in_ub_set lb_set_imp)
 
-lemma lb_set_min1:
+lemma lb_set_max1:
   "a \<in> X \<Longrightarrow> is_max a {x \<in> X. x \<le> a}"
-  by (metis lb_set_in_singleton lb_set_min0)
+  by (metis lb_set_in_singleton lb_set_max0)
 
 lemma ub_set_space1:
   "is_max m X \<Longrightarrow> ub_set X X = {m}"
@@ -537,7 +537,6 @@ lemma ub_set_space1:
 lemma lb_set_space1:
   "is_min m X \<Longrightarrow> lb_set X X = {m}"
   by (metis empty_iff insertI1 is_min_def min_unique subsetI subset_singleton_iff)
-
 
 lemma ub_set_space2:
   "has_max X \<Longrightarrow> ub_set X X = {max X}"
@@ -1452,6 +1451,7 @@ lemma is_ext_imp3b:
   "is_extensive_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> lb_set A Y \<subseteq> lb_set (f`A) Y"
   by (simp add: Collect_mono_iff is_ext_imp3 lb_set_def)
 
+
 subsection Isotonicity
 
 definition is_isotone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
@@ -1477,6 +1477,13 @@ lemma is_iso_ext_imp2:
   "is_isotone_on f X \<Longrightarrow> is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
   by(simp add:is_isotone_on_def is_extensive_on_def image_subset_iff is_map_def)
 
+lemma is_iso_sup:
+  "is_isotone_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> has_sup (f`A) (f`X) \<Longrightarrow> Sup (f`A) (f`X) \<le> f (Sup A X)"
+  by (meson has_sup_in_imp1 has_sup_in_set imageI is_isotone_imp2 sup_imp_lt_ub ub_set_if ub_set_imp1)
+
+lemma is_iso_inf:
+  "is_isotone_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> has_inf (f`A) (f`X) \<Longrightarrow> f (Inf A X) \<le> Inf (f`A) (f`X)"
+  by (metis equalityD1 has_inf_in_set imageI image_mono inf_antitone1 is_isotone_imp3 less_inf_if1b less_inf_imp3b)
 
 subsection Antitonicity
 definition is_antitone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
@@ -1850,6 +1857,11 @@ lemma dw_cl_if:
   "\<And>A x.  x \<in> X \<Longrightarrow> x \<in> dw_cl A X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
   by (simp add: dw_cl_def)
 
+lemma up_cl_ub:
+  "up_cl {x} X = ub_set {x} X"
+  by(simp add:up_cl_def ub_set_def ub_def)
+  
+
 subsection AsOperator
 lemma up_cl_in_carrier1:
   "\<And>A x.  x \<in> up_cl A X \<Longrightarrow> (x \<in> A \<or> x \<in> X)"
@@ -2123,86 +2135,198 @@ lemma is_dw_cl_if2:
 
 section FilterIdeals
 subsection Filters
+subsubsection GeneralFilters
+
 definition is_filter::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
   "is_filter F X \<equiv> F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X"
 
-definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-   "is_principal_filter F X \<equiv> F \<subseteq> X \<and> is_filter F X \<and> has_min F "
+definition is_ideal::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
+  "is_ideal I X \<equiv> I \<subseteq> X \<and> is_updir I \<and> is_dw_cl I X"
 
 lemma is_filter_imp0:
   "is_filter F X \<Longrightarrow> is_dwdir F"
   by (simp add: is_filter_def)
 
+lemma is_ideal_imp0:
+  "is_ideal I X \<Longrightarrow> is_updir I"
+  by (simp add: is_ideal_def)
+
 lemma is_filter_imp01:
   "is_filter F X \<Longrightarrow>  (\<And>a b. a \<in> F \<and>  b \<in> F \<Longrightarrow>  (\<exists>c \<in> F. c \<le> a \<and> c \<le> b))"
   by (simp add: is_dwdir_imp3 is_filter_imp0)
+
+lemma is_ideal_imp01:
+  "is_ideal I X \<Longrightarrow>  (\<And>a b. a \<in> I \<and>  b \<in> I \<Longrightarrow>  (\<exists>c \<in> I. c \<ge> a \<and> c \<ge> b))"
+  by (simp add: is_updir_imp3 is_ideal_imp0)
 
 lemma is_filter_obtains:
   assumes "is_filter F X" and  "a \<in> F" and  "b \<in> F" 
   obtains c where  "c \<in> F \<and>  c \<le> a \<and> c \<le> b"
   by (meson assms(1) assms(2) assms(3) is_filter_imp01)
 
+lemma is_ideal_obtains:
+  assumes "is_ideal I X" and  "a \<in> I" and  "b \<in> I" 
+  obtains c where  "c \<in> I \<and>  c \<ge> a \<and> c \<ge> b"
+  by (meson assms(1) assms(2) assms(3) is_ideal_imp01)
+
 lemma is_filter_imp1:
   "is_filter F X \<Longrightarrow> is_up_cl F X"
   by (simp add: is_filter_def)
 
+lemma is_ideal_imp1:
+  "is_ideal I X \<Longrightarrow> is_dw_cl I X"
+  by (simp add:is_ideal_def)
+
 lemma is_filter_imp20:
   "is_filter F X \<Longrightarrow> F \<subseteq> X"
-  by (simp add: is_filter_def)     
+  by (simp add: is_filter_def)    
 
 lemma is_filter_imp21:
   "is_filter F X \<Longrightarrow> F \<in> Pow X"
   by (simp add: is_filter_def)
 
+lemma is_ideal_imp20:
+  "is_ideal I X \<Longrightarrow> I \<subseteq> X"
+  by (simp add: is_ideal_def)    
+
+lemma is_ideal_imp21:
+  "is_ideal I X \<Longrightarrow> I \<in> Pow X"
+  by (simp add: is_ideal_def)
+
 lemma is_filter_imp3:
   "is_filter F X \<Longrightarrow> F \<noteq> {}"
   by (simp add: is_filter_def is_dwdir_imp1)
+
+lemma is_ideal_imp3:
+  "is_ideal I X \<Longrightarrow> I \<noteq> {}"
+  by (simp add: is_ideal_def is_updir_imp1)
 
 lemma is_filter_imp4:
   "is_filter F X \<Longrightarrow> F \<in> Pow_ne X"
   by (simp add: is_filter_def is_dwdir_imp1)
 
+lemma is_ideal_imp4:
+  "is_ideal I X \<Longrightarrow> I \<in> Pow_ne X"
+  by (simp add: is_ideal_def is_updir_imp1)
+
 lemma is_filter_if:
   "F \<subseteq> X \<Longrightarrow> is_dwdir F \<Longrightarrow> is_up_cl F X \<Longrightarrow> is_filter F X"
   by (simp add: is_filter_def)
+
+lemma is_ideal_if:
+  "I \<subseteq> X \<Longrightarrow> is_updir I \<Longrightarrow> is_dw_cl I X \<Longrightarrow> is_ideal I X"
+  by (simp add: is_ideal_def)
+
+lemma filter_contains_max:
+  assumes A0:"is_max m X" and A1:"is_filter F X"
+  shows "m \<in> F"
+proof-
+  obtain f where A2:"f \<in> F"
+    by (metis A1 equals0I is_filter_imp3)
+  have B0:"f \<le> m"
+    by (meson A0 A1 A2 is_filter_imp20 is_sup_in_imp2 subsetD sup_eq_top1)
+  show "m \<in> F"
+    using A0 A1 A2 B0 is_filter_imp1 is_max_imp is_up_cl_imp2 by blast
+qed
+
+
+lemma ideal_contains_min:
+  assumes A0:"is_min m X" and A1:"is_ideal I X"
+  shows "m \<in> I"
+proof-
+  obtain x where A2:"x \<in> I"
+    by (metis A1 equals0I is_ideal_imp3)
+  have B0:"x \<ge> m"
+    using A0 A1 A2 inf_eq_bot1 is_ideal_imp20 is_inf_in_imp2 by blast
+  show "m \<in> I"
+    using A0 A1 A2 B0 is_dw_cl_imp2 is_ideal_imp1 is_min_iff by blast
+qed
+
+subsubsection PrincipalFilters
+
+definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+   "is_principal_filter F X \<equiv> F \<subseteq> X \<and> is_filter F X \<and> has_min F "
+
+definition is_principal_ideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+   "is_principal_ideal I X \<equiv> is_ideal I X \<and> has_max I "
 
 lemma principal_filter_imp1:
   "is_principal_filter F X \<Longrightarrow> (\<exists>m. is_min m F)"
   using has_min_def is_principal_filter_def by blast
 
+lemma principal_ideal_imp1:
+  "is_principal_ideal I X \<Longrightarrow> (\<exists>m. is_max m I)"
+  using has_max_def is_principal_ideal_def by blast
+
 lemma principal_filter_obtains:
   assumes "is_principal_filter F X"
-  obtains m where "m = min F"
-  by simp
+  obtains m where "m = min F"by simp
+
+lemma principal_ideal_obtains:
+  assumes "is_principal_ideal I X"
+  obtains m where "m = max I" by simp
 
 lemma principal_filter_imp2:
   "is_principal_filter F X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<ge> min F \<Longrightarrow> x \<in> F"
   by (metis is_filter_imp1 is_min_imp is_principal_filter_def is_up_cl_imp2 min_if principal_filter_imp1) 
 
+lemma principal_ideal_imp2:
+  "is_principal_ideal I X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le> max I \<Longrightarrow> x \<in> I"
+  by (metis is_ideal_imp1 is_max_imp is_principal_ideal_def is_dw_cl_imp2 max_if principal_ideal_imp1)
+
 lemma principal_filter_imp3:
   "is_principal_filter F X \<Longrightarrow> x \<in> F \<Longrightarrow> x \<ge> min F"
   using is_min_imp lb_set_imp min_if principal_filter_imp1 by blast
 
+lemma principal_ideal_imp3:
+  "is_principal_ideal I X \<Longrightarrow> x \<in> I \<Longrightarrow> x \<le> max I"
+  using is_max_imp ub_set_imp max_if principal_ideal_imp1 by blast
+
+
 lemma principal_filter_imp4:
   "is_principal_filter F X \<Longrightarrow> F \<subseteq> X"
   by (simp add: is_principal_filter_def)
+
+lemma principal_ideal_imp4:
+  "is_principal_ideal I X \<Longrightarrow> I \<subseteq> X"
+  by (simp add: is_ideal_def is_principal_ideal_def)
+
 
 lemma principal_filter_imp5:
   assumes "is_principal_filter F X"
   shows "\<forall>x. x \<in> F \<longleftrightarrow> (x \<in> X \<and> x \<ge> min F)"
   using assms principal_filter_imp2 principal_filter_imp3 principal_filter_imp4 by blast
 
+lemma principal_ideal_imp5:
+  assumes "is_principal_ideal I X"
+  shows "\<forall>x. x \<in> I \<longleftrightarrow> (x \<in> X \<and> x \<le> max I)"
+  using assms principal_ideal_imp2 principal_ideal_imp3 principal_ideal_imp4 by blast
+
+
 lemma principal_filter_imp6:
   "is_principal_filter F X \<Longrightarrow> F = {x \<in> X. x \<ge> min F}"
   by (simp add: Orderings.order_eq_iff principal_filter_imp5 subset_iff)
+
+lemma principal_ideal_imp6:
+  "is_principal_ideal I X \<Longrightarrow> I = {x \<in> X. x \<le> max I}"
+  by (simp add: Orderings.order_eq_iff principal_ideal_imp5 subset_iff)
 
 lemma principal_filter_imp7:
   "is_principal_filter F X \<Longrightarrow> is_filter F X"
   by (simp add: is_principal_filter_def)
 
+lemma principal_ideal_imp7:
+  "is_principal_ideal I X \<Longrightarrow> is_ideal I X"
+  by (simp add: is_principal_ideal_def)
+
 lemma principal_filter_imply70:
   "is_principal_filter F X \<Longrightarrow> is_dwdir F"
   using is_filter_imp0 principal_filter_imp7 by blast
+
+lemma principal_ideal_imply70:
+  "is_principal_ideal I X \<Longrightarrow> is_updir I"
+  using is_ideal_imp0 principal_ideal_imp7 by blast
+
 
 lemma principal_filter_if1:
   "a \<in> X \<Longrightarrow> is_principal_filter (ub_set {a} X) X"
@@ -2213,52 +2337,25 @@ lemma principal_filter_if1:
   apply (simp add: is_upcl_in_imp0 ub_is_upset)
   apply (simp add: is_upcl_in_imp0 ub_is_upset)
   by (simp add: has_sup_has_lub has_sup_singleton2)
-  
+
+
+lemma principal_ideal_if1:
+  "a \<in> X \<Longrightarrow> is_principal_ideal (lb_set {a} X) X"
+  apply(auto simp add:is_principal_ideal_def is_ideal_def is_updir_def is_dw_cl_def)
+  apply (simp add: lb_set_mem_iff)
+  using singleton_in_ub_set apply auto[1]
+  apply (metis empty_not_insert empty_subsetI has_inf_def has_inf_singleton2 has_ub_def has_ub_iff insert_subset lb_set_in_degenerate ub_set_space2 ulu_eq_u)
+  apply (metis Int_commute Int_empty_left inf_le1 insert_absorb insert_inter_insert is_dw_cl_def lb_is_downset)
+  using dw_cl_in_extensive lb_set_subset apply auto[1]
+  by (simp add: has_inf_has_glb has_inf_singleton2)
+
 lemma principal_filter_if2:
   "a \<in> X \<Longrightarrow> is_principal_filter {x \<in> X. x \<ge> a} X"
   by (metis principal_filter_if1 ub_set_in_singleton)
 
-definition is_ideal::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" where
-  "is_ideal I X \<equiv> is_updir I \<and> is_dw_cl I X"
-
-definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-   "is_pfilter F X \<equiv> is_filter F X \<and> F \<noteq> X " 
-
-definition is_pideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-   "is_pideal I X \<equiv> is_ideal I X \<and> I \<noteq> X " 
-
-definition is_principal_ideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-   "is_principal_ideal I X \<equiv> is_ideal I X \<and> has_max I "
-
-subsection ProperFilters
-lemma is_pfilter_in_imp:
-  "\<And>F X. is_pfilter F X \<Longrightarrow>  (is_filter F X) \<and> (F \<noteq>  X)"
-  by (simp add:is_pfilter_def)
-
-lemma is_pfilter_if:
-  "\<And>F X.  (is_filter F X) \<and> ( F \<noteq>  X) \<Longrightarrow> is_pfilter F X "
-  by (simp add:is_pfilter_def)
-
-lemma is_pfilter_in_imp2:
-  "\<And>F X. is_pfilter F X \<Longrightarrow>  (F \<noteq> X \<and> F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X)"
-  by (auto simp add: is_pfilter_def is_filter_def)
-
-lemma is_pfilter_in_if2:
-  "\<And>F X.  (F \<noteq> X \<and>  F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X) \<Longrightarrow> is_pfilter F X "
-  by (simp add: is_pfilter_def is_filter_def)
-
-lemma is_principal_filter_imp1:
-  "is_principal_filter F X \<Longrightarrow> \<exists>m. is_min m F"
-  by (simp add: has_min_iff2 is_principal_filter_def)
-
-lemma is_principal_filter_obtains:
-  assumes "is_principal_filter F X"  obtains m where  "is_min m F"
-  using assms is_principal_filter_imp1 by auto
-
-lemma up_cl_ub:
-  "up_cl {x} X = ub_set {x} X"
-  by(simp add:up_cl_def ub_set_def ub_def)
-  
+lemma principal_ideal_if2:
+  "a \<in> X \<Longrightarrow> is_principal_ideal {x \<in> X. x \<le> a} X"
+  by (metis lb_set_in_singleton principal_ideal_if1)
 
 lemma is_principal_filter_equiv:
   assumes A0:"F \<subseteq> X"
@@ -2266,7 +2363,7 @@ lemma is_principal_filter_equiv:
 proof
   assume L:?L 
   obtain m where B0:"is_min m F"
-    using L is_principal_filter_imp1 by auto
+    using L principal_filter_imp1 by blast
   have B1:"\<forall>x \<in> F. m \<le> x"
     by (meson B0 is_min_iff)
   have B2:"\<forall>x \<in> X. m \<le> x \<longrightarrow> x \<in> F"
@@ -2291,6 +2388,72 @@ proof
   show ?L
     by (metis B5 B8 principal_filter_if1)
 qed
+
+
+subsection ProperFilters
+
+definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+   "is_pfilter F X \<equiv> is_filter F X \<and> F \<noteq> X " 
+
+definition is_pideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+   "is_pideal I X \<equiv> is_ideal I X \<and> I \<noteq> X " 
+
+lemma is_pfilter_in_imp:
+  "\<And>F X. is_pfilter F X \<Longrightarrow>  (is_filter F X) \<and> (F \<noteq>  X)"
+  by (simp add:is_pfilter_def)
+
+lemma is_pfilter_if:
+  "\<And>F X.  (is_filter F X) \<and> ( F \<noteq>  X) \<Longrightarrow> is_pfilter F X "
+  by (simp add:is_pfilter_def)
+
+lemma is_pfilter_in_imp2:
+  "\<And>F X. is_pfilter F X \<Longrightarrow>  (F \<noteq> X \<and> F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X)"
+  by (auto simp add: is_pfilter_def is_filter_def)
+
+lemma is_pfilter_in_if2:
+  "\<And>F X.  (F \<noteq> X \<and>  F \<subseteq> X \<and> is_dwdir F \<and> is_up_cl F X) \<Longrightarrow> is_pfilter F X "
+  by (simp add: is_pfilter_def is_filter_def)
+
+lemma is_pideal_in_imp:
+  "\<And>F X. is_pideal F X \<Longrightarrow>  (is_ideal F X) \<and> (F \<noteq>  X)"
+  by (simp add:is_pideal_def)
+
+lemma is_pideal_if:
+  "\<And>F X.  (is_ideal F X) \<and> ( F \<noteq>  X) \<Longrightarrow> is_pideal F X "
+  by (simp add:is_pideal_def)
+
+lemma is_pideal_in_imp2:
+  "\<And>F X. is_pideal F X \<Longrightarrow>  (F \<noteq> X \<and> F \<subseteq> X \<and> is_updir F \<and> is_dw_cl F X)"
+  by (auto simp add: is_pideal_def is_ideal_def)
+
+lemma is_pideal_in_if2:
+  "\<And>F X.  (F \<noteq> X \<and>  F \<subseteq> X \<and> is_updir F \<and> is_dw_cl F X) \<Longrightarrow> is_pideal F X "
+  by (simp add: is_pideal_def is_ideal_def)
+
+lemma filter_with_bot:
+  "is_filter F X \<Longrightarrow> is_min m X \<Longrightarrow> m \<in> F \<Longrightarrow> F=X"
+  by (meson is_filter_imp1 is_filter_imp20 is_min_iff is_up_cl_imp2 order_class.order_eq_iff subsetI)
+
+lemma ideal_with_top:
+  "is_ideal I X \<Longrightarrow> is_max m X \<Longrightarrow> m \<in> I \<Longrightarrow> I=X"
+  by (meson is_dw_cl_imp2 is_ideal_imp1 is_ideal_imp20 is_max_sanity_check subsetI subset_antisym)
+
+lemma filter_no_bot_imp_proper:
+  "is_filter F X \<Longrightarrow> is_min m X \<Longrightarrow> m \<notin> F \<Longrightarrow> is_pfilter F X"
+  using is_min_iff is_pfilter_if by auto
+
+lemma filter_no_bot_if_proper:
+  "is_pfilter F X \<Longrightarrow> is_min m X \<Longrightarrow> m \<notin> F"
+  using filter_with_bot is_pfilter_in_imp by blast
+
+lemma ideal_no_top_imp_proper:
+  "is_ideal I X \<Longrightarrow> is_max m X \<Longrightarrow> m \<notin> I \<Longrightarrow> is_pideal I X"
+  using is_max_sanity_check is_pideal_def by auto
+
+lemma ideal_no_top_if_proper:
+  "is_pideal I X \<Longrightarrow> is_max m X \<Longrightarrow> m \<notin> I"
+  using ideal_with_top is_pideal_in_imp by blast
+
 
 section ClosureRanges
 
