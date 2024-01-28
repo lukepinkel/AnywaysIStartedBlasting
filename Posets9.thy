@@ -1680,9 +1680,13 @@ lemma closure_on_sup_eq1:
   shows "has_sup (f`A) (f`X) \<and> (f (Sup A X) = (Sup (f`A) (f`X)))"
   by (simp add: assms(1) assms(2) assms(3) closure_on_ineq3 closure_on_ineq4 is_sup_sup_eq)
 
-
 definition cl_sup_cond1::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "cl_sup_cond1 f X \<equiv> (\<forall>A \<in> Pow X. has_sup A X \<longrightarrow> Sup A X \<le> f(Sup A X) \<and> f(Sup A X) = (Sup (f`A) (f`X)))"
+
+lemma cl_imp_cl_sup_cond:
+  "is_closure_on f X \<Longrightarrow> cl_sup_cond1 f X"
+  by (meson Pow_iff cl_eq_imp_ext1 cl_sup_cond1_def closure_eq_if_closure closure_on_sup_eq1 has_sup_in_set is_closure_on_imp2)
+  
 
 section Directedness
 
