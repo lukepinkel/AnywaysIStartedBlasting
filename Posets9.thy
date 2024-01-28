@@ -526,9 +526,26 @@ lemma lb_set_min0:
   "a \<in> X \<Longrightarrow> is_max a (lb_set {a} X)"
   by (simp add: is_max_iff singleton_in_ub_set lb_set_imp)
 
-lemma ul_set_min1:
+lemma lb_set_min1:
   "a \<in> X \<Longrightarrow> is_max a {x \<in> X. x \<le> a}"
   by (metis lb_set_in_singleton lb_set_min0)
+
+lemma ub_set_space1:
+  "is_max m X \<Longrightarrow> ub_set X X = {m}"
+  by (metis emptyE insertI1 is_max_def max_unique subsetI subset_singleton_iff)
+
+lemma lb_set_space1:
+  "is_min m X \<Longrightarrow> lb_set X X = {m}"
+  by (metis empty_iff insertI1 is_min_def min_unique subsetI subset_singleton_iff)
+
+
+lemma ub_set_space2:
+  "has_max X \<Longrightarrow> ub_set X X = {max X}"
+  using if_has_max_max_unique max_if ub_set_space1 by blast
+
+lemma lb_set_space2:
+  "has_min X \<Longrightarrow> lb_set X X = {min X}"
+  using if_has_min_min_unique lb_set_space1 min_if by blast
 
 
 section SupInf
@@ -871,6 +888,95 @@ lemma sup_imp_lt_ub:
   "has_sup A X \<Longrightarrow> b \<in> ub_set A X \<Longrightarrow> b \<ge> Sup A X"
   by (simp add: has_sup_imp3 ub_set_mem_iff)
 
+lemma sup_eq_top1:
+  "is_max m X \<Longrightarrow> is_sup m X X"
+  by (simp add: is_max_imp_is_sup)
+
+lemma sup_eq_top2:
+  "has_max X \<Longrightarrow> Sup X X = max X"
+  by (simp add: has_max_imp_has_sup max_if sup_in_max)
+
+lemma inf_eq_bot1:
+  "is_min m X \<Longrightarrow> is_inf m X X"
+  by (simp add: is_min_imp_is_inf)
+
+lemma inf_eq_bot2:
+  "has_min X \<Longrightarrow> Inf X X = min X"
+  by (simp add: has_min_imp_has_inf inf_in_min min_if)
+
+lemma sup_empty_iff:
+  "has_sup {} X \<longleftrightarrow> has_min X \<and> Sup {} X = min X"
+  using sup_in_degenerate sup_in_degenerate2 sup_in_degenerate3 by blast
+
+lemma inf_empty_iff:
+  "has_inf {} X \<longleftrightarrow> has_max X \<and> Inf {} X = max X"
+  using inf_in_degenerate inf_in_degenerate2 inf_in_degenerate3 by blast
+
+lemma less_inf_imp1:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf i A X \<Longrightarrow> x \<le> i \<Longrightarrow> a \<in> A \<Longrightarrow> x \<le> a"
+  using is_inf_in_imp2 order.trans by blast
+
+lemma less_inf_imp1b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> x \<le> Inf A X \<Longrightarrow> a \<in> A \<Longrightarrow> x \<le> a"
+  using inf_is_inf less_inf_imp1 by blast
+
+lemma less_inf_imp2:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf i A X \<Longrightarrow> x \<le> i \<Longrightarrow> (\<forall>a \<in> A. x \<le> a)"
+  using is_inf_in_imp2 order.trans by blast        
+
+lemma less_inf_imp2b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> x \<le> Inf A X \<Longrightarrow> (\<forall>a \<in> A. x \<le> a)"
+  using less_inf_imp1b by blast
+
+lemma less_inf_imp3:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf i A X \<Longrightarrow> x \<le> i \<Longrightarrow> x lb A"
+  by (meson is_lb_simp2 less_inf_imp2)
+
+lemma less_inf_imp3b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> x \<le> Inf A X \<Longrightarrow> x lb A"
+  using inf_is_inf less_inf_imp3 by blast
+
+lemma less_inf_if1:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf i A X \<Longrightarrow> x lb A \<Longrightarrow>  x \<le> i"
+  by (simp add: is_inf_in_imp3 lb_def)
+
+lemma less_inf_if1b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> x lb A \<Longrightarrow>  x \<le> Inf A X"
+  by (simp add: inf_imp_gt_lb lb_set_if)
+
+lemma greater_sup_imp1:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_sup s A X \<Longrightarrow> x \<ge> s \<Longrightarrow> a \<in> A \<Longrightarrow> x \<ge> a"
+  using is_sup_in_imp2 order.trans by blast
+
+lemma greater_sup_imp1b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> x \<ge> Sup A X \<Longrightarrow> a \<in> A \<Longrightarrow> x \<ge> a"
+  by (meson greater_sup_imp1 sup_is_sup)
+
+lemma greater_sup_imp2:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_sup s A X \<Longrightarrow> x \<ge> s \<Longrightarrow> (\<forall>a \<in> A. a \<le> x)"
+  using is_sup_in_imp2 order.trans by blast                
+
+lemma greater_sup_imp2b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> x \<ge> Sup A X \<Longrightarrow> (\<forall>a \<in> A. a \<le> x)"
+  using greater_sup_imp1b by blast
+
+lemma greater_sup_imp3:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>is_sup s A X \<Longrightarrow> x \<ge> s \<Longrightarrow> x ub A"
+  by (meson greater_sup_imp2 ub_def)
+                                             
+lemma greater_sup_imp3b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>has_sup A X \<Longrightarrow> x \<ge> Sup A X \<Longrightarrow> x ub A"
+  by (meson greater_sup_imp3 sup_is_sup)
+
+lemma greater_sup_if1:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>is_sup s A X \<Longrightarrow> x ub A \<Longrightarrow>  s \<le> x "
+  by (simp add: is_sup_in_imp3 ub_def)            
+
+lemma greater_sup_if1b:
+  "x \<in> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>has_sup A X \<Longrightarrow> x ub A \<Longrightarrow>  Sup A X \<le> x "
+  by (simp add: sup_imp_lt_ub ub_set_if)
+
+
 subsection Misc
 
 lemma inf_in_expression:
@@ -1126,9 +1232,9 @@ proof-
     obtain Ai where B2:"Ai \<in> A \<and> s = Sup Ai X"
       using A1 by blast
     have B3:"\<forall>x \<in> Ai. x \<le> u"
-      by (meson B2 UnionI assms ub_set_mem)
+      using B2 assms ub_set_mem by fastforce
     show "s \<le> u"
-      using B0 B2 B3 ex sup_is_sup is_sup_in_imp3 by blast
+      by (simp add: B0 B2 B3 ex has_sup_imp3)
   qed
   show ?thesis
     using B0 B1 ub_set_elm by blast
@@ -1462,7 +1568,6 @@ lemma cl_eq_imp_ext1:
   "x \<in> X \<Longrightarrow>  x \<le> f x"
   by (simp add: cl_eq closure_eq_imp2[of "f" "X" "x" "x"])
             
-
 lemma cl_eq_imp_iso1:
   shows "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> x1 \<le> f x2"
   using cl_eq_imp_ext1[of "x2"]  dual_order.trans by auto
@@ -1527,6 +1632,54 @@ lemma closure_eq_imp_closure:
 lemma closure_if_cl_eq:
    "is_closure_on f X \<longleftrightarrow> (is_self_map f X \<and> closure_eq f X)"
   using closure_eq_if_closure closure_eq_imp_closure is_closure_on_imp2 by blast
+
+lemma closure_on_ineq1:
+  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X"
+  shows "f (Sup A X ) ub f`A"
+  apply(auto simp add:ub_def)
+  using assms(1) assms(2) assms(3) has_sup_in_imp2 has_sup_in_set is_closure_imp_iso_imp1 by blast
+
+lemma lt_closed_imp_image_lt_closed:
+  assumes "is_closure_on f X" and "b \<in> f`X" and "a \<in> X" and "a \<le> b"
+  shows "f a \<le> b "
+  using assms(1) assms(2) assms(3) assms(4) closure_eq_if_closure_r by blast
+
+lemma extensive_then_lt_image:
+  assumes "is_extensive_on f X" and "b \<in> f`X" and "A \<subseteq> X" and  "b ub (f`A)"
+  shows "b ub A"
+  apply(auto simp add:ub_def)
+  by (meson assms(1) assms(3) assms(4) imageI is_extensive_on_def order_trans subsetD ub_def)
+
+lemma closure_on_ineq2:
+  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" and "b \<in> ub_set (f`A) (f`X)"
+  shows "f (Sup A X ) \<le> b"
+proof-
+  have B0:"b ub (f`A)"
+    using assms(4) ub_set_imp1 by blast
+  have B1:"b ub A"
+    by (meson B0 assms(1) assms(2) assms(4) extensive_then_lt_image is_closure_on_imp1 ub_set_imp2)
+  have B2:"Sup A X \<le> b"
+    by (meson B1 assms(1) assms(2) assms(3) assms(4) greater_sup_if1b is_closure_on_imp2 is_self_map_imp subset_iff ub_set_imp2)
+  show "f (Sup A X) \<le> b"
+    by (meson B2 assms(1) assms(3) assms(4) has_sup_in_set lt_closed_imp_image_lt_closed ub_set_imp2)
+qed
+
+lemma closure_on_ineq3:
+  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
+  shows "is_sup (f (Sup A X)) (f`A) (f`X)"
+  by (simp add: assms(1) assms(2) assms(3) closure_on_ineq1 closure_on_ineq2 has_sup_in_set is_min_iff is_sup_def ub_set_if)
+
+lemma closure_on_ineq4:
+  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
+  shows "has_sup (f`A) (f`X)"
+  using closure_on_ineq3
+  by (metis assms(1) assms(2) assms(3) has_min_ub_imp_has_sup is_min_imp_has_min is_sup_in_imp1)
+
+lemma closure_on_sup_eq1:
+  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
+  shows "has_sup (f`A) (f`X) \<and> (f (Sup A X) = (Sup (f`A) (f`X)))"
+  by (simp add: assms(1) assms(2) assms(3) closure_on_ineq3 closure_on_ineq4 is_sup_sup_eq)
+
 
 definition cl_sup_cond1::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "cl_sup_cond1 f X \<equiv> (\<forall>A \<in> Pow X. has_sup A X \<longrightarrow> Sup A X \<le> f(Sup A X) \<and> f(Sup A X) = (Sup (f`A) (f`X)))"
@@ -2085,7 +2238,7 @@ lemma principal_filter_if1:
   apply(auto simp add:is_principal_filter_def is_filter_def is_dwdir_def is_up_cl_def)
   using ub_set_imp2 apply blast
   using is_sup_def is_sup_singleton2 min_imp_ne apply blast
-  apply (metis empty_subsetI has_lb_def has_lb_iff has_sup_def has_sup_singleton2 insert_subset is_inf_def is_sup_lb_imp_is_inf max_imp_ne sup_is_sup ub_set_in_degenerate)
+  apply (metis insert_iff is_max_singleton is_min_sanity_check lb_def ub_set_max ub_set_min0)
   apply (simp add: is_upcl_in_imp0 ub_is_upset)
   apply (simp add: is_upcl_in_imp0 ub_is_upset)
   by (simp add: has_sup_has_lub has_sup_singleton2)
@@ -2150,7 +2303,7 @@ proof
   have B3:"F \<subseteq> up_cl {m} X"
     by (meson B1 assms singletonI subset_eq up_closure_in_imp)
   have B4:"up_cl {m} X \<subseteq> F"
-    by (metis B0 Diff_eq_empty_iff Diff_subset L is_filter_def assms insert_subset is_min_imp is_principal_filter_def is_upcl_in_imp0 up_cl_in_isotone)
+    by (simp add: B2 subset_eq up_cl_def)
   show ?R
     using B0 B3 B4 assms is_min_imp by blast
  next
@@ -2158,7 +2311,7 @@ proof
   obtain x where B5:"x \<in> X \<and> F = up_cl {x} X"
     using R by blast
   have B6:"is_min x ( up_cl {x} X)"
-    by (metis B5 dual_order.refl is_min_iff singletonD singletonI up_cl_in_obtai1 up_closure_in_imp)
+    by (simp add: B5 ub_set_min0 up_cl_ub)
   have B7:"is_min x (ub_set {x} X)"
     using B6 up_cl_ub[of "x" "X"] by force
   have B8:"F = ub_set {x} X"
@@ -2786,16 +2939,10 @@ lemma sup_cl_idempotent:
       obtain E where P1:"E \<in> Pow_ne (sup_cl A X) \<and> has_sup E X \<and> Sup E X = s"
         by (meson P0 sup_cl_idempotent0)
       have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)"
-        using P1 sup_cl_obtains by (metis DiffE PowD insert_absorb insert_subset)
+        using P1 sup_cl_idempotent1 by auto
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Sup Ai X}"
       have B1:"\<forall>x \<in> E.  ?P (?f x) x"
-        proof
-          fix x assume A2:"x \<in> E"
-          have B10:"\<exists>Ex. ?P Ex x"
-            using A2 B0 by fastforce
-          show "?P (?f x) x"
-            using someI_ex[OF B10] by blast
-        qed
+        by (smt (verit, best) B0 someI)
       have B2:"?S = E"
       proof
         show "?S \<subseteq> E"
@@ -3575,20 +3722,16 @@ proof-
       by (simp add: A1 ub_set_subset2)
     have B3:"has_inf ?P X"
       by (simp add: A0 B0 B2 inf_complete_imp0)
-    have B4:"Inf ?P X = Inf ?P C"
-      by (simp add: A3 B0 ub_set_subset)
-    have B5:"Inf ?P C \<in> C"
-      by (meson A3 B0 PowI has_inf_in_set pow_ne_if ub_set_subset)
-    have B6:"Inf ?P C lb ?P"
-      by (metis B3 B4 has_inf_in_imp2 lb_def)
-    have B7:"x lb ?P"
-      by (simp add: is_lb_simp2 ub_set_imp)
-    have B8:"x \<le> Inf ?P C"
-      by (metis A5 B3 B4 B7 has_inf_imp3 lb_def)
-    have B9:"Inf ?P C \<in> ?P"
-      by (simp add: B5 B8 ub_set_mem_iff)
-    have B10:"is_min (Inf ?P C) ?P"
-      by (simp add: B6 B9 is_min_def lb_set_if)
+    obtain i where B30:"is_inf i ?P X"
+      using B3 inf_obtain by blast
+    have B31:"i \<in> C \<and> i lb ?P"
+      by (metis A3 B0 B30 PowI has_inf_in_set is_inf_in_imp1 is_inf_inf_eq lb_set_imp1 pow_ne_if ub_set_subset)
+    have B32:"x \<le> i"
+      by (meson A5 B30 insertCI is_inf_in_imp3 ub_set_mem)
+    have B33:"i \<in> ?P"
+      by (metis B31 B32 singletonI up_cl_ub up_closure_in_imp)
+    have B10:"is_min i ?P"
+      using B2 B30 B33 is_inf_in_set_imp_is_min by auto
     show "has_min (ub_set {x} C)"
       using B10 has_min_iff2 by blast
   qed
@@ -3666,7 +3809,7 @@ proof
     proof(cases "A={}")
       case True
       then show ?thesis
-        by (metis A0 assms has_inf_def is_clr_imp1 is_complete_imp_max_and_inf lb_set_in_degenerate subset_empty)
+        using A0 assms inf_in_degenerate2 is_clr_imp1 is_complete_imp_max_and_inf by blast
     next
       case False
       then show ?thesis
@@ -3687,8 +3830,7 @@ proof
   proof(cases "A={}")
     case True
     then show ?thesis
-      by (metis A0 A1 Pow_bottom assms complete_clr1 empty_subsetI has_inf_def inf_subset_eq 
-          insert_absorb insert_not_empty insert_subset is_complete_imp_max_and_inf lb_set_in_degenerate)
+      by (metis A0 A3 B0 assms complete_clr1 inf_in_degenerate2 inf_subset_eq is_clr_def is_complete_imp_max_and_inf subset_empty)
   next
     case False
     then show ?thesis
@@ -3867,6 +4009,11 @@ lemma closure_sups1:
   using complete_clr_sup3[of "X" "f" "A"] A0 A1 A2 A3
   by (metis closure_range_is_clr complete_clr_sup2 has_sup_in_set image_mono is_closure_on_def is_closure_on_imp2 is_idempotent_imp2 is_proj_on_def is_self_map_imp)
   
+lemma closure_sups2:
+  fixes f::"'a::order \<Rightarrow> 'a::order" and A X::"'a::order set" 
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> (f`X)" and  A2:"is_complete_lattice X" and A3:"X \<noteq> {}"
+  shows "Sup A (f`X) = f (Sup A X)"
+  by (metis (full_types) A0 A1 A2 A3 closure_sups1 complete_clr_sup3 subset_imageE)
 
 lemma is_moore_family_imp1:
   "is_moore_family C X \<Longrightarrow> a \<in> C \<Longrightarrow> a \<subseteq> X"
@@ -3888,7 +4035,6 @@ proof-
     by (metis B0 B1 assms(1) assms(2) is_moore_family_def)
 qed
 
-section Grilling
 
 lemma lattice_inf_is_inf:
   "is_inf (inf (a::'a::lattice) b) {a, b} UNIV"
@@ -3898,1004 +4044,11 @@ lemma lattice_sup_is_sup:
   "is_sup (sup (a::'a::lattice) b) {a, b} UNIV"
   by (simp add: is_sup_def is_min_iff ub_set_mem_iff)
 
-
 lemma order_bot_is_min:
   "is_min (bot::'a::order_bot) UNIV"
   by (simp add: is_min_bot)
 
 
-definition meshes::"('a::{lattice,order_bot} set) \<Rightarrow> ('a::{lattice,order_bot} set) \<Rightarrow> bool"  (infixl "#" 50)  where
-   "(A # B) \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B.  ((inf a b) \<noteq> bot))"
-
-definition grill::"'a::{lattice,order_bot} set \<Rightarrow> 'a::{lattice,order_bot} set" where
-  "grill A = {x::('a::{lattice,order_bot}). {x}#A}"  
-
-lemma meshes_imp1:
-  "A#B \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> B\<Longrightarrow> inf a b \<noteq> bot"
-  by (simp add: meshes_def)
-
-lemma meshes_if1:
-  "(\<And>a b. a \<in> A \<Longrightarrow> b \<in> B \<Longrightarrow> inf a b \<noteq> bot) \<Longrightarrow> A#B"
-  by (simp add: meshes_def)
-
-lemma meshes_imp2:
-  "{a}#F \<Longrightarrow> f \<in> F \<Longrightarrow> inf a f \<noteq> bot"
-  by (simp add: meshes_imp1)
-
-
-lemma mesh_prop1:
-  assumes A0:"{a}#F" and A1:"a \<le> b"
-  shows "{b}#F"
-  by (metis (no_types, lifting) A0 A1 bot.extremum_uniqueI inf.orderE inf_assoc inf_le2 meshes_def singletonD singletonI)
-
-lemma mesh_prop2:
-  assumes A0:"is_up_cl (F::'X::boolean_algebra set) UNIV" and A1:"a \<in> F"
-  shows "\<not>{-a}#F"
-proof(rule ccontr)
-  assume A2:"\<not>(\<not>({(-a)}#F))"
-  have B0:"{(-a)}#F"
-    using A2 by blast
-  have B1:"inf (-a) a = bot"
-    by simp
-  show "False"
-    by (meson A1 B0 B1 insertCI meshes_def)
-qed
-
-
-
-definition top_u1::"'a set set \<Rightarrow> bool" where
-  "top_u1 T \<equiv> (\<forall>E. E \<subseteq> T \<longrightarrow> \<Union>E \<in> T )"
-
-definition top_i1::"'a set set \<Rightarrow> bool" where
-  "top_i1 T \<equiv> (\<forall>E. (finite E \<and> E \<subseteq> T) \<longrightarrow> \<Inter>E \<in> T )"
-
-definition top_i2::"'a set set \<Rightarrow> bool" where
-  "top_i2 T \<equiv> (\<forall>E. (finite E \<and> E \<subseteq> T \<and> E \<noteq> {}) \<longrightarrow> \<Inter>E \<in> T )"
-
-definition top_i3::"'a set set \<Rightarrow> bool" where
-  "top_i3 T \<equiv> (\<forall>a1 a2. (a1 \<in> T \<and> a2 \<in> T) \<longrightarrow> a1 \<inter> a2 \<in> T)"
-
-definition is_base1_for_topology::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" where
-  "is_base1_for_topology B T \<equiv> B \<subseteq> T \<and> (\<forall>U \<in>T.  (\<exists>E \<in> Pow B. U=\<Union>E))"
-
-definition is_base2_for_topology::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" where
-  "is_base2_for_topology B T \<equiv> (B \<subseteq> T) \<and> (\<forall>U \<in> T. \<forall>x \<in> U. \<exists>B \<in> B. (x \<in> B \<and> B \<subseteq> U))"
-
-definition is_base_3_covering::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_base_3_covering B X \<equiv>   (B \<in> Dpow X) \<and> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
-
-definition is_base_3_intercont::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_base_3_intercont B X \<equiv> (B \<subseteq> Pow X) \<and>(\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
-
-definition is_base3_for_topology::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_base3_for_topology B X \<equiv> is_base_3_covering B X \<and> is_base_3_intercont B X"
-
-
-definition basis_element_int_npt::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a set \<Rightarrow> 'a set \<Rightarrow> 'a  \<Rightarrow> 'a set)" where
-  "basis_element_int_npt B X \<equiv>  \<lambda>U1 U2 x. SOME U3. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2 \<and>  U3 \<in> B"
-
-definition basis_element_npt::"'a set set \<Rightarrow>  ('a set \<Rightarrow> 'a  \<Rightarrow> 'a set)" where
-  "basis_element_npt B \<equiv>  \<lambda>U x. SOME B3. (x \<in> B3) \<and> (B3 \<subseteq> U) \<and>  (B3 \<in> B)"
-
-definition basis_element_pt::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a  \<Rightarrow> 'a set)" where
-  "basis_element_pt B X \<equiv>  \<lambda>x. SOME B3. x \<in> B3 \<and>  B3 \<in> B"
-
-
-definition is_nhood_system_in::"('a \<Rightarrow> 'a set set) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_nhood_system_in N X \<equiv> (\<forall>x \<in> X. is_pfilter (N x) (Pow X) \<and>
-                             (\<forall>V \<in> N x. x \<in> V \<and> 
-                               (\<exists>W \<in> N x. (\<forall>y \<in> W. V \<in> N y))))"
-
-definition is_topology_on::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-   "is_topology_on T X \<equiv> (T \<in> Dpow X) \<and> (top_u1 T) \<and> (top_i3 T) \<and> (X \<in> T)"
-
-definition top_from_nhoods::"('a \<Rightarrow> 'a set set) \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "top_from_nhoods N X \<equiv> {V \<in> Pow X. (\<forall>x \<in> V. V \<in> N x)}"
-
-definition nhoods_of_in::"'a \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "nhoods_of_in x T X \<equiv> {V. V \<subseteq> X \<and> (\<exists>U. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V)}"
-
-definition topologies_on::"'a set \<Rightarrow> 'a set set set" where
-  "topologies_on X \<equiv> {T. is_topology_on T X}"
-
-definition finer_topologies::"'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set set" where
-  "finer_topologies E X \<equiv> {T. is_topology_on T X \<and> E \<subseteq> T}"
-
-definition topology_generated_in::"'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "topology_generated_in E X \<equiv> (Sup {E} (topologies_on X))"
-
-definition topology_generated_by_in::"'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "topology_generated_by_in E X \<equiv> \<Inter>(finer_topologies E X)"
-
-lemma pfilter_in_powerset_simp:
-  assumes "is_pfilter F (Pow X)"
-  shows "\<forall>f \<in> F. f \<le> X"
-  using assms is_pfilter_in_imp2 by auto
-
-definition top_sup1::"'a set set set \<Rightarrow>'a set \<Rightarrow> 'a set set" where
-  "top_sup1 ET X \<equiv> topology_generated_in (\<Union>ET) X"
-
-definition top_sup2::"'a set set set \<Rightarrow>'a set \<Rightarrow> 'a set set" where
-  "top_sup2 ET X \<equiv> (\<Inter>{T. is_topology_on T X \<and> (\<Union>ET) \<subseteq> T})"
-
-
-definition nhoods_from_top::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'a set set)" where
-  "nhoods_from_top T X \<equiv> (\<lambda>x. if x \<in> X then {V \<in> Pow X. \<exists>U \<in> T. x \<in> U \<and> U \<subseteq> V} else undefined)"
-
-definition nhood_base_from_base::"'a set set \<Rightarrow> 'a set \<Rightarrow>  ('a \<Rightarrow> 'a set set)" where
-  "nhood_base_from_base B X \<equiv> (\<lambda>x. if x \<in> X then {Bx \<in> B. x \<in> Bx} else undefined)"
-
-definition is_nhood_base::"('a \<Rightarrow> 'a set set) \<Rightarrow> ('a \<Rightarrow> 'a set set) \<Rightarrow> 'a set \<Rightarrow> bool" where
-    "is_nhood_base B N X \<equiv>  (\<forall>x \<in> X. \<forall>V \<in> N x. \<exists>b\<in> B x.  x \<in> b \<and> b \<subseteq> V)"
-
-definition cofinite_sets_in::"'a set \<Rightarrow> 'a set set" where
-  "cofinite_sets_in X \<equiv> {U. U \<in> Pow X \<and>  (finite (X - U) \<or> U={})}"
-
-definition particular_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "particular_point_top a X \<equiv> {U. U \<in> Pow X \<and>  ((a \<in> U) \<or> U={})}"
-
-definition excluded_point_top::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "excluded_point_top a X \<equiv> {U. U \<in> Pow X \<and>  a \<notin>  U \<or> U=X}"
-
-definition is_limit_point::"'a  \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_limit_point x A T X \<equiv> (\<forall>V. V \<in>  nhoods_of_in x T X \<longrightarrow> A \<inter> (V - {x}) \<noteq> {})"
-
-definition limit_points::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "limit_points A T X \<equiv> {x \<in> X. is_limit_point x A T X}"
-
-definition is_adherent_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_adherent_point x A T X \<equiv> (\<forall>V. V \<in> nhoods_of_in x T X \<longrightarrow> A \<inter> V \<noteq> {})"
-
-definition adherent_points::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "adherent_points A T X \<equiv> {x \<in> X. is_adherent_point x A T X}"
-
-definition is_isolated_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_isolated_point x A T X \<equiv> (\<exists>V. V \<in> nhoods_of_in x T X \<and> V \<inter> A = {x})"
-
-definition is_interior_point::"'a \<Rightarrow> 'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_interior_point x A T X \<equiv> (A \<in> nhoods_of_in x T X)"
-
-definition smaller_open_sets::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "smaller_open_sets E T X \<equiv> {U \<in> T. U \<subseteq> E}"
-
-definition larger_closed_sets::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "larger_closed_sets E T X \<equiv> {F \<in> Pow X. (X - F) \<in> T \<and> E \<subseteq> F}"
-
-definition interior1::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "interior1 E T X \<equiv> \<Union>{U \<in> T. U \<subseteq> E}"
-
-definition closure1::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "closure1 E T X \<equiv> \<Inter>{F. F \<subseteq> X \<and> (X-F) \<in> T \<and> E \<subseteq> F}"
-
-definition interior2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "interior2 E T X \<equiv> {x \<in> X. is_interior_point x E T X}"
-
-definition closure2::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'a set" where
-  "closure2 E T X \<equiv> {x \<in> X. is_adherent_point x E T X}"
-
-definition continuous_at::"('a \<Rightarrow> 'b) \<Rightarrow> 'a \<Rightarrow> 'a set set \<Rightarrow> 'a set \<Rightarrow> 'b set set \<Rightarrow> 'b set \<Rightarrow> bool" where
-  "continuous_at f x T X S Y \<equiv> (\<forall>V \<in> nhoods_of_in (f x) S Y. \<exists>U \<in> nhoods_of_in x T X. f`U \<le> V)"
-
-lemma top_u1_imp_contains_empty:
-  "\<And>T. top_u1 T \<Longrightarrow> {} \<in> T"
-  by (metis Sup_empty empty_subsetI top_u1_def)
-
-lemma top_i1_imp_contains_carrier:
-  "\<And>T. top_i1 T \<Longrightarrow> UNIV \<in> T"
-  using top_i1_def by force
-
-lemma top_i3_induct:
-  assumes A0:"top_i3 T" and A1:"finite E" and A2:"E \<noteq> {}" and A3:"E \<subseteq> T"
-  shows "(\<Inter>E) \<in> T"
-  using A1 A2 A3 
-proof (induct E rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    by simp 
-next
-  case (insert x F)
-  then show ?case
-    using A0 top_i3_def by auto
-qed
-
-lemma top_i3_finite_ne:
-  assumes "top_i3 T"
-  shows "\<And>E. E \<in> Fpow_ne T \<Longrightarrow> (\<Inter>E) \<in> T"
-  by (simp add: Fpow_def assms top_i3_induct)
-
-lemma top_i3_i2:
-  "top_i3 T \<Longrightarrow> top_i2 T"
-  by (simp add: top_i2_def top_i3_induct)
-
-
-lemma trivial_in_top:
-  "is_topology_on T X \<Longrightarrow> ({} \<in> T) \<and> (X \<in> T)"
-  by (simp add: is_topology_on_def top_u1_imp_contains_empty)
-
-lemma carrier_is_top_un:
-  "is_topology_on T X \<Longrightarrow> \<Union>T = X"
-  by (meson Pow_iff cSup_eq_maximum is_topology_on_def subsetD)
-
-lemma trivial_top:
-  fixes X::"'a set"
-  shows "is_topology_on {{}, X} X"
-proof-
-  define T where "T= {{}, X}"
-  have T0:"T \<in> Dpow X"
-    by (simp add: T_def)
-  have T1:"top_u1 T"
-    using T_def top_u1_def by fastforce
-  have T2:"top_i3 T"
-    using T_def top_i3_def by fastforce
-  have T3:"X \<in> T"
-    by (simp add: T_def)
-  show ?thesis
-    using T1 T2 T_def is_topology_on_def by auto
-qed
-
-lemma discrete_top:
-  fixes X::"'a set"
-  shows "is_topology_on (Pow X) X"
-proof-
-  define T where "T=Pow X"
-  have T0:"T \<in> Dpow X"
-    by (simp add: T_def)
-  have T1:"top_u1 T"
-    using T_def top_u1_def by fastforce
-  have T2:"top_i3 T"
-    using T_def top_i3_def by fastforce
-  have T3:"X \<in> T"
-    by (simp add: T_def)
-  show ?thesis
-    using T1 T2 T_def is_topology_on_def by auto
-qed
-
-
-lemma trivial_is_top:
-  "{{}, X} \<in> (topologies_on X)"
-  by (simp add: topologies_on_def trivial_top)
-
-lemma discrete_is_top:
-  "Pow X\<in> (topologies_on X)"
-  by (simp add: discrete_top topologies_on_def)
-
-lemma discrete_greater:
-  "\<And>T. T \<in> topologies_on X \<Longrightarrow> T \<le> (Pow X)"
-  by (simp add: is_topology_on_def topologies_on_def)
-
-lemma trivial_least:
-  "\<And>T. T \<in> topologies_on X \<Longrightarrow> T \<ge> {{} ,X}"
-  by (simp add: topologies_on_def trivial_in_top)
-
-lemma topologies_top:
-  "is_min {{}, X} (topologies_on X)"
-  by (metis is_min_iff trivial_is_top trivial_least)
-
-lemma topologies_bot:
-  "is_max (Pow X) (topologies_on X)"
-  by (simp add: discrete_greater discrete_is_top is_max_iff)
-
-lemma topologies_inf_closed:
-  assumes A0:"ET \<noteq> {}" and A1:"\<forall>T \<in> ET. T \<in> topologies_on X"
-  shows  "(\<Inter>ET) \<in> topologies_on X \<and> is_inf (\<Inter>ET) ET (topologies_on X)"
- proof-
-  have B0:"\<forall>T \<in> ET. is_topology_on T X"
-    using A1 topologies_on_def by fastforce
-  have B1:"\<forall>T \<in> ET. top_u1 T \<and> top_i3 T \<and> X \<in> T"
-    using B0 is_topology_on_def by blast
-  define I where  "I=(\<Inter>ET)"
-  have T0:"I \<in> Dpow X"
-    by (simp add: A0 A1 I_def Inf_less_eq discrete_greater)
-  have T1:"top_u1 I"
-  proof-
-    have T13:"\<And>E. E \<subseteq> I \<longrightarrow> \<Union>E \<in> I"
-    proof
-      fix E assume A2:"E \<subseteq> I"
-      have T10:"\<forall>x. x \<in> E \<longrightarrow> (\<forall>T \<in> ET. x \<in> T) "
-        using A2 I_def by auto
-      have T11:"(\<forall>T \<in> ET. E \<subseteq> T) "
-        using T10 by blast
-      have T12:"(\<forall>T \<in> ET. (\<Union>E) \<in> T)"
-        by (meson B1 T11 top_u1_def)
-      show "\<Union>E \<in> I"
-        using I_def T12 by fastforce
-    qed
-    show ?thesis
-      by (simp add: T13 top_u1_def)
-  qed
-  have T2:"top_i3 I"
-  proof-
-    have T13:"\<And>a1 a2. (a1 \<in> I \<and> a2 \<in> I) \<longrightarrow> a1 \<inter> a2 \<in> I"
-    proof
-      fix a1 a2  assume T13A0:"(a1 \<in> I \<and> a2 \<in> I) "
-      have T13B0:"\<forall>T \<in> ET. a1 \<in> T \<and> a2 \<in> T"
-        using I_def T13A0 by blast
-      have T13B1:"\<forall>T \<in> ET. a1 \<inter> a2 \<in> T"
-        by (meson B1 T13B0 top_i3_def)
-      show "a1 \<inter> a2 \<in> I"
-        by (simp add: I_def T13B1)
-    qed
-    show ?thesis
-      by (simp add: T13 top_i3_def)
-  qed
-  have T3:"X \<in> I"
-    by (simp add: B1 I_def)
-  have B3:"I \<in> topologies_on X"
-    by (metis T0 T1 T2 T3 is_topology_on_def mem_Collect_eq topologies_on_def)
-  have B4:"\<forall>T. T \<in> ET \<longrightarrow> I \<le> T"
-    by (simp add: I_def Inter_lower)
-  have B5:"\<And>S. (\<And>T. T \<in> ET \<Longrightarrow> S\<le> T) \<Longrightarrow> S \<le> I"
-    by (simp add: I_def Inter_greatest)
-  have B6:"is_inf I ET (topologies_on X)"
-    by (simp add: B3 B4 B5 is_inf_if3)
-  show ?thesis
-    using B3 B6 I_def by blast
-qed
-
-lemma generated_topology1:
-  fixes E::"'a set set" and  X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  shows "X \<in> T"
-  apply(simp add:T_def topology_generated_by_in_def finer_topologies_def)
-  using is_topology_on_def by blast
-
-lemma in_finer_top_imp:
-  "Ea \<subseteq> \<Inter>(finer_topologies E X) \<Longrightarrow> T \<in> finer_topologies E X \<Longrightarrow> Ea \<subseteq> T"
-  by (simp add: le_Inf_iff)
-
-lemma in_finer_top_imp1:
-  "T \<in> finer_topologies E X \<Longrightarrow> is_topology_on T X \<and> (E \<subseteq> T)"
-  by (simp add: finer_topologies_def)
-
-lemma in_finer_top_imp2:
-  "T \<in> finer_topologies E X \<Longrightarrow> T \<in> Dpow X"
-  by (simp add: finer_topologies_def is_topology_on_def)
-
-lemma in_iner_top_imp3:
-  "\<And>x. x \<in> \<Inter>(finer_topologies E X) \<Longrightarrow> (\<And>S. S \<in> (finer_topologies E X) \<Longrightarrow> x \<in> S)"
-  using InterE by blast
-
-lemma generated_topology2:
-  fixes E::"'a set set" and  X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  shows "top_u1 T"
-  apply(auto simp add:T_def topology_generated_by_in_def top_u1_def)
-proof-
-  let ?F="(finer_topologies E X)"
-  fix Ea Xa::"'a set set" assume A0:"Ea \<subseteq> \<Inter>?F" assume A1:"Xa \<in> ?F"
-  have B0:"Ea \<subseteq> Xa"
-    using A0 A1 by blast
-  have B1:"top_u1 Xa"
-    using A1 in_finer_top_imp1 is_topology_on_def by blast
-  show "\<Union>Ea \<in> Xa"
-    using B0 B1 top_u1_def by blast
-qed
-
-lemma generated_topology3:
-  fixes Xa E::"'a set set" and  a1 a2 X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  assumes A0:"\<And>S. S \<in> (finer_topologies E X) \<Longrightarrow> (a1 \<in> S \<and> a2 \<in> S)" and A1:"Xa \<in> (finer_topologies E X)"
-  shows "a1 \<inter> a2 \<in> Xa"
-proof-
-  have B0:"\<And>S. S \<in> (finer_topologies E X) \<longrightarrow> (a1 \<inter> a2 \<in> S)"
-    by (meson assms(2) in_finer_top_imp1 is_topology_on_def top_i3_def)
-  show ?thesis
-    using A1 B0 by blast
-qed
-
-
-lemma generated_topology4:
-  fixes E::"'a set set" and  X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  shows "top_i3 T"
-  apply(auto simp add:T_def topology_generated_by_in_def top_i3_def)
-  by (meson in_finer_top_imp1 is_topology_on_def top_i3_def)
-
-lemma generated_topology5:
-  fixes E::"'a set set" and X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  assumes A1:"(finer_topologies E X) \<noteq> {}"
-  shows "T \<in> Dpow X"
-  apply(auto simp add:T_def topology_generated_by_in_def)
-  by (metis A1 DiffI Diff_eq_empty_iff Union_Pow_eq Union_upper empty_iff equals0I in_finer_top_imp1 is_topology_on_def)
-
-
-lemma generated_topology6:
-  fixes E::"'a set set" and X::"'a set"
-  defines "T \<equiv> topology_generated_by_in E X"
-  assumes "E \<in> Dpow X"
-  shows A1:"(finer_topologies E X) \<noteq> {}"
-  using assms(2) discrete_top finer_topologies_def by fastforce
-
-lemma generated_topology_is_topology:
-  assumes A0:"E \<in> Dpow X"
-  shows "is_topology_on (topology_generated_by_in E X) X"
-  apply(simp add:is_topology_on_def)
-  by (meson PowD assms generated_topology1 generated_topology2 generated_topology4 generated_topology5 generated_topology6)
-
-lemma generated_topology_upper0:
-  assumes A0:"E \<in> Dpow X"
-  defines "T \<equiv> (topology_generated_by_in E X) "
-  shows "E \<subseteq> T"
-  apply(auto simp add: T_def)
-  by (metis in_finer_top_imp1 le_Inf_iff subsetD topology_generated_by_in_def)
-
-lemma generated_topology_upper1:
-  assumes A0:"E \<in> Dpow X"
-  defines "T \<equiv> (topology_generated_by_in E X) "
-  shows "\<And>Ei. Ei \<in> {E}  \<Longrightarrow> E \<le> T"
-  using A0 T_def generated_topology_upper0 by blast
-
-
-lemma generated_topology_least1:
-  assumes A0:"E \<in> Dpow X"
-  defines "T \<equiv> (topology_generated_by_in E X) "
-  assumes A0:"is_topology_on S X" and A1:"E \<subseteq> S"
-  shows "T \<subseteq> S"
-  by (auto simp add: T_def A0 finer_topologies_def local.A1 topology_generated_by_in_def)
-
-lemma generated_topology_least2:
-  assumes A0:"E \<in> Dpow X"
-  defines "T \<equiv> (topology_generated_by_in E X) "
-  shows "\<And>S. S \<in> topologies_on X \<and> E \<le> S \<Longrightarrow> T \<le> S"
-  by (metis A0 T_def generated_topology_least1 mem_Collect_eq topologies_on_def)
-
-
-lemma generated_topology_is_sup_in:
-  assumes A0:"E \<in> Dpow X"
-  defines "T \<equiv> (topology_generated_by_in E X) "
-  shows "has_sup {E} (topologies_on X) \<and> is_sup T {E} (topologies_on X)"
-  proof-
-    have B0:"T \<in> ub_set {E} (topologies_on X)"
-      by (metis A0 T_def generated_topology_is_topology generated_topology_upper0 mem_Collect_eq singletonD topologies_on_def ub_set_elm)
-    have B1:"\<And>S. S \<in> ub_set {E} (topologies_on X) \<Longrightarrow> T \<le> S"
-      by (metis A0 T_def generated_topology_least2 singletonI ub_set_mem)
-    have B2:"is_sup T {E} (topologies_on X)"
-      by (simp add: B0 B1 is_min_iff is_sup_def)
-    have B3:"is_sup T {E} (topologies_on X)"
-      by (simp add: B2)
-    show ?thesis
-      using B3 has_sup_def is_min_imp_has_min is_sup_def by blast
-qed
-
-lemma generated_topology_is_sup_in2:
- assumes A0:"E \<in> Dpow X"
- shows  "(topology_generated_by_in E X) = (topology_generated_in E X)"
-  by (metis assms generated_topology_is_sup_in is_sup_sup_eq topology_generated_in_def)
-
-
-lemma topologies_sup_closed:
-  assumes A0:"ET \<noteq> {}" and A1:"\<forall>T \<in> ET. T \<in> topologies_on X"
-  shows "(\<Inter>{T. is_topology_on T X \<and> (\<Union>ET) \<subseteq> T}) \<in> topologies_on X \<and>
-         (is_sup (\<Inter>{T. is_topology_on T X \<and> (\<Union>ET) \<subseteq> T}) ET (topologies_on X)) "
-proof-
-  define U where "U=({T. is_topology_on T X \<and> (\<Union>ET) \<subseteq> T})"
-  have B0:"(Pow X) \<in> U"
-    by (simp add: A1 Sup_le_iff U_def discrete_greater discrete_top)
-  have B1:"U \<noteq> {}"
-    using B0 by force
-  have B2:"(\<Inter>U) \<in> topologies_on X"
-    by (metis (no_types, lifting) B1 U_def mem_Collect_eq topologies_inf_closed topologies_on_def)
-  have B3:"\<forall>T. is_topology_on T X \<and>  (\<Union>ET) \<subseteq> T \<longrightarrow> (\<Inter>U) \<subseteq> T"
-    by (simp add: Inter_lower U_def)
-  have B4:"\<forall>T \<in> ET. T \<subseteq> (\<Inter>U)"
-    using U_def by blast
-  have B5:" (is_sup (\<Inter>U) ET (topologies_on X))"
-    by (metis B2 B3 B4 Sup_least is_sup_if3 mem_Collect_eq topologies_on_def)
-  show ?thesis
-    using B2 B5 U_def by auto
-qed
-  
-
-
-lemma topologies_on_mem_iff:
-  "\<And>T. T \<in> topologies_on X \<longleftrightarrow> is_topology_on T X"
-  by (simp add: topologies_on_def)
-
-lemma nhoods_of_in_mem_iff:
-  "\<And>N. N \<in> nhoods_of_in x T X \<longleftrightarrow> (N \<subseteq> X) \<and>(\<exists>U. U \<in> T \<and> x \<in> U \<and> U \<subseteq> N)"
-  by (simp add: nhoods_of_in_def)
-
-lemma nhoods_of_in_imp0:
-  "\<And>N. N \<in> nhoods_of_in x T X \<Longrightarrow> x \<in> N"
-  by (meson nhoods_of_in_mem_iff subsetD)
-
-lemma nhoods_of_in_imp1:
-  "\<And>N. N \<in> nhoods_of_in x T X \<Longrightarrow> N \<in> Pow X"
-  by (simp add: nhoods_of_in_mem_iff)
-
-lemma nhoods_of_in_imp2:
-  "nhoods_of_in x T X \<subseteq> Pow X"
-  by (meson nhoods_of_in_imp1 subsetI)
-
-lemma nhoods_of_in_imp3:
-  "\<And>N. N \<in> nhoods_of_in x T X \<Longrightarrow>  (\<exists>U. U \<in> T \<and> x \<in> U \<and> U \<subseteq> N)"
-  by (simp add: nhoods_of_in_mem_iff)
-
-lemma nhoods_of_obtains:
-  assumes "N \<in> nhoods_of_in x T X"
-  obtains U where "U \<in> T \<and> x \<in> U \<and> U \<subseteq> N"
-  by (meson assms nhoods_of_in_imp3)
-
-lemma top_from_nhoods_mem_imp:
-  "\<And>V. V \<in> top_from_nhoods N X \<Longrightarrow>  V \<in> Pow X \<and> (\<forall>x \<in> V. V \<in> N x)"
-  by (simp add: top_from_nhoods_def)
-
-lemma nhoods_from_top_mem_imp1:
-  "\<And>V x. x \<in> X \<Longrightarrow> V \<in> nhoods_from_top T X x \<Longrightarrow>  (\<exists>U \<in> T. x \<in> U \<and> U \<subseteq> V)"
-  by (simp add: nhoods_from_top_def)
-
-lemma nhood_system_imp_pfilters:
-  assumes A0:"is_nhood_system_in N X"
-  shows "\<And>x. x \<in> X \<Longrightarrow> is_pfilter (N x) (Pow X)"
-  using assms is_nhood_system_in_def by fastforce 
-
-lemma nhood_system_imp_subset:
-  assumes A0:"is_nhood_system_in N X" 
-  shows "\<And>x V. (x \<in> X \<and> V \<in> (N x)) \<Longrightarrow> V \<subseteq> X"
-  by (meson assms is_nhood_system_in_def pfilter_in_powerset_simp)
-
-lemma open_is_nhood_in:
-  "\<And>V x. x \<in> X \<Longrightarrow> x \<in> V \<Longrightarrow> V \<in> T \<Longrightarrow>  V \<subseteq> X \<Longrightarrow> V \<in> nhoods_of_in x T X"
-  using nhoods_of_in_def by fastforce
-
-lemma adherent_to_self:
-  assumes "is_topology_on T X" and "A \<subseteq> X" and "x \<in> A"
-  shows "is_adherent_point x A T X"
-  apply(simp add: is_adherent_point_def)
-  by (meson assms(3) disjoint_iff nhoods_of_in_imp0)
-
-lemma nhoods_is_pfilter:
-  fixes X::"'a set" and T::"'a set set" and x::"'a"
-  assumes A0:"is_topology_on T X" and A1:"x \<in> X"
-  shows "is_pfilter (nhoods_of_in x T X) (Pow X)"
-proof-
-  let ?Nx="(nhoods_of_in x T X)"
-  have B0:"?Nx \<noteq> Pow X"
-    using nhoods_of_in_imp0 by force
-  have B1:"is_dwdir ?Nx"
-  proof-
-    have B10:"\<And>a b. (a \<in> ?Nx \<and> b \<in> ?Nx) \<longrightarrow> (\<exists>c  \<in> ?Nx. (c \<le> a) \<and>  (c \<le> b))"
-    proof
-      fix Va Vb assume A2:"(Va \<in> ?Nx \<and> Vb \<in> ?Nx)"
-      obtain Ua where A3:"Ua \<in> T \<and> x \<in> Ua \<and> Ua \<subseteq> Va"
-        by (meson A2 nhoods_of_in_imp3)
-      obtain Ub where A4:"Ub \<in> T \<and> x \<in> Ub \<and> Ub \<subseteq> Vb"
-        by (meson A2 nhoods_of_in_imp3)
-      have B11:"Ua \<inter> Ub \<in> T"
-        by (meson A0 A3 A4 is_topology_on_def top_i3_def)
-      have B12:"Ua \<inter> Ub \<in> T \<and> x \<in> Ua \<inter> Ub \<and> Ua \<inter> Ub \<subseteq> Va \<and> Ua \<inter> Ub \<subseteq> Vb"
-        by (simp add: A3 A4 B11 inf.coboundedI1 inf.coboundedI2)
-      show "(\<exists>c  \<in> ?Nx. (c \<le> Va) \<and>  (c \<le> Vb))"
-        by (metis A0 B12 Sup_upper carrier_is_top_un local.A1 open_is_nhood_in)
-    qed
-    show ?thesis
-      by (metis A0 B10 PowD Pow_top bex_empty is_dwdir_if2 local.A1 open_is_nhood_in trivial_in_top)
-  qed
-  have B2:"is_up_cl ?Nx (Pow X)"
-  proof-
-    have B20:"\<And>a b. (a \<le> b \<and> b \<in> Pow X \<and>  a \<in> ?Nx) \<longrightarrow>  b \<in> ?Nx"
-    proof
-      fix Va Vb assume A5:"Va \<le> Vb \<and> Vb \<in> Pow X \<and> Va \<in> ?Nx"
-      obtain Ua where A6:"Ua \<in> T \<and> x \<in> Ua \<and> Ua \<subseteq> Va"
-        by (meson A5 nhoods_of_in_imp3)
-      have B21:"Ua \<subseteq> Vb"
-        using A5 A6 by auto
-      show "Vb \<in> ?Nx"
-        by (meson A5 A6 B21 PowD nhoods_of_in_mem_iff)
-    qed
-    have B21:"?Nx \<subseteq> (Pow X)"
-      by (simp add: nhoods_of_in_imp2)
-   show ?thesis
-     by (meson B20 B21 is_up_cl_if2)
-  qed
-  have B3:"?Nx \<noteq> {}"
-    by (simp add: B1 is_dwdir_imp1)
-  show ?thesis
-    by (simp add: B0 B1 B2 is_pfilter_in_if2 nhoods_of_in_imp2)
-qed
-
-
-
-lemma top_from_nhoods_inv:
-  fixes X::"'a set" and T::"'a set set" and x::"'a"
-  assumes A0:"is_topology_on T X"
-  shows "top_from_nhoods (nhoods_from_top T X) X = T" (is "?L = ?R")
-proof-
-  define N where "N= (nhoods_from_top T X)"
-  have B0:"?L \<subseteq> ?R"
-  proof
-    fix V assume A1:"V \<in> ?L"
-    have B01:"V \<in> Pow X \<and> (\<forall>x \<in> V. V \<in> N x)"
-      using A1 N_def top_from_nhoods_mem_imp by blast
-    have B02:"\<forall>x \<in> V. \<exists>U \<in> T. x \<in> U \<and> U \<subseteq> V"
-      by (metis A1 Pow_iff nhoods_from_top_mem_imp1 subsetD top_from_nhoods_mem_imp)
-    define F where "F=(\<lambda>x. (SOME U. U \<in> T \<and> x \<in> U \<and> U \<subseteq> V))"
-    have B03:"\<forall>x \<in> V. F x \<in> T \<and> x \<in> (F x) \<and> (F x) \<subseteq> V"
-      by (metis (mono_tags, lifting) B02 F_def someI)
-    have B04:"\<Union>(F`V) \<subseteq> V"
-      using B03 by blast
-    have B05:"\<Union>(F`V) \<supseteq> V"
-      using B03 by blast
-    have B06:"\<Union>(F`V) =V"
-      using B04 B05 by blast
-    have B07:"\<forall>U \<in> (F`V). U \<in> T"
-      using B03 by blast
-    have B08:"V \<in> T"
-      by (metis A0 B06 B07 is_topology_on_def subsetI top_u1_def)
-    show "V \<in> ?R"
-      by (simp add: B08)
-  qed
-  have B1:"?R \<subseteq> ?L"
-  proof
-    fix V assume A1:"V \<in> ?R"
-    have B10:"V \<subseteq> X"
-      by (meson A1 PowD assms in_mono is_topology_on_def)
-    show "V \<in> ?L"
-    proof(cases "V = {}")
-      case True
-      then show ?thesis
-        by (simp add: top_from_nhoods_def)
-    next
-      case False
-      obtain x where A2:"x \<in> V"
-        using False by blast
-      have B11:"\<exists>U \<in> T. x \<in> U \<and> U \<subseteq> V"
-        using A1 A2 by blast
-      then show ?thesis
-        apply(simp add:top_from_nhoods_def nhoods_from_top_def)
-        using B10 local.A1 by blast
-    qed
-  qed
-  show ?thesis
-    by (simp add: B0 B1 subset_antisym)
-qed
-
-lemma nhoods_from_top_inv:
-  fixes X::"'a set" and N::"('a \<Rightarrow> 'a set set)" and x::"'a"
-  assumes A0:"is_nhood_system_in N X" and A1:"x \<in> X"
-  shows "(nhoods_from_top (top_from_nhoods N X) X)(x) = N(x)"
-proof-
-  define T where A2:"T=top_from_nhoods N X"
-  define L where "L=(nhoods_from_top (top_from_nhoods N X) X)"
-  have B0:"\<And>V. V \<in> L x \<longrightarrow> V \<in> N x"
-  proof
-    fix V assume A3:"V \<in> L x"
-    obtain U where B1:"U \<in> T \<and> x \<in> U \<and> U \<subseteq> V"
-      by (metis A1 A2 A3 L_def nhoods_from_top_mem_imp1)
-    have B2:" (\<forall>y \<in> U. U \<in> N y)"
-      using A2 B1 top_from_nhoods_mem_imp by blast
-    have B3:"U \<in> N x"
-      by (simp add: B1 B2)
-    have B4:"U \<subseteq> V \<and> V \<subseteq> X"
-      by (metis (no_types, lifting) A1 A3 B1 CollectD L_def PowD nhoods_from_top_def)
-    have B5:"is_pfilter (N x) (Pow X)"
-      using A2 assms is_nhood_system_in_def by fastforce
-    have B6:"is_up_cl (N x) (Pow X)"
-      by (simp add: B5 is_filter_imp1 is_pfilter_in_imp)
-    show "V \<in> N x"
-      by (metis B3 B4 B6 PowI is_up_cl_imp2)
-  qed
-  have B7:"\<And>V. V \<in> N x \<longrightarrow> V \<in> L x"
-  proof
-    fix V assume A4:"V \<in> N x"
-    have A40:"V \<subseteq> X"
-      by (meson A0 A1 A4 nhood_system_imp_subset)
-    define U where A5:"U={y \<in> X. V \<in> N y}"
-    have B7:"x \<in> U"
-      by (simp add: A1 A4 A5)
-    have B8:"U \<subseteq> V"
-      using A0 A5 is_nhood_system_in_def by fastforce
-    have B9:"(\<And>y. y \<in> U \<longrightarrow> U \<in> N y)"
-      proof
-        fix y assume A6:"y \<in> U"
-        have A61:"V \<in> N y"
-          using A5 A6 by blast
-        obtain W where A7:"(W \<in> N y \<and> (\<forall>z \<in> W. V \<in> N z))"
-          by (metis (no_types, lifting) A0 A5 A6 CollectD is_nhood_system_in_def)
-        have B10:"W \<subseteq> U"
-        proof
-          fix z assume A8:"z \<in> W"
-          have B101:"V \<in> N z"
-            by (simp add: A7 A8)
-          show "z \<in> U"
-            using A0 A5 A6 A7 A8 nhood_system_imp_subset by fastforce
-        qed
-        have B110:"W \<in> N y \<and> is_pfilter (N y) (Pow X) \<and> W \<subseteq> U "
-          by (meson A0 A40 A6 A7 B10 B8 in_mono nhood_system_imp_pfilters)
-        have B11:"U \<in> N y"
-          by (meson A40 B110 B8 Pow_iff is_pfilter_in_imp2 is_up_cl_imp2 order.trans)
-        show "U \<in> N y"
-          using B11 by force
-      qed
-    have B120:"U \<in> Pow X \<and> (\<forall>u \<in> U.  V \<in> N u)"
-      using A5 by blast
-    have B121:"U \<in> T"
-      using A2 B120 B9 top_from_nhoods_def by force
-    have B122:"x \<in> U \<and> U \<subseteq> V"
-      by (simp add: B7 B8)
-    have B12:"V \<in> Pow X \<and> U \<in> T \<and> x \<in> U \<and> U \<subseteq> V"
-      by (simp add: A40 B121 B7 B8)
-    show "V \<in> L x"
-      by (metis (no_types, lifting) A1 A2 B12 CollectI L_def nhoods_from_top_def)
-  qed
-  show ?thesis
-    using B0 B7 L_def by blast
-qed
-
-
-
-
-lemma is_base1_for_topology_imp:
-   "is_base1_for_topology B T \<Longrightarrow> U \<in> T \<Longrightarrow> (\<exists>E \<in> Pow B. U=\<Union>E)"
-  by (simp add: is_base1_for_topology_def)
-
-lemma is_base2_for_topology_imp0:
-  "is_base2_for_topology B T \<Longrightarrow> (B \<subseteq> T) \<and> (\<forall>U \<in> T. \<forall>x \<in> U. \<exists>B \<in> B. (x \<in> B \<and> B \<subseteq> U))"
-  by (simp add: is_base2_for_topology_def)
-
-lemma is_base2_for_topology_if0:
-  "(B \<subseteq> T) \<Longrightarrow> (\<forall>U \<in> T. \<forall>x \<in> U. \<exists>B \<in> B. (x \<in> B \<and> B \<subseteq> U)) \<Longrightarrow> is_base2_for_topology B T "
-  by (simp add: is_base2_for_topology_def)
-
-lemma is_base2_for_topology_imp1:
-  "is_base2_for_topology B T \<Longrightarrow>  U \<in> T \<Longrightarrow> x \<in> U \<Longrightarrow>  (\<exists>Bx \<in> B. (x \<in> Bx \<and> Bx \<subseteq> U))"
-  by (simp add: is_base2_for_topology_def)
-
-lemma is_base2_for_topology_imp2:
-  assumes "is_base2_for_topology B T" "U \<in> T" "x \<in> U"
-  obtains Bx where "Bx \<in> B  \<and> x \<in> Bx \<and> Bx \<subseteq> U"
-  by (meson assms(1) assms(2) assms(3) is_base2_for_topology_imp1)
-
-lemma is_base_3_covering_imp1:
-  "is_base_3_covering B X \<Longrightarrow>  (B \<in> Dpow X)"
-  by (simp add: is_base_3_covering_def)
-
-lemma is_base_3_covering_imp2:
-  "is_base_3_covering B X  \<Longrightarrow> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
-  by (simp add: is_base_3_covering_def)
-
-lemma is_base_3_covering_obtains:
-  assumes "is_base_3_covering B X"  and "x \<in> X" obtains U where "U \<in> B \<and> x \<in> U"
-  using assms(1) assms(2) is_base_3_covering_imp2 by blast
-
-
-lemma is_base_3_covering_if:
-  "(B \<in> Dpow X) \<Longrightarrow>  (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U) \<Longrightarrow>  is_base_3_covering B X"
-  by (simp add: is_base_3_covering_def)
-
-
-lemma is_base_3_intercont_imp1:
-  "is_base_3_intercont B X \<Longrightarrow> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
-  by (simp add: is_base_3_intercont_def)
-
-lemma is_base_3_intercont_if:
-  "B \<subseteq> Pow X \<Longrightarrow> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2)) \<Longrightarrow> is_base_3_intercont B X "
-  by (simp add: is_base_3_intercont_def)
-
-
-lemma is_base_3_intercont_if2:
-  "B \<subseteq> Pow X \<Longrightarrow> (\<And>x U1  U2. x \<in> U1 \<inter> U2 \<and> U1 \<in> B \<and> U2 \<in> B \<Longrightarrow> (\<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2)) \<Longrightarrow> is_base_3_intercont B X "
-  by (simp add: is_base_3_intercont_def)
-
-
-lemma is_base_3_intercont_obtains1:
-  assumes "is_base_3_intercont B X" and "U1 \<in> B \<and> U2 \<in> B" and "x \<in> U1 \<inter> U2"
-  obtains U3 where "U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
-  by (meson assms(1) assms(2) assms(3) is_base_3_intercont_imp1)
-
-
-lemma is_base3_for_topology_imp0:
-  "is_base3_for_topology B X \<Longrightarrow> is_base_3_intercont B X"
-  by (simp add: is_base3_for_topology_def)
-
-lemma is_base3_for_topology_imp1:
-  "is_base3_for_topology B X \<Longrightarrow> is_base_3_covering B X"
-  by (simp add: is_base3_for_topology_def)
-
-lemma is_base3_for_topology_imp2:
-   "is_base3_for_topology B X \<Longrightarrow> B \<in> Dpow X"
-   by (simp add: is_base3_for_topology_def is_base_3_covering_def)
-
-lemma is_base3_for_topology_imp3:
-   "is_base3_for_topology B X \<Longrightarrow> (\<forall>x \<in> X. \<exists>U \<in> B. x \<in> U)"
-    by (simp add: is_base3_for_topology_def is_base_3_covering_def)
-
-lemma is_base3_for_topology_imp3b:
-  "is_base3_for_topology B X \<Longrightarrow> x \<in> X  \<Longrightarrow>  \<exists>U \<in> B. x \<in> U"
-  by (simp add: is_base3_for_topology_imp3)
-
-
-lemma is_base3_for_topology_imp4:
-   "is_base3_for_topology B X \<Longrightarrow> (\<forall>U1  U2. U1 \<in> B \<and> U2 \<in> B \<longrightarrow> (\<forall>x \<in> U1 \<inter> U2. \<exists> U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2))"
-    by (simp add: is_base3_for_topology_def is_base_3_intercont_def)
-
-lemma is_base3_for_topology_imp4b:
-   "is_base3_for_topology B X \<Longrightarrow>  U1 \<in> B \<and> U2 \<in> B \<and> x \<in> U1 \<inter> U2 \<Longrightarrow> (\<exists>U3\<in> B. x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2)"
-    by (simp add: is_base3_for_topology_def is_base_3_intercont_def)
-
-lemma is_base_3_intercont_imp4c:
-  assumes "is_base_3_intercont B X" and "U1 \<in> B \<and> U2 \<in> B \<and> x \<in> U1 \<inter> U2"
-  shows "\<exists>U3. U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
-  by (meson assms(1) assms(2) is_base_3_intercont_imp1)
-
-lemma is_base3_for_topology_imp5:
-  "is_base3_for_topology B X \<Longrightarrow> b \<in> B \<Longrightarrow> b \<subseteq> X"
-  using is_base3_for_topology_imp2 by fastforce
-
-lemma is_base3_for_topology_imp6:
-  "is_base3_for_topology B X \<Longrightarrow> V \<in> Pow B \<Longrightarrow> (\<Union>V) \<in> Pow X"
-  using is_base3_for_topology_imp2 by fastforce
-
-lemma is_base3_for_topology_if:
-   " is_base_3_covering B X \<Longrightarrow> is_base_3_intercont B X   \<Longrightarrow>is_base3_for_topology B X"
-    by (simp add: is_base3_for_topology_def)
-
-lemma nhood_base_imp0:
-  "x \<in> X \<Longrightarrow> b \<in> nhood_base_from_base B X x \<Longrightarrow> b \<in> B"
-  by (simp add: nhood_base_from_base_def)
-
-lemma nhood_base_imp1:
-  "x \<in> X \<Longrightarrow> b \<in> nhood_base_from_base B X x \<Longrightarrow> x \<in> b"
-  by (simp add: nhood_base_from_base_def)
-
-lemma in_nhood_base_imp2:
-  "x \<in> X \<Longrightarrow> x \<in> b  \<Longrightarrow>b \<in> B \<Longrightarrow>  b \<in> nhood_base_from_base B X x"
-  by (simp add: nhood_base_from_base_def)
-
-lemma base_intercont_imp_pset_downdir:
-  assumes A0:"is_base_3_intercont B X" and  A1:"x \<in> X" and A2:"(nhood_base_from_base B X x) \<noteq> {}"
-  shows "is_dwdir (nhood_base_from_base B X x)"
-  proof-
-  have B0:"\<And>a b. a \<in> nhood_base_from_base B X x \<and> b \<in> nhood_base_from_base B X x \<longrightarrow> ( \<exists>c::'a set\<in>nhood_base_from_base B X x. c lb {a, b})"
-  proof
-    fix a b assume A3:"a \<in> nhood_base_from_base B X x \<and> b \<in> nhood_base_from_base B X x"
-    have B0:"x \<in> a \<inter> b"
-      by (meson A3 IntI local.A1 nhood_base_imp1)
-    obtain c where B1:"c \<in> B \<and> x \<in> c \<and> c \<subseteq> a \<inter> b"
-      by (metis A0 A3 B0 is_base_3_intercont_def local.A1 nhood_base_imp0)
-    have B2:"c \<in> nhood_base_from_base B X x"
-      by (simp add: B1 in_nhood_base_imp2 local.A1)
-    have B3:"c lb {a, b}"
-      by (metis B1 Inf_insert Inter_empty inf_top.right_neutral lb_def le_Inf_iff)
-    show "( \<exists>c::'a set\<in>nhood_base_from_base B X x. c lb {a, b})"
-      using B2 B3 by auto
-    qed
-  show ?thesis
-    by (simp add: A2 B0 is_dwdir_if1)
-qed
-
-
-
-
-
-lemma basis_element_pt_props:
-  assumes A0:"is_base2_for_topology B T"
-  defines "f \<equiv> basis_element_npt B"
-  shows "\<And>U x. (U \<in> T \<and> x \<in> U) \<longrightarrow> (f U x) \<in> B \<and> x \<in> (f U x) \<and> (f U x) \<subseteq> U"
-proof
-    fix U x assume A1:"U \<in> T \<and> x \<in> U"
-    obtain Bx where B1:"Bx \<in> B \<and> x \<in> Bx \<and> Bx \<subseteq> U"
-      by (meson A0 A1 is_base2_for_topology_imp2)
-    show "(f U x) \<in> B \<and> x \<in> (f U x) \<and> (f U x) \<subseteq> U"
-    apply( simp add:f_def basis_element_npt_def)
-      by (metis (mono_tags, lifting) \<open>\<And>thesis::bool. (\<And>Bx::'a::type set. Bx \<in> (B::'a::type set set) \<and> (x::'a::type) \<in> Bx \<and> Bx \<subseteq> (U::'a::type set) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> someI2_ex)
-qed
-
-
-lemma basis_element_pt_props2:
-  assumes A0:"is_base2_for_topology B T"
-  defines "f \<equiv> basis_element_npt B"
-  shows "\<And>U. U \<in> T \<Longrightarrow> (\<forall>x. x \<in> U \<longrightarrow> (f U x) \<in> B \<and> x \<in> (f U x) \<and> (f U x) \<subseteq> U)"
-  by (metis A0 basis_element_pt_props f_def)
-
-
-lemma basis_element_pt_props3:
-  assumes A0:"is_base2_for_topology B T" and A1:"U \<in> T"
-  defines "f \<equiv> (\<lambda>x. ((basis_element_npt B) U x))"
-  shows "(\<Union>(f`U)) =U "
-  using A0 A1 basis_element_pt_props f_def by fastforce
-
-
-lemma basis_element_npt_props:
-  assumes "is_base3_for_topology B X"
-  defines "f \<equiv> basis_element_pt B X"
-  shows "\<And>x. x \<in> X \<longrightarrow> (f x) \<in> B \<and> x \<in> (f x)"
-proof
-    fix x assume A0:"x \<in> X"
-    show "(f x) \<in> B \<and> x \<in> (f x)"
-    apply(simp add:f_def basis_element_pt_def)
-      by (metis (no_types, lifting) A0 assms(1) is_base3_for_topology_imp3 someI_ex)
-qed
-
-lemma basis_element_int_npt_props0:
-  assumes "is_base3_for_topology B X"
-  defines "f \<equiv> basis_element_int_npt B X"
-  shows "\<And>U1 U2 x. U1 \<in> B \<and> U2 \<in> B  \<and> x \<in> U1 \<inter> U2 \<longrightarrow> ((f U1 U2 x) \<in> B \<and> ((f U1 U2 x) \<subseteq> U1 \<inter> U2) \<and> x \<in> (f U1 U2 x))"
-proof
-    fix U1 U2 x assume A0:"U1 \<in> B \<and> U2 \<in> B  \<and> x \<in> U1 \<inter> U2"
-    let ?U3="(f U1 U2 x)"
-    have B0:"\<exists>U3. U3 \<in> B \<and> x \<in> U3 \<and> U3 \<subseteq> U1 \<inter> U2"
-      by (meson A0 assms(1) is_base3_for_topology_imp4b)
-    have B1:"is_base_3_intercont B X"
-      by (simp add: assms(1) is_base3_for_topology_imp0)
-    show "?U3 \<in> B \<and> (?U3 \<subseteq> U1 \<inter> U2) \<and> x \<in> ?U3"
-    apply(simp add:f_def basis_element_int_npt_def)
-      by (metis (mono_tags, lifting) B0 Int_subset_iff tfl_some)
-qed
-
-lemma un_all_pts:
-  assumes "\<And>x. x \<in> U \<longrightarrow> (x \<in> V x) \<and> (V x \<subseteq> U)"
-  shows "(\<Union>x \<in> U. V x) = U"
-  using assms by fastforce
-
-lemma basis_element_int_npt_props1:
-  assumes "is_base3_for_topology B X" "(b1 \<in> B \<and> b2 \<in> B)"
-  shows "\<exists>V \<in> Pow B.  b1 \<inter> b2 = (\<Union>V)"
-proof-
-  define V where A2:"V = (\<lambda>x. (basis_element_int_npt B X) b1 b2 x)"
-  have B0:"\<And>x. x \<in> b1 \<inter> b2 \<longrightarrow> (x \<in> V x) \<and> (V x \<subseteq> b1 \<inter> b2)"
-    by (metis A2 assms(1) assms(2) basis_element_int_npt_props0)
-  have B1:"(\<Union>x \<in> b1 \<inter> b2. V x) = b1 \<inter> b2 "
-    using B0 by blast
-  have B2:"V`(b1 \<inter> b2) \<in> Pow B \<and>   b1 \<inter> b2 = (\<Union>(V`(b1 \<inter> b2)))"
-    by (metis B1 PowI \<open>V::'a::type \<Rightarrow> 'a::type set \<equiv> basis_element_int_npt (B::'a::type set set) (X::'a::type set) (b1::'a::type set) (b2::'a::type set)\<close> assms(1) assms(2) basis_element_int_npt_props0 image_subset_iff)
-  show ?thesis
-    using B2 by auto
-qed  
-
-lemma is_base3_for_topology_imp7:
-  assumes A0:"is_base3_for_topology B X"
-  shows "X \<in> (sup_cle B (Pow X))"
-proof-
-  define U where "U=basis_element_pt B X"
-  have B0:"\<And>x. x \<in> X \<longrightarrow> x \<in> U x \<and>  U x \<in> B"
-    by (simp add: U_def assms basis_element_npt_props)
-  have B1:"\<And>x. x \<in> X \<longrightarrow> (U x) \<subseteq> X"
-    using B0 assms is_base3_for_topology_imp5 by blast
-  have B2:"(\<Union>x \<in> X. U x) = X"
-    using B0 B1 by blast
-  have B8:"U`X \<subseteq> B"
-    using B0 by blast
-  have B9:"\<forall>a \<in> U`X. a \<le> \<Union>(U`X)"
-    by blast
-  have B10:"\<forall>u \<in> ub_set (U`X) (Pow X). \<Union>(U`X) \<le> u "
-    by (simp add: Sup_le_iff ub_set_mem_iff)
-  have B11:"is_sup (\<Union>(U`X)) (U`X) (Pow X)"
-    by (metis B2 B9 Pow_iff Sup_least is_sup_if3)
-  have B12:"Sup (U`X) (Pow X)= X"
-    by (metis B11 B2 is_sup_sup_eq)
-  show ?thesis
-    by (metis B12 B2 B8 PowI Pow_top inf_ub_imp_has_sup sets_have_inf5 subset_Pow_Union sup_cle_if1)
-qed
-
-lemma is_base3_for_topology_imp8:
-  assumes A0:"is_base3_for_topology B X"
-  shows "X \<in> (sup_cle B UNIV)"
-proof-
-  define U where "U=basis_element_pt B X"
-  have B0:"\<And>x. x \<in> X \<longrightarrow> x \<in> U x \<and>  U x \<in> B"
-    by (simp add: U_def assms basis_element_npt_props)
-  have B1:"\<And>x. x \<in> X \<longrightarrow> (U x) \<subseteq> X"
-    using B0 assms is_base3_for_topology_imp5 by blast
-  have B2:"(\<Union>x \<in> X. U x) = X"
-    using B0 B1 by blast
-  have B8:"U`X \<subseteq> B"
-    using B0 by blast
-  have B9:"\<forall>a \<in> U`X. a \<le> \<Union>(U`X)"
-    by blast
-  have B10:"\<forall>u \<in> ub_set (U`X) (Pow X). \<Union>(U`X) \<le> u "
-    by (simp add: Sup_le_iff ub_set_mem_iff)
-  have B11:"is_sup (\<Union>(U`X)) (U`X) (Pow X)"
-    by (metis B2 B9 Pow_iff Sup_least is_sup_if3)
-  have B12:"Sup (U`X) (Pow X)= X"
-    by (metis B11 B2 is_sup_sup_eq)
-  have B13:"Sup (U`X) (Pow X) = Sup (U`X) UNIV"
-    by (simp add: B12 B2 sets_have_sup3)
-  show ?thesis
-    by (metis B12 B13 B8 Pow_iff iso_tuple_UNIV_I sets_have_sup2 sup_cle_if1)
-qed
-  
 
 
 end
