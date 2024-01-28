@@ -1167,14 +1167,14 @@ lemma inf_inf_imp_has_inf_eq:
 
 end
 
-lemma insert_new_finf:
-  assumes binf:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_inf {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_inf E X"
-  shows "has_inf  (insert x E) X \<and> Inf (insert x E) X = Inf {x, (Inf E X)} X"
+lemma insert_new_finf0:
+  assumes A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_inf E X" and A4:"has_inf {x, (Inf E X)} X"
+  shows "has_inf (insert x E) X \<and>  Inf (insert x E) X = Inf {x, (Inf E X)} X"
 proof-
   have B0:" (Inf E X) \<in> X"
     by (simp add: A3 has_inf_in_set)
   have B1:"has_inf  {x, (Inf E X)} X"
-    using A1 B0 binf by auto
+    using A1 B0 A4 by auto
   have B2:"Inf {x, (Inf E X)} X lb E"
     by (meson A3 B1 dual_order.trans has_inf_in_imp2 insert_iff lb_def)
   have B3:"Inf {x, (Inf E X)} X lb (insert x E)"
@@ -1189,14 +1189,20 @@ proof-
     by (metis B6 has_inf_def is_inf_def is_inf_inf_eq is_max_imp_has_max)
 qed
 
-lemma insert_new_fsup:
-  assumes bsup:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_sup {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_sup E X"
-  shows "has_sup (insert x E) X \<and> Sup (insert x E) X = Sup {x, (Sup E X)} X"
+lemma insert_new_finf:
+  assumes binf:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_inf {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_inf E X"
+  shows "has_inf  (insert x E) X \<and> Inf (insert x E) X = Inf {x, (Inf E X)} X"
+  by (meson A0 A1 A2 A3 DiffE binf has_inf_in_set insert_new_finf0)
+
+
+lemma insert_new_fsup0:
+  assumes A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_sup E X" and A4:"has_sup {x, (Sup E X)} X"
+  shows "has_sup (insert x E) X \<and>  Sup (insert x E) X = Sup {x, (Sup E X)} X"
 proof-
   have B0:" (Sup E X) \<in> X"
     by (simp add: A3 has_sup_in_set)
   have B1:"has_sup  {x, (Sup E X)} X"
-    using A1 B0 bsup by auto
+    using A1 B0 A4 by auto
   have B2:"Sup {x, (Sup E X)} X ub E"
     by (meson A3 B1 dual_order.trans has_sup_in_imp2 insertCI ub_def)
   have B3:"Sup {x, (Sup E X)} X ub (insert x E)"
@@ -1211,8 +1217,17 @@ proof-
     by (metis B6 has_min_ub_imp_has_sup is_min_imp_has_min is_sup_in_imp1 is_sup_sup_eq)
 qed
 
+lemma insert_new_fsup:
+  assumes bsup:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_sup {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_sup E X"
+  shows "has_sup (insert x E) X \<and> Sup (insert x E) X = Sup {x, (Sup E X)} X"
+  by (meson A0 A1 A2 A3 DiffD1 bsup has_sup_in_set insert_new_fsup0)
+
+
 lemma finite_inf_ex:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_inf {a1, a2} X)" and A1:"finite E" and A2:"E \<noteq> {}" and A3:"E \<subseteq> X"
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_inf {a1, a2} X)" and
+          A1:"finite E" and 
+          A2:"E \<noteq> {}" and 
+          A3:"E \<subseteq> X"
   shows "(has_inf E X)"
   using A1 A2 A3 
 proof (induct E rule: finite_ne_induct)
@@ -1221,25 +1236,16 @@ proof (induct E rule: finite_ne_induct)
     by (simp add: has_min_imp_has_inf has_min_singleton)
 next
   case (insert x F)
-  have P0:"x \<in> X-F"
-    using insert.hyps(3) insert.prems by auto
-  have P1:"F \<subseteq> X"
-    using insert.prems by blast
-  have P2:"has_inf F X"
-    by (simp add: P1 insert.hyps(4))
-  have P3:"F \<noteq> {}"
-    by (simp add: insert.hyps(2))
-  have P4:"Inf (insert x F) X = Inf {x, (Inf F X)} X"
-    using A0 P0 P2 P3 insert.hyps(1) insert_new_finf by blast
-  have P5:"has_inf {x, (Inf F X)} X"
-    using A0 P2 has_inf_in_set insert.prems by blast
   then show ?case
-    using A0 P0 P2 P3 insert.hyps(1) insert_new_finf by blast
+    by (simp add: A0 has_inf_in_set insert_new_finf0)
 qed
 
 
 lemma finite_sup_ex:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_sup {a1, a2} X)" and A1:"finite E" and A2:"E \<noteq> {}" and A3:"E \<subseteq> X"
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_sup {a1, a2} X)" and
+          A1:"finite E" and 
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> X"
   shows "(has_sup E X)"
   using A1 A2 A3 
 proof (induct E rule: finite_ne_induct)
@@ -1248,20 +1254,55 @@ proof (induct E rule: finite_ne_induct)
     by (simp add: has_sup_singleton2)
 next
   case (insert x F)
-  have P0:"x \<in> X-F"
-    using insert.hyps(3) insert.prems by auto
-  have P1:"F \<subseteq> X"
-    using insert.prems by blast
-  have P2:"has_sup F X"
-    by (simp add: P1 insert.hyps(4))
-  have P3:"F \<noteq> {}"
-    by (simp add: insert.hyps(2))
-  have P4:"Sup (insert x F) X = Sup {x, (Sup F X)} X"
-    using A0 P0 P2 P3 insert.hyps(1) insert_new_fsup by blast
-  have P5:"has_sup {x, (Sup F X)} X"
-    using A0 P2 has_sup_in_set insert.prems by blast
   then show ?case
-    using A0 P0 P2 P3 insert.hyps(1) insert_new_fsup by blast
+    by (simp add: A0 insert_new_fsup)
+qed
+
+lemma finite_inf_closed:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> has_inf {a1,a2} X \<and> Inf {a1, a2} X \<in> C" and
+          A1:"finite E" and 
+          A2:"E \<noteq> {}" and 
+          A3:"E \<subseteq> X"
+  shows " has_inf E X \<and> (Inf E X) \<in> C"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  have P0:" Inf F X \<in> X"
+    using has_inf_in_set insert.hyps(4) insert.prems by auto
+  have P1:"has_inf {x, Inf F X} X"
+    using A0 P0 insert.prems by blast
+  have P2:"Inf (insert x F) X = Inf {x, Inf F X} X"
+    using P1 insert.hyps(1) insert.hyps(2) insert.hyps(3) insert.hyps(4) insert.prems insert_new_finf0 by auto
+  then show ?case
+    by (metis A0 Diff_iff P0 insert.hyps(1) insert.hyps(2) insert.hyps(3) insert.hyps(4) insert.prems insert_new_finf0 insert_subset)
+qed
+
+
+lemma finite_sup_closed:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> has_sup {a1,a2} X \<and> Sup {a1, a2} X \<in> C" and
+          A1:"finite E" and 
+          A2:"E \<noteq> {}" and 
+          A3:"E \<subseteq> X"
+  shows " has_sup E X \<and> (Sup E X) \<in> C"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  have P0:" Sup F X \<in> X"
+    using has_sup_in_set insert.hyps(4) insert.prems by auto
+  have P1:"has_sup {x, Sup F X} X"
+    using A0 P0 insert.prems by blast
+  have P2:"Sup (insert x F) X = Sup {x, Sup F X} X"
+    using P1 insert.hyps(1) insert.hyps(2) insert.hyps(3) insert.hyps(4) insert.prems insert_new_fsup0 by auto
+  then show ?case
+    by (metis A0 Diff_iff P0 insert.hyps(1) insert.hyps(2) insert.hyps(3) insert.hyps(4) insert.prems insert_new_fsup0 insert_subset)
 qed
 
 
