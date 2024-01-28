@@ -2242,6 +2242,10 @@ proof-
     using A0 A1 A2 B0 is_dw_cl_imp2 is_ideal_imp1 is_min_iff by blast
 qed
 
+lemma filter_inf_closed:
+  "is_filter F X \<Longrightarrow> a \<in> F \<and> b \<in> F \<Longrightarrow> has_inf {a, b} X \<Longrightarrow> (Inf {a, b} X) \<in> F"
+  by (simp add: is_filter_def dwdir_inf)
+
 subsubsection PrincipalFilters
 
 definition is_principal_filter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
@@ -4222,6 +4226,50 @@ context
           toped:"has_max X" and
           csinf:"is_inf_complete X"
 begin
+
+lemma filter_csinf_moore_family1:
+  assumes "EF \<in> Pow_ne (filters X)"
+  shows "(\<Inter>EF) \<in> (filters X)"
+proof-
+  let ?I="(\<Inter>EF)"
+  have B0:"\<forall>F \<in> EF. max X \<in> F"
+    by (metis assms filter_contains_max filters_mem_iff if_has_max_max_unique max_if pow_ne_imp2 subset_eq toped)
+  have B1:"is_dwdir ?I"
+  proof-
+    have B10:"\<And>a b. a \<in>?I \<and> b \<in> ?I\<longrightarrow> (\<exists>c\<in>?I. c lb {a, b})"
+    proof
+      fix a b assume A1:"a \<in>?I \<and> b \<in> ?I"
+      have B11:"\<forall>F \<in> EF. a \<in> F \<and> b \<in> F"
+        using A1 by blast
+      have B12:"\<forall>F \<in> EF. F \<subseteq> X"
+        by (meson PowD assms filters_mem_iff in_mono pow_ne_imp2)
+      have B13:"a \<in> X \<and> b \<in> X"
+        using B11 B12 assms by fastforce
+      have B14:"\<forall>F \<in> EF. has_inf {a, b} X"
+        by (simp add: B13 csinf inf_complete_imp0)
+      have B15:"\<forall>F \<in> EF. Inf {a, b} X \<in> F"
+        by (meson B11 B14 assms filter_inf_closed filters_mem_iff in_mono pow_ne_imp2)
+      have B16:"Inf {a, b} X \<in> ?I"
+        by (simp add: B15)
+      have B17:"Inf {a, b} X lb {a, b}"
+        by (metis B14 DiffD2 assms has_inf_in_imp2 insert_iff lb_def subset_empty subset_emptyI)
+      show "\<exists>c\<in>?I. c lb {a, b}"
+        using B16 B17 by blast
+    qed
+    show ?thesis
+      by (metis B0 B10 InterI empty_iff is_dwdir_if1)
+  qed
+  have B2:"is_up_cl ?I X"
+    apply(auto simp add:is_up_cl_def up_cl_def)
+    apply (meson is_filter_def assms filters_mem_iff is_up_cl_imp2 pow_ne_imp2 subset_iff)
+    by (metis DiffE Pow_iff all_not_in_conv assms filters_mem_iff in_mono insertI1)
+  show ?thesis
+    by (simp add: B1 B2 is_filter_def filters_mem_iff in_upsets_in_imp_subset up_sets_in_def)
+qed
+
+  
+
+
 
 end
 
