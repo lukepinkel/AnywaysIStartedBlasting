@@ -1394,69 +1394,18 @@ lemma sets_have_sup3:
 
 end
 
-section Closures
+section Mappings
 (*Probably should develop the theory of closures before trying to develop closures*)
-
+subsection UtilityTriple
 definition is_map::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow>bool" where
   "is_map f X Y \<equiv> ((f`X) \<subseteq> Y)"
-
-lemma is_map_comp:
-  "is_map f X Y \<Longrightarrow> is_map g Y Z \<Longrightarrow> is_map (g \<circ> f) X Z"
-  by (simp add: image_subset_iff is_map_def)
 
 abbreviation is_self_map::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_self_map f X \<equiv> is_map f X X"
 
-definition is_idempotent_on::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_idempotent_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> f (f x) = f x) \<and> is_self_map f X"
-
-definition is_extensive_on::"('a::order \<Rightarrow> 'a::order)  \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_extensive_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (x \<le> (f x))) \<and>  is_self_map f X"
-
-definition is_isotone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
-  "is_isotone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<le> (f x2))"
-
-definition is_antitone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
-  "is_antitone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<ge> (f x2))"
-
-definition is_idempotent::"('a \<Rightarrow> 'a) \<Rightarrow> bool" where
-  "is_idempotent f \<equiv> is_idempotent_on f UNIV"
-
-definition is_extensive::"('a::order \<Rightarrow> 'a::order)  \<Rightarrow> bool" where
-  "is_extensive f \<equiv> is_extensive_on f UNIV"
-
-definition is_isotone::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
-  "is_isotone f \<equiv> is_isotone_on f UNIV"
-
-definition is_antitone::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
-  "is_antitone f \<equiv> is_antitone_on f UNIV"
-
-definition is_proj_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
-  "is_proj_on f X \<equiv> (is_idempotent_on f X) \<and> (is_isotone_on f X)"
-
-definition is_proj::"('a::order \<Rightarrow> 'a::order) \<Rightarrow>  bool" where
-  "is_proj f \<equiv>is_proj_on f UNIV"
-
-definition is_closure_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
-  "is_closure_on f X \<equiv> is_proj_on f X \<and> (is_extensive_on f X)"
-
-definition is_closure::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> bool" where
-  "is_closure f \<equiv> is_closure_on f UNIV"
-
-definition closure_eq::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "closure_eq f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (( x1 \<le> f x2) \<longleftrightarrow> (f x1 \<le> f x2)))"
-
-lemma closure_eq_imp1:
-  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
-  by (simp add: closure_eq_def)
-
-lemma closure_eq_imp2:
-  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
-  by (simp add: closure_eq_def)
-
-lemma is_idempotent_simp:
-  "is_idempotent f \<longleftrightarrow>  is_idempotent_on f UNIV"
-  by (simp add: is_idempotent_def)
+lemma is_map_comp:
+  "is_map f X Y \<Longrightarrow> is_map g Y Z \<Longrightarrow> is_map (g \<circ> f) X Z"
+  by (simp add: image_subset_iff is_map_def)
 
 lemma is_self_map_imp:
   "is_self_map f X \<Longrightarrow> f`X \<subseteq> X"
@@ -1470,51 +1419,78 @@ lemma is_self_map_if:
   "X \<noteq> {} \<Longrightarrow> f`X \<subseteq> X \<Longrightarrow> is_self_map f X "
   by (simp add: is_map_def)
 
-lemma is_isotone_simp:
-  "is_isotone f \<longleftrightarrow>  is_isotone_on f UNIV"
-  by (simp add: is_isotone_def)
+subsection Extensiveness
 
-lemma is_extensive_simp:
-  "is_extensive f \<longleftrightarrow>  is_extensive_on f UNIV"
-  by (simp add: is_extensive_def)
+definition is_extensive_on::"('a::order \<Rightarrow> 'a::order)  \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_extensive_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (x \<le> (f x))) \<and>  is_self_map f X"
 
 lemma is_extensive_on_imp_map:
   "is_extensive_on f X \<Longrightarrow> is_self_map f X"
   by (simp add: is_extensive_on_def)
 
-lemma is_antitone_simp:
-  "is_antitone f \<longleftrightarrow>  is_antitone_on f UNIV"
-  by (simp add: is_antitone_def)
+lemma is_ext_imp0:
+  "is_extensive_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le> f x"
+  by (simp add: is_extensive_on_def)
 
-lemma is_proj_simp:
-  "is_proj f \<longleftrightarrow>  is_proj_on f UNIV"
-  by (simp add: is_proj_def)
+lemma is_ext_imp1:
+  "is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
+  using is_ext_imp0 order_trans by blast
+
+lemma is_ext_imp2:
+  "is_extensive_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b ub (f`A) \<Longrightarrow> b ub A"
+  apply(auto simp add:ub_def) using is_ext_imp0 order.trans by blast
+
+lemma is_ext_imp2b:
+  "is_extensive_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> ub_set (f`A) Y \<subseteq> ub_set A Y"
+  by (simp add: Collect_mono_iff is_ext_imp2 ub_set_def)
+
+lemma is_ext_imp3:
+  "is_extensive_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b lb A \<Longrightarrow> b lb (f`A)"
+  apply(auto simp add:lb_def) using is_ext_imp0 order_trans by blast
+
+lemma is_ext_imp3b:
+  "is_extensive_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> lb_set A Y \<subseteq> lb_set (f`A) Y"
+  by (simp add: Collect_mono_iff is_ext_imp3 lb_set_def)
+
+subsection Isotonicity
+
+definition is_isotone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
+  "is_isotone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<le> (f x2))"
 
 lemma is_isotone_imp1:
   "is_isotone_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
   by(simp add:is_isotone_on_def)
 
-lemma is_closure_imp_iso_imp1:
-  "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
-  apply(simp add:is_closure_on_def is_proj_on_def) using is_isotone_imp1
-  by blast
+lemma is_isotone_imp2:
+  "is_isotone_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b \<in> X \<Longrightarrow> b ub A \<Longrightarrow> (f b) ub (f`A)"
+  by (simp add: in_mono is_isotone_on_def ub_def)
 
-lemma is_ext_imp1:
-  "is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
-  apply(simp add:is_extensive_on_def)
-  using order.trans by blast
+lemma is_isotone_imp3:
+  "is_isotone_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b \<in> X \<Longrightarrow> b lb A \<Longrightarrow> (f b) lb (f`A)"
+  by (simp add: in_mono is_isotone_on_def lb_def)
 
 lemma is_iso_ext_imp1:
   "is_isotone_on f X \<Longrightarrow> is_extensive_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> f (f x)"
   by(simp add:is_isotone_on_def is_extensive_on_def image_subset_iff is_map_def)
 
-lemma is_iso_idem_imp1:
-  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> f (f x)"
-  by(simp add:is_isotone_on_def is_idempotent_on_def image_subset_iff is_map_def)
-
 lemma is_iso_ext_imp2:
   "is_isotone_on f X \<Longrightarrow> is_extensive_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
   by(simp add:is_isotone_on_def is_extensive_on_def image_subset_iff is_map_def)
+
+
+subsection Antitonicity
+definition is_antitone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
+  "is_antitone_on f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<and> x1 \<le> x2 \<longrightarrow> (f x1) \<ge> (f x2))"
+
+
+lemma antitone_comp:
+  "is_map f X Y \<Longrightarrow> is_map g Y X \<Longrightarrow> is_antitone_on f X \<Longrightarrow> is_antitone_on g Y \<Longrightarrow> is_isotone_on (g \<circ> f) X"
+  by(simp add:is_map_def is_antitone_on_def is_isotone_on_def image_subset_iff)
+
+
+subsection Idempotency
+definition is_idempotent_on::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_idempotent_on f X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> f (f x) = f x) \<and> is_self_map f X"
 
 lemma is_idempotent_imp1:
   "is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x = (f (f x))"
@@ -1528,14 +1504,26 @@ lemma is_idempotent_imp3:
   "is_idempotent_on f X \<Longrightarrow> is_self_map f X"
   by(simp add:is_idempotent_on_def)
 
-lemma is_closure_simp:
-  "is_closure f \<longleftrightarrow>  is_closure_on f UNIV"
-  by (simp add: is_closure_def)
+lemma is_idempotent_imp4:
+  "is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> (f x) = x \<Longrightarrow> x \<in> f`X"
+  by (simp add: rev_image_eqI)
 
-lemma antitone_comp:
-  "is_map f X Y \<Longrightarrow> is_map g Y X \<Longrightarrow> is_antitone_on f X \<Longrightarrow> is_antitone_on g Y \<Longrightarrow> is_isotone_on (g \<circ> f) X"
-  apply(simp add:is_map_def is_antitone_on_def is_isotone_on_def)
-  by (simp add: image_subset_iff)
+lemma is_iso_idem_imp1:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> f (f x)"
+  by(simp add:is_isotone_on_def is_idempotent_on_def image_subset_iff is_map_def)
+
+lemma is_iso_idem_imp2:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
+  by (simp add: is_idempotent_imp3 is_isotone_imp1 is_self_map_imp2)
+
+lemma is_iso_idem_imp3:
+  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> (f x2)"
+   using is_iso_idem_imp2[of "f" "X" "x1" "x2"] is_idempotent_imp1[of "f" "X" "x2"] by fastforce 
+
+
+subsection Projections
+definition is_proj_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_proj_on f X \<equiv> (is_idempotent_on f X) \<and> (is_isotone_on f X)"
 
 lemma is_proj_on_imp1:
   "is_proj_on f X \<Longrightarrow> is_idempotent_on f X" 
@@ -1548,60 +1536,51 @@ lemma is_proj_on_imp2:
 lemma is_proj_on_imp3:
   "is_proj_on f X \<Longrightarrow> is_self_map f X" 
   by(simp add:is_idempotent_imp3 is_proj_on_imp1)
- 
-lemma is_iso_idem_imp2:
-  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> f (f x2)"
-  by (simp add: is_idempotent_imp3 is_isotone_imp1 is_self_map_imp2)
-
-lemma is_iso_idem_imp3:
-  "is_isotone_on f X \<Longrightarrow> is_idempotent_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1  \<le> (f x2)"
-   using is_iso_idem_imp2[of "f" "X" "x1" "x2"] is_idempotent_imp1[of "f" "X" "x2"] by fastforce 
 
 lemma proj_imp_lt_cl_lt:
   "is_proj_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
-  using is_iso_idem_imp3 is_proj_on_imp1 is_proj_on_imp2 by blast
+  using is_iso_idem_imp3 is_proj_on_def by blast
 
-context fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
-    assumes ismap:"is_self_map f X" and cl_eq:"closure_eq f X"
-begin
+
+subsection Closure
+definition is_closure_on::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
+  "is_closure_on f X \<equiv> is_proj_on f X \<and> (is_extensive_on f X)"
+
+definition closure_eq::"('a::order \<Rightarrow> 'a::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "closure_eq f X \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (( x1 \<le> f x2) \<longleftrightarrow> (f x1 \<le> f x2)))"
+
+
+lemma closure_eq_imp1:
+  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
+  by (simp add: closure_eq_def)
+
+lemma closure_eq_imp2:
+  "closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
+  by (simp add: closure_eq_def)
+
+lemma is_closure_imp_iso_imp1:
+  "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  using is_closure_on_def is_isotone_imp1 is_proj_on_imp2 by blast
+
 lemma cl_eq_imp_ext1:
-  "x \<in> X \<Longrightarrow>  x \<le> f x"
-  by (simp add: cl_eq closure_eq_imp2[of "f" "X" "x" "x"])
-            
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> x \<in> X \<Longrightarrow>  x \<le> f x"
+  by (simp add: closure_eq_imp2)
+
 lemma cl_eq_imp_iso1:
-  shows "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> x1 \<le> f x2"
-  using cl_eq_imp_ext1[of "x2"]  dual_order.trans by auto
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> x1 \<le> f x2"
+  using cl_eq_imp_ext1 order.trans by blast     
 
 lemma cl_eq_imp_iso2:
-  "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
-  using cl_eq closure_eq_imp1 by blast
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  by (simp add: cl_eq_imp_iso1 closure_eq_imp1)
 
-lemma cl_eq_imp_iso3:
-  shows "x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
-  using cl_eq_imp_iso2[of "x1" "x2"] cl_eq_imp_iso1[of "x1" "x2"] by auto
+lemma cl_eq_imp_idemp:
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> x \<in> X \<Longrightarrow> f (f x) = f x"
+  by (simp add: cl_eq_imp_ext1 closure_eq_imp1 dual_order.eq_iff is_self_map_imp2)
 
-lemma cl_eq_imp_idm1:
-  "x \<in> X \<Longrightarrow> (f (f x)) \<le> (f x)"
-  using ismap is_self_map_imp2[of "f" "X" "x"] cl_eq closure_eq_imp1[of "f" "X" "f x" "x"] by auto
-
-lemma cl_eq_imp_idm2:
-  "x \<in> X \<Longrightarrow> f (f x) = f x"
-  using cl_eq_imp_idm1[of "x"] ismap is_iso_idem_imp2[of "f" "X" "x" "f x"]
-  by (simp add: cl_eq_imp_ext1 is_self_map_imp2 order_antisym)
-
-lemma cl_eq_imp_ext2:
-  "is_extensive_on f X"
-  by (simp add: is_extensive_on_def ismap cl_eq_imp_ext1)
-
-lemma cl_eq_imp_iso4:
-  "is_isotone_on f X"
-  by (simp add:is_isotone_on_def cl_eq_imp_iso3)
-
-lemma cl_eq_imp_idm3:
-  "is_idempotent_on f X"
-  by (simp add: cl_eq_imp_idm2 is_idempotent_on_def ismap)
-
-end
+lemma closure_eq_imp_closure:
+  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> (is_extensive_on f X) \<and> (is_isotone_on f X) \<and> (is_idempotent_on f X)"
+  by (simp add: cl_eq_imp_ext1 cl_eq_imp_idemp cl_eq_imp_iso2 is_extensive_on_def is_idempotent_on_def is_isotone_on_def)
 
 lemma is_closure_on_imp1:
   "is_closure_on f X \<Longrightarrow> is_extensive_on f X" 
@@ -1611,6 +1590,14 @@ lemma is_closure_on_imp2:
   "is_closure_on f X \<Longrightarrow> is_self_map f X" 
   using is_closure_on_imp1[of "f" "X"] is_extensive_on_imp_map[of "f" "X"] by blast
 
+lemma is_closure_on_imp3:
+  "is_closure_on f X \<Longrightarrow> is_isotone_on f X"
+  by (simp add: is_closure_on_def is_proj_on_imp2) 
+
+lemma is_closure_on_imp4:
+  "is_closure_on f X \<Longrightarrow> is_idempotent_on f X"
+  by (simp add: is_closure_on_def is_proj_on_imp1)
+
 lemma closure_eq_if_closure_l:
   "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow> x1 \<le> f x2"
   using is_ext_imp1 is_closure_on_def by blast
@@ -1619,61 +1606,46 @@ lemma closure_eq_if_closure_r:
   "is_closure_on f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow>  x1 \<le> f x2 \<Longrightarrow> f x1 \<le> f x2"
   by(simp add:is_closure_on_def is_closure_on_imp2[of "f" "X"] proj_imp_lt_cl_lt[of "f" "X" "x1" "x2"])
 
-
 lemma closure_eq_if_closure:
   "is_closure_on f X \<Longrightarrow> closure_eq f X"
   by(auto simp add:closure_eq_def closure_eq_if_closure_l closure_eq_if_closure_r)
 
-lemma closure_eq_imp_closure:
-  "is_self_map f X \<Longrightarrow> closure_eq f X \<Longrightarrow> is_closure_on f X"
-  by (simp add: cl_eq_imp_ext2 cl_eq_imp_idm3 cl_eq_imp_iso4 is_closure_on_def is_proj_on_def)
-
-
 lemma closure_if_cl_eq:
    "is_closure_on f X \<longleftrightarrow> (is_self_map f X \<and> closure_eq f X)"
-  using closure_eq_if_closure closure_eq_imp_closure is_closure_on_imp2 by blast
+  by (meson closure_eq_if_closure closure_eq_imp_closure is_closure_on_def is_closure_on_imp2 is_proj_on_def)
 
 lemma closure_on_ineq1:
-  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X"
-  shows "f (Sup A X ) ub f`A"
-  apply(auto simp add:ub_def)
-  using assms(1) assms(2) assms(3) has_sup_in_imp2 has_sup_in_set is_closure_imp_iso_imp1 by blast
+  "is_closure_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> f (Sup A X) ub (f`A)"
+  by (meson has_sup_in_imp1 has_sup_in_set is_closure_on_imp3 is_isotone_imp2 ub_set_imp1)
 
-lemma lt_closed_imp_image_lt_closed:
-  assumes "is_closure_on f X" and "b \<in> f`X" and "a \<in> X" and "a \<le> b"
-  shows "f a \<le> b "
-  using assms(1) assms(2) assms(3) assms(4) closure_eq_if_closure_r by blast
+lemma lt_closed_point:
+  "is_closure_on f X \<Longrightarrow> b \<in> f`X \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> f a \<le> b"
+  using closure_eq_if_closure_r by blast
 
-lemma extensive_then_lt_image:
-  assumes "is_extensive_on f X" and "b \<in> f`X" and "A \<subseteq> X" and  "b ub (f`A)"
-  shows "b ub A"
-  apply(auto simp add:ub_def)
-  by (meson assms(1) assms(3) assms(4) imageI is_extensive_on_def order_trans subsetD ub_def)
 
 lemma closure_on_ineq2:
-  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" and "b \<in> ub_set (f`A) (f`X)"
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X" and A3:"b \<in> ub_set (f`A) (f`X)"
   shows "f (Sup A X ) \<le> b"
 proof-
   have B0:"b ub (f`A)"
     using assms(4) ub_set_imp1 by blast
   have B1:"b ub A"
-    by (meson B0 assms(1) assms(2) assms(4) extensive_then_lt_image is_closure_on_imp1 ub_set_imp2)
+    using A0 A1 B0 is_closure_on_imp1 is_ext_imp2 by blast
   have B2:"Sup A X \<le> b"
-    by (meson B1 assms(1) assms(2) assms(3) assms(4) greater_sup_if1b is_closure_on_imp2 is_self_map_imp subset_iff ub_set_imp2)
+    by (meson A0 A2 A3 B1 in_mono is_closure_on_imp2 is_map_def sup_imp_lt_ub ub_set_if ub_set_imp2)
   show "f (Sup A X) \<le> b"
-    by (meson B2 assms(1) assms(3) assms(4) has_sup_in_set lt_closed_imp_image_lt_closed ub_set_imp2)
+    by (meson A0 A2 A3 B2 has_sup_in_set lt_closed_point ub_set_imp2)
 qed
 
 lemma closure_on_ineq3:
-  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X" 
   shows "is_sup (f (Sup A X)) (f`A) (f`X)"
-  by (simp add: assms(1) assms(2) assms(3) closure_on_ineq1 closure_on_ineq2 has_sup_in_set is_min_iff is_sup_def ub_set_if)
+  by (simp add: A0 A1 A2 closure_on_ineq1 closure_on_ineq2 has_sup_in_set is_min_if2 is_sup_def ub_set_if)
 
 lemma closure_on_ineq4:
-  assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
+  assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X" 
   shows "has_sup (f`A) (f`X)"
-  using closure_on_ineq3
-  by (metis assms(1) assms(2) assms(3) has_min_ub_imp_has_sup is_min_imp_has_min is_sup_in_imp1)
+  by (meson A0 A1 A2 closure_on_ineq3 has_min_ub_imp_has_sup is_min_imp_has_min is_sup_in_imp1)
 
 lemma closure_on_sup_eq1:
   assumes "is_closure_on f X" and "A \<subseteq> X" and "has_sup A X" 
@@ -1701,7 +1673,6 @@ definition is_sup_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarro
 
 definition is_inf_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  bool" where
   "is_inf_closed A X \<equiv> (\<forall>B \<in> Pow_ne A. has_inf B X \<longrightarrow> Inf B X \<in> A)"
-
 
 definition is_dwdir::"'a::ord set  \<Rightarrow> bool" where
    "is_dwdir A \<equiv> is_ne A \<and> (\<forall>a b. a \<in> A \<and>  b \<in> A \<longrightarrow>  (\<exists>c \<in> A. c lb {a, b}))"
@@ -1744,13 +1715,12 @@ lemma is_dwdir_if2:
   by (simp add: is_dwdir_def lb_def)
 
 lemma is_updir_if1:
-  " is_ne A  \<Longrightarrow> (\<forall>a b. a \<in> A \<and>  b \<in> A \<longrightarrow>  (\<exists>c \<in> A. c ub {a, b})) \<Longrightarrow> is_updir A"
+  "is_ne A  \<Longrightarrow> (\<forall>a b. a \<in> A \<and>  b \<in> A \<longrightarrow>  (\<exists>c \<in> A. c ub {a, b})) \<Longrightarrow> is_updir A"
   by (simp add: is_updir_def)
 
 lemma is_updir_if2:
   " is_ne A  \<Longrightarrow> (\<forall>a b. a \<in> A \<and>  b \<in> A \<longrightarrow>  (\<exists>c \<in> A. c \<ge> a \<and> c \<ge> b)) \<Longrightarrow> is_updir A"
   by (simp add: is_updir_def ub_def)
-
 
 lemma up_dir_obtains:
   assumes "is_updir A" and "a \<in> A" and "b \<in> A"
@@ -1764,7 +1734,6 @@ lemma dw_dir_obtains:
 
 definition is_cofinal_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" (infix "is'_cofinal'_in" 50) where
   "A is_cofinal_in B \<equiv> (\<forall>a. a \<in> A \<longrightarrow> has_ub {a} B)"
-
 
 lemma is_cofinal_in_imp:
   "\<And>A B. A is_cofinal_in B \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (\<exists>b \<in> B. a \<le> b))"
@@ -1865,7 +1834,6 @@ proof
     using A2 A3 B0 B1 has_sup_in_set is_dw_cl_imp2 by blast
 qed
 
-
 lemma up_closure_in_imp:
   "\<And>A x. x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_cl A X"
   by (simp add: up_cl_def)
@@ -1874,7 +1842,6 @@ lemma down_closure_in_imp:
   "\<And>A x. x \<in> X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a) \<Longrightarrow> x \<in> dw_cl A X"
   by (simp add: dw_cl_def)
            
-
 lemma up_cl_if:
   "\<And>A x.  x \<in> X \<Longrightarrow> x \<in> up_cl A X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x)"
   by (simp add: up_cl_def)
@@ -2627,6 +2594,45 @@ proof
 qed
 
   
+lemma top_is_closed1:
+  assumes "is_closure_on f X" and "is_max m X"
+  shows "f m = m"
+  by (meson assms(1) assms(2) cl_eq_imp_ext1 closure_eq_if_closure is_closure_on_imp2 is_max_iff is_self_map_imp2 order_antisym)
+
+lemma top_is_closed2:
+  assumes "is_clr C X" and "is_max m X"
+  shows "m \<in> C"
+  by (metis assms(1) assms(2) clr_from_closure_def clr_induces_closure cr_cl_cr_eq_cr image_eqI is_max_iff top_is_closed1)
+
+
+lemma clr_inf_closed:
+  assumes "is_clr C X" and "A \<subseteq> C" and "has_inf A X"
+  shows "Inf A X \<in> C"
+proof(cases "A = {}")
+  case True
+  have B0:"has_max X"
+    by (metis True assms(3) has_inf_def lb_set_in_degenerate)
+  obtain m where "is_max m X"
+    using B0 has_max_iff2 by blast
+  then show ?thesis
+    by (metis True assms(1) inf_in_degenerate max_if top_is_closed2) 
+next
+  case False
+  let ?f="closure_from_clr C"
+  have B0:"\<forall>a. a \<in> A \<longrightarrow> Inf A X \<le> a"
+    using assms(3) has_inf_in_imp2 by blast
+  have B1:"\<forall>a. a \<in> A \<longrightarrow> ?f(Inf A X ) \<le> ?f a"
+    by (meson B0 assms(1) assms(2) assms(3) closure_range.cl_is_iso closure_range.intro has_inf_in_set in_mono is_clr_imp1)
+  have B2:"\<forall>a. a \<in> A\<longrightarrow>  ?f(Inf A X ) \<le> a"
+    by (metis B1 assms(1) assms(2) closure_range.cl_fp closure_range.intro in_mono)
+  have B3:"?f(Inf A X ) \<le> Inf A X "
+    by (simp add: B2 assms(1) assms(3) closure_range.cl_is_self_map closure_range.intro has_inf_imp3 has_inf_in_set is_self_map_imp2)
+  have B4:"?f (Inf A X ) = (Inf A X )"
+    using B3 assms(1) assms(3) closure_range.cl_is_ext closure_range.intro has_inf_in_set order_antisym_conv by blast
+  then show ?thesis
+    by (metis assms(1) assms(3) closure_from_clr_def clr_obtains1 has_inf_in_set min_if)
+qed
+
 
 
 section SupInfClosures
@@ -3274,52 +3280,6 @@ qed
 
 
 
-lemma top_is_closed1:
-  assumes "is_closure_on f X" and "is_max m X"
-  shows "f m = m"
-  by (meson assms(1) assms(2) cl_eq_imp_ext1 closure_eq_if_closure is_closure_on_imp2 is_max_iff is_self_map_imp2 order_antisym)
-
-lemma top_is_closed2:
-  assumes "is_clr C X" and "is_max m X"
-  shows "m \<in> C"
-proof-
-  have B0:"m \<in> X"
-    using assms(2) is_max_imp by blast
-  have B1:"ub_set {m} C = {m}"
-    by (metis B0 assms(1) assms(2) is_clr_imp1 is_clr_imp3 subset_singletonD ub_set_in_isotone2 ub_set_max)
-  show ?thesis
-    using B1 ub_set_mem_iff by auto
-qed
-
-lemma clr_inf_closed:
-  assumes "is_clr C X" and "A \<subseteq> C" and "has_inf A X"
-  shows "Inf A X \<in> C"
-proof(cases "A = {}")
-  case True
-  have B0:"has_max X"
-    by (metis True assms(3) has_inf_def lb_set_in_degenerate)
-  obtain m where "is_max m X"
-    using B0 has_max_iff2 by blast
-  then show ?thesis
-    by (metis True assms(1) inf_in_degenerate max_if top_is_closed2) 
-next
-  case False
-  let ?f="closure_from_clr C"
-  have B0:"\<forall>a. a \<in> A \<longrightarrow> Inf A X \<le> a"
-    using assms(3) has_inf_in_imp2 by blast
-  have B1:"\<forall>a. a \<in> A \<longrightarrow> ?f(Inf A X ) \<le> ?f a"
-    by (meson B0 assms(1) assms(2) assms(3) closure_range.cl_is_iso closure_range.intro has_inf_in_set in_mono is_clr_imp1)
-  have B2:"\<forall>a. a \<in> A\<longrightarrow>  ?f(Inf A X ) \<le> a"
-    by (metis B1 assms(1) assms(2) closure_range.cl_fp closure_range.intro in_mono)
-  have B3:"?f(Inf A X ) \<le> Inf A X "
-    by (simp add: B2 assms(1) assms(3) closure_range.cl_is_self_map closure_range.intro has_inf_imp3 has_inf_in_set is_self_map_imp2)
-  have B4:"?f (Inf A X ) = (Inf A X )"
-    using B3 assms(1) assms(3) closure_range.cl_is_ext closure_range.intro has_inf_in_set order_antisym_conv by blast
-  then show ?thesis
-    by (metis assms(1) assms(3) closure_from_clr_def clr_obtains1 has_inf_in_set min_if)
-qed
-
-
 
 definition is_galois_connection::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "is_galois_connection f X g Y \<equiv> (is_map f X Y) \<and> (is_map g Y X) \<and> 
@@ -3497,10 +3457,6 @@ lemma lu_is_galois:
   by (simp add: is_galois_connection_def l_is_antitone l_is_map lu_is_extensive u_is_antitone u_is_map ul_is_extensive)
 
 
-
-
-
-
 definition is_inter_system::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_inter_system A X \<equiv> (A \<subseteq> Pow X) \<and> (\<forall>a \<in> Pow(A). \<Inter>a \<in> A)"
 
@@ -3532,7 +3488,6 @@ proof-
   show "is_min (\<Inter>(ub_set {x} A)) (ub_set {x} A)"
     by (simp add: B3)
 qed
-
 
 lemma inter_sys_imp3:
  assumes A0:"is_inter_system A X"
@@ -3752,8 +3707,8 @@ proof
   let ?E1="{y \<in> (f`X). x \<le> (f y)}" let ?E2="ub_set {x} (f`X)"
   have B0:"?E1 = ?E2"
     apply(auto simp add:ub_set_def ub_def)
-    using A3 cl_eq_imp_idm1 closure_if_cl_eq order_trans apply blast
-    by (metis A3 cl_eq_imp_idm2 closure_eq_if_closure is_closure_on_imp2)
+    using A3 is_closure_on_imp4 is_idempotent_imp1 apply fastforce
+    by (metis A3 is_closure_on_imp4 is_idempotent_imp1)
   have B1:"has_min ?E2"
     using A2 A3 closure_range_is_clr is_clr_imp2 by blast
   have B2:"(min ?E2) lb ?E2"
@@ -3955,7 +3910,7 @@ proof(cases "A={}")
   have B1:"f`A = {}"
     by (simp add: True)
   have B2:"f (Sup (f`A) (f`X)) = f (Sup (f`A) X)"
-    by (metis A1 A2 B1 True cl_eq_imp_idm2 closure_eq_if_closure closure_of_min has_sup_def has_sup_in_set is_closure_on_imp2 is_complete_imp_min_and_sup sup_in_degenerate ub_set_in_degenerate)
+    by (metis A1 A2 B1 True closure_of_min closure_range_is_clr complete_clr_sup2 empty_subsetI has_sup_in_set is_closure_on_imp4 is_clr_imp1 is_idempotent_imp2 sup_in_degenerate)
   then show ?thesis
     using True by fastforce
 next
@@ -4010,9 +3965,8 @@ lemma closure_sups1:
   fixes f::"'a::order \<Rightarrow> 'a::order" and A X::"'a::order set" 
   assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and  A2:"is_complete_lattice X" and A3:"X \<noteq> {}"
   shows "f (Sup A X) = (Sup (f`A) (f`X))"
-  using complete_clr_sup3[of "X" "f" "A"] A0 A1 A2 A3
-  by (metis closure_range_is_clr complete_clr_sup2 has_sup_in_set image_mono is_closure_on_def is_closure_on_imp2 is_idempotent_imp2 is_proj_on_def is_self_map_imp)
-  
+  by (meson A0 A1 A2 A3 closure_on_sup_eq1 complete_clr_sup2 equalityD1 has_sup_has_lub has_sup_singleton2 is_clr_def)
+
 lemma closure_sups2:
   fixes f::"'a::order \<Rightarrow> 'a::order" and A X::"'a::order set" 
   assumes A0:"is_closure_on f X" and A1:"A \<subseteq> (f`X)" and  A2:"is_complete_lattice X" and A3:"X \<noteq> {}"
