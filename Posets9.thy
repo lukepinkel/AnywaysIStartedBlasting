@@ -2454,6 +2454,21 @@ lemma ideal_no_top_if_proper:
   "is_pideal I X \<Longrightarrow> is_max m X \<Longrightarrow> m \<notin> I"
   using ideal_with_top is_pideal_in_imp by blast
 
+subsection FiltersSetIdealSet
+
+definition filters::"'a::order set \<Rightarrow> 'a::order set set" where
+  "filters X \<equiv> {F \<in> Pow  X. is_filter F X}"
+
+definition pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
+  "pfilters X \<equiv> {F \<in> Pow  X. is_pfilter F X}"
+
+lemma filters_mem_iff:
+  "A \<in> filters X \<longleftrightarrow> (A \<in> Pow X \<and> is_filter A X)"
+  by (simp add: filters_def)
+
+lemma pfilters_mem_iff:
+  "A \<in> pfilters X \<longleftrightarrow> (A \<in> Pow X \<and> is_pfilter A X)"
+  by (simp add: pfilters_def)
 
 section ClosureRanges
 
@@ -4144,6 +4159,11 @@ lemma is_moore_family_imp2:
   "is_moore_family C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> a \<in> A \<Longrightarrow> a \<subseteq> X"
   by (meson PowD is_moore_family_def subsetD)
 
+lemma is_moore_family_imp3:
+  "is_moore_family (C::'a::order set set) X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> (\<Inter>(ub_set {A} C)) lb (ub_set {A} C)"
+  by (simp add: Inter_lower is_lb_simp2)
+
+
 lemma is_moore_family_inter:
   assumes "is_moore_family C X" and "A \<in> Pow_ne C" 
   shows " \<Inter>A \<in> C"
@@ -4156,6 +4176,33 @@ proof-
     by (metis B0 B1 assms(1) assms(2) is_moore_family_def)
 qed
 
+lemma is_moore_family_imp4:
+  "is_moore_family C X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> (\<Inter>(ub_set {A} C)) \<in> C"
+  by (metis (full_types) Pow_iff bex_empty is_moore_family_def is_moore_family_inter pow_ne_if singletonI ub_set_subset up_cl_ub up_closure_in_imp)
+
+lemma is_moore_family_imp5:
+  "is_moore_family C X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> A \<subseteq> (\<Inter>(ub_set {A} C))"
+  by (simp add: le_Inf_iff ub_set_imp)
+
+lemma is_moore_family_imp6:
+  "is_moore_family C  X \<Longrightarrow> A \<subseteq> X \<Longrightarrow>(\<Inter>(ub_set {A} C)) \<in> (ub_set {A} C)"
+  by (simp add: is_moore_family_imp4 is_moore_family_imp5 ub_set_mem_iff)
+
+lemma is_moore_family_imp7:
+  "is_moore_family C X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_min (\<Inter>(ub_set {A} C))  (ub_set {A} C)"
+  by (simp add: Inter_lower is_min_if2 is_moore_family_imp6)
+
+lemma is_moore_family_imp8:
+  "is_moore_family C X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_min (ub_set {A} C)"
+  using has_min_iff2 is_moore_family_imp7 by blast
+
+lemma is_moore_family_is_clr:
+  "is_moore_family C X \<Longrightarrow> is_clr C (Pow X)"
+  apply(auto simp add:is_clr_def)
+  apply (simp add: is_moore_family_def)
+  using is_moore_family_imp1 apply blast
+  by (simp add: is_moore_family_imp8)
+  
 
 lemma lattice_inf_is_inf:
   "is_inf (inf (a::'a::lattice) b) {a, b} UNIV"
@@ -4169,6 +4216,14 @@ lemma order_bot_is_min:
   "is_min (bot::'a::order_bot) UNIV"
   by (simp add: is_min_bot)
 
+context
+  fixes X::"'a::order set"
+  assumes is_ne:"X \<noteq> {}" and
+          toped:"has_max X" and
+          csinf:"is_inf_complete X"
+begin
+
+end
 
 
 
