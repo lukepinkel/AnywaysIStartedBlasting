@@ -546,6 +546,22 @@ lemma lb_set_space2:
   "has_min X \<Longrightarrow> lb_set X X = {min X}"
   using if_has_min_min_unique lb_set_space1 min_if by blast
 
+lemma max_gt_subset:
+  "is_max m X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<le> m"
+  using is_max_sanity_check by auto
+
+lemma min_lt_subset:
+  "is_min m X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<ge> m"
+  using is_min_sanity_check by auto
+
+lemma max_subset_ub:
+  "is_max m X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> m ub A"
+  by (simp add: max_gt_subset ub_def)
+          
+lemma min_subset_lb:
+  "is_min m X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> m lb A"
+  by (simp add: min_lt_subset lb_def)
+
 
 section SupInf
 
@@ -1002,59 +1018,35 @@ lemma sup_in_lu_super:
   "is_sup m A X \<Longrightarrow> A \<subseteq> B \<Longrightarrow>  m \<in> (lb_set (ub_set B X) X)"
   by (simp add: is_sup_in_imp3 is_sup_in_set lb_set_mem_iff subsetD ub_set_mem_iff)
 
+
 lemma lb_set_inf_from_principal:
-  fixes A X::"'a::order set"
-  assumes A0:"A \<noteq> {}" and A1:"has_inf A X" and A2:"A \<subseteq> X"
-  shows "lb_set {(Inf A X)} X = (\<Inter>a \<in> A. lb_set {a} X)"
-proof-
-  obtain i where B0:"i = Inf A X"
-    by simp
-  show "lb_set { Inf A X} X = (\<Inter>a \<in> A. lb_set {a} X)"
-     apply(auto simp add:lb_set_def lb_def)
-    using A1 has_inf_in_imp2 order_trans apply blast
-    using A0 apply blast
-    by (meson A0 A1 bot.extremum_uniqueI has_inf_imp3 subset_emptyI)
-qed
+  "A \<noteq> {} \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> lb_set {(Inf A X)} X = (\<Inter>a \<in> A. lb_set {a} X)"  
+   apply(auto simp add:lb_set_def lb_def)
+  using less_inf_imp1b apply blast
+  by (simp add: has_inf_imp3)
 
 lemma ub_set_sup_from_principal:
-  fixes A X::"'a::order set"
-  assumes A0:"A \<noteq> {}" and A1:"has_sup A X" and A2:"A \<subseteq> X"
-  shows "ub_set {(Sup A X)} X = (\<Inter>a \<in> A. ub_set {a} X)"
-proof-
-  obtain i where B0:"i = Sup A X"
-    by simp
-  show "ub_set { Sup A X} X = (\<Inter>a \<in> A. ub_set {a} X)"
-     apply(auto simp add:ub_set_def ub_def)
-    using A1 has_sup_in_imp2 order_trans apply blast
-    using A0 apply blast
-    by (meson A0 A1 bot.extremum_uniqueI has_sup_imp3 subset_emptyI)
-qed
-
+  "A \<noteq> {} \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> ub_set {(Sup A X)} X = (\<Inter>a \<in> A. ub_set {a} X)"  
+   apply(auto simp add:ub_set_def ub_def)
+  using greater_sup_imp1b apply blast
+  by (simp add: has_sup_imp3)
 
 lemma inf_subset_eq0:
-  assumes A0:"A \<subseteq> B" and A1:"B \<subseteq> C" and A2:"is_inf i A C" and A3:"i \<in> B"
-  shows "is_inf i A B"
-  by (meson A1 A2 A3 is_inf_in_iff is_inf_in_imp2 is_max_subset lb_set_in_isotone2 lb_set_mem_iff)
+  "A \<subseteq> B \<Longrightarrow> B \<subseteq> C \<Longrightarrow> is_inf i A C \<Longrightarrow> i \<in> B \<Longrightarrow> is_inf i A B"
+  apply(auto simp add:is_inf_def) by (meson is_max_imp is_max_subset lb_set_if lb_set_imp1 lb_set_in_isotone2)
+
+lemma inf_subset_eq1:
+  "A \<subseteq> B \<Longrightarrow> B \<subseteq> C \<Longrightarrow> has_inf A C \<Longrightarrow> Inf A C \<in> B \<Longrightarrow> has_inf A B \<and> Inf A B = Inf A C"
+  by (metis has_inf_def inf_is_inf inf_subset_eq0 is_inf_in_imp1 is_inf_inf_eq is_max_imp_has_max)
+
 
 lemma sup_subset_eq0:
-  assumes A0:"A \<subseteq> B" and A1:"B \<subseteq> C" and A2:"is_sup s A C" and A3:"s \<in> B"
-  shows "is_sup s A B"
-  by (meson A1 A2 A3 is_min_subset is_sup_in_iff is_sup_in_imp1 ub_set_if ub_set_imp1 ub_set_in_isotone2)
+  "A \<subseteq> B \<Longrightarrow> B \<subseteq> C \<Longrightarrow> is_sup s A C \<Longrightarrow> s \<in> B \<Longrightarrow> is_sup s A B"
+  apply(auto simp add:is_sup_def) by (meson is_min_imp is_min_subset ub_set_if ub_set_imp1 ub_set_in_isotone2)
 
-
-lemma inf_subset_eq:
-  fixes A B C::"'a::order set"
-  assumes A0:"A \<subseteq> B" and A1:"B \<subseteq> C" and A2:"has_inf A C" and A3:"Inf A C \<in> B"
-  shows "has_inf A B \<and> Inf A B = Inf A C"
-  using A0 A1 A2 A3 inf_subset_eq0[of "A" "B" "C"]
-  by (metis has_inf_def inf_is_inf is_inf_def is_inf_inf_eq is_max_imp_has_max)
-
-lemma sup_subset_eq:
-  fixes A B C::"'a::order set"
-  assumes A0:"A \<subseteq> B" and A1:"B \<subseteq> C" and A2:"has_sup A C" and A3:"Sup A C \<in> B"
-  shows "has_sup A B \<and> Sup A B = Sup A C"
-  using A0 A1 A2 A3 sup_subset_eq0[of "A" "B" "C"]
-  by (metis has_sup_def sup_is_sup is_sup_def is_sup_sup_eq is_min_imp_has_min)
+lemma sup_subset_eq1:
+  "A \<subseteq> B \<Longrightarrow> B \<subseteq> C \<Longrightarrow> has_sup A C \<Longrightarrow> Sup A C \<in> B \<Longrightarrow> has_sup A B \<and> Sup A B = Sup A C"
+  by (metis has_sup_def is_min_imp_has_min is_sup_def is_sup_sup_eq sup_is_sup sup_subset_eq0)
 
 
 context fixes A X::"'a::order set"
@@ -1063,8 +1055,7 @@ begin
 
 lemma inf_ub_is_ub:
   "is_inf i (ub_set A X) X \<Longrightarrow> i ub A"
-  apply(simp add:is_inf_def)
-  by (meson A0 in_mono is_max_iff lu_extensive ub_def)
+  apply(simp add:is_inf_def) by (meson A0 in_mono is_max_iff lu_extensive ub_def)
 
 lemma is_inf_ub_in_ub_set:
   "is_inf i (ub_set A X) X \<Longrightarrow> i \<in> ub_set A X"
@@ -1072,70 +1063,49 @@ lemma is_inf_ub_in_ub_set:
 
 lemma sup_lb_is_lb:
   "is_sup i (lb_set A X) X \<Longrightarrow> i lb A"
-  apply(auto simp add:is_sup_def)
-  by (meson A0 in_mono is_min_iff ul_extensive lb_def)
+  apply(auto simp add:is_sup_def) by (meson A0 in_mono is_min_iff ul_extensive lb_def)
 
 lemma is_sup_lb_in_lb_set:
   "is_sup s (lb_set A X) X \<Longrightarrow> s \<in> lb_set A X"
   by (simp add: sup_lb_is_lb is_sup_in_set lb_set_if)
 
 lemma is_inf_ub_imp_is_sup:
-  assumes  A1:"is_inf i (ub_set A X) X"
-  shows "is_sup i A X"
-  by (simp add: assms is_inf_in_imp1 is_inf_ub_in_ub_set sup_in_expression)
+  "is_inf i (ub_set A X) X \<Longrightarrow> is_sup i A X"
+  by (simp add: is_inf_in_imp2 is_inf_in_set is_inf_ub_in_ub_set lb_set_elm sup_in_expression)
 
 lemma is_sup_lb_imp_is_inf:
-  assumes  A1:"is_sup s (lb_set A X) X"
-  shows "is_inf s A X"
-  by (simp add: assms inf_in_expression is_sup_in_imp1 is_sup_lb_in_lb_set)
+  "is_sup s (lb_set A X) X \<Longrightarrow> is_inf s A X"
+  by (simp add: inf_in_expression is_sup_in_imp2 is_sup_in_set is_sup_lb_in_lb_set ub_set_elm)
 
 lemma inf_ub_imp_has_sup:
-  assumes  A1:"has_inf (ub_set A X) X"
-  shows "has_sup A X"
-  using assms has_sup_def inf_is_inf is_inf_ub_imp_is_sup is_min_imp_has_min is_sup_def by blast
+  "has_inf (ub_set A X) X \<Longrightarrow> has_sup A X"
+  using has_sup_def inf_is_inf is_inf_ub_imp_is_sup is_min_imp_has_min is_sup_def by blast
 
 lemma sup_lb_imp_has_inf:
-  assumes  A1:"has_sup (lb_set A X) X"
-  shows "has_inf A X"
-  using assms has_inf_def is_inf_def is_max_imp_has_max is_sup_lb_imp_is_inf sup_is_sup by blast
+  "has_sup (lb_set A X) X \<Longrightarrow> has_inf A X"
+  using has_inf_def is_inf_def is_max_imp_has_max is_sup_lb_imp_is_inf sup_is_sup by blast
 
 lemma sup_in_eq_inf_in_ub:
-  assumes  A1:"has_inf (ub_set A X) X"
-  shows "Sup A X = Inf(ub_set A X) X"
-  by (metis assms inf_is_inf is_inf_ub_imp_is_sup is_sup_sup_eq)
+  "has_inf (ub_set A X) X \<Longrightarrow> Sup A X = Inf(ub_set A X) X"
+  by (simp add: has_sup_in_imp1 inf_ub_imp_has_sup is_inf_inf_eq is_min_imp_is_inf ub_set_subset)
 
 lemma inf_in_eq_sup_in_lb:
-  assumes A1:"has_sup (lb_set A X) X"
-  shows "Inf A X = Sup(lb_set A X) X"
-  by (metis is_sup_lb_imp_is_inf assms is_inf_inf_eq sup_is_sup)
-
-lemma inf_complete_bounded_sup_eq1:
-  assumes A1:"(ub_set A X \<noteq> {})" and
-          A2:"has_inf (ub_set A X) X"
-  shows "Sup A X = Inf (ub_set A X) X"
-  by (simp add: A2 sup_in_eq_inf_in_ub)
-
-lemma sup_complete_bounded_inf_eq1:
-  assumes A1:"lb_set A X \<noteq> {}" and
-          A2:"has_sup (lb_set A X) X"
-  shows "Inf A X = Sup (lb_set A X) X"
-  using A2 inf_in_eq_sup_in_lb by presburger
+  "has_sup (lb_set A X) X \<Longrightarrow> Inf A X = Sup(lb_set A X) X"
+  by (simp add: has_inf_in_imp1 is_max_imp_is_sup is_sup_sup_eq lb_set_subset sup_lb_imp_has_inf)
 
 end
 
 lemma same_upper_bounds_imp_sup_eq:
   "has_sup A X  \<Longrightarrow> ub_set A X = ub_set B X \<Longrightarrow> has_sup B X \<and> Sup A X = Sup B X"
-  apply(auto simp add:has_sup_def Sup_def)
-  by (simp add: is_sup_in_iff)
+  apply(auto simp add:has_sup_def Sup_def) by (simp add: is_sup_in_iff)
 
 lemma same_lower_bounds_imp_sup_eq:
   "has_inf A X \<Longrightarrow> lb_set A X = lb_set B X \<Longrightarrow>  has_inf B X \<and> Inf A X = Inf B X"
-  apply(auto simp add:has_inf_def Inf_def)
-  by (simp add: is_inf_in_iff)
+  apply(auto simp add:has_inf_def Inf_def) by (simp add: is_inf_in_iff)
 
 context fixes A::"'a::order set set" and
               X::"'a::order set"
-        assumes ex:"\<forall>Ai \<in> A. has_inf  Ai X"
+        assumes ex:"\<forall>Ai \<in> A. has_inf Ai X"
 begin
 
 lemma lb_infs_lb_un:
@@ -1196,6 +1166,103 @@ lemma inf_inf_imp_has_inf_eq:
   using assms lb_un_eq_lb_fp same_lower_bounds_imp_sup_eq by blast
 
 end
+
+lemma insert_new_finf:
+  assumes binf:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_inf {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_inf E X"
+  shows "has_inf  (insert x E) X \<and> Inf (insert x E) X = Inf {x, (Inf E X)} X"
+proof-
+  have B0:" (Inf E X) \<in> X"
+    by (simp add: A3 has_inf_in_set)
+  have B1:"has_inf  {x, (Inf E X)} X"
+    using A1 B0 binf by auto
+  have B2:"Inf {x, (Inf E X)} X lb E"
+    by (meson A3 B1 dual_order.trans has_inf_in_imp2 insert_iff lb_def)
+  have B3:"Inf {x, (Inf E X)} X lb (insert x E)"
+    by (metis B1 B2 has_inf_in_imp2 insertCI insertE lb_def)
+  have B4:"Inf {x, (Inf E X)} X \<in> lb_set (insert x E) X"
+    by (simp add: B1 B3 has_inf_in_set lb_set_if)
+  have B5:"\<And>b. b \<in> lb_set (insert x E) X \<longrightarrow> b \<in> lb_set {x, (Inf E X)} X"
+    by (simp add: A3 has_inf_imp3 lb_set_mem_iff)
+  have B6:"is_inf (Inf {x, (Inf E X)} X) (insert x E) X"
+    by (simp add: B1 B4 B5 has_inf_in_set inf_imp_gt_lb is_inf_if1 is_max_iff)
+  show ?thesis
+    by (metis B6 has_inf_def is_inf_def is_inf_inf_eq is_max_imp_has_max)
+qed
+
+lemma insert_new_fsup:
+  assumes bsup:"\<And>a b. a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> has_sup {a, b} X" and A0:"finite E" and A1:"x \<in> X- E" and A2:"E \<noteq> {}" and A3:"has_sup E X"
+  shows "has_sup (insert x E) X \<and> Sup (insert x E) X = Sup {x, (Sup E X)} X"
+proof-
+  have B0:" (Sup E X) \<in> X"
+    by (simp add: A3 has_sup_in_set)
+  have B1:"has_sup  {x, (Sup E X)} X"
+    using A1 B0 bsup by auto
+  have B2:"Sup {x, (Sup E X)} X ub E"
+    by (meson A3 B1 dual_order.trans has_sup_in_imp2 insertCI ub_def)
+  have B3:"Sup {x, (Sup E X)} X ub (insert x E)"
+    by (metis B1 B2 has_sup_in_imp2 insert_iff ub_def)
+  have B4:"Sup {x, (Sup E X)} X \<in> ub_set (insert x E) X"
+    by (simp add: B1 B3 has_sup_in_set ub_set_if)
+  have B5:"\<And>b. b \<in> ub_set (insert x E) X \<longrightarrow> b \<in> ub_set {x, (Sup E X)} X"
+    by (simp add: A3 has_sup_imp3 ub_set_mem_iff)
+  have B6:"is_sup (Sup {x, (Sup E X)} X) (insert x E) X"
+    by (simp add: B1 B4 B5 has_sup_in_set sup_imp_lt_ub is_sup_if1 is_min_iff)
+  show ?thesis
+    by (metis B6 has_min_ub_imp_has_sup is_min_imp_has_min is_sup_in_imp1 is_sup_sup_eq)
+qed
+
+lemma finite_inf_ex:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_inf {a1, a2} X)" and A1:"finite E" and A2:"E \<noteq> {}" and A3:"E \<subseteq> X"
+  shows "(has_inf E X)"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    by (simp add: has_min_imp_has_inf has_min_singleton)
+next
+  case (insert x F)
+  have P0:"x \<in> X-F"
+    using insert.hyps(3) insert.prems by auto
+  have P1:"F \<subseteq> X"
+    using insert.prems by blast
+  have P2:"has_inf F X"
+    by (simp add: P1 insert.hyps(4))
+  have P3:"F \<noteq> {}"
+    by (simp add: insert.hyps(2))
+  have P4:"Inf (insert x F) X = Inf {x, (Inf F X)} X"
+    using A0 P0 P2 P3 insert.hyps(1) insert_new_finf by blast
+  have P5:"has_inf {x, (Inf F X)} X"
+    using A0 P2 has_inf_in_set insert.prems by blast
+  then show ?case
+    using A0 P0 P2 P3 insert.hyps(1) insert_new_finf by blast
+qed
+
+
+lemma finite_sup_ex:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (has_sup {a1, a2} X)" and A1:"finite E" and A2:"E \<noteq> {}" and A3:"E \<subseteq> X"
+  shows "(has_sup E X)"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    by (simp add: has_sup_singleton2)
+next
+  case (insert x F)
+  have P0:"x \<in> X-F"
+    using insert.hyps(3) insert.prems by auto
+  have P1:"F \<subseteq> X"
+    using insert.prems by blast
+  have P2:"has_sup F X"
+    by (simp add: P1 insert.hyps(4))
+  have P3:"F \<noteq> {}"
+    by (simp add: insert.hyps(2))
+  have P4:"Sup (insert x F) X = Sup {x, (Sup F X)} X"
+    using A0 P0 P2 P3 insert.hyps(1) insert_new_fsup by blast
+  have P5:"has_sup {x, (Sup F X)} X"
+    using A0 P2 has_sup_in_set insert.prems by blast
+  then show ?case
+    using A0 P0 P2 P3 insert.hyps(1) insert_new_fsup by blast
+qed
 
 
 context fixes A::"'a::order set set" and
@@ -1344,6 +1411,10 @@ lemma sup_sup_imp_has_sup_eq_indexed:
   by (metis (no_types, lifting) assms has_sup_def has_sup_imp_eq_sup_sup_indexed has_min_iff ub_sup_ub_un_indexed ub_un_ub_sup_indexed)
 
 end
+
+
+
+
 context fixes  A::"'a set set" and  X::"'a set"
 begin
 
@@ -1392,6 +1463,22 @@ lemma sets_have_sup3:
   using is_sup_sup_eq sets_have_sup1 by blast
 
 end
+
+lemma finite_inf:
+ assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> has_inf {a1, a2} X" and 
+          A1:"finite E" and
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> X"
+  shows "has_inf E X"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    by (simp add: has_min_imp_has_inf has_min_singleton)
+next
+  case (insert x F)
+  then show ?case
+qed
 
 section Mappings
 (*Probably should develop the theory of closures before trying to develop closures*)
@@ -1963,17 +2050,13 @@ definition dw_sets_in::"'a::order set \<Rightarrow> 'a::order set set" where
 definition up_sets_in::"'a::order set \<Rightarrow> 'a::order set set" where
   "up_sets_in X \<equiv> {D. is_up_cl D X}"
 
-
 lemma in_downsets_in_imp_subset:
   "E \<in> dw_sets_in X  \<Longrightarrow> E \<subseteq> X"
-  apply (simp add: dw_sets_in_def)
-  using is_dwclosed_in_imp1 by auto
+  apply (simp add: dw_sets_in_def) using is_dwclosed_in_imp1 by auto
 
 lemma in_upsets_in_imp_subset:
   "E \<in> up_sets_in X  \<Longrightarrow> E \<subseteq> X"
-  apply (simp add: up_sets_in_def)
-  using is_upclosed_in_imp1 by auto
-
+  apply (simp add: up_sets_in_def) using is_upclosed_in_imp1 by auto
 
 lemma is_downclosed_in_imp2:
   "\<And>A X. A \<in> dw_sets_in X \<Longrightarrow> is_dw_cl A X"
@@ -2004,10 +2087,8 @@ proof-
     show "x \<in> B"
       using A2 B1 B2 B21 by blast
   qed
-  have B3:"is_dw_cl B X" (*by (meson A1 B0 B2 in_mono is_downclosed_in_def is_downclosed_in_imp2)*)
-    apply(auto simp add:is_dw_cl_def)
-    apply (metis B30 dw_cl_if dw_cl_in_carrier1)
-    by (meson B0 dw_cl_in_extensive in_mono subset_trans)
+  have B3:"is_dw_cl B X"
+    by (meson B0 B30 dual_order.trans dw_cl_if dw_cl_in_carrier2 dw_cl_in_extensive is_dwclosed_in_if0 subsetI subset_antisym)
   have B4:"B \<subseteq> X"
     using B0 by blast
   show ?thesis
@@ -2035,10 +2116,8 @@ proof-
   qed
   have B2:"\<forall>x \<in> X. \<forall>a \<in> A. (a \<le> x) \<longrightarrow> x \<in> A"
     using A0 is_up_cl_imp2 is_upclosed_in_imp2 by blast
-  have B3:"is_up_cl B X" (*using B0 B1 B2 is_upclosed_in_def by fastforce*)
-  apply(auto simp add:is_up_cl_def up_cl_def)
-    using B30 apply blast
-    using B0 by blast
+  have B3:"is_up_cl B X"
+    by (meson B0 B30 dual_order.trans is_upclosed_in_if0 subsetI subset_antisym up_cl_if up_cl_in_carrier2 up_cl_in_extensive)
   have B4:"B \<subseteq> X"
     using B0 by blast
   show ?thesis
@@ -2047,8 +2126,7 @@ qed
 
 lemma in_downsets_imp_complement_in_upsets:
   "D \<in> dw_sets_in X  \<Longrightarrow> (X - D) \<in> up_sets_in X "
-  apply(auto simp add:up_sets_in_def is_up_cl_def up_cl_def)
-  using is_downclosed_in_imp2 is_dw_cl_imp2 by blast
+  apply(auto simp add:up_sets_in_def is_up_cl_def up_cl_def) using is_downclosed_in_imp2 is_dw_cl_imp2 by blast
 
 lemma complement_in_upsets_imp_in_downsets:
   "D \<subseteq> X \<Longrightarrow> (X - D) \<in> up_sets_in X  \<Longrightarrow>D \<in> dw_sets_in X "
@@ -2099,27 +2177,12 @@ lemma dw_sets_un_closed:
 lemma has_sup_in_imp_downclosure_has_sup_in:
   assumes A0:"has_sup A X" and A1:"A \<subseteq> X"
   shows "has_sup (dw_cl A X) X \<and> Sup A X = Sup (dw_cl A X) X"
-proof-
-  obtain s where B0:"s = Sup A X"
-    by simp
-  have B1:"ub_set (dw_cl A X) X = ub_set A X"
-    by (simp add: A1 down_closure_has_same_ub)
-  show "has_sup (dw_cl A X) X \<and>  Sup A X = Sup (dw_cl A X) X"
-    by (metis A0 B1 has_sup_def has_sup_in_imp1 min_unique)
-qed
-
+  by (metis A0 A1 down_closure_has_same_ub same_upper_bounds_imp_sup_eq)
 
 lemma has_inf_in_imp_upclosure_has_inf_in:
   assumes A0:"has_inf A X" and A1:"A \<subseteq> X"
   shows "has_inf (up_cl A X) X \<and> Inf A X = Inf (up_cl A X) X"
-proof-
- obtain i where B0:"i = Inf A X" by simp
-  have B1:"lb_set (up_cl A X) X = lb_set A X"
-    by (simp add: A1 up_closure_has_same_lb)
-  show "has_inf (up_cl A X) X \<and> Inf A X = Inf (up_cl A X) X"
-    by (metis A0 B1 has_inf_def has_inf_in_imp1 max_unique)
-qed
-
+  using A0 A1 same_lower_bounds_imp_sup_eq up_closure_has_same_lb by blast
 
 lemma is_up_cl_if2:
   "(A::'a::order set) \<subseteq> X \<Longrightarrow> (\<And>a b. (b \<in> X \<and> a \<le> b \<and> a \<in> A) \<Longrightarrow> b \<in> A) \<Longrightarrow> is_up_cl A X"
@@ -2129,9 +2192,13 @@ lemma is_dw_cl_if2:
   "(A::'a::order set) \<subseteq> X \<Longrightarrow> (\<And>a b. (b \<in> X \<and> a \<ge> b \<and> a \<in> A) \<Longrightarrow> b \<in> A) \<Longrightarrow> is_dw_cl A X"
   by (meson is_dwclosed_in_if0 subsetI subset_antisym dw_cl_if dw_cl_in_carrier2 dw_cl_in_extensive)
 
+lemma in_up_cl_set_if:
+  "is_up_cl A X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> A"
+  using is_up_cl_imp2 by auto
 
-  
-   
+lemma in_dw_cl_set_if:
+  "is_dw_cl A X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<ge> x) \<Longrightarrow> x \<in> A"
+  using is_dw_cl_imp2 by auto
 
 section FilterIdeals
 subsection Filters
@@ -2217,31 +2284,30 @@ lemma is_ideal_if:
   "I \<subseteq> X \<Longrightarrow> is_updir I \<Longrightarrow> is_dw_cl I X \<Longrightarrow> is_ideal I X"
   by (simp add: is_ideal_def)
 
-lemma filter_contains_max:
-  assumes A0:"is_max m X" and A1:"is_filter F X"
-  shows "m \<in> F"
-proof-
-  obtain f where A2:"f \<in> F"
-    by (metis A1 equals0I is_filter_imp3)
-  have B0:"f \<le> m"
-    by (meson A0 A1 A2 is_filter_imp20 is_sup_in_imp2 subsetD sup_eq_top1)
-  show "m \<in> F"
-    using A0 A1 A2 B0 is_filter_imp1 is_max_imp is_up_cl_imp2 by blast
-qed
+lemma filter_contains_max0:
+  "is_filter F X \<Longrightarrow> (\<exists>f. f \<in> F)"
+  by (simp add: ex_in_conv is_filter_imp3)
+  
+lemma filter_contains_max1:
+  "is_max m X \<Longrightarrow> is_filter F X \<Longrightarrow> (\<exists>f. f \<in> F \<and> f \<le> m)"
+  by (meson is_filter_def filter_contains_max0 max_gt_subset)
 
+lemma filter_contains_max:
+  "is_max m X \<Longrightarrow> is_filter F X \<Longrightarrow> m \<in> F"
+  using filter_contains_max1 is_filter_imp1 is_max_imp is_up_cl_imp2 by blast
+   
+lemma ideal_contains_min0:
+  "is_ideal I X \<Longrightarrow> (\<exists>i. i \<in> I)"
+  by (simp add: ex_in_conv is_ideal_imp3)
+  
+lemma ideal_contains_min1:
+  "is_min m X \<Longrightarrow> is_ideal I X \<Longrightarrow> (\<exists>i. i \<in> I \<and> i \<ge> m)"
+  by (meson ideal_contains_min0 is_ideal_imp20 min_lt_subset)
 
 lemma ideal_contains_min:
-  assumes A0:"is_min m X" and A1:"is_ideal I X"
-  shows "m \<in> I"
-proof-
-  obtain x where A2:"x \<in> I"
-    by (metis A1 equals0I is_ideal_imp3)
-  have B0:"x \<ge> m"
-    using A0 A1 A2 inf_eq_bot1 is_ideal_imp20 is_inf_in_imp2 by blast
-  show "m \<in> I"
-    using A0 A1 A2 B0 is_dw_cl_imp2 is_ideal_imp1 is_min_iff by blast
-qed
-
+  "is_min m X \<Longrightarrow> is_ideal I X \<Longrightarrow> m \<in> I"
+  using ideal_contains_min1 is_dw_cl_imp2 is_ideal_imp1 is_min_imp by blast
+   
 lemma filter_inf_closed:
   "is_filter F X \<Longrightarrow> a \<in> F \<and> b \<in> F \<Longrightarrow> has_inf {a, b} X \<Longrightarrow> (Inf {a, b} X) \<in> F"
   by (simp add: is_filter_def dwdir_inf)
@@ -3844,7 +3910,7 @@ lemma clr_inf_complete2:
 
 lemma clr_inf_complete3:
   "is_clr C X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow>  Inf A C = Inf A X"
-  by (simp add: A1 clr_inf_complete1 clr_inf_complete2 inf_subset_eq)
+  by (simp add: A1 clr_inf_complete1 clr_inf_complete2 inf_subset_eq1)
 
 
 lemma clr_inf_on_cinf_converse:
@@ -3971,7 +4037,7 @@ proof
   proof(cases "A={}")
     case True
     then show ?thesis
-      by (metis A0 A3 B0 assms complete_clr1 inf_in_degenerate2 inf_subset_eq is_clr_def is_complete_imp_max_and_inf subset_empty)
+      by (metis A0 A3 B0 assms complete_clr1 inf_in_degenerate2 inf_subset_eq1 is_clr_def is_complete_imp_max_and_inf subset_empty)
   next
     case False
     then show ?thesis
@@ -4032,9 +4098,9 @@ proof-
   have B1:"has_inf (ub_set A C) X"
     by (meson A0 A1 B0 PowI dual_order.trans is_complete_lattice_def is_inf_complete_def pow_ne_if ub_set_subset)
   have B2:"Inf (ub_set A C) X = Inf (ub_set A C) C "
-    by (metis A1 A2 B1 clr_inf_closed inf_subset_eq ub_set_subset)
+    by (metis A1 A2 B1 clr_inf_closed inf_subset_eq1 ub_set_subset)
   have B3:"has_inf (ub_set A C) C"
-    by (meson A1 A2 B1 clr_inf_closed inf_subset_eq ub_set_subset)
+    by (meson A1 A2 B1 clr_inf_closed inf_subset_eq1 ub_set_subset)
   have B4:"Sup A C =  (Inf (ub_set A C) C)"
     by (simp add: B3 assms sup_in_eq_inf_in_ub)
   have B5:"is_sup (Inf (ub_set A C) C) A C"
