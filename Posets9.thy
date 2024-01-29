@@ -4451,8 +4451,6 @@ context
           csinf:"is_inf_complete X"
 begin
 
-
-
 lemma filter_csinf_moore_family1:
   assumes "EF \<in> Pow_ne (filters X)"
   shows "(\<Inter>EF) \<in> (filters X)"
@@ -4521,7 +4519,6 @@ proof-
     by (smt (verit) B0 filter_closure_def is_up_cl_if2 mem_Collect_eq subset_iff)
 qed
 
-  
 lemma filter_cl2:
   assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
   shows "is_dwdir (filter_closure A X)"
@@ -4576,6 +4573,17 @@ proof
     by (meson A2 A4 B2 B3 Posets9.is_filter_def filter_closure_mem_iff in_up_cl_set_if)
 qed
 
+lemma filter_cl_is_ub:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow>  (filter_closure A X) \<in>  (ub_set {A} (filters X))"
+  by (metis filter_cl0 filter_cl_is_filter filters_mem_iff is_filter_imp21 singletonD ub_set_elm)
+
+lemma filter_cl_lt_ub:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> F \<in>  (ub_set {A} (filters X)) \<Longrightarrow> (filter_closure A X) \<le> F"
+  by (simp add: filter_cl_least filters_mem_iff ub_set_mem_iff)
+
+lemma filter_cl_is_lub:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (filter_closure A X) (ub_set {A} (filters X)) (Pow X)"
+  by (metis filter_cl_is_filter filter_cl_is_ub filter_cl_lt_ub is_filter_imp21 is_inf_if3)
 
 end
 
