@@ -2030,6 +2030,20 @@ proof
     using A2 A3 B0 B1 has_inf_in_set is_up_cl_imp2 by blast
 qed
 
+lemma dwdir_finf:
+  fixes A X::"'a::order set"
+  assumes A0:"A \<subseteq> X" and A1:"is_dwdir A" and A2:"is_up_cl A X"
+  shows "\<And>E. (E \<in> Fpow_ne A \<and>  has_inf E X) \<longrightarrow> ((Inf E  X) \<in> A)"
+proof
+  fix E assume A3:" (E \<in> Fpow_ne A \<and>  has_inf E X)"
+  obtain c where B1:"c \<in> A \<and> c lb E"
+    by (meson A1 A3 dw_dir_finite fpow_ne_mem_iff)
+  have B2:"c \<le> Inf E X"
+    by (meson A0 A3 B1 has_inf_imp3 lb_def subsetD)
+  show "(Inf E  X) \<in> A"
+    using A2 A3 B1 B2 has_inf_in_set is_up_cl_imp2 by blast
+qed
+
 lemma updir_sup:
   fixes A X::"'a::order set"
   assumes A0:"A \<subseteq> X" and A1:"is_updir A" and A2:"is_dw_cl A X"
@@ -2426,6 +2440,10 @@ lemma ideal_contains_min:
    
 lemma filter_inf_closed:
   "is_filter F X \<Longrightarrow> a \<in> F \<and> b \<in> F \<Longrightarrow> has_inf {a, b} X \<Longrightarrow> (Inf {a, b} X) \<in> F"
+  by (simp add: is_filter_def dwdir_inf)
+
+lemma filter_finf_closed:
+  "is_filter F X \<Longrightarrow>  E \<in> Fpow_ne F \<Longrightarrow> has_inf E X \<Longrightarrow> (Inf E X) \<in> F"
   by (simp add: is_filter_def dwdir_inf)
 
 subsubsection PrincipalFilters
@@ -4536,6 +4554,21 @@ proof-
     by (metis A0 A1 B0 bot.extremum_uniqueI filter_cl0 is_dwdir_def)
 qed
 
+lemma filter_cl_is_filter:
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  shows "is_filter (filter_closure A X) X"
+  by (meson A0 A1 Posets9.is_filter_def filter_cl1 filter_cl2 filter_closure_mem_iff subsetI)
+
+lemma filter_cl_least:
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}"  and A2:"is_filter F X" and A3:"A \<subseteq> F"
+  shows "(filter_closure A X) \<subseteq> F"
+proof
+  fix x assume A4:"x \<in> (filter_closure A X)"
+  obtain Fx where B0:"Fx  \<in> Fpow_ne A \<and> Inf Fx X \<le> x"
+    using A4 filter_closure_obtains by blast
+  have B1:"Fx \<subseteq> F"
+    using A3 B0 fpow_ne_imp2 by blast 
+  show "x \<in> F"
 
 
 end
