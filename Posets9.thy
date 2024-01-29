@@ -4568,7 +4568,13 @@ proof
     using A4 filter_closure_obtains by blast
   have B1:"Fx \<subseteq> F"
     using A3 B0 fpow_ne_imp2 by blast 
+  have B2:"Inf Fx X \<in> F"
+    by (metis A2 A3 B0 DiffD2 DiffI csinf dwdir_finf fpow_ne_imp3 fpow_ne_imp4 inf_complete_imp2 is_filter_imp0 is_filter_imp1 is_filter_imp20)
+  have B3:"Inf Fx X \<le> x"
+    by (simp add: B0)
   show "x \<in> F"
+    by (meson A2 A4 B2 B3 Posets9.is_filter_def filter_closure_mem_iff in_up_cl_set_if)
+qed
 
 
 end
