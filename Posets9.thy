@@ -27,21 +27,46 @@ lemma pow_ne_imp:
   "a \<in> Pow_ne A \<Longrightarrow> a \<noteq> {}"
   by blast
 
+lemma fpow_ne_imp:
+  "a \<in> Fpow_ne A \<Longrightarrow> a \<noteq> {}"
+  by blast
+
 lemma pow_ne_imp2:
   "a \<in> Pow_ne A \<Longrightarrow> a \<subseteq> A"
   by blast
+
+lemma fpow_ne_imp2:
+  "a \<in> Fpow_ne A \<Longrightarrow> a \<subseteq> A"
+  by (simp add: Fpow_Pow_finite)
 
 lemma pow_ne_imp3:
   "a \<in> Pow_ne A \<Longrightarrow> a \<in> Pow A"
   by blast
 
+lemma fpow_ne_imp3:
+  "a \<in> Fpow_ne A \<Longrightarrow> a \<in> Pow A"
+  by (simp add: fpow_ne_imp2)
+
 lemma pow_ne_imp4:
   "C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> A \<in> Pow_ne X"
   by blast
 
+lemma fpow_ne_imp4:
+  "C \<subseteq> X \<Longrightarrow> A \<in> Fpow_ne C \<Longrightarrow> A \<in> Fpow_ne X"
+  using Fpow_mono by auto
+
 lemma pow_ne_if:
   "a \<noteq> {} \<Longrightarrow> a \<in> Pow A \<Longrightarrow>  a \<in> Pow_ne A"
   by blast
+
+lemma fpow_ne_if:
+  "a \<noteq> {} \<Longrightarrow> a \<in> Pow A \<Longrightarrow> finite a \<Longrightarrow>  a \<in> Fpow_ne A"
+  by (simp add: Fpow_Pow_finite)
+          
+lemma fpow_ne_mem_iff:
+  "a \<in> Fpow_ne A \<longleftrightarrow> (finite a \<and> a \<subseteq> A \<and> a \<noteq> {})"
+  using Fpow_def by blast
+ 
 
 abbreviation is_ne::"'a set \<Rightarrow> bool" where
   "is_ne A \<equiv> A  \<noteq> {}"
@@ -239,6 +264,23 @@ lemma singleton_in_ub_set:
   "(a::'a::order) \<in> X \<Longrightarrow> a \<in> lb_set {a} X"
   by (simp add: lb_set_if lb_singleton_simp)
 
+lemma lb_subset_imp_lt:
+  "(a::'a::order) \<in> X \<and> b \<in> X \<Longrightarrow>  lb_set {a} X \<subseteq> lb_set {b} X \<Longrightarrow> a \<le> b"
+  by (meson in_mono lb_set_imp singletonI singleton_in_ub_set)
+
+lemma ub_subset_imp_gt:
+  "(a::'a::order) \<in> X \<and> b \<in> X \<Longrightarrow>  ub_set {a} X \<subseteq> ub_set {b} X \<Longrightarrow> a \<ge> b"
+  by (meson in_mono singletonI singleton_in_lb_set ub_set_imp)
+
+
+lemma lb_embedding:
+  "(a::'a::order) \<in> X \<and> b \<in> X  \<Longrightarrow>(lb_set {a} X \<subseteq> lb_set {b} X  \<longleftrightarrow> a \<le> b) "
+  by (meson lb_set_singleton_isotone lb_subset_imp_lt)
+
+lemma ub_embedding:
+  "(a::'a::order) \<in> X \<and> b \<in> X  \<Longrightarrow>(ub_set {a} X \<subseteq> ub_set {b} X  \<longleftrightarrow> a \<ge> b) "
+  by (meson ub_set_singleton_antitone ub_subset_imp_gt)
+
 lemma ub_set_in_from_principal:
   assumes "A \<noteq> {}"
   shows "ub_set A X = (\<Inter>a \<in> A. ub_set {a} X)"
@@ -291,7 +333,13 @@ lemma ul_idempotent:
   "ub_set (lb_set (ub_set (lb_set A X) X ) X) X = ub_set (lb_set A X) X "
   by (simp add: ulu_eq_u lb_set_subset)
 
+lemma set_subset_lb_ub:
+  "A \<subseteq> X \<Longrightarrow> b \<in> ub_set A X \<Longrightarrow> A \<subseteq> lb_set {b} X"
+  by (simp add: lb_set_in_singleton subset_eq ub_set_mem_iff)
 
+lemma set_subset_ub_lb:
+  "A \<subseteq> X \<Longrightarrow> b \<in> lb_set A X \<Longrightarrow> A \<subseteq> ub_set {b} X"
+  by (simp add: ub_set_in_singleton subset_eq lb_set_mem_iff)
 
 section LeastGreatest
 
@@ -1453,9 +1501,6 @@ lemma sup_sup_imp_has_sup_eq_indexed:
 
 end
 
-
-
-
 context fixes  A::"'a set set" and  X::"'a set"
 begin
 
@@ -1505,21 +1550,6 @@ lemma sets_have_sup3:
 
 end
 
-lemma finite_inf:
- assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> has_inf {a1, a2} X" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> X"
-  shows "has_inf E X"
-  using A1 A2 A3 
-proof (induct E rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    by (simp add: has_min_imp_has_inf has_min_singleton)
-next
-  case (insert x F)
-  then show ?case
-qed
 
 section Mappings
 (*Probably should develop the theory of closures before trying to develop closures*)
@@ -1612,6 +1642,7 @@ lemma is_iso_sup:
 lemma is_iso_inf:
   "is_isotone_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_inf A X \<Longrightarrow> has_inf (f`A) (f`X) \<Longrightarrow> f (Inf A X) \<le> Inf (f`A) (f`X)"
   by (metis equalityD1 has_inf_in_set imageI image_mono inf_antitone1 is_isotone_imp3 less_inf_if1b less_inf_imp3b)
+
 
 subsection Antitonicity
 definition is_antitone_on::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow> bool" where
@@ -1795,6 +1826,16 @@ lemma cl_imp_cl_sup_cond:
   by (meson Pow_iff cl_eq_imp_ext1 cl_sup_cond1_def closure_eq_if_closure closure_on_sup_eq1 has_sup_in_set is_closure_on_imp2)
   
 
+subsection OrderEmbeddings
+
+definition is_ord_embedding::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_ord_embedding f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> (x1 \<le> x2  \<longleftrightarrow> f x1 \<le> f x2))"
+
+lemma ord_emb_is_inj:
+  "is_ord_embedding f X \<Longrightarrow> inj_on f X"
+  by (simp add: inj_on_def is_ord_embedding_def order_antisym)  
+
+
 section Directedness
 
 definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
@@ -1866,6 +1907,40 @@ lemma dw_dir_obtains:
   assumes "is_dwdir A" and "a \<in> A" and "b \<in> A"
   obtains c where "c \<in> A \<and> c lb {a, b}"
   using assms(1) assms(2) assms(3) is_dwdir_imp2 by blast
+
+lemma dw_dir_finite:
+  assumes A0:"is_dwdir (A::'a::order set)"
+  shows "finite F \<Longrightarrow> F \<subseteq> A \<Longrightarrow> (\<exists>c \<in> A. c lb F)"
+proof(induct rule: finite_induct)
+  case empty
+  then show ?case
+    using assms is_dwdir_imp1 is_lb_simp2 by fastforce
+next
+  case (insert x F)
+  have P0:"\<And>a b. a \<in> A \<and>  b \<in> A \<Longrightarrow>  (\<exists>c \<in> A. c lb {a, b})"
+    by (simp add: assms is_dwdir_imp2)
+  then show ?case
+  apply(simp add:lb_def)
+    by (smt (verit, del_insts) insert.hyps(3) insert.prems insert_subset is_lb_simp1 order.trans)
+qed
+
+
+lemma updir_finite:
+  assumes A0:"is_updir (A::'a::order set)"
+  shows "finite F \<Longrightarrow> F \<subseteq> A \<Longrightarrow> (\<exists>c \<in> A. c ub F)"
+proof(induct rule: finite_induct)
+  case empty
+  then show ?case
+    using assms is_updir_imp1 is_ub_simp2 by fastforce
+next
+  case (insert x F)
+  have P0:"\<And>a b. a \<in> A \<and>  b \<in> A \<Longrightarrow>  (\<exists>c \<in> A. c ub {a, b})"
+    by (simp add: assms is_updir_imp2)
+  then show ?case
+  apply(simp add:ub_def)
+    by (smt (verit, del_insts) insert.prems insert_subset local.insert(3) order.trans ub_set_if ub_set_mem)
+qed
+
 
 definition is_cofinal_in::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> bool" (infix "is'_cofinal'_in" 50) where
   "A is_cofinal_in B \<equiv> (\<forall>a. a \<in> A \<longrightarrow> has_ub {a} B)"
@@ -2418,9 +2493,17 @@ lemma principal_filter_imp6:
   "is_principal_filter F X \<Longrightarrow> F = {x \<in> X. x \<ge> min F}"
   by (simp add: Orderings.order_eq_iff principal_filter_imp5 subset_iff)
 
+lemma principal_filter_imp6b:
+  "is_principal_filter F X \<Longrightarrow> F = ub_set {min F} X"
+  by (simp add: principal_filter_imp6 ub_set_in_singleton)
+
 lemma principal_ideal_imp6:
   "is_principal_ideal I X \<Longrightarrow> I = {x \<in> X. x \<le> max I}"
   by (simp add: Orderings.order_eq_iff principal_ideal_imp5 subset_iff)
+
+lemma principal_ideal_imp6b:
+  "is_principal_ideal I X \<Longrightarrow> I = lb_set {max I} X"
+  by (simp add: lb_set_in_singleton principal_ideal_imp6)
 
 lemma principal_filter_imp7:
   "is_principal_filter F X \<Longrightarrow> is_filter F X"
@@ -2580,6 +2663,9 @@ lemma filters_mem_iff:
 lemma pfilters_mem_iff:
   "A \<in> pfilters X \<longleftrightarrow> (A \<in> Pow X \<and> is_pfilter A X)"
   by (simp add: pfilters_def)
+
+subsection CharacterizingMappings
+
 
 section ClosureRanges
 
@@ -4327,12 +4413,27 @@ lemma order_bot_is_min:
   "is_min (bot::'a::order_bot) UNIV"
   by (simp add: is_min_bot)
 
+definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "filter_closure A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow_ne A. Inf F X \<le> x}"
+
+lemma filter_closure_mem_iff:
+  "x \<in> filter_closure A X  \<longleftrightarrow> (x \<in> X \<and> (\<exists>F \<in> Fpow_ne A. Inf F X \<le> x))"
+  by (simp add: filter_closure_def)
+
+lemma filter_closure_obtains:
+  assumes "x \<in>  filter_closure A X"
+  obtains Fx where "Fx \<in> Fpow_ne A \<and> Inf Fx X \<le> x"
+  by (meson assms filter_closure_mem_iff)
+
+
 context
   fixes X::"'a::order set"
   assumes is_ne:"X \<noteq> {}" and
           toped:"has_max X" and
           csinf:"is_inf_complete X"
 begin
+
+
 
 lemma filter_csinf_moore_family1:
   assumes "EF \<in> Pow_ne (filters X)"
@@ -4374,7 +4475,66 @@ proof-
     by (simp add: B1 B2 is_filter_def filters_mem_iff in_upsets_in_imp_subset up_sets_in_def)
 qed
 
+lemma filter_cl0:
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  shows "A \<subseteq> filter_closure A X"
+proof
+  fix a assume A2:"a \<in> A"
+  have B0:"{a} \<in> Fpow_ne A"
+    using A2 Fpow_def by blast
+  have B1:"Inf {a} X \<le> a"
+    by (metis A0 A2 inf_singleton2 order_class.order_eq_iff subsetD)
+  show "a \<in> filter_closure A X"
+    using A0 A2 B0 B1 filter_closure_def by blast
+qed
+
+lemma filter_cl1:
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  shows "is_up_cl (filter_closure A X) X"
+proof-
+  let ?ClA="(filter_closure A X)"
+  have B0:"(\<And>a b. (b \<in> X \<and> a \<le> b \<and> a \<in> ?ClA) \<longrightarrow> b \<in> ?ClA)"
+  proof
+    fix a b assume A2:"b \<in> X \<and> a \<le> b \<and> a \<in> ?ClA"
+    show "b \<in> ?ClA"
+      by (smt (verit) A2 dual_order.trans filter_closure_def mem_Collect_eq ub_def)
+  qed
+  show ?thesis
+    by (smt (verit) B0 filter_closure_def is_up_cl_if2 mem_Collect_eq subset_iff)
+qed
+
   
+lemma filter_cl2:
+  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  shows "is_dwdir (filter_closure A X)"
+proof-
+  let ?ClA="(filter_closure A X)"
+  have B0:"\<And>a b. a \<in> ?ClA \<and> b \<in> ?ClA \<longrightarrow> (\<exists>c \<in> ?ClA. c lb {a, b})"
+  proof
+    fix a b assume A2:"a \<in> ?ClA \<and> b \<in> ?ClA" 
+    obtain Fa Fb where B1:"Fa \<in> Fpow_ne A \<and> Inf Fa X \<le> a  \<and> Fb \<in> Fpow_ne A \<and>  Inf Fb X \<le> b"
+      by (meson A2 filter_closure_obtains)
+    let ?Fab="(Fa \<union> Fb)"
+    have B2:"?Fab \<subseteq> A \<and> ?Fab \<subseteq> X"
+      using A0 B1 fpow_ne_imp2 by auto
+    have B3:"Inf ?Fab  X \<le> Inf Fa X \<and> Inf ?Fab X \<le> Inf Fb X"
+      by (metis B1 B2 Diff_iff Pow_iff csinf inf_antitone1 is_inf_complete_def le_supE pow_ne_if sup_bot.eq_neutr_iff sup_ge1 sup_ge2)
+    have B4:"Inf ?Fab X \<le> a \<and> Inf ?Fab X \<le> b"
+      using B1 B3 dual_order.trans by blast
+    have B5:"Inf ?Fab X \<le> Inf ?Fab X"
+      by simp
+    have B6:"?Fab \<in> Fpow_ne A"
+      by (metis B1 B2 bot_eq_sup_iff finite_UnI fpow_ne_mem_iff)
+    have B7:"Inf ?Fab X \<in> ?ClA "
+      by (metis B2 B5 B6 Diff_iff PowI csinf filter_closure_mem_iff inf_complete_imp1)
+    have B8:"Inf ?Fab X \<in> ?ClA \<and>  Inf ?Fab X lb {a, b}"
+      using B4 B7 lb_def by auto
+    show "(\<exists>c \<in> ?ClA. c lb {a, b})"
+      using B8 by auto
+  qed
+  show ?thesis
+    by (metis A0 A1 B0 bot.extremum_uniqueI filter_cl0 is_dwdir_def)
+qed
 
 
 
