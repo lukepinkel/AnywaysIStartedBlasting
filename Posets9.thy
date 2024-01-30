@@ -529,6 +529,14 @@ lemma is_min_subset:
   "is_min m B\<Longrightarrow>  A \<subseteq> B \<Longrightarrow>  m \<in> A \<Longrightarrow> is_min m A"
   by (simp add: in_mono is_min_iff)
 
+lemma lt_is_min_imp_lb:
+  "is_min m A \<Longrightarrow> x \<le> m \<Longrightarrow> x lb A"
+  by (meson dual_order.trans is_min_iff lb_def)
+
+lemma gt_is_max_imp_ub:
+  "is_max m A \<Longrightarrow> x \<ge> m \<Longrightarrow> x ub A"
+  by (meson dual_order.trans is_max_iff ub_def)
+
 subsection ExistentialHas
 
 lemma has_max_iff:
@@ -693,6 +701,61 @@ lemma max_subset_ub:
 lemma min_subset_lb:
   "is_min m X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> m lb A"
   by (simp add: min_lt_subset lb_def)
+
+lemma min_lt_elem:
+  "a \<in> A \<Longrightarrow> has_min A \<Longrightarrow> min A \<le> a"
+  by (metis if_has_min_min_unique is_min_iff min_if)
+
+lemma max_gt_elem:
+  "a \<in> A \<Longrightarrow> has_max A \<Longrightarrow> max A \<ge> a"
+  by (metis insertI1 ub_set_imp ub_set_space2)
+
+lemma le_is_max_twoset:
+  "a \<le> b \<Longrightarrow> is_max b {a, b}"
+  by (simp add: is_max_iff)
+
+lemma lt_is_max_twoset:
+  "a <  b \<Longrightarrow> is_max b {a, b}"
+  by (simp add: is_max_iff)
+
+lemma insert_new_fmin0:
+  assumes A0:"finite E" and A1:"x \<notin> E" and A2:"E \<noteq> {}" and A3:"has_min E" and A4:"has_min {x, (min E)}"
+  shows "has_min (insert x E) \<and>  min (insert x E) = min {x, min E}"
+proof-
+  let ?m="min  {x, (min E)}"
+  have B0:"?m \<le> x \<and> ?m \<le> min E"
+    by (simp add: A4 min_lt_elem)
+  have B1:"?m lb E"
+    using A3 B0 if_has_min_min_unique lt_is_min_imp_lb min_if by blast
+  have B2:"?m lb (insert x E)"
+    by (metis B0 B1 insert_iff lb_def)
+  have B3:"?m \<in> (insert x E)"
+    by (metis A3 A4 has_min_iff insert_iff min_if2 min_singleton)
+  have B4:"is_min ?m (insert x E)"
+    using B2 B3 is_min_iff2 by auto
+  show ?thesis
+    using B4 is_min_imp_has_min min_if by fastforce
+qed
+
+
+lemma insert_new_fmax0:
+  assumes A0:"finite E" and A1:"x \<notin> E" and A2:"E \<noteq> {}" and A3:"has_max E" and A4:"has_max {x, (max E)}"
+  shows "has_max (insert x E) \<and>  max (insert x E) = max {x, max E}"
+proof-
+  let ?m="max  {x, (max E)}"
+  have B0:"?m \<ge> x \<and> ?m \<ge> max E"
+    by (simp add: A4 max_gt_elem)
+  have B1:"?m ub E"
+    using A3 B0 if_has_max_max_unique gt_is_max_imp_ub max_if by blast
+  have B2:"?m ub (insert x E)"
+    by (metis B0 B1 insert_iff ub_def)
+  have B3:"?m \<in> (insert x E)"
+    by (metis A3 A4 has_max_iff insert_iff max_if2 max_singleton)
+  have B4:"is_max ?m (insert x E)"
+    using B2 B3 is_max_iff2 by auto
+  show ?thesis
+    using B4 is_max_imp_has_max max_if by fastforce
+qed
 
 
 section SupInf
@@ -2102,6 +2165,22 @@ lemma is_up_cl_imp2:
 lemma is_dw_cl_imp2:
   "is_dw_cl A X \<Longrightarrow> (\<And>a b. (b \<in> X \<and> b \<le> a \<and> a \<in> A) \<Longrightarrow> b \<in> A)"
   using is_dwclosed_in_imp1 by auto
+
+lemma is_dw_cl_imp3:
+  "is_dw_cl A X \<Longrightarrow> (\<And>a.  a\<in> A \<Longrightarrow> lb_set {a} X \<subseteq> A)"
+  using is_dw_cl_imp2 lb_set_mem_iff by blast
+
+lemma union_lemma:
+  "(\<And>x. x \<in> X \<Longrightarrow> (f x) \<subseteq> X) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x \<in> (f x)) \<Longrightarrow> X = (\<Union>x \<in> X. f x)"
+  by blast
+
+lemma union_lemma2:
+  "(A::'a::order set) \<subseteq> X \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<in> lb_set {x} X)"
+  by (simp add: singleton_in_ub_set subset_iff)
+
+lemma is_dw_cl_imp4:
+  "(A::'a::order set) \<subseteq> X \<Longrightarrow> is_dw_cl A X \<Longrightarrow> A = (\<Union>a \<in> A. lb_set {a} X)"
+  by (simp add: is_dw_cl_imp3 union_lemma union_lemma2)
 
 subsection Misc
 
