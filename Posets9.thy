@@ -1707,10 +1707,77 @@ section Mappings
 (*Probably should develop the theory of closures before trying to develop closures*)
 subsection UtilityTriple
 definition is_map::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow>bool" where
-  "is_map f X Y \<equiv> ((f`X) \<subseteq> Y)"
+  "is_map f X Y \<equiv> (f`X) \<subseteq> Y"
 
 abbreviation is_self_map::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_self_map f X \<equiv> is_map f X X"
+
+definition is_surj::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> bool" where
+  "is_surj f X Y \<equiv> (f`X=Y)"
+
+definition id::"'a set \<Rightarrow> ('a \<Rightarrow> 'a)" where
+  "id X \<equiv> (\<lambda>x. if x \<in> X then x else undefined)"
+
+
+lemma is_surj_imp1:
+  "is_surj f X Y \<Longrightarrow> y \<in> Y \<Longrightarrow> \<exists>x \<in> X. y= f x"
+  by(auto simp add:is_surj_def)
+
+lemma is_surj_if1:
+  "is_map f X Y \<Longrightarrow> (\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. y= f x)  \<Longrightarrow> is_surj f X Y "
+  by(auto simp add:is_surj_def is_map_def image_iff)
+
+lemma is_surj_if2:
+  "f`X \<subseteq> Y \<Longrightarrow> (\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. y= f x)  \<Longrightarrow> is_surj f X Y "
+  by (simp add: is_map_def is_surj_if1)
+
+lemma is_surj_comp:
+  "is_surj f X Y \<Longrightarrow> is_surj g Y Z \<Longrightarrow> is_surj (g \<circ> f) X Z"
+  by(auto simp add:is_surj_def)
+
+lemma is_surj_rinv:
+  "is_surj f X Y \<Longrightarrow> B \<subseteq> Y \<Longrightarrow> f`(f-`B) = B"
+  by(auto simp add:is_surj_def)
+
+lemma is_surj_empty_vim_imp_empty:
+  "is_surj f X Y \<Longrightarrow> B \<subseteq> Y \<Longrightarrow> (f-`B) = {} \<Longrightarrow> B = {}"
+  by(auto simp add:is_surj_def)
+
+lemma is_surj_empty_vim_if_empty:
+  "is_surj f X Y \<Longrightarrow> B \<subseteq> Y \<Longrightarrow> B = {} \<Longrightarrow> (f-`B) = {}"
+  by(auto simp add:is_surj_def)
+
+lemma is_surj_on_image:
+  "is_surj f X (f`X)"
+  by(simp add:is_surj_def)
+
+lemma id_apply:
+  "x \<in> X \<Longrightarrow> id X x = x"
+  by (simp add:id_def)
+
+lemma image_id:
+  "(id X)`X = X"
+  by (simp add:id_def)
+
+lemma id_is_map:
+  "is_map (id X) X X"
+  by(simp add:is_map_def id_def)
+
+lemma id_is_surj:
+  "is_surj (id X) X X"
+  by (simp add: image_id is_surj_def)
+
+lemma id_is_inj:
+  "inj_on (id X) X"
+  by (simp add: id_apply inj_on_inverseI)
+
+lemma exists_section_imp_surj:
+  "is_map f X Y \<Longrightarrow> \<exists>s. is_map s Y X \<and> (\<forall>y \<in> Y. (f \<circ> s) y = y) \<Longrightarrow> is_surj f X Y"
+  by (metis (mono_tags, lifting) comp_apply image_subset_iff is_map_def is_surj_if1)
+
+lemma exists_section_if_surj:
+  "is_map f X Y \<Longrightarrow> is_surj f X Y \<Longrightarrow>  \<exists>s. is_map s Y X \<and> (\<forall>y \<in> Y. (f \<circ> s) y = y)"
+  by (metis comp_def f_inv_into_f image_subset_iff inv_into_into is_map_def is_surj_def)
 
 lemma is_map_comp:
   "is_map f X Y \<Longrightarrow> is_map g Y Z \<Longrightarrow> is_map (g \<circ> f) X Z"
@@ -1983,10 +2050,20 @@ subsection OrderEmbeddings
 definition is_ord_embedding::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_ord_embedding f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> (x1 \<le> x2  \<longleftrightarrow> f x1 \<le> f x2))"
 
+definition is_ord_isomorphism::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set  \<Rightarrow>  'b::order set  \<Rightarrow> bool" where
+  "is_ord_isomorphism f X Y \<equiv> is_ord_embedding f X \<and> f`X=Y"
+
 lemma ord_emb_is_inj:
   "is_ord_embedding f X \<Longrightarrow> inj_on f X"
   by (simp add: inj_on_def is_ord_embedding_def order_antisym)  
 
+lemma ord_emb_imp1:
+  "is_ord_embedding f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> f x1 \<le> f x2"
+  by(simp add:is_ord_embedding_def)
+
+lemma ord_emb_imp2:
+  "is_ord_embedding f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow>  x1 \<le> x2"
+  by(simp add:is_ord_embedding_def)
 
 section Directedness
 
@@ -4615,6 +4692,13 @@ context
           csinf:"is_inf_complete X"
 begin
 
+lemma max_filter:
+  "is_filter {max X} X"
+  apply(auto simp add:is_filter_def is_dwdir_def is_up_cl_def lb_def up_cl_def)
+  using if_has_max_max_unique is_max_imp1 max_if toped apply blast
+  apply (simp add: antisym max_gt_elem toped)
+  using has_max_def is_max_imp1 max_if toped by blast
+
 lemma filter_csinf_moore_family1:
   assumes "EF \<in> Pow_ne (filters X)"
   shows "(\<Inter>EF) \<in> (filters X)"
@@ -4750,7 +4834,6 @@ lemma filter_cl_is_lub:
   by (metis filter_cl_is_filter filter_cl_is_ub filter_cl_lt_ub is_filter_imp21 is_inf_if3)
 
 end
-
 
 
 end
