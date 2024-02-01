@@ -5019,13 +5019,13 @@ lemma order_bot_is_min:
 
 
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
-  "filter_closure A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow_ne A. Inf F X \<le> x}"
+  "filter_closure A X \<equiv> if A={} then {max X} else {x \<in> X. \<exists>F \<in> Fpow_ne A. Inf F X \<le> x}"
 
 definition principal_filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "principal_filter_closure A X \<equiv> if A={} then {max X} else \<Union>a \<in> A. ub_set {a} X"
 
 lemma filter_closure_mem_iff:
-  "x \<in> filter_closure A X  \<longleftrightarrow> (x \<in> X \<and> (\<exists>F \<in> Fpow_ne A. Inf F X \<le> x))"
+  "A \<noteq> {} \<Longrightarrow> x \<in> filter_closure A X  \<longleftrightarrow> (x \<in> X \<and> (\<exists>F \<in> Fpow_ne A. Inf F X \<le> x))"
   by (simp add: filter_closure_def)
 
 lemma principal_filter_closure_mem_iff:
@@ -5037,7 +5037,7 @@ lemma principal_filter_closure_mem_iff2:
   by(simp add: principal_filter_closure_mem_iff ub_set_def ub_def )
 
 lemma filter_closure_obtains:
-  assumes "x \<in> filter_closure A X"
+  assumes "A \<noteq> {}" and "x \<in> filter_closure A X"
   obtains Fx where "Fx \<in> Fpow_ne A \<and> Inf Fx X \<le> x"
   by (meson assms filter_closure_mem_iff)
 
@@ -5186,101 +5186,160 @@ lemma filters_is_clr:
   using filters_mem_iff apply auto[1]
   by (simp add: filters_have_min_ub)
 
-
-
-lemma filter_cl0:
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
-  shows "A \<subseteq> filter_closure A X"
-proof
-  fix a assume A2:"a \<in> A"
-  have B0:"{a} \<in> Fpow_ne A"
-    using A2 Fpow_def by blast
-  have B1:"Inf {a} X \<le> a"
-    by (metis A0 A2 inf_singleton2 order_class.order_eq_iff subsetD)
-  show "a \<in> filter_closure A X"
-    using A0 A2 B0 B1 filter_closure_def by blast
+lemma filter_closure_of_empty:
+  "(closure_from_clr (filters X)) {} = {max X}"
+proof-
+  have B0:"ub_set {} (filters X) = (filters X)"
+    by (simp add: ub_set_in_degenerate)
+  have B1:"is_min {max X} (ub_set {} (filters X))"
+    by (simp add: B0 max_filter_min)
+  have B2:"min (ub_set {} (filters X)) = {max X}"
+    using B1 min_if by auto
+  show ?thesis
+    by (smt (verit, ccfv_threshold) B0 B2 PowI Pow_bottom Pow_empty closure_from_clr_def closure_range.cl_fp closure_range.cl_is_iso closure_range.intro emptyE filters_is_clr insertE is_clr_imp2 is_filter_imp20 is_min_imp_has_min max_filter max_filter2 max_filter_min min_antitone2 singleton_insert_inj_eq' subset_singletonD ub_set_subset_space)
 qed
 
+lemma filter_cl0:
+  assumes A0:"A \<subseteq> X"
+  shows "A \<subseteq> filter_closure A X"
+proof(cases "A = {}")
+  case True
+  then show ?thesis
+    by simp
+next
+  case False
+  then show ?thesis
+  proof-
+    have B0:"A \<subseteq> filter_closure A X"
+      proof
+        fix a assume A2:"a \<in> A"
+        have B0:"{a} \<in> Fpow_ne A"
+          using A2 Fpow_def by blast
+        have B1:"Inf {a} X \<le> a"
+          by (metis A0 A2 inf_singleton2 order_class.order_eq_iff subsetD)
+        show "a \<in> filter_closure A X"
+          by (meson A2 B0 B1 False assms filter_closure_mem_iff in_mono)
+      qed
+    show ?thesis
+      by (simp add: B0)
+  qed
+qed
+
+
 lemma filter_cl1:
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  assumes A0:"A \<subseteq> X"
   shows "is_up_cl (filter_closure A X) X"
-proof-
+proof(cases "A = {}")
+  case True
+  then show ?thesis
+    by (simp add: filter_closure_def is_filter_imp1 max_filter)
+next
+  case False
   let ?ClA="(filter_closure A X)"
   have B0:"(\<And>a b. (b \<in> X \<and> a \<le> b \<and> a \<in> ?ClA) \<longrightarrow> b \<in> ?ClA)"
   proof
     fix a b assume A2:"b \<in> X \<and> a \<le> b \<and> a \<in> ?ClA"
     show "b \<in> ?ClA"
-      by (smt (verit) A2 dual_order.trans filter_closure_def mem_Collect_eq ub_def)
+      by (meson A2 False dual_order.trans filter_closure_mem_iff)
   qed
-  show ?thesis
-    by (smt (verit) B0 filter_closure_def is_up_cl_if2 mem_Collect_eq subset_iff)
+  then show ?thesis
+    by (metis False filter_closure_mem_iff is_up_cl_if2 subsetI)
 qed
+
+
 
 lemma filter_cl2:
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  assumes A0:"A \<subseteq> X"
   shows "is_dwdir (filter_closure A X)"
-proof-
-  let ?ClA="(filter_closure A X)"
-  have B0:"\<And>a b. a \<in> ?ClA \<and> b \<in> ?ClA \<longrightarrow> (\<exists>c \<in> ?ClA. c lb {a, b})"
-  proof
-    fix a b assume A2:"a \<in> ?ClA \<and> b \<in> ?ClA" 
-    obtain Fa Fb where B1:"Fa \<in> Fpow_ne A \<and> Inf Fa X \<le> a  \<and> Fb \<in> Fpow_ne A \<and>  Inf Fb X \<le> b"
-      by (meson A2 filter_closure_obtains)
-    let ?Fab="(Fa \<union> Fb)"
-    have B2:"?Fab \<subseteq> A \<and> ?Fab \<subseteq> X"
-      using A0 B1 fpow_ne_imp2 by auto
-    have B3:"Inf ?Fab  X \<le> Inf Fa X \<and> Inf ?Fab X \<le> Inf Fb X"
-      by (metis B1 B2 Diff_iff Pow_iff csinf inf_antitone1 is_inf_complete_def le_supE pow_ne_if sup_bot.eq_neutr_iff sup_ge1 sup_ge2)
-    have B4:"Inf ?Fab X \<le> a \<and> Inf ?Fab X \<le> b"
-      using B1 B3 dual_order.trans by blast
-    have B5:"Inf ?Fab X \<le> Inf ?Fab X"
-      by simp
-    have B6:"?Fab \<in> Fpow_ne A"
-      by (metis B1 B2 bot_eq_sup_iff finite_UnI fpow_ne_mem_iff)
-    have B7:"Inf ?Fab X \<in> ?ClA "
-      by (metis B2 B5 B6 Diff_iff PowI csinf filter_closure_mem_iff inf_complete_imp1)
-    have B8:"Inf ?Fab X \<in> ?ClA \<and>  Inf ?Fab X lb {a, b}"
-      using B4 B7 lb_def by auto
-    show "(\<exists>c \<in> ?ClA. c lb {a, b})"
-      using B8 by auto
+proof(cases "A = {}")
+  case True
+  then show ?thesis
+    by (metis filter_closure_def is_filter_imp0 max_filter)
+next
+  case False
+  then show ?thesis 
+  proof-
+    let ?ClA="(filter_closure A X)"
+    have B0:"\<And>a b. a \<in> ?ClA \<and> b \<in> ?ClA \<longrightarrow> (\<exists>c \<in> ?ClA. c lb {a, b})"
+    proof
+      fix a b assume A2:"a \<in> ?ClA \<and> b \<in> ?ClA" 
+      obtain Fa Fb where B1:"Fa \<in> Fpow_ne A \<and> Inf Fa X \<le> a  \<and> Fb \<in> Fpow_ne A \<and>  Inf Fb X \<le> b"
+        by (meson A2 False filter_closure_obtains)
+      let ?Fab="(Fa \<union> Fb)"
+      have B2:"?Fab \<subseteq> A \<and> ?Fab \<subseteq> X"
+        using A0 B1 fpow_ne_imp2 by auto
+      have B3:"Inf ?Fab  X \<le> Inf Fa X \<and> Inf ?Fab X \<le> Inf Fb X"
+        by (metis B1 B2 Diff_iff Pow_iff csinf inf_antitone1 is_inf_complete_def le_supE pow_ne_if sup_bot.eq_neutr_iff sup_ge1 sup_ge2)
+      have B4:"Inf ?Fab X \<le> a \<and> Inf ?Fab X \<le> b"
+        using B1 B3 dual_order.trans by blast
+      have B5:"Inf ?Fab X \<le> Inf ?Fab X"
+        by simp
+      have B6:"?Fab \<in> Fpow_ne A"
+        by (metis B1 B2 bot_eq_sup_iff finite_UnI fpow_ne_mem_iff)
+      have B7:"Inf ?Fab X \<in> ?ClA "
+        by (metis B2 B5 B6 Diff_iff False PowI csinf filter_closure_mem_iff inf_complete_imp1)
+      have B8:"Inf ?Fab X \<in> ?ClA \<and>  Inf ?Fab X lb {a, b}"
+        using B4 B7 lb_def by auto
+      show "(\<exists>c \<in> ?ClA. c lb {a, b})"
+        using B8 by auto
+    qed
+    show ?thesis
+      by (metis B0 False assms bot.extremum_uniqueI filter_cl0 is_dwdir_def)
   qed
-  show ?thesis
-    by (metis A0 A1 B0 bot.extremum_uniqueI filter_cl0 is_dwdir_def)
 qed
 
+
 lemma filter_cl_is_filter:
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
+  assumes A0:"A \<subseteq> X"
   shows "is_filter (filter_closure A X) X"
-  by (meson A0 A1 Posets9.is_filter_def filter_cl1 filter_cl2 filter_closure_mem_iff subsetI)
+  by (simp add: is_filter_def assms filter_cl1 filter_cl2 in_upsets_in_imp_subset up_sets_in_def)
 
 lemma filter_cl_least:
-  assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}"  and A2:"is_filter F X" and A3:"A \<subseteq> F"
+  assumes A0:"A \<subseteq> X"  and A2:"is_filter F X" and A3:"A \<subseteq> F"
   shows "(filter_closure A X) \<subseteq> F"
-proof
-  fix x assume A4:"x \<in> (filter_closure A X)"
-  obtain Fx where B0:"Fx  \<in> Fpow_ne A \<and> Inf Fx X \<le> x"
-    using A4 filter_closure_obtains by blast
-  have B1:"Fx \<subseteq> F"
-    using A3 B0 fpow_ne_imp2 by blast 
-  have B2:"Inf Fx X \<in> F"
-    by (metis A0 A2 B0 B1 Diff_iff csinf filter_finf_closed fpow_ne_imp3 fpow_ne_mem_iff inf_complete_imp0 pow_ne_imp4)
-  have B3:"Inf Fx X \<le> x"
+proof(cases "A = {}")
+  case True
+  then show ?thesis
+    by (metis A2 filter_closure_def max_filter_least)
+next
+  case False
+  then show ?thesis
+  proof-
+    have B0:"(filter_closure A X) \<subseteq> F"
+      proof
+      fix x assume A4:"x \<in> (filter_closure A X)"
+      obtain Fx where B0:"Fx  \<in> Fpow_ne A \<and> Inf Fx X \<le> x"
+        using A4 False filter_closure_obtains by blast
+      have B1:"Fx \<subseteq> F"
+        using A3 B0 fpow_ne_imp2 by blast 
+      have B2:"Inf Fx X \<in> F"
+        by (metis A0 A2 B0 B1 Diff_iff csinf filter_finf_closed fpow_ne_imp3 fpow_ne_mem_iff inf_complete_imp0 pow_ne_imp4)
+      have B3:"Inf Fx X \<le> x"
+        by (simp add: B0)
+      show "x \<in> F"
+        by (meson A2 A4 B2 B3 False filter_closure_mem_iff is_filter_imp1 is_up_cl_imp2)
+    qed
+  show ?thesis
     by (simp add: B0)
-  show "x \<in> F"
-    by (meson A2 A4 B2 B3 is_filter_def filter_closure_mem_iff in_up_cl_set_if)
+  qed
 qed
 
 lemma filter_cl_is_ub:
-  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow>  (filter_closure A X) \<in>  (ub_set {A} (filters X))"
+  "A \<subseteq> X \<Longrightarrow> (filter_closure A X) \<in>  (ub_set {A} (filters X))"
   by (metis filter_cl0 filter_cl_is_filter filters_mem_iff is_filter_imp21 singletonD ub_set_elm)
 
 lemma filter_cl_lt_ub:
-  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> F \<in>  (ub_set {A} (filters X)) \<Longrightarrow> (filter_closure A X) \<le> F"
+  "A \<subseteq> X  \<Longrightarrow> F \<in>  (ub_set {A} (filters X)) \<Longrightarrow> (filter_closure A X) \<le> F"
   by (simp add: filter_cl_least filters_mem_iff ub_set_mem_iff)
 
 lemma filter_cl_is_lub:
-  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (filter_closure A X) (ub_set {A} (filters X)) (Pow X)"
+  "A \<subseteq> X \<Longrightarrow>  is_inf (filter_closure A X) (ub_set {A} (filters X)) (Pow X)"
   by (metis filter_cl_is_filter filter_cl_is_ub filter_cl_lt_ub is_filter_imp21 is_inf_if3)
+
+lemma filter_closure_eq_closure:
+  "A \<subseteq> X  \<Longrightarrow> filter_closure A X = (closure_from_clr (filters X)) A "
+  by (simp add: filter_cl_is_ub filter_cl_lt_ub closure_from_clr_def csinf is_min_iff is_ne min_if toped)
+
 
 end
 
