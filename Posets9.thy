@@ -1558,6 +1558,10 @@ lemma sets_have_inf4b:
   "is_inf X {} (Pow X)"
   by(auto simp add:Inf_def is_inf_def is_max_def lb_set_def ub_set_def lb_def ub_def)
 
+lemma sets_have_inf4c:
+  "A \<in> (Pow (Pow X)) \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (\<Inter>A) A (Pow X)"
+  by (metis IntD2 Inter_lower Posets9.sets_have_inf4 PowD ex_in_conv inf.orderE le_inf_iff)
+
 lemma sets_have_inf5:
   "has_inf A (Pow X)"
   using has_max_lb_imp_has_inf is_inf_in_iff is_max_imp_has_max sets_have_inf4 by blast
@@ -4745,7 +4749,8 @@ proof-
   show ?thesis
     by (metis A1 B0 Pow_not_empty assms ex_in_conv is_clr_def)
 qed
-    
+
+
 end
 
 
@@ -4782,6 +4787,14 @@ lemma complete_clr_sup2:
   assumes "A \<subseteq> C"
   shows "has_sup A C"
   by (meson A0 A1 A2 complete_clr_sup1 assms has_min_iff2 has_sup_def is_sup_in_imp1)
+
+lemma complete_clr_inf2:
+  "A \<subseteq> C \<Longrightarrow> has_inf A C"
+  by (simp add: complete_clr_sup2 lb_set_subset_space sup_lb_imp_has_inf)
+
+lemma clr_on_complete_lattice_is_complete:
+  "is_complete_lattice C"
+  by (simp add: complete_clr_inf2 inf_comp_max_imp_comp inf_in_degenerate3 is_inf_complete_def)
 
 end
 
@@ -4895,6 +4908,18 @@ lemma closure_sups3:
   shows "f (Sup A X) = f (Sup (f`A) X) \<and> f (Sup (f`A) (f`X)) = f (Sup (f`A) X)"
   using A0 A1 A2 A3 complete_clr_sup3 by blast
 
+lemma closure_range_on_complete_lattice_is_complete:
+  "is_complete_lattice X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> is_clr C X \<Longrightarrow> is_complete_lattice C"
+  using clr_on_complete_lattice_is_complete by blast
+
+lemma pow_is_complete_lattice:
+  "is_complete_lattice(Pow X)"
+  by (simp add: inf_comp_max_imp_comp inf_in_degenerate3 is_inf_complete_def sets_have_inf5)
+
+lemma dpow_is_complete_lattice:
+  "is_complete_lattice(Pow (Pow X))"
+  by (simp add: pow_is_complete_lattice)
+
 lemma is_moore_family_contains_space:
   "is_moore_family C X \<Longrightarrow>X \<in> C"
   by (metis Pow_bottom is_moore_family_def sets_have_infb)
@@ -4971,6 +4996,10 @@ lemma is_moore_family_is_clr:
   "is_moore_family C X \<Longrightarrow> is_clr C (Pow X)"
   by (simp add: moore_family_is_clr)
 
+lemma moore_family_is_complete_lattice:
+  "is_moore_family C X \<Longrightarrow> is_complete_lattice C"
+  by (meson closure_range_on_complete_lattice_is_complete moore_family_imp1 moore_family_is_clr pow_is_complete_lattice)
+
 lemma lattice_inf_is_inf:
   "is_inf (inf (a::'a::lattice) b) {a, b} UNIV"
   by (simp add: is_inf_def is_max_iff lb_set_mem_iff)
@@ -4979,9 +5008,14 @@ lemma lattice_sup_is_sup:
   "is_sup (sup (a::'a::lattice) b) {a, b} UNIV"
   by (simp add: is_sup_def is_min_iff ub_set_mem_iff)
 
+lemma is_moore_family_if1:
+  "C \<in> Pow (Pow X) \<Longrightarrow> (\<forall>A \<in> Pow C. \<Inter>A \<in> C) \<Longrightarrow> is_moore_family C X"
+  by (simp add: complete_clr1 inter_system_is_clr is_inter_system_def is_moore_family_def pow_is_complete_lattice)
+
 lemma order_bot_is_min:
   "is_min (bot::'a::order_bot) UNIV"
   by (simp add: is_min_bot)
+
 
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "filter_closure A X \<equiv> {x \<in> X. \<exists>F \<in> Fpow_ne A. Inf F X \<le> x}"
