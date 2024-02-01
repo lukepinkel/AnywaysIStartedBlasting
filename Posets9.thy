@@ -5012,6 +5012,7 @@ lemma is_moore_family_if1:
   "C \<in> Pow (Pow X) \<Longrightarrow> (\<forall>A \<in> Pow C. \<Inter>A \<in> C) \<Longrightarrow> is_moore_family C X"
   by (simp add: complete_clr1 inter_system_is_clr is_inter_system_def is_moore_family_def pow_is_complete_lattice)
 
+
 lemma order_bot_is_min:
   "is_min (bot::'a::order_bot) UNIV"
   by (simp add: is_min_bot)
@@ -5050,6 +5051,22 @@ lemma principal_filter_closure_obtains2:
   obtains a where "a \<in> A \<and>  a \<le> x"
   by (meson assms principal_filter_closure_mem_iff2)
 
+lemma inf_complete_imp_downdir:
+  assumes A0:"X \<noteq> {}" and A1:"is_inf_complete X" 
+  shows  "is_dwdir X"
+proof-
+  have B0:"\<And>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> (\<exists>x3 \<in> X. x3 lb {x1, x2})"
+  proof
+    fix x1 x2 assume A2:" x1 \<in> X \<and> x2 \<in> X "
+    have B01:"Inf {x1, x2} X \<in> X \<and> Inf {x1, x2} X lb {x1, x2}"
+      by (meson A1 A2 binf_complete_imp0 binf_complete_imp1 has_inf_in_imp1 is_inf_complete_imp_binf_complete lb_set_imp1)
+    show "(\<exists>x3 \<in> X. x3 lb {x1, x2})"
+      using B01 by blast
+  qed
+  show ?thesis
+    by (simp add: A0 B0 is_dwdir_def)
+qed
+
 context
   fixes X::"'a::order set"
   assumes is_ne:"X \<noteq> {}" and
@@ -5067,6 +5084,23 @@ lemma max_filter:
 lemma max_filter_least:
   "is_filter F X \<Longrightarrow> {max X} \<subseteq> F"
   using filter_contains_max if_has_max_max_unique max_if toped by blast
+
+lemma max_filter2:
+  "{max X} \<in> filters X"
+  by (meson filters_mem_iff is_filter_imp21 max_filter)
+
+lemma max_filter_least2:
+  "{max X} lb filters X"
+  by (meson filters_mem_iff is_lb_simp2 max_filter_least)
+
+lemma max_filter_min:
+  "is_min {max X} (filters X)"
+  by (simp add: is_min_iff2 max_filter2 max_filter_least2)
+
+lemma max_filter_inf:
+  "is_inf {max X} (filters X) (filters X)"
+  by (simp add: inf_eq_bot1 max_filter_min)
+
 
 lemma filter_csinf_moore_family1:
   assumes "EF \<in> Pow_ne (filters X)"
@@ -5107,6 +5141,52 @@ proof-
   show ?thesis
     by (simp add: B1 B2 is_filter_def filters_mem_iff in_upsets_in_imp_subset up_sets_in_def)
 qed
+
+lemma improper_filter1:
+  "is_filter (Pow X) (Pow X)"
+  by (meson Posets9.is_filter_def Pow_bottom Pow_iff Pow_not_empty Pow_top is_dwdir_if2 is_up_cl_if2)
+
+lemma improper_filter2:
+  "is_filter X X"
+  apply(auto simp add:is_filter_def is_dwdir_def is_up_cl_def)
+  apply (simp add: is_ne)
+  apply (metis csinf has_inf_def has_lb_def has_lb_iff has_max_imp_ne is_binf_complete_def is_inf_complete_imp_binf_complete)
+  using up_cl_in_carrier1 apply blast
+  by (meson subset_iff up_cl_in_extensive)
+
+lemma filters_have_min_ub:
+  assumes "x \<le> X"
+  shows "has_min (ub_set {x} (filters X))"
+proof-
+  have B0:"\<And>x. x \<le> X \<longrightarrow> has_min (ub_set {x} (filters X))"
+  proof
+    fix x assume A0:"x \<le> X"
+    let ?m="\<Inter>(ub_set {x} (filters X))"
+    have B01:"(ub_set {x} (filters X)) \<subseteq> (filters X)"
+      by (simp add: ub_set_subset_space)
+    have B02:"(ub_set {x} (filters X)) \<noteq> {}"
+      by (metis A0 empty_iff filters_mem_iff improper_filter2 is_filter_imp21 singletonI up_cl_ub up_closure_in_imp)
+    have B03:"?m \<in> filters X"
+      by (simp add: B01 B02 filter_csinf_moore_family1)
+    have B04:"?m \<in> (ub_set {x} (filters X))"
+      by (meson B03 Inter_greatest ub_set_elm ub_set_mem)
+    show "has_min (ub_set {x} (filters X))"
+      by (meson B04 Inf_lower has_min_def is_min_if2)
+  qed
+  show ?thesis
+    by (simp add: B0 assms)
+qed
+
+
+
+lemma filters_is_clr:
+  "is_clr (filters X) (Pow X)"
+  apply(auto simp add:is_clr_def)
+  using max_filter2 apply auto[1]
+  using filters_mem_iff apply auto[1]
+  by (simp add: filters_have_min_ub)
+
+
 
 lemma filter_cl0:
   assumes A0:"A \<subseteq> X" and A1:"A \<noteq> {}" 
