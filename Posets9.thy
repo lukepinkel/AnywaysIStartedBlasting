@@ -23,14 +23,6 @@ abbreviation Dpow::"'a set \<Rightarrow> 'a set set set" where
 abbreviation Pow_ne::"'a set \<Rightarrow> 'a set set" where
   "Pow_ne A \<equiv> (Pow A) - {{}}"
 
-lemma pow_ne_imp:
-  "a \<in> Pow_ne A \<Longrightarrow> a \<noteq> {}"
-  by blast
-
-lemma fpow_ne_imp:
-  "a \<in> Fpow_ne A \<Longrightarrow> a \<noteq> {}"
-  by blast
-
 lemma pow_ne_imp2:
   "a \<in> Pow_ne A \<Longrightarrow> a \<subseteq> A"
   by blast
@@ -39,21 +31,9 @@ lemma fpow_ne_imp2:
   "a \<in> Fpow_ne A \<Longrightarrow> a \<subseteq> A"
   by (simp add: Fpow_Pow_finite)
 
-lemma pow_ne_imp3:
-  "a \<in> Pow_ne A \<Longrightarrow> a \<in> Pow A"
-  by blast
-
-lemma fpow_ne_imp3:
-  "a \<in> Fpow_ne A \<Longrightarrow> a \<in> Pow A"
-  by (simp add: fpow_ne_imp2)
-
 lemma pow_ne_imp4:
   "C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> A \<in> Pow_ne X"
   by blast
-
-lemma fpow_ne_imp4:
-  "C \<subseteq> X \<Longrightarrow> A \<in> Fpow_ne C \<Longrightarrow> A \<in> Fpow_ne X"
-  using Fpow_mono by auto
 
 lemma pow_ne_if:
   "a \<noteq> {} \<Longrightarrow> a \<in> Pow A \<Longrightarrow>  a \<in> Pow_ne A"
@@ -67,10 +47,8 @@ lemma fpow_ne_mem_iff:
   "a \<in> Fpow_ne A \<longleftrightarrow> (finite a \<and> a \<subseteq> A \<and> a \<noteq> {})"
   using Fpow_def by blast
  
-
 abbreviation is_ne::"'a set \<Rightarrow> bool" where
   "is_ne A \<equiv> A  \<noteq> {}"
-
 
 section Bounds
 subsection BoundPredicate
@@ -2045,16 +2023,8 @@ lemma lt_closed_point:
 lemma closure_on_ineq2:
   assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X" and A3:"b \<in> ub_set (f`A) (f`X)"
   shows "f (Sup A X ) \<le> b"
-proof-
-  have B0:"b ub (f`A)"
-    using assms(4) ub_set_imp1 by blast
-  have B1:"b ub A"
-    using A0 A1 B0 is_closure_on_imp1 is_ext_imp2 by blast
-  have B2:"Sup A X \<le> b"
-    by (meson A0 A2 A3 B1 in_mono is_closure_on_imp2 is_map_def sup_imp_lt_ub ub_set_if ub_set_imp2)
-  show "f (Sup A X) \<le> b"
-    by (meson A0 A2 A3 B2 has_sup_in_set lt_closed_point ub_set_imp2)
-qed
+  by (meson A0 A1 A2 A3 greater_sup_if1b has_sup_in_set in_mono is_closure_on_imp1 is_closure_on_imp2 is_ext_imp2 is_self_map_imp lt_closed_point ub_set_imp1 ub_set_imp2)
+
 
 lemma closure_on_ineq3:
   assumes A0:"is_closure_on f X" and A1:"A \<subseteq> X" and A2:"has_sup A X" 
@@ -5313,7 +5283,7 @@ next
       have B1:"Fx \<subseteq> F"
         using A3 B0 fpow_ne_imp2 by blast 
       have B2:"Inf Fx X \<in> F"
-        by (metis A0 A2 B0 B1 Diff_iff csinf filter_finf_closed fpow_ne_imp3 fpow_ne_mem_iff inf_complete_imp0 pow_ne_imp4)
+        by (metis A0 A2 B0 B1 DiffD2 DiffI PowI csinf filter_finf_closed fpow_ne_mem_iff inf_complete_imp2)
       have B3:"Inf Fx X \<le> x"
         by (simp add: B0)
       show "x \<in> F"
