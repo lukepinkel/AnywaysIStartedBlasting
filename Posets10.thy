@@ -146,11 +146,11 @@ lemma has_lb_iff:
   by(auto simp add:has_lb_def lb_set_def)
 
 lemma ub_set_mem:
-  "\<And>(A::'a::order set) X x u. (u \<in> ub_set A X  \<and> x \<in> A) \<Longrightarrow> (x \<le> u \<and> u \<in> X) "
+  "(u \<in> ub_set A X  \<and> x \<in> A) \<Longrightarrow> (x \<le> u \<and> u \<in> X) "
   by (simp add: ub_set_def ub_def)
 
 lemma lb_set_mem:
-  "\<And>(A::'a::order set) X x l. (l \<in> lb_set A X  \<and> x \<in> A) \<Longrightarrow> (l \<le> x \<and> l \<in> X) "
+  "(l \<in> lb_set A X  \<and> x \<in> A) \<Longrightarrow> (l \<le> x \<and> l \<in> X) "
   by (simp add: lb_set_def lb_def)
 
 lemma ub_set_subset2:
@@ -162,11 +162,11 @@ lemma lb_set_subset2:
   by (simp add: Collect_conj_eq inf.coboundedI1 lb_set_def)
 
 lemma ub_set_imp:
-  "\<And>(A::'a::order set) X u. (u \<in> ub_set A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<le> u)"
+  "(u \<in> ub_set A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> x \<le> u)"
   by (simp add: ub_set_def ub_def)
 
 lemma lb_set_imp:
-  "\<And>(A::'a::order set) X l. (l \<in> lb_set A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> l \<le> x)"
+  "(l \<in> lb_set A X) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> l \<le> x)"
   by (simp add: lb_set_def lb_def)
 
 lemma ub_set_imp1:
@@ -194,19 +194,19 @@ lemma lb_set_imp2:
   by (simp add: lb_set_def)
 
 lemma ub_set_elm:
-  "\<And>(A::'a::order set) X u. (\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> u \<in> X \<Longrightarrow> u \<in> ub_set A X"
+  "(\<And>a. a \<in> A \<Longrightarrow> a \<le> u) \<Longrightarrow> u \<in> X \<Longrightarrow> u \<in> ub_set A X"
   by (simp add: ub_set_def ub_def)
 
 lemma lb_set_elm:
-  "\<And>(A::'a::order set) X l. (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<in> X \<Longrightarrow> l \<in> lb_set A X"
+  " (\<And>a. a \<in> A \<Longrightarrow> l \<le> a) \<Longrightarrow> l \<in> X \<Longrightarrow> l \<in> lb_set A X"
   by (simp add: lb_set_def lb_def)
 
 lemma ub_set_mem_iff:
-  "\<forall>x. x \<in> ub_set A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x )"
+  "x \<in> ub_set A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x )"
   using ub_def ub_set_def by fastforce
 
 lemma lb_set_mem_iff:
-  "\<forall>x. x \<in> lb_set A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> x \<le> a )"
+  "x \<in> lb_set A B \<longleftrightarrow> (x \<in> B) \<and> (\<forall>a. a \<in> A \<longrightarrow> x \<le> a )"
   using lb_def lb_set_def by fastforce
 
 lemma lb_set_exp:
@@ -304,11 +304,11 @@ lemma lu_extensive:
 end
 
 lemma ul_isotone:
-  "\<And>A B X.  A \<subseteq> B \<Longrightarrow>  (ub_set (lb_set A X) X) \<subseteq> (ub_set (lb_set B X) X)"
+  " A \<subseteq> B \<Longrightarrow>  (ub_set (lb_set A X) X) \<subseteq> (ub_set (lb_set B X) X)"
   by (simp add: lb_set_antitone1 ub_set_antitone1)
 
 lemma lu_isotone:
-  "\<And>A B X.  A \<subseteq> B \<Longrightarrow>  (lb_set (ub_set A X) X) \<subseteq> (lb_set (ub_set B X) X)"
+  " A \<subseteq> B \<Longrightarrow>  (lb_set (ub_set A X) X) \<subseteq> (lb_set (ub_set B X) X)"
   by (simp add: lb_set_antitone1 ub_set_antitone1)
 
 lemma ulu_eq_u:
@@ -454,7 +454,7 @@ lemma is_max_isotone2:
   using is_max_iff by blast
 
 lemma is_min_antitone1:
-  "\<And>A B ma mb. A \<subseteq> B \<and> (is_min ma A) \<and> ( is_min mb B) \<longrightarrow>  mb \<le> ma"
+  "A \<subseteq> B \<and> (is_min ma A) \<and> ( is_min mb B) \<longrightarrow>  mb \<le> ma"
   using is_min_iff by blast
 
 lemma is_min_antitone2:
@@ -1716,6 +1716,104 @@ next
 qed
 
 
+lemma sup_complete_imp0:
+  "is_sup_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> has_sup A X"
+  using has_sup_in_set is_sup_complete_def by blast
+
+lemma inf_complete_imp0:
+  "is_inf_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> has_inf A X"
+  using has_inf_in_set is_inf_complete_def by blast
+
+lemma bsup_complete_imp0:
+  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> has_sup {a, b} X"
+  using has_sup_in_set is_bsup_complete_def by blast
+
+lemma binf_complete_imp0:
+  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> has_inf {a, b} X"
+  using has_inf_in_set is_binf_complete_def by blast
+
+lemma sup_complete_imp1:
+  "is_sup_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Sup A X \<in> X"
+  using has_sup_in_set is_sup_complete_def by blast
+
+lemma inf_complete_imp1:
+  "is_inf_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Inf A X \<in> X"
+  using has_inf_in_set is_inf_complete_def by blast
+
+lemma bsup_complete_imp1:
+  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> Sup {a, b} X \<in> X"
+  using has_sup_in_set is_bsup_complete_def by blast
+
+lemma binf_complete_imp1:
+  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf {a, b} X \<in> X"
+  using has_inf_in_set is_binf_complete_def by blast
+
+lemma inf_complete_imp2:
+  "is_inf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> has_inf A X"
+  by (meson inf_complete_imp0 pow_ne_imp4)
+            
+lemma sup_complete_imp2:
+  "is_sup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> has_sup A X"
+  by (meson pow_ne_imp4 sup_complete_imp0)
+
+lemma bsup_complete_imp2:
+  "is_bsup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> has_sup {a, b} X"
+  using has_sup_in_set is_bsup_complete_def by blast
+
+lemma binf_complete_imp2:
+  "is_binf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> has_inf {a, b} X"
+  using has_inf_in_set is_binf_complete_def by blast
+
+lemma inf_complete_imp3:
+  "is_inf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> Inf A X \<in> X"
+  by (simp add: has_inf_in_set inf_complete_imp2)
+             
+lemma sup_complete_imp3:
+  "is_sup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> Sup A X \<in> X"
+  by (simp add: has_sup_in_set sup_complete_imp2)
+
+lemma bsup_complete_imp3:
+  "is_bsup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> Sup {a, b} X \<in> X"
+  using has_sup_in_set is_bsup_complete_def by blast
+
+lemma binf_complete_imp3:
+  "is_binf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C \<Longrightarrow> Inf {a, b} X \<in> X"
+  using has_inf_in_set is_binf_complete_def by blast
+
+lemma binf_complete_imp4:
+  "is_binf_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf {a, b} X \<le> a \<and> Inf {a, b} X \<le> b"
+  by (simp add: binf_complete_imp0 has_inf_in_imp2)
+
+lemma bsup_complete_imp4:
+  "is_bsup_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> Sup {a, b} X  \<and> b \<le> Sup {a, b} X"
+  by (simp add: bsup_complete_imp0 has_sup_in_imp2)
+
+lemma binf_complete_greatest:
+  "is_binf_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> c \<in> X \<Longrightarrow> c lb {a,b} \<Longrightarrow> c \<le> Inf {a, b} X"
+  by (simp add: binf_complete_imp0 inf_imp_gt_lb lb_set_if)
+
+lemma bsup_complete_least:
+  "is_bsup_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> c \<in> X \<Longrightarrow> c ub {a,b} \<Longrightarrow> c \<ge> Sup {a, b} X"
+  by (simp add: bsup_complete_imp0 sup_imp_lt_ub ub_set_if)
+
+
+lemma inf_complete_min1:
+   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_min (Inf X X) X"
+  by (simp add: inf_in_min is_inf_complete_def)
+
+
+
+lemma sup_complete_max1:
+   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_max (Sup X X) X"
+  by (simp add: sup_in_max is_sup_complete_def)
+
+lemma inf_complete_min2:
+   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_min X"
+  using has_min_def inf_complete_min1 by blast
+
+lemma sup_complete_max2:
+   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_max X"
+  using has_max_def sup_complete_max1 by auto
 section Mappings
 (*Probably should develop the theory of closures before trying to develop closures*)
 subsection UtilityTriple
@@ -2072,6 +2170,8 @@ lemma is_cofinal_in_if:
 lemma is_cofinal_in_if_ub_in_ne:
   "\<And>A B. (\<And>a. a \<in> A \<Longrightarrow> (ub_set {a} B) \<noteq> {}) \<Longrightarrow> A is_cofinal_in B "
   by (simp add:is_cofinal_in_def has_ub_iff)
+
+
 section UpDwClosure
 
 definition up_cl::"'a::ord set \<Rightarrow> 'a::ord set \<Rightarrow> 'a::ord set" where
