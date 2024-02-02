@@ -84,7 +84,7 @@ lemma closure_eq_imp_closure:
 
 lemma closure_if_cl_eq:
    "is_closure_on f X \<longleftrightarrow> (is_self_map f X \<and> closure_eq f X)"
-  by (meson closure_eq_if_closure closure_eq_imp_closure is_closure_on_def is_closure_on_imp2 is_proj_on_def)
+  using closure_eq_if_closure closure_eq_imp_closure is_closure_on_iff is_extensive_on_def by blast
 
 lemma closure_on_ineq1:
   "is_closure_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> f (Sup A X) ub (f`A)"
@@ -107,7 +107,6 @@ lemma closure_of_sup_is_sup2:
   "is_closure_on f X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> has_sup A X \<Longrightarrow> has_sup (f`A) (f`X) \<and> (f (Sup A X) = (Sup (f`A) (f`X)))"
   by (meson closure_of_sup_is_sup1 has_min_ub_imp_has_sup is_min_imp_has_min is_sup_def is_sup_sup_eq)
 
-
 lemma is_clr_imp1:
   "is_clr C X \<Longrightarrow> (C \<noteq> {}) \<and> (C \<subseteq> X)"
   by(simp add:is_clr_def)
@@ -118,12 +117,19 @@ lemma is_clr_imp2:
 
 lemma is_clr_imp3:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (ub_set {x} C) \<noteq> {}"
-  apply(simp add:is_clr_def) 
-  by (metis empty_iff has_min_iff)
+  by (simp add: has_min_imp_ne is_clr_def)
 
 lemma clr_is_cofinal:
   "is_clr C X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ub_set {x} C \<noteq> {})"
   by (simp add: is_clr_imp3)
+
+lemma clr_is_cofinal_in_space:
+  "is_clr C X \<Longrightarrow> X is_cofinal_in C"
+  by (simp add: clr_is_cofinal is_cofinal_in_if_ub_in_ne)
+
+lemma clr_is_cofinal2:
+  "C \<subseteq> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ub_set {x} C \<noteq> {}) \<Longrightarrow> is_max m X \<Longrightarrow> m \<in> C"
+  by (metis Int_insert_right_if0 inf_le2 is_max_iff subset_empty ub_set_max ub_set_restrict1)
   
 lemma is_clr_imp4:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> has_inf (ub_set {x} C) C"
@@ -139,24 +145,7 @@ lemma is_clr_imp6:
 
 lemma is_clr_imp_max:
   "has_max X \<Longrightarrow> is_clr C X \<Longrightarrow> has_max C"
-proof-
-  assume A0:"has_max X"
-  obtain m where B0:"is_max m X"
-    using A0 has_max_iff2 by auto
-  show "is_clr C X \<Longrightarrow> has_max C"
-  proof-
-    assume A1:"is_clr C X"
-    have B1:"(ub_set {m} C) \<noteq> {}"
-      using A1 B0 clr_is_cofinal is_max_iff by blast
-    have B2:"ub_set {m} C = {m}"
-      by (metis A1 B0 B1 inf_le2 is_clr_def subset_singletonD ub_set_max ub_set_restrict1)
-    have B3:"m \<in> C"
-      using B2 ub_set_mem_iff by auto
-  show ?thesis
-    by (meson A1 B0 B3 is_clr_imp1 is_max_imp_has_max is_max_subset)
-  qed
-qed
-
+  by (meson clr_is_cofinal clr_is_cofinal2 has_max_iff2 is_clr_imp1 is_max_subset)
 
 lemma clr_obtains0:
   assumes "is_clr C X" and " x \<in> X "
@@ -177,38 +166,26 @@ abbreviation Cl::"'a::order \<Rightarrow> 'a::order" where
   "Cl x \<equiv> (closure_from_clr C) x"
 
 lemma crange_is_ne:
-  "C \<noteq> {}"
-  using clr is_clr_imp1 by blast
+  "C \<noteq> {}" using clr is_clr_imp1 by blast
 
 lemma space_is_ne:
-  "X \<noteq> {}"
-  using crange_is_ne is_clr_def
-  using clr by blast 
+  "X \<noteq> {}" using clr is_clr_imp1 by blast
+
+lemma least_closed_in_space:
+  "xa \<in> X \<Longrightarrow> min (ub_set {xa} C) \<in> X"
+  by (metis clr clr_obtains1 in_mono is_clr_imp1 min_if)
 
 lemma Cl_maps_to:
   "Cl`X \<subseteq> X"
-proof
-  fix c assume A0:"c \<in> Cl`X"
-  obtain x where B0:"c = Cl x" and B1:"x \<in> X" using A0 imageE[of "c" "Cl" "X"] by blast
-  have B2:"is_min c (ub_set {x} C)" using B0 closure_from_clr_def
-    by (metis B1 clr clr_obtains1 min_if)
-  have B3:"c \<in> C"
-    using B2 is_sup_in_iff is_sup_in_set by blast
-  show "c \<in> X"
-    using B3 clr is_clr_imp1 by blast
-qed
+  by(auto simp add:closure_from_clr_def clr least_closed_in_space  )
 
 lemma cl_is_self_map:
   "is_self_map Cl X"
   by(simp add:is_map_def Cl_maps_to space_is_ne)
 
-lemma pr_fil_iso1:
-  "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (ub_set {y} C) \<subseteq> (ub_set {x} C)"
-  by (simp add: ub_set_singleton_antitone)
-
 lemma cl_is_iso:
   "x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<le> y \<Longrightarrow> (Cl x)  \<le>  (Cl y)"
-  apply(auto simp add: closure_from_clr_def) using is_clr_imp2 min_antitone2 by (metis clr pr_fil_iso1)
+  by (metis closure_from_clr_def clr is_clr_imp2 min_antitone2 ub_set_singleton_antitone)
 
 lemma cl_is_iso_on:
   "is_isotone_on Cl X"
@@ -224,23 +201,11 @@ lemma cl_is_ext_on:
 
 lemma cl_fp:
   "c \<in> C \<Longrightarrow> Cl c = c"
-  proof-
-    fix c assume A0:"c \<in> C"
-    have B0:"is_min c (ub_set {c} C)"
-      by(auto simp add:A0 is_min_def ub_set_def lb_set_def ub_def lb_def)
-    show " Cl c =c"
-      using B0 closure_from_clr_def min_if by metis
-qed
+  by (simp add: closure_from_clr_def min_ub_set_singleton2)
 
 lemma cl_is_idm:
   "x \<in> X \<Longrightarrow> (Cl (Cl x)) = Cl x "
-proof-
-  fix x assume A0:"x \<in> X"
-  have B0:"Cl x \<in> C"
-    by (metis A0 closure_from_clr_def clr clr_obtains1 min_if)
-  show "(Cl (Cl x)) = Cl x " using A0 B0 cl_fp[of "Cl x"]
-    by fastforce
-qed
+  by (metis cl_fp closure_from_clr_def clr clr_obtains1 min_if)
 
 lemma cl_is_idm_on:
   "is_idempotent_on Cl X"
@@ -249,6 +214,12 @@ lemma cl_is_idm_on:
 lemma cl_is_closure:
   "is_closure_on Cl X"
   by(simp add:is_closure_on_def is_proj_on_def cl_is_idm_on cl_is_iso_on cl_is_ext_on)
+
+lemma element_in_clr_iff:
+  "y \<in> clr_from_closure (closure_from_clr C) X  \<longleftrightarrow> y \<in> C"
+  apply(auto simp add:clr_from_closure_def)
+  apply (metis closure_from_clr_def clr clr_obtains1 min_if)
+  by (metis closure_range.cl_fp closure_range_axioms clr image_eqI in_mono is_clr_imp1)
 
 end
 
@@ -270,14 +241,7 @@ lemma Cf_subseteq_space:
 
 lemma cl_ub_im:
   "x \<in> X \<Longrightarrow> (f x) \<in> ub_set {x} Cf"
-proof-
-  fix x assume A0:"x \<in> X"
-  have B0:"f x \<in> Cf" 
-    by  (simp add:clr_from_closure_def A0 imageI[of "x" "X" "f"])
-  have B1:"x \<le> f x" using is_cl is_closure_on_def is_extensive_on_def A0 by blast
-  show "(f x) \<in> ub_set {x} Cf"
-    by (simp add: B0 B1 ub_set_mem_iff)
-qed
+  using clr_from_closure_def is_cl is_closure_on_iff is_ext_imp0 ub_set_mem_iff by fastforce
 
 lemma cl_ub_is_ne:
   "x \<in> X \<Longrightarrow> ub_set {x} Cf \<noteq> {}"
@@ -285,25 +249,7 @@ lemma cl_ub_is_ne:
 
 lemma cl_ub_min:
   "x \<in> X \<Longrightarrow> y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
-proof-
-  fix x assume A0:"x \<in> X" show "y \<in> ub_set {x} Cf \<Longrightarrow> f x \<le> y"
-  proof-
-    fix y assume A1:"y \<in>  ub_set {x} Cf"
-    have B0:"x \<le> y" 
-      using A1 ub_set_def ub_def  by (simp add: ub_set_imp)
-    have B1:"y \<in> Cf " 
-       using A1 ub_set_imp2 by blast
-    have B2:"y \<in> X"  
-      using B1 Cf_subseteq_space by blast 
-    have B3:"f x \<le> f y"
-      using A0 B0 B2 is_cl is_closure_on_iff is_isotone_imp1 by blast
-    have B4:"... = y"
-      by (metis B1 clr_from_closure_def is_cl is_closure_on_def is_idempotent_imp2 is_proj_on_def)
-    show "f x \<le> y"
-      using B3 B4 by auto
-  qed
-qed
-   
+  by (metis clr_from_closure_def is_cl lt_closed_point singletonI ub_set_imp ub_set_imp2)
 
 lemma cl_is_min_ub:
   "x \<in> X \<Longrightarrow>  has_min (ub_set {x} Cf)"
@@ -315,125 +261,73 @@ lemma Cf_is_clr:
 
 end 
 
-lemma closure_range_is_clr:
-  fixes f::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
-  assumes is_cl:"is_closure_on f X" and ne:"X \<noteq> {}"
-  shows "is_clr (f`X) X"
-  by (metis closure.Cf_is_clr closure.intro clr_from_closure_def is_cl ne)
-  
-lemma clr_induces_closure:
-  fixes C X::"'a::order set"                     
-  assumes clr:"is_clr C X"
-  shows "is_closure_on (closure_from_clr C) X"
-  by (simp add: closure_range.cl_is_closure closure_range.intro clr) 
-
 lemma cl_cr_cl_eq_cl:
   assumes A0:"is_closure_on f X" and A1:"a \<in> X"
   shows "closure_from_clr (clr_from_closure f X) a = f a"
-proof-
-    have B0:"f`X \<subseteq> X"
-      by (simp add: A0 is_closure_on_imp2 is_self_map_imp)
-    have B1:"min (ub_set {a} (f ` X)) = min {y \<in> f`X. a \<le> y}"
-      by (simp add: ub_set_in_singleton)
-    have B2:"f a \<in> f`X \<and> a \<le> f a "
-      using A0 A1 is_closure_on_iff is_ext_imp0 by blast
-    have B3:"\<forall>y. y\<in> f`X \<and> a \<le> y \<longrightarrow> f a \<le> y"
-      using A0 A1 closure_eq_if_closure_r by blast
-    have B4:"is_min (f a) (ub_set {a} (f ` X))"
-      by (simp add: B2 B3 is_min_iff ub_set_mem_iff)
-    show ?thesis
-      by (metis B4 closure_from_clr_def clr_from_closure_def min_if)
-qed
-    
+  by (metis A0 A1 closure.cl_ub_im closure.cl_ub_min closure.intro closure_from_clr_def empty_iff min_if2)
+
 lemma cr_cl_cr_eq_cr:
   assumes A0:"is_clr C X"
   shows "clr_from_closure (closure_from_clr C) X = C"
-proof-
-  have T:"\<forall>y. y \<in> clr_from_closure (closure_from_clr C) X  \<longleftrightarrow> y \<in> C"
-  proof
-    fix y
-    have B0:"y \<in> clr_from_closure (closure_from_clr C) X \<longleftrightarrow> (\<exists>x \<in> X.  (closure_from_clr C) x = y)"
-      using clr_from_closure_def by auto
-    have B1:"... \<longleftrightarrow> (\<exists>x \<in> X. y = min (ub_set {x} C))"
-      by (metis closure_from_clr_def)
-    have B2:"... \<longleftrightarrow> y \<in> C"
-      by (metis assms clr_obtains1 is_clr_imp1 min_if min_ub_set_singleton2 subsetD)
-    show " y \<in> clr_from_closure (closure_from_clr C) X  \<longleftrightarrow> y \<in> C"
-      by (simp add: B0 B1 B2)
-  qed
-  show ?thesis
-    using T by blast
-qed
+  using assms closure_range.element_in_clr_iff closure_range.intro by blast
 
 lemma cl_order_iso:
   fixes f1 f2::"'a::order \<Rightarrow> 'a::order" and X::"'a::order set"
   assumes A0:"is_closure_on f1 X"  and A1:"is_closure_on f2 X" and A3:"\<forall>x. x \<in> X \<longrightarrow> f1 x \<le> f2 x"
   shows "clr_from_closure f2 X \<subseteq> clr_from_closure f1 X"
-proof
-  fix x assume A4:"x \<in> clr_from_closure f2 X"
-  have B0:"x \<le> f1 x"
-    using A0 A1 A4 closure.Cf_subseteq_space closure.intro closure_eq_if_closure_l
-    by (metis clr_from_closure_def image_is_empty order_refl subsetD) 
-  have B1:"... \<le> f2 x"
-    using A1 A3 A4 closure.Cf_subseteq_space closure.intro
-    using clr_from_closure_def by blast
-  have B2:"... = x"
-    by (metis A1 A4 clr_from_closure_def is_closure_on_def is_idempotent_imp2 is_proj_on_def)
-  have B3:"f1 x = x"
-    using B0 B1 B2 by fastforce
-  show "x \<in> clr_from_closure f1 X"
-    by (metis A1 A4 B3 clr_from_closure_def imageI is_closure_on_imp2 is_map_def subsetD)
-qed
+  apply(auto) by (metis A0 A1 A3 clr_from_closure_def image_insert insertI1 insert_absorb insert_subset is_closure_on_iff is_extensive_on_def is_idempotent_imp2 is_self_map_imp order_antisym_conv)
 
 lemma clr_order_iso:
   fixes C1 C2 X::"'a::order set"
   assumes A0:"is_clr C1 X" and A1:"is_clr C2 X" and A2:"C2 \<subseteq> C1"
   shows "\<And>x. x \<in> X \<longrightarrow> closure_from_clr C1 x \<le> closure_from_clr C2 x"
-proof
-  fix x assume A3:"x \<in> X"
-  show "closure_from_clr C1 x \<le> closure_from_clr C2 x"
-    by (metis A0 A1 A2 A3 closure_from_clr_def is_clr_imp2 min_antitone2 ub_set_in_isotone2)
-qed
+  by (metis A0 A1 A2 closure_from_clr_def is_clr_imp2 min_antitone2 ub_set_in_isotone2)
+(*
+sublocale closure_range \<subseteq> cl:closure "closure_from_clr C" "X"
+  apply(unfold_locales)
+  apply (simp add: cl_is_closure)
+  by (simp add: space_is_ne)
 
-  
+locale closure_space=closure
+
+sublocale closure_space \<subseteq> cr:closure_range "f`X" "X"
+  apply(unfold_locales)
+  by (metis Cf_is_clr clr_from_closure_def)
+
+print_locale! closure_space
+print_locale! closure_range
+*)
 lemma top_is_closed1:
-  assumes "is_closure_on f X" and "is_max m X"
-  shows "f m = m"
-  by (meson assms(1) assms(2) cl_eq_imp_ext1 closure_eq_if_closure is_closure_on_imp2 is_max_iff is_self_map_imp2 order_antisym)
+  "is_closure_on f X \<Longrightarrow> is_max m X \<Longrightarrow> f m = m"
+  by (simp add: is_closure_on_iff is_extensive_on_def is_max_iff is_self_map_imp2 order_antisym)
 
 lemma top_is_closed2:
-  assumes "is_clr C X" and "is_max m X"
-  shows "m \<in> C"
-  by (metis assms(1) assms(2) clr_from_closure_def clr_induces_closure cr_cl_cr_eq_cr image_eqI is_max_iff top_is_closed1)
+   "is_clr C X \<Longrightarrow> is_max m X \<Longrightarrow> m \<in> C"
+  by (metis Int_insert_right_if0 clr_is_cofinal inf_le2 is_clr_imp1 is_max_iff subset_empty ub_set_max ub_set_restrict1)
 
+lemma clr_inf_ne1:
+  "is_clr C X  \<Longrightarrow> A \<subseteq> C \<Longrightarrow> has_inf A X \<Longrightarrow> a \<in> A \<Longrightarrow>  (closure_from_clr C) (Inf A X ) \<le> (closure_from_clr C) a"
+  by (meson closure_range.cl_is_iso closure_range.intro has_inf_in_imp2 has_inf_in_set in_mono is_clr_imp1)
 
-lemma clr_inf_closed:
-  assumes "is_clr C X" and "A \<subseteq> C" and "has_inf A X"
-  shows "Inf A X \<in> C"
-proof(cases "A = {}")
-  case True
-  have B0:"has_max X"
-    by (metis True assms(3) has_inf_def lb_set_in_degenerate)
-  obtain m where "is_max m X"
-    using B0 has_max_iff2 by blast
-  then show ?thesis
-    by (metis True assms(1) inf_in_degenerate max_if top_is_closed2) 
-next
-  case False
-  let ?f="closure_from_clr C"
-  have B0:"\<forall>a. a \<in> A \<longrightarrow> Inf A X \<le> a"
-    using assms(3) has_inf_in_imp2 by blast
-  have B1:"\<forall>a. a \<in> A \<longrightarrow> ?f(Inf A X ) \<le> ?f a"
-    by (meson B0 assms(1) assms(2) assms(3) closure_range.cl_is_iso closure_range.intro has_inf_in_set in_mono is_clr_imp1)
-  have B2:"\<forall>a. a \<in> A\<longrightarrow>  ?f(Inf A X ) \<le> a"
-    by (metis B1 assms(1) assms(2) closure_range.cl_fp closure_range.intro in_mono)
-  have B3:"?f(Inf A X ) \<le> Inf A X "
-    by (simp add: B2 assms(1) assms(3) closure_range.cl_is_self_map closure_range.intro has_inf_imp3 has_inf_in_set is_self_map_imp2)
-  have B4:"?f (Inf A X ) = (Inf A X )"
-    using B3 assms(1) assms(3) closure_range.cl_is_ext closure_range.intro has_inf_in_set order_antisym_conv by blast
-  then show ?thesis
-    by (metis assms(1) assms(3) closure_from_clr_def clr_obtains1 has_inf_in_set min_if)
-qed
+lemma clr_inf_ne2:
+  "is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> has_inf A X \<Longrightarrow> a \<in> A \<Longrightarrow>  (closure_from_clr C) (Inf A X ) \<le>a"
+  by (metis closure_range.cl_fp closure_range.intro clr_inf_ne1 subsetD)
+
+lemma clr_inf_ne3:
+  "is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> has_inf A X \<Longrightarrow> a \<in> A \<Longrightarrow>  (closure_from_clr C) (Inf A X ) \<le> Inf A X"
+  by (metis closure_from_clr_def closure_range.intro closure_range.least_closed_in_space clr_inf_ne2 has_inf_imp3 has_inf_in_set)
+
+lemma clr_inf_ne4:
+  "is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> has_inf A X \<Longrightarrow> a \<in> A \<Longrightarrow>  (closure_from_clr C) (Inf A X ) = Inf A X"
+  by (meson closure_range.cl_is_ext closure_range.intro clr_inf_ne3 has_inf_in_set order_antisym)
+
+lemma clr_inf_ne:
+  "is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> has_inf A X \<Longrightarrow> a \<in> A \<Longrightarrow>  Inf A X \<in> C"
+  by (metis closure_from_clr_def clr_inf_ne4 clr_obtains1 has_inf_in_set min_if)
+
+lemma clr_inf_semilattice:
+  "is_inf_complete X \<Longrightarrow> is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> A \<noteq> {} \<Longrightarrow> Inf A X \<in> C"
+  by (meson Pow_iff all_not_in_conv clr_inf_ne dual_order.trans is_clr_imp1 is_inf_complete_def pow_ne_if)
 
 
 lemma is_galois_connection_imp1:
@@ -472,95 +366,91 @@ lemma galois_equiv_imp4:
   "galois_equiv f X g Y \<Longrightarrow> (is_map f X Y) \<Longrightarrow>  (is_map g Y X) \<Longrightarrow>(is_extensive_on (g \<circ> f) X)"
   apply(auto simp add:is_extensive_on_def  galois_equiv_def is_map_def)
   by (simp add: image_subset_iff)
+    
 
+lemma gc_imp_ineq1a:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> x \<le> g y \<Longrightarrow> (f \<circ> g) y \<le> f x"
+  by (simp add: image_subset_iff is_antitone_on_def is_galois_connection_def is_map_def)
+
+lemma gc_imp_ineq1b:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> f x \<Longrightarrow> (g \<circ> f) x \<le> g y"
+  by (simp add: image_subset_iff is_antitone_on_def is_galois_connection_def is_map_def)
+
+lemma gc_imp_ineq2a:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> x \<le> g y \<Longrightarrow>y  \<le> f x"
+  using gc_imp_ineq1a is_galois_connection_imp4 order_trans by blast
+
+lemma gc_imp_ineq2b:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> f x \<Longrightarrow> x  \<le> g y"
+  using gc_imp_ineq1b is_galois_connection_imp3 order_trans by blast
 
 lemma gc_imp_ge:
-  assumes A0:"is_galois_connection f X g Y"
-  shows   "galois_equiv f X g Y"
-proof-
-  have B0:"\<And>x y. (x \<in> X \<and> y \<in> Y) \<longrightarrow> (x \<le> g y \<longleftrightarrow> y \<le> f x)"
-  proof
-    fix x y assume A1:"(x \<in> X \<and> y \<in> Y)"  
-    show "(x \<le> g y \<longleftrightarrow> y \<le> f x)"
-  proof
-    assume A2:"x \<le> g y"
-    have B1:"y \<le> (f \<circ> g) y"
-      using A1 assms is_galois_connection_imp4 by blast
-    have B2:"... \<le> f x"
-      by (metis A1 A2 assms comp_apply image_subset_iff is_galois_connection_def is_galois_connection_imp1 is_map_def)
-    show "y \<le> f x"
-      using B1 B2 by auto
-  next
-    assume A3:"y \<le> f x"
-    have B3:"x \<le> (g \<circ> f) x"
-      using A1 assms is_galois_connection_imp3 by blast
-    have B4:"... \<le> g y"
-      by (metis A1 A3 assms comp_apply image_subset_iff is_galois_connection_def is_galois_connection_imp2 is_map_def)
-    show "x \<le> g y"
-      using B3 B4 by auto
-    qed
-  qed
-  show ?thesis
-    by (simp add: B0 galois_equiv_def)
-qed
-    
+  "is_galois_connection f X g Y \<Longrightarrow> galois_equiv f X g Y"
+  by(auto simp add:galois_equiv_def gc_imp_ineq2a gc_imp_ineq2b)
   
 lemma ge_imp_gc:
-  assumes A0:"galois_equiv f X g Y \<and>  (is_map f X Y) \<and> (is_map g Y X)"
-  shows "is_galois_connection f X g Y"
-proof-
-  have B0:" (is_antitone_on f X) \<and> (is_antitone_on g Y)"
-    using assms galois_equiv_imp1 galois_equiv_imp2 by blast
-  have B1:"(is_extensive_on (f \<circ> g) Y) \<and> (is_extensive_on (g \<circ> f) X)"
-    using assms galois_equiv_imp3 galois_equiv_imp4 by blast 
-  show ?thesis
-    by (simp add: B0 B1 assms is_galois_connection_def)
-qed
- 
-lemma galois_triple_comp1:
-  assumes A0:"is_galois_connection f X g Y"
-  shows "\<And>x. x \<in> X \<longrightarrow> (f \<circ> g \<circ> f) x = f x"
-proof
-  fix x assume A1:"x \<in> X"
-  have B1:"f x \<le> (f \<circ> g \<circ>f) x"
-    by (metis A1 assms comp_apply image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
-  have B2:"f x \<ge> (f \<circ> g \<circ>f) x"
-    by (metis A1 assms comp_apply is_antitone_on_def is_extensive_on_def is_galois_connection_def is_self_map_imp2)
-  show "(f \<circ> g \<circ> f) x = f x"
-    using B1 B2 by auto
-qed
+  "galois_equiv f X g Y \<and>  (is_map f X Y) \<and> (is_map g Y X) \<Longrightarrow> is_galois_connection f X g Y"
+  using galois_equiv_imp1 galois_equiv_imp2 galois_equiv_imp3 galois_equiv_imp4 is_galois_connection_def by blast
 
-lemma galois_triple_comp2:
-  assumes A0:"is_galois_connection f X g Y"
-  shows "\<And>y. y\<in> Y \<longrightarrow> (g \<circ> f \<circ> g) y = g y"
-proof
-  fix y assume A1:"y \<in> Y"
-  have B1:"g y \<le> (g \<circ> f \<circ>g) y"
-    by (metis A1 assms comp_apply image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
-  have B2:"g y \<ge> (g \<circ> f \<circ> g) y"
-    by (metis A1 assms comp_apply is_antitone_on_def is_extensive_on_def is_galois_connection_def is_self_map_imp2)
-  show "(g \<circ> f \<circ> g) y = g y"
-    using B1 B2 by auto
-qed
+lemma galois_triple_comp01:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<le> (f \<circ> g \<circ> f) x"
+  by (simp add: image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
+ 
+lemma galois_triple_comp02:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> (f \<circ> g \<circ> f) x \<le> f x "
+  by (metis comp_apply is_antitone_on_def is_extensive_on_def is_galois_connection_def is_self_map_imp2)
+ 
+lemma galois_triple_comp0:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> (f \<circ> g \<circ> f) x = f x "
+  using galois_triple_comp01 galois_triple_comp02 order_antisym by blast
+
+lemma galois_quad_comp0:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> (g \<circ> f \<circ> g \<circ> f) x = (g \<circ> f) x "
+  using galois_triple_comp0 by fastforce
+ 
+lemma galois_triple_comp11:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y \<le> (g \<circ> f \<circ> g) y"
+  by (simp add: image_subset_iff is_extensive_on_def is_galois_connection_def is_map_def)
+
+lemma galois_triple_comp12:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y \<ge> (g \<circ> f \<circ> g) y"
+  by (meson galois_triple_comp02 is_galois_connection_def)
+
+lemma galois_triple_comp1:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y = (g \<circ> f \<circ> g) y"
+  using galois_triple_comp11 galois_triple_comp12 order_antisym by blast
+
+lemma galois_quad_comp1:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> (f \<circ> g \<circ> f \<circ> g) y = (f \<circ> g) y"
+  using galois_triple_comp1 by fastforce 
+
+lemma galois_quad_comp1b:
+  "is_galois_connection f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> f( g ( f ( g y) ) ) = f (g y)"
+  using galois_triple_comp1 by fastforce           
+
+lemma galois_quad_comp0b:
+  "is_galois_connection f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> g( f ( g ( f x) ) ) = g (f x )"
+  using galois_triple_comp0 by fastforce 
+
+lemma galois_double_comp_is_ext:
+  "is_galois_connection f X g Y \<Longrightarrow> is_extensive_on (f \<circ> g) Y \<and> is_extensive_on (g \<circ> f) X"
+  by (simp add: is_galois_connection_def)
+ 
+lemma galois_double_comp_is_iso:
+  "is_galois_connection f X g Y \<Longrightarrow> is_isotone_on (f \<circ> g) Y \<and> is_isotone_on (g \<circ> f) X"
+  by (meson antitone_comp is_galois_connection_def)
+
+lemma galois_double_comp_is_map:
+  "is_galois_connection f X g Y \<Longrightarrow> is_self_map (f \<circ> g) Y \<and> is_self_map (g \<circ> f) X"
+  by (simp add: galois_double_comp_is_ext is_extensive_on_imp_map)
+ 
+lemma galois_double_comp0_is_idm:
+  "is_galois_connection f X g Y \<Longrightarrow> is_idempotent_on (f \<circ> g) Y \<and>  is_idempotent_on (g \<circ> f) X"
+  by(auto simp add:is_idempotent_on_def galois_double_comp_is_map galois_quad_comp0b galois_quad_comp1b)
 
 lemma galois_double_comp1_is_cl:
-  assumes A0:"is_galois_connection f X g Y"
-  shows "is_closure_on (f \<circ> g) Y \<and> is_closure_on (g \<circ> f) X"
-proof-
-  have B0:"is_extensive_on (f \<circ> g) Y \<and> is_extensive_on (g \<circ> f) X"
-    using assms is_galois_connection_def by auto
-  have B1:"is_isotone_on (f \<circ> g) Y \<and> is_isotone_on (g \<circ> f) X"
-    by (metis antitone_comp assms is_galois_connection_def)
-  have B2:"is_idempotent_on (f \<circ> g) Y \<and> is_idempotent_on (g \<circ> f) X"
-    apply(auto simp add:is_idempotent_on_def )
-    using assms galois_triple_comp2 apply fastforce
-    apply (simp add: B0 is_extensive_on_imp_map)
-    using assms galois_triple_comp1 apply fastforce
-    by (simp add: B0 is_extensive_on_imp_map)
-  show ?thesis
-    by (simp add: B0 B1 B2 is_closure_on_def is_proj_on_def)
-qed
-
+  "is_galois_connection f X g Y \<Longrightarrow> is_closure_on (f \<circ> g) Y \<and> is_closure_on (g \<circ> f) X"
+  by (simp add: galois_double_comp0_is_idm galois_double_comp_is_ext galois_double_comp_is_iso is_closure_on_iff)
 
 
 lemma l_is_map:
@@ -608,36 +498,35 @@ definition moore_family_cl::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a s
 
 lemma moore_family_ne:
   "is_moore_family A X \<Longrightarrow> A \<noteq> {}"
-  by (meson Pow_iff empty_iff empty_subsetI is_moore_family_def)
-
+  by(auto simp add: is_moore_family_def)
 
 lemma moore_family_imp1:
   "is_moore_family A X \<Longrightarrow> A \<subseteq> Pow X"
   by (simp add: is_moore_family_def)
 
-lemma moore_family_imp2:
- assumes A0:"is_moore_family A X"
-  shows"(\<And>x. x\<subseteq>X \<Longrightarrow> is_min (Inf (ub_set {x} A) (Pow X)) (ub_set {x} A))"
-proof-
-  fix x assume A1:"x \<subseteq> X"
-  let ?i="Inf (ub_set {x} A) (Pow X)"
-  have B0:"?i \<in> A"
-    by (meson Pow_iff assms is_moore_family_def ub_set_subset_space)
-  have B1:"?i lb (ub_set {x} A)"
-    by (simp add: has_inf_in_imp2 lb_def sets_have_inf5)
-  have B2:"?i \<in> (ub_set {x} A)"
-    by (metis A1 B0 PowI has_inf_imp3 sets_have_inf5 singletonI ub_set_imp up_cl_ub up_closure_in_imp)
-  have B3:"is_min ?i  (ub_set {x} A)"
-    by (simp add: B1 B2 is_min_iff2)
-  show "is_min (Inf (ub_set {x} A) (Pow X)) (ub_set {x} A)"
-    by (simp add: B3)
-qed
+lemma moore_family_imp21:
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow>  (Inf (ub_set {x} A) (Pow X)) \<in> A"
+  by (simp add: is_moore_family_def ub_set_subset_space)
 
+lemma moore_family_imp22:
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow>  (Inf (ub_set {x} A) (Pow X)) lb (ub_set {x} A)"
+  by (simp add: has_inf_in_imp2 lb_def sets_have_inf5)
+
+lemma moore_family_imp23:
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow> x \<le>  (Inf (ub_set {x} A) (Pow X))"
+  by (simp add: has_inf_imp3 sets_have_inf5 ub_set_imp)
+
+lemma moore_family_imp24:
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow> (Inf (ub_set {x} A) (Pow X)) \<in> (ub_set {x} A)"
+  by (metis (no_types, lifting) moore_family_imp21 moore_family_imp23 singletonI up_cl_ub up_closure_in_imp)
+
+lemma moore_family_imp2:
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow> is_min (Inf (ub_set {x} A) (Pow X)) (ub_set {x} A)"
+  by (simp add: is_min_iff2 moore_family_imp22 moore_family_imp24)
 
 lemma moore_family_imp3:
- assumes A0:"is_moore_family A X"
-  shows"(\<And>x. x\<subseteq>X \<Longrightarrow> has_min (ub_set {x} A))"
-  using assms has_min_def moore_family_imp2 by blast
+  "is_moore_family A X \<Longrightarrow> x \<in> Pow X \<Longrightarrow> has_min (ub_set {x} A)"
+  using has_min_iff2 moore_family_imp2 by blast
 
 lemma moore_family_is_clr:
   "is_moore_family A X \<Longrightarrow> is_clr A (Pow X)"
@@ -654,7 +543,6 @@ lemma moore_family_cl_is_cl2:
   apply(auto simp add:is_isotone_on_def is_map_def moore_family_cl_def is_moore_family_def)
   by (meson inf_antitone1 sets_have_inf5 subsetD ub_set_singleton_antitone)
 
-
 lemma moore_family_cl_is_cl3:
   "is_moore_family A X \<Longrightarrow> is_idempotent_on (moore_family_cl A X) (Pow X)"
   apply(auto simp add:is_idempotent_on_def is_map_def moore_family_cl_def is_moore_family_def)
@@ -666,129 +554,13 @@ lemma moore_family_cl_is_cl:
   "is_moore_family A X \<Longrightarrow> is_closure_on (moore_family_cl A X) (Pow X)"
   by (simp add: is_closure_on_def is_proj_on_def moore_family_cl_is_cl1 moore_family_cl_is_cl2 moore_family_cl_is_cl3)
 
-
-lemma sup_complete_imp0:
-  "is_sup_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> has_sup A X"
-  using has_sup_in_set is_sup_complete_def by blast
-
-lemma inf_complete_imp0:
-  "is_inf_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> has_inf A X"
-  using has_inf_in_set is_inf_complete_def by blast
-
-lemma bsup_complete_imp0:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> has_sup {a, b} X"
-  using has_sup_in_set is_bsup_complete_def by blast
-
-lemma binf_complete_imp0:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> has_inf {a, b} X"
-  using has_inf_in_set is_binf_complete_def by blast
-
-lemma sup_complete_imp1:
-  "is_sup_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Sup A X \<in> X"
-  using has_sup_in_set is_sup_complete_def by blast
-
-lemma inf_complete_imp1:
-  "is_inf_complete X \<Longrightarrow> A \<in> Pow_ne X \<Longrightarrow> Inf A X \<in> X"
-  using has_inf_in_set is_inf_complete_def by blast
-
-lemma bsup_complete_imp1:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X  \<Longrightarrow> Sup {a, b} X \<in> X"
-  using has_sup_in_set is_bsup_complete_def by blast
-
-lemma binf_complete_imp1:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf {a, b} X \<in> X"
-  using has_inf_in_set is_binf_complete_def by blast
-
-lemma inf_complete_imp2:
-  "is_inf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> has_inf A X"
-  by (meson inf_complete_imp0 pow_ne_imp4)
-            
-lemma sup_complete_imp2:
-  "is_sup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> has_sup A X"
-  by (meson pow_ne_imp4 sup_complete_imp0)
-
-lemma bsup_complete_imp2:
-  "is_bsup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> has_sup {a, b} X"
-  using has_sup_in_set is_bsup_complete_def by blast
-
-lemma binf_complete_imp2:
-  "is_binf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> has_inf {a, b} X"
-  using has_inf_in_set is_binf_complete_def by blast
-
-lemma inf_complete_imp3:
-  "is_inf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> Inf A X \<in> X"
-  by (simp add: has_inf_in_set inf_complete_imp2)
-             
-lemma sup_complete_imp3:
-  "is_sup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> Sup A X \<in> X"
-  by (simp add: has_sup_in_set sup_complete_imp2)
-
-lemma bsup_complete_imp3:
-  "is_bsup_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C  \<Longrightarrow> Sup {a, b} X \<in> X"
-  using has_sup_in_set is_bsup_complete_def by blast
-
-lemma binf_complete_imp3:
-  "is_binf_complete X \<Longrightarrow> C \<subseteq> X \<Longrightarrow>  a \<in> C \<Longrightarrow> b \<in> C \<Longrightarrow> Inf {a, b} X \<in> X"
-  using has_inf_in_set is_binf_complete_def by blast
-
-lemma binf_complete_imp4:
-  "is_binf_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf {a, b} X \<le> a \<and> Inf {a, b} X \<le> b"
-  by (simp add: binf_complete_imp0 has_inf_in_imp2)
-
-lemma bsup_complete_imp4:
-  "is_bsup_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> Sup {a, b} X  \<and> b \<le> Sup {a, b} X"
-  by (simp add: bsup_complete_imp0 has_sup_in_imp2)
-
-lemma binf_complete_greatest:
-  "is_binf_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> c \<in> X \<Longrightarrow> c lb {a,b} \<Longrightarrow> c \<le> Inf {a, b} X"
-  by (simp add: binf_complete_imp0 inf_imp_gt_lb lb_set_if)
-
-lemma bsup_complete_least:
-  "is_bsup_complete X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> c \<in> X \<Longrightarrow> c ub {a,b} \<Longrightarrow> c \<ge> Sup {a, b} X"
-  by (simp add: bsup_complete_imp0 sup_imp_lt_ub ub_set_if)
-
-
-lemma inf_complete_min1:
-   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_min (Inf X X) X"
-  by (simp add: inf_in_min is_inf_complete_def)
-
-
-
-lemma sup_complete_max1:
-   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_max (Sup X X) X"
-  by (simp add: sup_in_max is_sup_complete_def)
-
-lemma inf_complete_min2:
-   "is_inf_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_min X"
-  using has_min_def inf_complete_min1 by blast
-
-lemma sup_complete_max2:
-   "is_sup_complete X \<Longrightarrow> X \<noteq> {} \<Longrightarrow> has_max X"
-  using has_max_def sup_complete_max1 by auto
-
 lemma has_max_imp_ub_ne:
-  assumes A0:"has_max X" and A1:"A \<in> Pow X "
-  shows " ub_set A X \<noteq> {}"
-proof-
-  obtain m where A2:"is_max m X"
-    using A0 has_max_iff2 by auto
-  have B0:"m \<in> (ub_set A X)"
-    using A1 A2 is_max_imp_set by auto
-  show ?thesis
-    using B0 by auto
-qed
+  "has_max X \<Longrightarrow> A \<in> Pow X \<Longrightarrow> ub_set A X \<noteq> {}"
+  by (metis Pow_iff empty_iff has_max_def is_max_imp_set)
 
 lemma has_min_imp_lb_ne:
-  assumes A0:"has_min X" and A1:"A \<in> Pow X "
-  shows " lb_set A X \<noteq> {}"
-proof-
-  obtain m where A2:"is_min m X"
-    using A0 has_min_iff2 by auto
-  have B0:"m \<in> (lb_set A X)"
-    using A1 A2 is_min_imp_set by auto
-  show ?thesis
-    using B0 by auto
-qed
+  "has_min X \<Longrightarrow> A \<in> Pow X \<Longrightarrow> lb_set A X \<noteq> {}"
+  by (metis Pow_iff empty_iff has_min_def is_min_imp_set)
 
 lemma is_inf_complete_imp_binf_complete:
   "is_inf_complete X \<Longrightarrow> is_binf_complete X"
@@ -850,99 +622,6 @@ lemma inf_comp_max_imp_comp:
   "(is_inf_complete X \<and> has_max X) \<Longrightarrow> is_complete_lattice X"
   by (simp add: inf_comp_max_imp_sup_comp_min sup_comp_min_imp_comp)
 
-lemma lattice_inf_commutativity:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow>  b \<in> X \<Longrightarrow> Inf {a, b} X = Inf {b, a} X"
-  by (simp add: insert_commute)
-
-lemma lattice_sup_commutativity:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow>  b \<in> X \<Longrightarrow> Sup {a, b} X = Sup {b, a} X"
-  by (simp add: insert_commute)
-
-lemma lattice_inf_associativity:
-  assumes A0:"is_binf_complete X" and A1:"a \<in> X \<and> b \<in> X \<and> c \<in> X" 
-  shows "Inf {Inf {a, b} X, c} X = Inf {a, Inf {c, b} X} X"
-proof-
-  let ?ab="Inf {a, b} X" let ?cb="Inf {c, b} X"
-  have B0:"?cb \<in> X"
-    by (simp add: A0 A1 binf_complete_imp0 has_inf_in_set)
-  have B1:"?ab \<in> X"
-    by (simp add: A0 A1 binf_complete_imp0 has_inf_in_set)
-  have B2:"Inf {?ab, c} X \<in> X"
-    by (simp add: A0 A1 binf_complete_imp1)
-  have B3:"Inf {a, ?cb} X \<in> X"
-    by (simp add:A0 A1 binf_complete_imp1)
-  have B4:"Inf {?ab, c} X \<le> ?ab \<and> Inf {?ab, c} X \<le> c"
-    by (simp add: A0 A1 B1 binf_complete_imp0 has_inf_in_imp2)
-  have B5:"Inf {?ab, c} X \<le> a \<and> Inf {?ab, c} X \<le> b"
-    by (meson A0 A1 B4 binf_complete_imp0 has_inf_in_imp2 insertI1 insertI2 order_trans)
-  have B6:"Inf {a, ?cb} X \<le> a \<and> Inf {a, ?cb} X \<le> ?cb"
-    by (simp add: A0 A1 B0 binf_complete_imp0 has_inf_in_imp2)
-  have B7:"Inf {a, ?cb} X \<le> c \<and> Inf {a, ?cb} X \<le> b"
-    by (meson A0 A1 B6 binf_complete_imp0 has_inf_in_imp2 insertI1 insertI2 order.trans)
-  have B10:"Inf {a, ?cb} X \<le> Inf {?ab, c} X"
-    by (metis A0 A1 B0 B1 B3 B7 has_inf_imp3 has_inf_in_imp2 insert_iff is_binf_complete_def)
-  have B11:"Inf {?ab, c} X \<le> Inf {a, ?cb} X"
-    by (metis A0 A1 B0 B1 B2 B5 binf_complete_imp0 has_inf_imp3 has_inf_in_imp2 insert_iff)
-  show ?thesis
-    by (simp add: B10 B11 dual_order.eq_iff)
-qed
-
-
-lemma lattice_sup_associativity:
-  assumes A0:"is_bsup_complete X" and A1:"a \<in> X \<and> b \<in> X \<and> c \<in> X" 
-  shows "Sup {Sup {a, b} X, c} X = Sup {a, Sup {c, b} X} X"
-proof-
-  let ?ab="Sup {a, b} X" let ?cb="Sup {c, b} X"
-  have B0:"?cb \<in> X"
-    by (simp add: A0 A1 bsup_complete_imp0 has_sup_in_set)
-  have B1:"?ab \<in> X"
-    by (simp add: A0 A1 bsup_complete_imp0 has_sup_in_set)
-  have B2:"Sup {?ab, c} X \<in> X"
-    by (simp add: A0 A1 bsup_complete_imp1)
-  have B3:"Sup {a, ?cb} X \<in> X"
-    by (simp add:A0 A1 bsup_complete_imp1)
-  have B4:"Sup {?ab, c} X \<ge> ?ab \<and> Sup {?ab, c} X \<ge> c"
-    by (simp add: A0 A1 B1 bsup_complete_imp0 has_sup_in_imp2)
-  have B5:"Sup {?ab, c} X \<ge> a \<and> Sup {?ab, c} X \<ge> b"
-    by (meson A0 A1 B4 bsup_complete_imp0 has_sup_in_imp2 insertI1 insertI2 order_trans)
-  have B6:"Sup {a, ?cb} X \<ge> a \<and> Sup {a, ?cb} X \<ge> ?cb"
-    by (simp add: A0 A1 B0 bsup_complete_imp0 has_sup_in_imp2)
-  have B7:"Sup {a, ?cb} X \<ge> c \<and> Sup {a, ?cb} X \<ge> b"
-    by (meson A0 A1 B6 bsup_complete_imp0 has_sup_in_imp2 insertI1 insertI2 order.trans)
-  have B10:"Sup {a, ?cb} X \<ge> Sup {?ab, c} X"
-    by (metis A0 A1 B0 B1 B3 B7 has_sup_imp3 has_sup_in_imp2 insert_iff is_bsup_complete_def)
-  have B11:"Sup {?ab, c} X \<ge> Sup {a, ?cb} X"
-    by (metis A0 A1 B0 B1 B2 B5 has_sup_imp3 has_sup_in_imp2 insert_iff is_bsup_complete_def)
-  show ?thesis
-    by (simp add: B10 B11 dual_order.eq_iff)
-qed
-  
-lemma lattice_inf_idempotency:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> Inf {a, a} X = a"
-  by (simp add: inf_singleton2)
-
-lemma lattice_sup_idempotency:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> Sup {a, a} X = a"
-  by (simp add: sup_singleton2)
-
-
-
-lemma lattice_inf_ord_imp_inf0:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> Inf {a, b} X = a"
-  by (simp add: binary_lb binf_complete_greatest binf_complete_imp0 has_inf_in_imp2 order_antisym)
-
-lemma lattice_inf_ord_imp_inf1:
-  "is_binf_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf {a, b} X = a \<Longrightarrow>  a \<le> b"
-  by (metis binf_complete_imp4)
-                   
-lemma lattice_inf_ord_imp_sup0:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> Sup {a, b} X = b"
-  by (simp add: binary_ub bsup_complete_imp4 bsup_complete_least order_class.order_eq_iff)
-
-lemma lattice_sup_ord_imp_sup1:
-  "is_bsup_complete X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Sup {a, b} X = b \<Longrightarrow>  a \<le> b"
-  by (metis bsup_complete_imp4)
-
 
 section ClosureRangesAndCompleteness
 context
@@ -958,12 +637,11 @@ lemma clr_inf_complete1:
 
 lemma clr_inf_complete2:
   "is_clr C X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow> Inf A X \<in> C"
-  using clr_inf_closed clr_inf_complete1 by blast
+  using clr_inf_ne clr_inf_complete1 by blast
 
 lemma clr_inf_complete3:
   "is_clr C X \<Longrightarrow> A \<in> Pow_ne C \<Longrightarrow>  Inf A C = Inf A X"
   by (simp add: A1 clr_inf_complete1 clr_inf_complete2 inf_subset_eq1)
-
 
 lemma clr_inf_on_cinf_converse:
   assumes A3:"\<forall>A \<in> Pow_ne C. has_inf A C \<and> Inf A C = Inf A X" and
@@ -1010,7 +688,7 @@ proof
     apply (metis A3 cl_eq_imp_idemp closure_eq_if_closure is_closure_on_imp2)
     by (metis A3 is_closure_on_iff is_idempotent_imp1)
   have B1:"has_min ?E2"
-    using A2 A3 closure_range_is_clr is_clr_imp2 by blast
+    by (metis A2 A3 closure.Cf_is_clr closure.intro clr_from_closure_def insert_absorb insert_not_empty is_clr_def)
   have B2:"(min ?E2) lb ?E2"
     using B1 has_min_def is_sup_imp_lt_ub is_sup_in_iff min_if by blast
   have B3:"(min ?E2) \<in> X"
@@ -1057,82 +735,40 @@ context
           A1:" C \<subseteq> X"
 begin
 
+
 lemma complete_clr1:
-  assumes A2:"is_clr C X"
-  shows "\<And>A. A \<in> Pow C \<longrightarrow> Inf A X \<in> C"
-proof
-  fix A assume A3:"A \<in> Pow C"
-  have B0:"A \<subseteq> C \<and> A \<subseteq> X"
-    using A1 A3 by blast 
-  have B1:"has_inf A X"
-    proof(cases "A={}")
-      case True
-      then show ?thesis
-        using A0 assms inf_in_degenerate2 is_clr_imp1 is_complete_imp_max_and_inf by blast
-    next
-      case False
-      then show ?thesis
-        using A0 B0 is_complete_lattice_def is_inf_complete_def by blast
-    qed
-  show "Inf A X \<in> C"
-    by (simp add: B0 B1 assms clr_inf_closed)
-qed
+  "is_clr C X \<Longrightarrow> A \<in> Pow C \<Longrightarrow> Inf A X \<in> C"
+  by (metis A0 clr_inf_complete2 has_inf_in_set inf_empty_iff inf_in_degenerate is_clr_def is_complete_imp_max_and_inf is_max_sanity_check max_gt_elem pow_ne_if subset_empty top_is_closed2)
 
 lemma complete_clr2:
-  assumes "is_clr C X"
-  shows "\<And>A. A \<in> Pow C \<longrightarrow> Inf A C = Inf A X"
-proof
-  fix A assume A3:"A \<in> Pow C"
-  have B0:"A \<subseteq> C \<and> A \<subseteq> X"
-    using A1 A3 by blast 
-  show "Inf A C = Inf A X"
-  proof(cases "A={}")
-    case True
-    then show ?thesis
-      by (metis A0 A3 B0 assms complete_clr1 inf_in_degenerate2 inf_subset_eq1 is_clr_def is_complete_imp_max_and_inf subset_empty)
-  next
-    case False
-    then show ?thesis
-      by (metis A0 A3 assms clr_inf_complete3 is_clr_def is_complete_lattice_def pow_ne_if)
-  qed
-qed
+  "is_clr C X \<Longrightarrow> A \<in> Pow C \<Longrightarrow> Inf A C = Inf A X"
+  by (metis A0 Pow_iff clr_inf_complete3 complete_clr1 inf_in_degenerate2 inf_subset_eq1 is_clr_imp1 is_complete_imp_max_and_inf pow_ne_if subset_empty)
 
-lemma complete_clr3:
-  assumes "\<And>A. A \<in> Pow C \<longrightarrow> Inf A X \<in> C"
-  shows "is_clr C X"
-proof-
-  have B0:"\<forall>x \<in> X. has_min (ub_set {x} C)"
-  proof
-    fix x assume A3:"x \<in> X"
-    have B1:"(max X) \<in> C"
-      by (metis Pow_bottom assms inf_in_degenerate)
-    have B2:"(max X) \<in> ub_set {x} C"
-      by (metis A0 A3 B1 empty_iff has_max_iff is_complete_imp_max_and_inf max_if2 singletonD ub_set_elm)
-    have B3:"ub_set {x} C \<noteq> {}"
-      using B2 by auto
-    have B4:" Inf (ub_set {x} C) X \<in> C"
-      by (simp add: assms ub_set_subset_space)
-    have B5:"x \<in> lb_set (ub_set {x} C) X"
-      by (simp add: A3 lb_set_elm ub_set_imp)
-    have B6:"x \<le> Inf (ub_set {x} C) X"
-      by (meson A0 A1 B3 B5 PowI inf_complete_imp0 inf_imp_gt_lb is_complete_lattice_def pow_ne_if ub_set_subset2)
-    have B7:"Inf (ub_set {x} C) X \<in> ub_set {x} C"
-      by (simp add: B4 B6 ub_set_mem_iff)
-    have B8:"Inf (ub_set {x} C) X lb (ub_set {x} C)"
-      by (meson A0 A1 B3 Pow_iff has_inf_in_imp2 inf_complete_imp0 is_complete_lattice_def lb_def pow_ne_if ub_set_subset2)
-    have B9:"is_min (Inf (ub_set {x} C) X) (ub_set {x} C)"
-      by (simp add: B7 B8 is_min_def lb_set_if)
-    show "has_min (ub_set {x} C)"
-      using B9 is_min_imp_has_min by auto
-   qed
-  show ?thesis
-    by (metis A1 B0 Pow_not_empty assms ex_in_conv is_clr_def)
-qed
+lemma complet_clr31:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> x \<in> X \<Longrightarrow>x \<le>  Inf (ub_set {x} C) X"
+  by (simp add: has_inf_imp3 ub_set_imp ub_set_subset_space)
 
+lemma complet_clr32:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> x \<in> X \<Longrightarrow>Inf (ub_set {x} C) X \<in> ub_set {x} C"
+  by (metis Pow_iff complet_clr31 singletonI ub_set_subset_space up_cl_ub up_closure_in_imp)
+
+lemma complet_clr33:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> x \<in> X \<Longrightarrow> Inf (ub_set {x} C) X lb (ub_set {x} C)"
+  by (simp add: has_inf_in_imp2 lb_def ub_set_subset_space)
+
+lemma complet_clr34:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> x \<in> X \<Longrightarrow>is_min (Inf (ub_set {x} C) X) (ub_set {x} C)"
+  by (meson complet_clr32 complet_clr33 is_min_iff2)
+
+lemma complet_clr35:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> x \<in> X \<Longrightarrow> has_min (ub_set {x} C)"
+  using complet_clr34 has_min_def by auto
+
+lemma complet_clr3:
+  "(\<And>A. A \<in> Pow C \<Longrightarrow> has_inf A X \<and> Inf A X \<in> C) \<Longrightarrow> is_clr C X"
+  by (metis A1 Pow_top complet_clr35 empty_iff is_clr_def)
 
 end
-
-
 
 context
   fixes C X::"'a::order set" 
@@ -1141,39 +777,34 @@ context
           A2:"is_clr C X"
 begin
 
-lemma complete_clr_sup1:
-  assumes A3:"A \<subseteq> C"
-  shows "is_sup (Inf (ub_set A C) X) A C \<and> Sup A C =  (Inf (ub_set A C) C)"
-proof-
-  let ?U="ub_set A C" let ?I="Inf ?U X"
-  have B0:"(ub_set A C \<noteq> {})"
-    by (metis A0 A2 PowI assms closure_range.intro closure_range.space_is_ne has_max_imp_ub_ne is_clr_imp_max is_complete_imp_max_and_inf)
-  have B1:"has_inf (ub_set A C) X"
-    by (meson A0 A1 B0 PowI dual_order.trans is_complete_lattice_def is_inf_complete_def pow_ne_if ub_set_subset_space)
-  have B2:"Inf (ub_set A C) X = Inf (ub_set A C) C "
-    by (metis A0 A2 PowI complete_clr2 is_clr_imp1 ub_set_subset_space)
-  have B3:"has_inf (ub_set A C) C"
-    by (meson A1 A2 B1 clr_inf_closed inf_subset_eq1 ub_set_subset_space)
-  have B4:"Sup A C =  (Inf (ub_set A C) C)"
-    by (simp add: B3 assms sup_in_eq_inf_in_ub)
-  have B5:"is_sup (Inf (ub_set A C) C) A C"
-    by (simp add: B3 assms inf_is_inf is_inf_ub_imp_is_sup)
-  show ?thesis
-    by (simp add: B2 B4 B5)
-qed
+lemma complete_clr_sup10:
+  "A \<subseteq> C \<Longrightarrow> (ub_set A C \<noteq> {})"
+  by (metis A0 A2 Pow_iff closure_range.intro closure_range.space_is_ne has_max_imp_ub_ne is_clr_imp_max is_complete_imp_max_and_inf)
 
-lemma complete_clr_sup2:
-  assumes "A \<subseteq> C"
-  shows "has_sup A C"
-  by (meson A0 A1 A2 complete_clr_sup1 assms has_min_iff2 has_sup_def is_sup_in_imp1)
+lemma complete_clr_sup11:
+  "A \<subseteq> C \<Longrightarrow> has_inf (ub_set A C) X"
+  by (meson A0 A1 PowI complete_clr_sup10 inf_complete_imp0 is_complete_lattice_def pow_ne_if ub_set_subset2)
 
-lemma complete_clr_inf2:
-  "A \<subseteq> C \<Longrightarrow> has_inf A C"
-  by (simp add: complete_clr_sup2 lb_set_subset_space sup_lb_imp_has_inf)
+lemma complete_clr_sup12:
+  "A \<subseteq> C \<Longrightarrow> Inf (ub_set A C) X = Inf (ub_set A C) C"
+  by (metis A0 A1 A2 PowI complete_clr2 ub_set_subset_space)
+
+lemma complete_clr_sup13:
+  "A \<subseteq> C \<Longrightarrow> has_inf (ub_set A C) C"
+  by (meson A0 A1 A2 PowI complete_clr1 complete_clr_sup11 inf_subset_eq1 ub_set_subset_space)
+
+lemma complete_clr_sup14:
+  "A \<subseteq> C \<Longrightarrow>is_sup (Inf (ub_set A C) C) A C \<and> Sup A C =  (Inf (ub_set A C) C)"
+  by (metis complete_clr_sup13 inf_ub_imp_has_sup sup_in_eq_inf_in_ub sup_is_sup)
+
+
+lemma complete_clr_inf_sup_complete:
+  "A \<subseteq> C \<Longrightarrow> has_inf A C \<and> has_sup A C"
+  by (simp add: complete_clr_sup13 inf_ub_imp_has_sup lb_set_subset_space sup_lb_imp_has_inf)
 
 lemma clr_on_complete_lattice_is_complete:
   "is_complete_lattice C"
-  by (simp add: complete_clr_inf2 inf_comp_max_imp_comp inf_in_degenerate3 is_inf_complete_def)
+  by (simp add: complete_clr_inf_sup_complete is_sup_complete_def sup_comp_min_imp_comp sup_in_degenerate3)
 
 end
 
@@ -1241,13 +872,13 @@ next
   have B9:"f`X \<subseteq> X"
     by (simp add: A2 is_closure_on_imp2 is_self_map_imp)
   have B10:"Sup (f`A) X \<le> Sup (f`A) (f`X)"
-    by (metis A0 A1 A2 B4 B9 assms closure_range_is_clr complete_clr_sup1 image_mono is_sup_sup_eq sup_geq_rsup sup_is_sup)
+    by (simp add: A0 A1 A2 B4 B9 False assms closure_of_sup_is_sup2 inf_complete_max_exists_sup is_complete_imp_max_and_inf sup_antitone2)
   have B11:"is_clr (f`X) X"
-    by (simp add: A0 A2 closure_range_is_clr)
+    by (metis A0 A2 closure.Cf_is_clr closure.intro clr_from_closure_def)
   have B12:"(f`A) \<subseteq> (f`X)"
     by (simp add: assms image_mono)
   have B13:"has_sup (f`A) (f`X)"
-    by (meson A1 B11 B12 B9 complete_clr_sup2)
+    by (meson A1 B11 B12 B9 complete_clr_inf_sup_complete)
   have B14:"Sup (f`A) (f`X) \<in> X"
     by (metis B13 B9 has_sup_in_set subsetD)
   have B15:"f (Sup (f`A) X) \<le> f (Sup (f`A) (f`X))"
