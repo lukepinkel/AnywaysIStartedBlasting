@@ -27,3 +27,5 @@ GaloisConnections2.thy
 FiltersAndIdeals2.thy
 Closures2.thy
 Relations.thy
+OrderedSets.thy
+OrderedSets2.thy
