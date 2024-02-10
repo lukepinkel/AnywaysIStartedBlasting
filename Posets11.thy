@@ -1757,6 +1757,10 @@ lemma filter_closure_obtains:
   obtains Fx where "Fx \<subseteq> A \<and> finite Fx \<and> Fx \<noteq> {}  \<and> Inf X Fx \<le> x"
   by (meson assms filter_closure_iff)
 
+lemma filter_closure_empty:
+  "is_greatest X top \<Longrightarrow> filter_closure X {} = {top}"
+  by (simp add: filter_closure_def greatest_equality2)
+
 context
   fixes X::"'a::order set"
   assumes toped:"is_greatest X top" and
@@ -1771,6 +1775,16 @@ proof(cases "A = {}")
   next
     case False then show ?thesis  using assms filter_closure_singleton by blast
 qed
+
+lemma filter_cl1:
+  assumes A0:"A \<subseteq> X"
+  shows "is_ord_cl X (filter_closure X A) (\<le>)"
+  by (metis (full_types) greatest_unique is_ord_clI1 toped)
+
+lemma filter_cl2:
+  assumes A0:"A \<subseteq> X"
+  shows "is_dir (filter_closure X A) (\<ge>)"
+  by (metis greatestD11 greatestD2 is_dwdirI1 toped)
 
 end
 
