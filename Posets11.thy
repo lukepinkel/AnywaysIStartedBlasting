@@ -543,6 +543,10 @@ lemma sup_max_eq:
   "A \<subseteq> X \<Longrightarrow> (is_sup X A x \<and> x \<in> A) \<longleftrightarrow> (is_greatest A x)"
   by (meson Upper_BoundsD1 greatestD11 greatestI4 is_greatestD12 is_supD11 is_supI114 subsetD)
 
+lemma sup_max_eq2:
+  "(is_sup A A x) \<longleftrightarrow> (is_greatest A x)"
+  using is_supD111 sup_max_eq by blast
+
 lemma sup_in_subset:
   "A \<subseteq> B \<Longrightarrow>  B \<subseteq> X \<Longrightarrow> is_sup X A s \<Longrightarrow> s \<in> B \<Longrightarrow> is_sup B A s"
   by(simp add:in_mono sup_iff2 Upper_Bounds_mem_iff)
@@ -706,6 +710,10 @@ lemma inf_min_eq:
   "A \<subseteq> X \<Longrightarrow> (is_inf X A x \<and> x \<in> A) \<longleftrightarrow> (is_least A x)"
   by (meson Lower_BoundsD1 is_infD11 is_infI114 leastD11 leastD12 leastI4 subsetD)
 
+lemma inf_min_eq2:
+  "(is_inf A A x) \<longleftrightarrow> (is_least A x)"
+  using is_infD111 inf_min_eq by blast
+
 lemma inf_in_subset:
   "A \<subseteq> B \<Longrightarrow>  B \<subseteq> X \<Longrightarrow> is_inf X A s \<Longrightarrow> s \<in> B \<Longrightarrow> is_inf B A s"
   by(simp add:in_mono inf_iff2 Lower_Bounds_mem_iff)
@@ -755,6 +763,94 @@ lemma Upper_eq_sup_eq:
 lemma Lower_eq_inf_eq:
   "Lower_Bounds X A = Lower_Bounds X B \<Longrightarrow> (is_inf X A i \<longleftrightarrow> is_inf X B i)"
   by (simp add: is_inf_def)
+
+subsection Completeness
+
+definition is_cinf_semilattice::"'a::order set \<Rightarrow> bool" where
+  "is_cinf_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf X A x))"
+
+definition is_csup_semilattice::"'a::order set \<Rightarrow> bool" where
+  "is_csup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_sup X A x))"
+
+definition is_clattice::"'a::order set \<Rightarrow> bool" where
+  "is_clattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<longrightarrow> (\<exists>s. is_sup X A s))"
+
+lemma cinfI1:
+  "\<lbrakk>X \<noteq> {}; (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf X A x)) \<rbrakk> \<Longrightarrow> is_cinf_semilattice X"
+  by (simp add: is_cinf_semilattice_def)
+
+lemma csupI1:
+  "\<lbrakk>X \<noteq> {}; (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_sup X A x)) \<rbrakk> \<Longrightarrow> is_csup_semilattice X"
+  by (simp add: is_csup_semilattice_def)
+
+lemma clatI1:
+  "\<lbrakk>X \<noteq> {}; (\<forall>A. A \<subseteq> X \<longrightarrow> (\<exists>x. is_sup X A x)) \<rbrakk> \<Longrightarrow> is_clattice X"
+  by (simp add: is_clattice_def)
+
+lemma clatI2:
+  "\<lbrakk>X \<noteq> {}; (\<forall>A. A \<subseteq> X \<longrightarrow> (\<exists>x. is_inf X A x))\<rbrakk> \<Longrightarrow> is_clattice X"
+  by (meson Upper_Bounds_sub clatI1 sup_if_inf_ub)
+
+lemma cinfD1:
+  "is_cinf_semilattice X \<Longrightarrow> X \<noteq> {}"
+  by (simp add: is_cinf_semilattice_def)
+
+lemma csupD1:
+  "is_csup_semilattice X \<Longrightarrow> X \<noteq> {}"
+  by (simp add: is_csup_semilattice_def)
+
+lemma clatD1:
+  "is_clattice X \<Longrightarrow> X \<noteq> {}"
+  by (simp add: is_clattice_def)
+
+lemma cinfD2:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (simp add: is_cinf_semilattice_def)
+
+lemma csupD2:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (simp add: is_csup_semilattice_def)
+
+lemma clatD21:
+  "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (simp add: is_clattice_def)
+
+lemma cinfD3:
+  "is_cinf_semilattice X \<Longrightarrow> (\<exists>x. is_least X x)"
+  by (metis inf_min_eq2 is_cinf_semilattice_def order_refl)
+
+lemma csupD3:
+  "is_csup_semilattice X \<Longrightarrow> (\<exists>x. is_greatest X x)"
+  by (metis is_csup_semilattice_def order_refl sup_max_eq2)
+
+lemma cinf_sup:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; Upper_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (meson Upper_Bounds_sub cinfD2 sup_if_inf_ub)
+
+lemma csup_inf:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; Lower_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (meson Lower_Bounds_sub csupD2 inf_if_sup_lb)
+
+lemma clatD22:
+  "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (meson Lower_Bounds_sub clatD21 inf_if_sup_lb)
+
+lemma clatD31:
+  "\<lbrakk>is_clattice X\<rbrakk> \<Longrightarrow> is_greatest X (Inf X {})"
+  by (metis clatD22 empty_subsetI inf_empty inf_equality)
+
+lemma clatD32:
+  "\<lbrakk>is_clattice X\<rbrakk> \<Longrightarrow> is_least X (Sup X {})"
+  by (metis clatD21 empty_subsetI sup_empty sup_equality)
+
+lemma clatI31:
+  "\<lbrakk>is_cinf_semilattice X; is_greatest X (Inf X {})\<rbrakk> \<Longrightarrow> is_clattice X"
+  by (metis cinfD1 cinf_sup clatI1 inf_empty sup_if_inf_ub)
+
+lemma clatI32:
+  "\<lbrakk>is_csup_semilattice X; is_least X (Sup X {})\<rbrakk> \<Longrightarrow> is_clattice X"
+  by (metis clatI1 is_csup_semilattice_def sup_empty)
+
 
 section Functions
 subsection Isotonicity
@@ -986,6 +1082,10 @@ lemma closureD12:
   "\<lbrakk>is_closure X f;  x \<in> X\<rbrakk> \<Longrightarrow> (x \<in> (f`X) \<longleftrightarrow> f x \<le> x )"
   using closureD11 closureD9 by blast
 
+lemma closureD13:
+  "\<lbrakk>is_closure X f; x \<in> X; f x \<le> x\<rbrakk> \<Longrightarrow> f x = x"
+  by (simp add: closureD5 dual_order.eq_iff)
+
 lemma cl_sup_eq_sup_cl1:
   "\<lbrakk>is_closure X f; is_sup X A s; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s) \<in> Upper_Bounds (f`X) (f`A)"
   by (simp add: is_closure_def is_supD11 isotoneD41)
@@ -1034,7 +1134,16 @@ lemma cl_sup_ge_sup_cl4:
 lemma cl_sup_ge_sup_cl:
   "\<lbrakk>is_closure X f; is_sup X A s1;  is_sup X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> f s1  = f s2"
   by (simp add: cl_sup_ge_sup_cl3 cl_sup_ge_sup_cl4 dual_order.eq_iff)
+
+lemma cl_inf_closed1:
+  "\<lbrakk>is_closure X f; A \<subseteq> f`X; is_inf X A m\<rbrakk> \<Longrightarrow> f m \<le> m"
+  by (simp add: closureD1 closureD7  in_mono is_infD111 is_infD1121 is_infD122 lb_def )
          
+lemma cl_inf_closed2:
+  "\<lbrakk>is_closure X f; A \<subseteq> f`X; is_inf X A m\<rbrakk> \<Longrightarrow> f m = m"
+  by (simp add: cl_inf_closed1 closureD5 dual_order.eq_iff is_infD111)
+         
+
 
 subsection ClosureRanges
 
@@ -1100,7 +1209,7 @@ lemma cl_range4:
   "is_clr C X  \<Longrightarrow> (cl_from_clr C)`C = C"
   by (simp add: cl_range3)
 
-lemma cl_range5:
+lemma clr_induced_closure_id:
   "is_clr C X  \<Longrightarrow>  (cl_from_clr C)`X = C"
   by (metis cl_range2 cl_range4 clrD2 image_mono order_antisym)
 
@@ -1134,7 +1243,7 @@ lemma cl_ide:
 
 lemma cl_is_closure:
   "is_clr C X \<Longrightarrow> is_closure X (cl_from_clr C)"
-  by(simp add:is_closure_def cl_ext2 cl_ide cl_iso2 cl_range5 clrD2)
+  by(simp add:is_closure_def cl_ext2 cl_ide cl_iso2 clr_induced_closure_id clrD2)
 
 lemma closure_of_in_ub:
   "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> (f x) \<in> (Upper_Bounds (f`X) {x})"
@@ -1156,25 +1265,37 @@ lemma closure_induced_clr:
   "is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_clr (f`X) X"
   by (metis closure_of_least_closed1 empty_is_image is_closure_def is_clr_def)
 
-lemma closure_induced_clr_id1:
+lemma closure_induced_clr_id:
   "is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> x  \<in> X \<Longrightarrow> (cl_from_clr (f`X)) x = f x"
   by (simp add: cl_from_clr_def closure_of_least_closed2)
 
-lemma closure_induced_clr_id2:
-  "is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> (\<forall>x. x  \<in> X \<longrightarrow> (cl_from_clr (f`X)) x = f x)"
-  by (simp add: cl_from_clr_def closure_of_least_closed2)
+(*
+  clr_induced_closure_id 
+    is_clr C X  \<Longrightarrow>  (cl_from_clr C)`X = C
+  
+  and closure_induced_clr_id
+    is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> x  \<in> X \<Longrightarrow> (cl_from_clr (f`X)) x = f x
 
-lemma closure_induced_clr_dual1:
+  define 
+    F=(\<lambda>C. cl_from_clr C)
+  and 
+    G=(\<lambda>f. f`X)
+  
+  Then
+     F \<circ> G (f) = f 
+  where equality is defined on X and
+    G \<circ> F (C) = C
+
+*)
+
+lemma closure_induced_clr_dual:
   "is_closure X f1 \<Longrightarrow> is_closure X f2 \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> f1 x \<le> f2 x) \<Longrightarrow> (f2`X) \<subseteq> (f1`X)"
   by (metis closureD11 closureD2 idempotentD3 is_closure_def subsetI)
                     
-lemma clr_induced_closure_dual1:
+lemma clr_induced_closure_dual:
   "is_clr C1 X \<Longrightarrow> is_clr C2 X \<Longrightarrow> C2 \<subseteq> C1 \<Longrightarrow>  x \<in> X \<Longrightarrow> ((cl_from_clr C1) x) \<le> ((cl_from_clr C2) x)"
   by (simp add: cl_ext1 cl_lt_ub2 cl_range1 subsetD)
 
-lemma clr_induced_closure_dual2:
-  "is_clr C1 X \<Longrightarrow> is_clr C2 X \<Longrightarrow> C2 \<subseteq> C1 \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ((cl_from_clr C1) x) \<le> ((cl_from_clr C2) x))"
-  by (simp add: clr_induced_closure_dual1)
 
 (*
   Clunky converses to cl_sup_eq_sup
@@ -1214,6 +1335,8 @@ proof-
     by (simp add: P isotoneI1)
 qed
 
+(*so closure ranges are infimum closed and moreover if the poset is topped then this element is closed*)
+
 lemma clrD8:
   "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow> (cl_from_clr C) i \<in> Lower_Bounds X A"
   by (simp add: Lower_BoundsI cl_is_closure cl_lt_ub2 closureD1 in_mono is_infD111 is_infD32)
@@ -1229,6 +1352,10 @@ lemma clrD10:
 lemma clrD11:
   "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow>  i \<in> C"
   by (metis cl_range1 clrD10 is_infD111)
+
+lemma clrD12:
+  "\<lbrakk>is_clr C X; top \<in> X; (\<And>x. x \<in> X \<Longrightarrow> x \<le> top)\<rbrakk> \<Longrightarrow> top \<in> C"
+  by (simp add: greatestI3 is_clr_cofinal)
 
 lemma moore_clI1:
   "C \<subseteq> Pow X \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> (X \<inter> (\<Inter>E)) \<in> C) \<Longrightarrow> x \<in> Pow X \<Longrightarrow> is_least (Upper_Bounds C {x})  (X \<inter> (\<Inter>(Upper_Bounds C {x}))) "
@@ -1249,6 +1376,48 @@ lemma moore_clI3:
   "C \<subseteq> Pow X \<Longrightarrow> X \<in> C \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> E \<noteq> {} \<Longrightarrow> (\<Inter>E) \<in> C) \<Longrightarrow> is_clr C (Pow X)"
   by (metis Inf_insert insert_not_empty insert_subsetI moore_clI2)
 
+lemma clr_cinf_semilattice1:
+  assumes A0:"is_clr C X" and A1:"is_cinf_semilattice X"
+  shows "\<And>A. A \<subseteq> C \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf C A x \<and> is_inf X A x)"
+proof
+  fix A assume A2:"A \<subseteq> C \<and> A \<noteq> {}"
+  obtain x where B0:"is_inf X A x"
+    by (meson A0 A1 A2 clrD2 dual_order.trans is_cinf_semilattice_def)
+  have B1:"is_inf C A x"
+    by (meson A0 A2 B0 clrD11 clrD2 inf_in_subset)
+  show "(\<exists>x. is_inf C A x \<and> is_inf X A x)"
+    using B0 B1 by blast
+qed
+
+lemma clr_cinf_semilattice2:
+  "\<lbrakk>is_clr C X; is_cinf_semilattice X\<rbrakk> \<Longrightarrow> (\<And>A. A \<subseteq> C \<and> A \<noteq> {} \<Longrightarrow> Inf C A = Inf X A)"
+  by (metis clr_cinf_semilattice1 inf_equality)
+
+lemma clr_clattice1:
+  assumes A0:"is_clr C X" and A1:"is_clattice X"
+  shows "\<And>A. A \<subseteq> C \<longrightarrow> (\<exists>x. is_sup C A x \<and> is_inf X (Upper_Bounds C A) x)"
+proof
+  fix A assume A2:"A \<subseteq> C"
+  obtain x where B0:"is_inf X (Upper_Bounds C A) x"
+    by (meson A0 A1 Upper_Bounds_sub clatD22 is_clr_def order_trans)
+  have B1:"is_sup C A x"
+    by (meson A0 A2 B0 Upper_Bounds_sub clrD11 clrD2 inf_in_subset sup_if_inf_ub)
+  show "(\<exists>x. is_sup C A x \<and> is_inf X (Upper_Bounds C A) x)"
+    using B0 B1 by blast
+qed
+
+lemma clr_clattice2:
+  "\<lbrakk>is_clr C X; is_clattice X\<rbrakk> \<Longrightarrow> (\<And>A. A \<subseteq> C \<Longrightarrow> Sup C A = Inf  X (Upper_Bounds C A))"
+  by (metis clr_clattice1 inf_equality sup_equality)
+
+lemma clr_is_clattice:
+  "\<lbrakk>is_clr C X; is_clattice X\<rbrakk> \<Longrightarrow> is_clattice C"
+  by (metis clr_clattice1 is_clattice_def is_clr_def)
+
+
+lemma closure_range_is_clattice:
+  "\<lbrakk>is_closure X f; is_clattice X\<rbrakk> \<Longrightarrow> is_clattice (f`X)"
+  using closure_induced_clr clr_is_clattice is_clattice_def by blast
 
 
 definition ord_embedding::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
