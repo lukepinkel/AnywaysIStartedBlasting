@@ -1811,8 +1811,8 @@ lemma filter_cl_is_lcl:
   by (simp add: filter_cl_is_ub filter_cl_lt_ub leastI3)
 
 lemma filter_closure_eq_closure:                                      
-  "A \<subseteq> X  \<Longrightarrow> filter_closure A X = (cl_from_clr (filters_on X)) A "
-  by (simp add: filter_cl_is_ub filter_cl_lt_ub closure_from_clr_def csinf is_min_iff is_ne min_if toped)
+  "A \<subseteq> X  \<Longrightarrow> filter_closure X A = (cl_from_clr (filters_on X)) A "
+  by (metis cl_from_clr_def filter_cl_is_lcl least_equality2)
 
 end
 
