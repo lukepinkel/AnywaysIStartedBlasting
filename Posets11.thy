@@ -6,6 +6,7 @@ no_notation List.list.Nil ("[]")
 no_notation Cons (infixr "#" 65) 
 hide_type list
 hide_const rev
+hide_const top
 declare [[show_consts,show_sorts,show_types]]
 
 section Bounds
@@ -864,6 +865,22 @@ lemma clatI32:
   "\<lbrakk>is_csup_semilattice X; is_least X (Sup X {})\<rbrakk> \<Longrightarrow> is_clattice X"
   by (metis clatI1 is_csup_semilattice_def sup_empty)
 
+lemma cinfD41:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A lb A "
+  by (metis cinfD2 inf_equality is_infD112)
+
+lemma cinfD42:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> X "
+  by (metis cinfD2 inf_equality is_infD111)
+
+lemma cinfD43:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> Lower_Bounds X A "
+  by (simp add: Lower_Bounds_mem_iff cinfD41 cinfD42)
+
+lemma cinfD44:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
+  by (metis cinfD2 inf_equality)    
+
 
 section Functions
 subsection Isotonicity
@@ -1523,6 +1540,10 @@ lemma is_ord_clE2:
   "is_ord_cl (X::'a::order set) A (\<ge>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> b \<in> A "
   by (simp add:is_ord_cl_def)
 
+lemma is_ord_clI1:
+  "(\<And>a b. \<lbrakk>a \<in> A; b \<in> X; ord a b\<rbrakk> \<Longrightarrow> b \<in> A ) \<Longrightarrow> is_ord_cl  (X::'a::order set) A ord"
+  by (auto simp add:is_ord_cl_def)
+
 lemma is_ord_empty:
   "is_ord_cl (X::'a::order set) {} ord "
   by (simp add: is_ord_cl_def)
@@ -1584,7 +1605,6 @@ subsection FiltersAndIdeals
 
 definition is_filter::"'a::order set\<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_filter X F \<equiv> F \<noteq> {} \<and> F \<subseteq> X \<and> (is_dir F (\<ge>)) \<and> is_ord_cl X F (\<le>)"
-
 
 lemma filterI1:
   "\<lbrakk> F \<noteq> {}; F \<subseteq> X; (is_dir F (\<ge>));  (is_ord_cl X F (\<le>))\<rbrakk> \<Longrightarrow> is_filter X F"
@@ -1704,7 +1724,55 @@ lemma filter_is_clr:
   "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_clr (filters_on X) (Pow X)"
   by (simp add: filter_inter_closed2 filters_is_clr1 filters_is_clr1b moore_clI3)
 
+lemma filter_closure_of_empty1:
+  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (Upper_Bounds (filters_on X) {{}}) {top}"
+  by (simp add: Upper_Bounds_mem_iff2 filters_on_def greatest_in_filter2 least_iff min_filter1)
 
+lemma filter_closure_of_empty2:
+  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
+  by (simp add: cl_from_clr_def filter_closure_of_empty1 least_equality2)
+
+definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "filter_closure X A \<equiv> if A={} then {Greatest X} else {x \<in> X. \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x}"
+
+lemma filter_closure_iff:
+  "A \<noteq> {} \<Longrightarrow> x \<in> filter_closure X A  \<longleftrightarrow> (x \<in> X \<and> ( \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x))"
+  by (simp add: filter_closure_def)
+
+lemma filter_closure_memI1:
+  "(x \<in> X \<and> ( \<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x)) \<Longrightarrow> x \<in> filter_closure X A"
+  using filter_closure_iff by blast
+
+lemma filter_closure_memI2:
+  "(x \<in> X \<and>  F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x) \<Longrightarrow> x \<in> filter_closure X A"
+  using filter_closure_iff by blast
+
+lemma filter_closure_singleton:
+  "\<lbrakk>A \<subseteq> X; a \<in> A\<rbrakk> \<Longrightarrow> a \<in> filter_closure X A"
+  apply(rule_tac ?F="{a}"  in filter_closure_memI2, simp)
+  by (metis in_mono inf_equality inf_singleton order_refl)
+
+lemma filter_closure_obtains:
+  assumes "A \<noteq> {}" and "x \<in> filter_closure X A"
+  obtains Fx where "Fx \<subseteq> A \<and> finite Fx \<and> Fx \<noteq> {}  \<and> Inf X Fx \<le> x"
+  by (meson assms filter_closure_iff)
+
+context
+  fixes X::"'a::order set"
+  assumes toped:"is_greatest X top" and
+          csinf:"is_cinf_semilattice X"
+begin
+
+lemma filter_cl0:
+  assumes A0:"A \<subseteq> X"
+  shows "A \<subseteq> filter_closure X A"
+proof(cases "A = {}")
+    case True then show ?thesis  by simp
+  next
+    case False then show ?thesis  using assms filter_closure_singleton by blast
+qed
+
+end
 
 
 
