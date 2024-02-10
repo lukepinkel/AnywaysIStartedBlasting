@@ -789,6 +789,7 @@ definition is_csup_semilattice::"'a::order set \<Rightarrow> bool" where
 definition is_clattice::"'a::order set \<Rightarrow> bool" where
   "is_clattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<longrightarrow> (\<exists>s. is_sup X A s))"
 
+
 lemma cinfI1:
   "\<lbrakk>X \<noteq> {}; (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf X A x)) \<rbrakk> \<Longrightarrow> is_cinf_semilattice X"
   by (simp add: is_cinf_semilattice_def)
@@ -881,6 +882,122 @@ lemma cinfD44:
   "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
   by (metis cinfD2 inf_equality)    
 
+
+definition is_inf_semilattice::"'a::order set \<Rightarrow> bool" where
+  "is_inf_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x))"
+
+definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
+  "is_sup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))"
+
+definition is_lattice::"'a::order set \<Rightarrow> bool" where
+  "is_lattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))"
+
+lemma lattI1:
+  "\<lbrakk>X \<noteq> {}; (\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))\<rbrakk> \<Longrightarrow> is_lattice X"
+  by (simp add: is_lattice_def)
+
+lemma lattI2:
+  "\<lbrakk>is_inf_semilattice X; is_sup_semilattice X\<rbrakk> \<Longrightarrow> is_lattice X"
+  by (simp add: is_inf_semilattice_def is_sup_semilattice_def lattI1)
+
+lemma lattD1:
+  "is_lattice X \<Longrightarrow> X \<noteq> {}"
+  by (simp add: is_lattice_def)
+
+lemma lattD21:
+  "\<lbrakk>is_lattice X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>x. is_inf X {a, b} x) "
+  by (simp add: is_lattice_def)
+
+lemma lattD22:
+  "\<lbrakk>is_lattice X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>x. is_sup X {a, b} x) "
+  by (simp add: is_lattice_def)
+
+
+lemma lattD31:
+  "\<lbrakk>is_lattice X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_inf X {a, b} (Inf X {a, b}) "
+  using inf_equality lattD21 by blast
+
+lemma lattD32:
+  "\<lbrakk>is_lattice X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_sup X {a, b} (Sup X {a, b}) "
+  using sup_equality lattD22 by blast
+
+definition inf::"'a::order set \<Rightarrow>'a::order \<Rightarrow> 'a::order \<Rightarrow> 'a::order" where
+  "inf X a b = Inf X {a, b}"
+
+lemma bsupI:
+  "\<lbrakk>is_sup_semilattice X; (\<And>s. is_sup X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Sup X {a, b})"
+  by (metis is_sup_semilattice_def sup_equality)
+
+lemma bsup_sub:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (Sup X {a, b}) \<in> X"
+  using bsupI is_supD111 by blast
+
+lemma bsup_in:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (\<exists>s. is_sup X {a1, a2} s)" and 
+          A1:"finite E" and
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> X"
+  shows "\<exists>s. is_sup X E s"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  obtain sF where B0:"is_sup X F sF"
+    using insert.hyps(4) insert.prems by blast
+  have B1:"sF \<in> X"
+    using B0 is_supD111 by blast
+  obtain s where B2:"is_sup X {sF, x} s"
+    using A0 B1 insert.prems by fastforce
+  have B3:"s \<in> Upper_Bounds X (insert x F)"
+    by (metis B0 B2 Upper_BoundsD1 Upper_Bounds_mem_iff insert_subset is_supD11 subset_insertI sup_iff2 ub_insert)
+  have B4:"\<And>t. t \<in> Upper_Bounds X (insert x F) \<longrightarrow> s \<le> t"
+  proof
+    fix t assume A4:"t \<in> Upper_Bounds X (insert x F)"
+    show "s \<le> t"
+      by (metis A4 B0 B2 Upper_BoundsD1 Upper_BoundsD2 Upper_BoundsD3 insertI1 is_supD42 subset_insertI ub_ant2 ub_double)
+   qed
+  have B5:"is_sup X (insert x F) s"
+    by (simp add: B3 B4 is_supI113)
+  then show ?case
+    by blast
+qed
+
+lemma binf_in:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (\<exists>i. is_inf X {a1, a2} i)" and 
+          A1:"finite E" and
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> X"
+  shows "\<exists>i. is_inf X E i"
+  using A1 A2 A3 
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  obtain iF where B0:"is_inf X F iF"
+    using insert.hyps(4) insert.prems by blast
+  have B1:"iF \<in> X"
+    using B0 is_infD111 by blast
+  obtain i where B2:"is_inf X {iF, x} i"
+    using A0 B1 insert.prems by fastforce
+  have B3:"i \<in> Lower_Bounds X (insert x F)"
+    by (metis B0 B2 Lower_Bounds_mem_iff inf_iff2 insertCI is_infD1121 lb_insert)
+  have B4:"\<And>t. t \<in> Lower_Bounds X (insert x F) \<longrightarrow> t \<le> i"
+  proof
+    fix t assume A4:"t \<in> Lower_Bounds X (insert x F)"
+    show "t \<le> i"
+      by (metis A4 B0 B2 Lower_BoundsD1 Lower_BoundsD2 Lower_BoundsD3 insertI1 is_infD122 lb_ant2 lb_double subset_insertI)
+   qed
+  have B5:"is_inf X (insert x F) i"
+    by (simp add: B3 B4 is_infI113)
+  then show ?case
+    by blast
+qed
+   
 
 section Functions
 subsection Isotonicity
