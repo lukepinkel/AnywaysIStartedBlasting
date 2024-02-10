@@ -1056,6 +1056,13 @@ lemma isotoneD62:
   "\<lbrakk>is_isotone X f; is_inf X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f x) lb f`A"
   by (simp add: is_infD112 isotoneD32 inf_iff2)
 
+lemma cinf_sinf:
+  "is_cinf_semilattice X \<Longrightarrow> is_inf_semilattice X"
+  by (simp add: is_cinf_semilattice_def is_inf_semilattice_def)
+
+lemma csup_fsup:
+  "is_csup_semilattice X \<Longrightarrow> is_sup_semilattice X"
+  by (simp add: is_csup_semilattice_def is_sup_semilattice_def)
 
 subsection Extensivity
 definition is_extensive::" 'a::order set \<Rightarrow>  ('a::order \<Rightarrow> 'a::order) \<Rightarrow> bool" where
@@ -1817,7 +1824,6 @@ lemma filter_inter_dir:
   assumes A0:"is_cinf_semilattice X" and
           A1:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" and
           A2:"EF \<noteq> {}" and
-          A3:"is_greatest X top"
   shows "is_dir (\<Inter>EF) (\<ge>)"
 proof-
   let ?I="\<Inter>EF"
@@ -1940,7 +1946,72 @@ lemma filter_closure_eq_closure:
   by (metis cl_from_clr_def filter_cl_is_lcl least_equality2)
 
 end
+context
+  fixes X::"'a::order set"
+  assumes   csinf:"is_lattice X"
+begin
 
+lemma finite_inter1:
+  assumes A0:"is_filter X F1" "is_filter X F2" 
+  shows "(F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}" (is "?L = ?R")
+proof
+  show "?L \<subseteq> ?R"
+    proof
+      fix z assume A1:"z \<in> ?L"
+      have B0:"z \<in> F1 \<and> z \<in> F2"
+        using A1 by blast
+      have B1:"z = Sup X {z, z}"
+        by (metis B0 assms(2) filterD2 insert_absorb2 subsetD sup_equality sup_singleton)
+      have B2:"z \<in> ?R"
+        using B0 B1 by blast
+      show "z \<in> ?R"
+        using B2 by blast
+    qed
+next
+  show "?R \<subseteq> ?L"
+  proof
+    fix z assume A2:"z \<in> ?R"
+    obtain f1 f2 where B3:"f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1,f2}"
+      using A2 by blast
+    have B4:"f1 \<le> z \<and> f2 \<le> z"
+      by (metis B3 assms(1) assms(2) csinf filterD2 insertI1 insert_commute is_supD1121 lattD32 subsetD)
+    have B5:"z \<in> X"
+      by (metis B3 assms(1) assms(2) csinf filterD2 is_supD111 lattD32 subsetD)
+    have B6:"z \<in> F1 \<and> z \<in> F2"
+      using B3 B4 B5 assms(1) assms(2) filterD4 is_ord_clE1 by blast
+    show "z \<in> ?L"
+      using B6 by blast
+  qed
+qed
+
+(*
+lemma finite_inter:
+  assumes A0:"(\<forall>F \<in> EF. is_filter X F)" and A1: "finite EF" and A2:"EF \<noteq> {}"
+  shows "is_filter X (\<Inter>EF)"
+proof-
+  let ?I="(\<Inter>EF)"
+  have B0:"is_ord_cl X ?I (\<le>)"
+    by (simp add: A0 filter_inter_upcl)
+  have B1:"is_dir ?I (\<ge>)"
+  proof-
+    have P: "\<And>a b. a \<in> ?I \<and> b \<in> ?I\<longrightarrow> (\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
+    proof
+      fix a b assume A5:"a \<in> ?I \<and> b \<in> ?I"
+      have B0:"a \<in>X \<and> b \<in> X"
+        using A0 A2 A5 filterD2 by fastforce
+      obtain i where B1:"is_inf X {a, b} i"
+        using B0 csinf lattD21 by blast
+      have B2:"\<forall>F \<in> EF. i \<in> F"
+        by (meson A0 A5 B1 InterE filter_inf_closed)
+      show "(\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
+        by (meson B1 B2 InterI dual_order.refl insert_iff is_infD32)
+    qed
+  show ?thesis
+    by (metis P is_dwdirI1)
+  qed
+  have B2:"?I \<noteq> {}"
+*)
+end
 
 
 
