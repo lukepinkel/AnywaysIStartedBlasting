@@ -997,6 +997,14 @@ next
   then show ?case
     by blast
 qed
+
+lemma sup_semilattice_fsup:
+  "\<lbrakk>is_sup_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_sup X F (Sup X F)"
+  by (metis bsup_in is_sup_semilattice_def sup_equality)
+   
+lemma inf_semilattice_finf:
+  "\<lbrakk>is_inf_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_inf X F (Inf X F)"
+  by (metis binf_in is_inf_semilattice_def inf_equality)
    
 
 section Functions
