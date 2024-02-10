@@ -40,9 +40,17 @@ lemma ub_singleton:
   "x ub {x}"
   by (simp add: ub_def)
 
+lemma ub_insert:
+  "\<lbrakk>c ub F; c \<ge> x\<rbrakk> \<Longrightarrow> c ub (insert x F)"
+  by (simp add: ub_def)
+
 lemma ub_binary:
   "a \<le> b \<longleftrightarrow> b ub {a, b}"
   by (simp add: ub_def)
+
+lemma ub_double:
+  "c ub {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
+  by (metis insert_iff ubD ubI ub_singleton)
 
 subsubsection UpperBoundsSet
 
@@ -140,9 +148,17 @@ lemma lb_singleton:
   "x lb {x}"
   by (simp add: lb_def)
 
+lemma lb_insert:
+  "\<lbrakk>c lb F; c \<le> x\<rbrakk> \<Longrightarrow> c lb (insert x F)"
+  by (simp add: lb_def)
+
 lemma lb_binary:
   "a \<le> b \<longleftrightarrow> a lb {a, b}"
   by (simp add: lb_def)
+
+lemma lb_double:
+  "c lb {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
+  by (metis insert_iff lbD lbI lb_singleton)
 
 
 subsubsection LowerBounds
@@ -201,9 +217,6 @@ lemma Lower_Bounds_empty:
 lemma Lower_Bounds_singleton:
   "x \<in> X \<Longrightarrow> x \<in> Lower_Bounds X {x}"
   by (simp add: Lower_Bounds_def lb_singleton)
-
-
-
 
 
 subsection LowerUpper
@@ -1438,19 +1451,69 @@ lemma ord_emb_imp2:
   "ord_embedding f X \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> f x1 \<le> f x2 \<Longrightarrow>  x1 \<le> x2"
   by(simp add:ord_embedding_def)
 
+
+section SpecialSubsets
+
+subsection DirectedSets
+
 definition is_dir::"'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> bool" where
   "is_dir X ord \<equiv> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>c \<in> X. ord a c \<and> ord b c))"
 
 definition is_ord_cl::"'a set \<Rightarrow> 'a set \<Rightarrow>('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> bool" where
   "is_ord_cl X A ord \<equiv> (\<forall>a b. a \<in> A \<and> b \<in> X \<and> ord a b \<longrightarrow> b \<in> A )"
 
-lemma is_dwdirE1:
+lemma is_updirE1:
   "is_dir (X::'a::order set) (\<le>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<le> c \<and> b \<le> c) "
   by (simp add: is_dir_def)
 
-lemma is_updirE1:
+lemma is_updirI1:
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<le> c \<and> b \<le> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<le>)"
+  by (simp add: is_dir_def)
+
+lemma is_updir_empty:
+  "is_dir {} (\<le>)"
+  by (simp add: is_dir_def)
+
+lemma is_updir_singleton:
+  "is_dir {x::'a::order} (\<le>)"
+  by (simp add: is_dir_def)
+
+lemma is_updirD1:
+  "\<lbrakk>is_dir (X::'a::order set) (\<le>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c ub {a, b})"
+  by (simp add: is_updirE1 ub_double)
+
+lemma csup_updir:
+  "is_csup_semilattice X \<Longrightarrow> is_dir X (\<le>)"
+  by (metis csupD3 is_updirI1 greatestD11 greatestD2)
+
+lemma is_dwdirE1:
   "is_dir (X::'a::order set) (\<ge>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c) "
   by (simp add: is_dir_def)
+
+lemma is_dwdirI1:
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdir_empty:
+  "is_dir {} (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdir_singleton:
+  "is_dir {x::'a::order} (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdirD1:
+  "\<lbrakk>is_dir (X::'a::order set) (\<ge>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c lb {a, b})"
+  by (simp add: is_dwdirE1 lb_double)
+
+lemma dwdir_obtain:
+  assumes A0:"is_dir (X::'a::order set) (\<ge>)" and A1:"a \<in> X" and A2:"b \<in> X"
+  obtains c where "c \<in> X \<and>  a \<ge> c \<and> b \<ge> c"
+  using A0 A1 A2 is_dwdirE1 by blast
+
+lemma cinf_dwdir:
+  "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
+  by (metis cinfD3 is_dwdirI1 leastD11 leastD2)
 
 lemma is_ord_clE1:
   "is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A "
@@ -1515,6 +1578,132 @@ lemma is_ord_cl_in3:
   apply (rule int_to_ind_int[of "(\<lambda>A. A \<in> (Pow (Pow (X::'a::order set))) \<and> (\<forall>a. a \<in> A \<longrightarrow> is_ord_cl X a ord))"  "\<lambda>B. is_ord_cl X B ord" "f" "I"])
   apply (simp add: is_ord_cl_in)
   by blast
+
+
+subsection FiltersAndIdeals
+
+definition is_filter::"'a::order set\<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_filter X F \<equiv> F \<noteq> {} \<and> F \<subseteq> X \<and> (is_dir F (\<ge>)) \<and> is_ord_cl X F (\<le>)"
+
+
+lemma filterI1:
+  "\<lbrakk> F \<noteq> {}; F \<subseteq> X; (is_dir F (\<ge>));  (is_ord_cl X F (\<le>))\<rbrakk> \<Longrightarrow> is_filter X F"
+  by (simp add: is_filter_def)
+
+lemma filterD1:
+  "is_filter X F \<Longrightarrow> F \<noteq> {}"
+  by (simp add: is_filter_def)
+
+lemma filterD2:
+  "is_filter X F \<Longrightarrow> F \<subseteq> X"
+  by (simp add: is_filter_def)
+
+lemma filterD3:
+  "is_filter X F \<Longrightarrow> (is_dir F (\<ge>))"
+  by (simp add: is_filter_def)
+
+lemma filterD4:
+  "is_filter X F \<Longrightarrow> (is_ord_cl X F (\<le>))"
+  by (simp add: is_filter_def)
+
+lemma greatest_in_filter1:
+  "is_greatest X m \<Longrightarrow> is_filter X F \<Longrightarrow>  (\<exists>f. f \<in> F \<and> f \<le> m)"
+  by (metis Posets11.is_filter_def bot.extremum_uniqueI is_greatestD12 subset_emptyI ubD ub_ant2)
+
+lemma greatest_in_filter2:
+  "is_greatest X m \<Longrightarrow> is_filter X F \<Longrightarrow>  m \<in> F"
+  using filterD4 greatestD11 greatest_in_filter1 is_ord_clE1 by blast
+
+lemma dwdir_inf:
+  assumes A0:"A \<subseteq> X" and A1:"is_dir A (\<ge>)" and A2:"is_ord_cl X A (\<le>)"
+  shows "\<And>a b. (a \<in> A \<and> b \<in> A \<and>  is_inf X {a, b} i) \<longrightarrow> (i \<in> A)"
+proof
+  fix a b assume A3:" (a \<in> A \<and> b \<in> A \<and> is_inf X {a, b} i)"
+  obtain c where B0:"c \<in> A \<and> a \<ge> c \<and> b \<ge> c"
+    using A1 A3 is_dwdirE1 by blast
+  have B1:"c lb {a, b}"
+    by (simp add: B0 lb_def)
+  have B2:"c \<le> i"
+    using A0 A3 B0 B1 lt_inf_iff by blast
+  show "i \<in> A"
+    using A2 A3 B0 B2 is_infD111 is_ord_clE1 by blast
+qed
+
+lemma filter_inf_closed:
+  "\<lbrakk>is_filter X F; a \<in> F;  b \<in> F;  is_inf X {a, b} i\<rbrakk>\<Longrightarrow> i \<in> F"
+  by (meson is_filter_def dwdir_inf)
+
+lemma min_filter1:
+  "is_greatest X top \<Longrightarrow> is_filter X {top}"
+  by (simp add: is_filter_def greatest_iff is_dwdir_singleton is_ord_cl_def order_antisym) 
+
+lemma min_filter2:
+  "\<lbrakk>is_greatest X top; is_filter X F\<rbrakk> \<Longrightarrow>{top} \<subseteq> F"
+  by (simp add: greatest_in_filter2)
+
+lemma filters_max:
+  "is_cinf_semilattice X \<Longrightarrow>is_filter X X"
+  by (simp add: is_filter_def cinf_dwdir is_cinf_semilattice_def is_ord_cl_space)
+
+definition filters_on::"'a::order set \<Rightarrow> 'a::order set set" where
+  "filters_on X \<equiv> {F. is_filter X F}"
+
+lemma filters_on_iff:
+  "F \<in> filters_on X \<longleftrightarrow> is_filter X F"
+  by (simp add: filters_on_def)
+
+lemma filters_is_clr1:
+  "(filters_on X) \<subseteq> Pow X"
+  using filterD2 filters_on_iff by fastforce
+
+lemma filters_is_clr1b:
+  "is_cinf_semilattice X \<Longrightarrow> X \<in> filters_on X"
+  by (simp add: filters_max filters_on_iff)
+
+lemma filter_inter_upcl:
+  "(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F) \<Longrightarrow> is_ord_cl X (\<Inter>EF) (\<le>)"
+  by (simp add: filterD2 filterD4 is_ord_cl_in2 subsetI)
+
+lemma filter_inter_ne:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F);is_greatest X top\<rbrakk> \<Longrightarrow> (\<Inter>EF) \<noteq> {}"
+  by (metis InterI empty_iff greatest_in_filter2)
+
+lemma filter_inter_dir:
+  assumes A0:"is_cinf_semilattice X" and
+          A1:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" and
+          A2:"EF \<noteq> {}" and
+          A3:"is_greatest X top"
+  shows "is_dir (\<Inter>EF) (\<ge>)"
+proof-
+  let ?I="\<Inter>EF"
+  have P: "\<And>a b. a \<in> ?I \<and> b \<in> ?I\<longrightarrow> (\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
+  proof
+    fix a b assume A5:"a \<in> ?I \<and> b \<in> ?I"
+    have B0:"a \<in>X \<and> b \<in> X"
+      by (metis A1 A2 A5 Inter_iff all_not_in_conv filterD2 subset_iff)
+    obtain i where B1:"is_inf X {a, b} i"
+      by (meson A0 B0 cinfD2 empty_subsetI insert_not_empty insert_subset)
+    have B2:"\<forall>F \<in> EF. i \<in> F"
+      by (meson A1 A5 B1 InterE filter_inf_closed)
+    show "(\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
+      by (meson B1 B2 InterI dual_order.refl insert_iff is_infD32)
+  qed
+  show ?thesis
+    by (metis P is_dwdirI1)
+qed
+
+lemma filter_inter_closed1:
+  "\<lbrakk>is_cinf_semilattice X;(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {};is_greatest X top\<rbrakk> \<Longrightarrow>  is_filter X (\<Inter>EF)"
+  by (meson Inf_less_eq is_filter_def filter_inter_dir filter_inter_ne filter_inter_upcl)
+
+lemma filter_inter_closed2:
+  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (\<And>E. \<lbrakk>E \<subseteq> (filters_on X); E \<noteq> {}\<rbrakk> \<Longrightarrow> (\<Inter>E) \<in> (filters_on X))"
+  by (simp add: filter_inter_closed1 filters_on_iff subset_iff)
+
+lemma filter_is_clr:
+  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_clr (filters_on X) (Pow X)"
+  by (simp add: filter_inter_closed2 filters_is_clr1 filters_is_clr1b moore_clI3)
+
 
 
 
