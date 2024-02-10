@@ -1761,6 +1761,10 @@ lemma filter_closure_empty:
   "is_greatest X top \<Longrightarrow> filter_closure X {} = {top}"
   by (simp add: filter_closure_def greatest_equality2)
 
+lemma filter_closure_ne:
+  "\<lbrakk>X \<noteq> {}; A \<subseteq> X\<rbrakk> \<Longrightarrow> filter_closure X A \<noteq> {}"
+  by (metis empty_iff filter_closure_def filter_closure_singleton insert_subset subset_empty subset_emptyI)
+
 context
   fixes X::"'a::order set"
   assumes toped:"is_greatest X top" and
@@ -1770,11 +1774,7 @@ begin
 lemma filter_cl0:
   assumes A0:"A \<subseteq> X"
   shows "A \<subseteq> filter_closure X A"
-proof(cases "A = {}")
-    case True then show ?thesis  by simp
-  next
-    case False then show ?thesis  using assms filter_closure_singleton by blast
-qed
+  by (simp add: assms filter_closure_singleton subsetI)
 
 lemma filter_cl1:
   assumes A0:"A \<subseteq> X"
@@ -1785,6 +1785,34 @@ lemma filter_cl2:
   assumes A0:"A \<subseteq> X"
   shows "is_dir (filter_closure X A) (\<ge>)"
   by (metis greatestD11 greatestD2 is_dwdirI1 toped)
+
+lemma filter_cl3:
+  "A \<subseteq> X \<Longrightarrow> is_filter X (filter_closure X A)"
+  by (simp add: cinfD1 csinf filterI1 filter_cl1 filter_cl2 filter_closure_ne greatestD11 subsetI toped)
+
+lemma filter_cl_least:
+  "\<lbrakk>is_filter X F; A \<subseteq> F\<rbrakk> \<Longrightarrow> (filter_closure X A) \<subseteq> F"
+  by (meson greatest_in_filter2 subsetI toped)
+
+lemma filter_cl_is_ub:
+  "A \<subseteq> X \<Longrightarrow> (filter_closure X A) \<in>  (Upper_Bounds (filters_on X) {A})"
+  by (simp add: Upper_Bounds_singleton2 filter_cl0 filter_cl3 filters_on_def)
+
+lemma filter_cl_lt_ub:
+  "A \<subseteq> X  \<Longrightarrow> F \<in>  (Upper_Bounds (filters_on X) {A}) \<Longrightarrow> (filter_closure X A) \<le> F"
+  by (meson Upper_BoundsD1 Upper_Bounds_mem_iff filter_cl_least filters_on_iff insertI1)
+
+lemma filter_cl_is_lub:
+  "A \<subseteq> X \<Longrightarrow>  is_inf (Pow X) (Upper_Bounds (filters_on X) {A}) (filter_closure X A) "
+  by (meson Upper_BoundsD2 filter_cl_is_ub filter_cl_lt_ub filters_is_clr1 is_infI115 lb_def subset_iff)
+
+lemma filter_cl_is_lcl:
+  "A \<subseteq> X \<Longrightarrow>  is_least (Upper_Bounds (filters_on X) {A}) (filter_closure X A) "
+  by (simp add: filter_cl_is_ub filter_cl_lt_ub leastI3)
+
+lemma filter_closure_eq_closure:                                      
+  "A \<subseteq> X  \<Longrightarrow> filter_closure A X = (cl_from_clr (filters_on X)) A "
+  by (simp add: filter_cl_is_ub filter_cl_lt_ub closure_from_clr_def csinf is_min_iff is_ne min_if toped)
 
 end
 
