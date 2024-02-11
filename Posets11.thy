@@ -1005,6 +1005,8 @@ next
     by blast
 qed
 
+
+
 lemma sup_semilattice_fsup:
   "\<lbrakk>is_sup_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_sup X F (Sup X F)"
   by (metis bsup_in is_sup_semilattice_def sup_equality)
@@ -1013,6 +1015,14 @@ lemma inf_semilattice_finf:
   "\<lbrakk>is_inf_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_inf X F (Inf X F)"
   by (metis binf_in is_inf_semilattice_def inf_equality)
    
+lemma sinfD2:
+  "\<lbrakk>is_inf_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X F x)"
+  using inf_semilattice_finf by blast
+
+lemma ssupD2:
+  "\<lbrakk>is_sup_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X F x)"
+  using sup_semilattice_fsup by blast
+
 
 section Functions
 subsection Isotonicity
@@ -1642,6 +1652,9 @@ lemma csup_updir:
   "is_csup_semilattice X \<Longrightarrow> is_dir X (\<le>)"
   by (metis csupD3 is_updirI1 greatestD11 greatestD2)
 
+lemma sup_updir:
+  "\<lbrakk>is_sup_semilattice X; is_greatest X m\<rbrakk> \<Longrightarrow> is_dir X (\<le>)"
+  by (meson greatestD11 greatestD2 is_updirI1)
 
 lemma is_dwdirE1:
   "is_dir (X::'a::order set) (\<ge>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c) "
@@ -1671,6 +1684,7 @@ lemma dwdir_obtain:
 lemma cinf_dwdir:
   "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
   by (metis cinfD3 is_dwdirI1 leastD11 leastD2)
+
 
 lemma is_ord_clE1:
   "is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A "
@@ -1789,9 +1803,74 @@ proof
     using A2 A3 B0 B2 is_infD111 is_ord_clE1 by blast
 qed
 
+
+lemma dwdir_inf2:
+  assumes A0:"is_inf_semilattice X"
+  shows " is_dir X (\<ge>)"
+proof-
+  have B0:"\<And>a b. a \<in> X \<and>  b \<in> X \<longrightarrow> (\<exists>c \<in> X.  a \<ge> c \<and>  b \<ge> c)"
+  proof
+    fix a b assume A1:"a \<in> X \<and> b \<in> X"
+    obtain i where B1:"is_inf X {a, b} i"
+      by (meson A1 assms is_inf_semilattice_def)
+    show "\<exists>c \<in> X.  a \<ge> c \<and>  b \<ge> c"
+      using B1 is_infD111 is_infD112 lb_double by blast
+  qed
+  show ?thesis
+    by (simp add: B0 is_dwdirI1)
+qed
+  
 lemma filter_inf_closed:
   "\<lbrakk>is_filter X F; a \<in> F;  b \<in> F;  is_inf X {a, b} i\<rbrakk>\<Longrightarrow> i \<in> F"
   by (meson is_filter_def dwdir_inf)
+
+lemma filter_inf_closed1:
+  assumes A0:"is_inf_semilattice X" and A1:"is_filter X F" and  A2:"a \<in> F" " b \<in> F" shows "Inf X {a, b} \<in> F"
+proof-
+  obtain i where A3:"is_inf X {a, b} i"
+    by (meson A0 A1 assms(3) assms(4) filterD2 in_mono is_inf_semilattice_def)
+  show "Inf X {a, b} \<in> F"
+    using A1 A3 assms(3) assms(4) filter_inf_closed inf_equality by blast
+qed
+
+lemma filter_inf_closed2:
+  assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>  Inf X {a1, a2} \<in> A" and 
+          A1:"finite E" and
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> A" and
+          A4:"A \<subseteq> X" and
+          A5:"is_inf_semilattice X"
+  shows "Inf X E \<in> A"
+  using A1 A2 A3 A4 A5
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  obtain i where A6:"is_inf X F i"
+    by (meson A4 A5 inf_semilattice_finf insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
+  have B0:"i \<in> A"
+    using A4 A5 A6 inf_equality insert.hyps(4) insert.prems(1) by blast
+  have B1:"x \<in> A"
+    using insert.prems(1) by auto
+  obtain t where A7:"is_inf X {x, i} t"
+    by (meson A4 A5 A6 B1 is_infD111 is_inf_semilattice_def subset_eq)
+  have B2:"t \<in> A"
+    using A0 A7 B0 B1 inf_equality by blast
+  have B3:"t \<in> (Lower_Bounds X (insert x F))"
+    by (metis A6 A7 Lower_Bounds_mem_iff is_infD111 is_infD112 is_infD5 lb_double lb_insert)
+  have B4:"\<And>y. y \<in> (Lower_Bounds X (insert x F)) \<longrightarrow> y \<le>t "
+    by (metis A6 A7 Lower_BoundsD3 Lower_Bounds_mem_iff2 insertCI is_infD42 lb_double)
+  have B5:"is_inf X (insert x F) t"
+    by (simp add: B3 B4 is_infI113)
+  then show ?case
+    by (simp add: B2 inf_equality)
+qed
+
+lemma filter_inf_closed3:
+  "\<lbrakk>is_inf_semilattice X; is_filter X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf X A \<in> F"
+  by (simp add: is_filter_def filter_inf_closed1 filter_inf_closed2)
 
 lemma min_filter1:
   "is_greatest X top \<Longrightarrow> is_filter X {top}"
@@ -1801,7 +1880,11 @@ lemma min_filter2:
   "\<lbrakk>is_greatest X top; is_filter X F\<rbrakk> \<Longrightarrow>{top} \<subseteq> F"
   by (simp add: greatest_in_filter2)
 
-lemma filters_max:
+lemma filters_max0:
+  "is_inf_semilattice X \<Longrightarrow> is_filter X X"
+  by (simp add: is_filter_def dwdir_inf2 is_inf_semilattice_def is_ord_cl_space)
+
+lemma filters_max1:
   "is_cinf_semilattice X \<Longrightarrow>is_filter X X"
   by (simp add: is_filter_def cinf_dwdir is_cinf_semilattice_def is_ord_cl_space)
 
@@ -1817,8 +1900,8 @@ lemma filters_is_clr1:
   using filterD2 filters_on_iff by fastforce
 
 lemma filters_is_clr1b:
-  "is_cinf_semilattice X \<Longrightarrow> X \<in> filters_on X"
-  by (simp add: filters_max filters_on_iff)
+  "is_inf_semilattice X \<Longrightarrow> X \<in> filters_on X"
+  by (simp add: filters_max0 filters_on_iff)
 
 lemma filter_inter_upcl:
   "(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F) \<Longrightarrow> is_ord_cl X (\<Inter>EF) (\<le>)"
@@ -1867,8 +1950,6 @@ proof-
     using B1 by fastforce
 qed
 
-
-
 lemma filter_inter_closed1:
   "\<lbrakk>is_inf_semilattice X;(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {};is_greatest X top\<rbrakk> \<Longrightarrow>  is_filter X (\<Inter>EF)"
   by (meson Inter_subset is_filter_def cinf_sinf filter_inter_dir filter_inter_ne filter_inter_upcl)
@@ -1878,15 +1959,15 @@ lemma filter_inter_closed2:
   by (simp add: filter_inter_closed1 filters_on_iff subset_iff)
 
 lemma filter_is_clr:
-  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_clr (filters_on X) (Pow X)"
+  "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_clr (filters_on X) (Pow X)"
   by (simp add: cinf_sinf filter_inter_closed2 filters_is_clr1 filters_is_clr1b moore_clI3)
 
 lemma filter_closure_of_empty1:
-  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (Upper_Bounds (filters_on X) {{}}) {top}"
+  "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (Upper_Bounds (filters_on X) {{}}) {top}"
   by (simp add: Upper_Bounds_mem_iff2 filters_on_def greatest_in_filter2 least_iff min_filter1)
 
 lemma filter_closure_of_empty2:
-  "\<lbrakk>is_cinf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
+  "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
   by (simp add: cl_from_clr_def filter_closure_of_empty1 least_equality2)
 
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
@@ -1903,6 +1984,10 @@ lemma filter_closure_memI1:
 lemma filter_closure_memI2:
   "(x \<in> X \<and>  F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x) \<Longrightarrow> x \<in> filter_closure X A"
   using filter_closure_iff by blast
+
+lemma filter_closure_ne_simp:
+  "A \<noteq> {} \<Longrightarrow> filter_closure X A = {x \<in> X. \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x}"
+  by (simp add: filter_closure_def)
 
 lemma filter_closure_singleton:
   "\<lbrakk>A \<subseteq> X; a \<in> A\<rbrakk> \<Longrightarrow> a \<in> filter_closure X A"
@@ -1927,29 +2012,41 @@ lemma filter_closure_superset:
   using filter_closure_singleton by auto
 
 context
+  fixes A X::"'a::order set" 
+  assumes subs_ne:"A \<subseteq> X" "A \<noteq> {}" and
+          csinf:"is_inf_semilattice X" 
+begin
+lemma ne_filter_cl0:
+  "A \<subseteq> (filter_closure X A)"
+  by (metis empty_subsetI filter_closure_superset order.trans subs_ne(1))
+
+lemma ne_filter_cl1:
+  "is_ord_cl X (filter_closure X A) (\<le>)"
+  apply(simp add:subs_ne filter_closure_ne_simp is_ord_cl_def) by (meson order.trans)
+
+end
+
+context
   fixes X::"'a::order set"
   assumes toped:"is_greatest X top" and
-          csinf:"is_cinf_semilattice X"
+          csinf:"is_inf_semilattice X"
 begin
 
 lemma filter_cl0:
-  assumes A0:"A \<subseteq> X"
-  shows "A \<subseteq> filter_closure X A"
-  by (simp add: assms filter_closure_singleton subsetI)
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> filter_closure X A"
+  by (simp add: filter_closure_singleton subsetI)
 
 lemma filter_cl1:
-  assumes A0:"A \<subseteq> X"
-  shows "is_ord_cl X (filter_closure X A) (\<le>)"
-  by (metis (full_types) greatest_unique is_ord_clI1 toped)
+  "A \<subseteq> X \<Longrightarrow> is_ord_cl X (filter_closure X A) (\<le>)"
+  by (metis csinf filterD4 filter_closure_empty min_filter1 ne_filter_cl1 toped)
 
 lemma filter_cl2:
-  assumes A0:"A \<subseteq> X"
-  shows "is_dir (filter_closure X A) (\<ge>)"
+  "A \<subseteq> X \<Longrightarrow> is_dir (filter_closure X A) (\<ge>)"
   by (metis greatestD11 greatestD2 is_dwdirI1 toped)
 
 lemma filter_cl3:
   "A \<subseteq> X \<Longrightarrow> is_filter X (filter_closure X A)"
-  by (simp add: cinfD1 csinf filterI1 filter_cl1 filter_cl2 filter_closure_ne greatestD11 subsetI toped)
+  by (metis is_filter_def csinf filter_cl1 filter_cl2 filter_closure_ne filters_max0 greatestD11 subsetI toped)
 
 lemma filter_cl_least:
   "\<lbrakk>is_filter X F; A \<subseteq> F\<rbrakk> \<Longrightarrow> (filter_closure X A) \<subseteq> F"
@@ -1976,9 +2073,11 @@ lemma filter_closure_eq_closure:
   by (metis cl_from_clr_def filter_cl_is_lcl least_equality2)
 
 end
+
+
 context
   fixes X::"'a::order set"
-  assumes csinf:"is_lattice X"
+  assumes csinf:"is_lattice X" 
 begin
 
 lemma filters_on_lattice_inf1:
@@ -2053,34 +2152,77 @@ lemma filters_on_lattice_inf7:
 lemma filters_on_lattice_inf8:
   "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk>\<Longrightarrow> is_inf (filters_on X) {F1, F2} (F1 \<inter> F2)"
   by (meson filters_on_lattice_inf6 filters_on_lattice_inf7 is_infI113)
-(*
-lemma finite_inter:
-  assumes A0:"(\<forall>F \<in> EF. is_filter X F)" and A1: "finite EF" and A2:"EF \<noteq> {}"
-  shows "is_filter X (\<Inter>EF)"
-proof-
-  let ?I="(\<Inter>EF)"
-  have B0:"is_ord_cl X ?I (\<le>)"
-    by (simp add: A0 filter_inter_upcl)
-  have B1:"is_dir ?I (\<ge>)"
-  proof-
-    have P: "\<And>a b. a \<in> ?I \<and> b \<in> ?I\<longrightarrow> (\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
-    proof
-      fix a b assume A5:"a \<in> ?I \<and> b \<in> ?I"
-      have B0:"a \<in>X \<and> b \<in> X"
-        using A0 A2 A5 filterD2 by fastforce
-      obtain i where B1:"is_inf X {a, b} i"
-        using B0 csinf lattD21 by blast
-      have B2:"\<forall>F \<in> EF. i \<in> F"
-        by (meson A0 A5 B1 InterE filter_inf_closed)
-      show "(\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
-        by (meson B1 B2 InterI dual_order.refl insert_iff is_infD32)
-    qed
-  show ?thesis
-    by (metis P is_dwdirI1)
-  qed
-  have B2:"?I \<noteq> {}"
-*)
 
+lemma filters_on_lattice_inf_semilattice:
+  "is_inf_semilattice (filters_on X)"
+  by (metis filters_on_lattice_inf8 csinf equals0D filters_is_clr1b filters_on_iff is_inf_semilattice_def lattD41)
+
+lemma filters_on_lattice_sup1:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_ord_cl X (filter_closure X (\<Union>EF)) (\<le>)"
+  by (metis Sup_least all_not_in_conv csinf empty_Union_conv filterD1 filterD2 lattD41 ne_filter_cl1)
+
+lemma filters_on_lattice_sup2:
+  assumes A0:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" "EF \<noteq> {}" 
+  shows " is_dir (filter_closure X (\<Union>EF)) (\<ge>)"
+proof-
+  let ?U="(\<Union>EF)"
+  let ?A="filter_closure X ?U"
+  have B0:"\<And>a b. a \<in> ?A \<and>  b \<in> ?A \<longrightarrow> (\<exists>c \<in> ?A.  a \<ge> c \<and>  b \<ge> c)"
+  proof
+    fix a b assume A1:"a \<in> ?A \<and> b \<in> ?A"
+    obtain Fa Fb where B1:"Fa \<subseteq> ?U" "finite Fa" "Fa \<noteq> {}" "Inf X Fa \<le> a" and 
+                       B2:"Fb \<subseteq> ?U" "finite Fb" "Fb \<noteq> {}" "Inf X Fb \<le> b"
+      by (metis A1 Pow_empty assms(1) assms(2) filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
+    let ?Fab="Fa \<union> Fb"
+    have B3:"?Fab \<subseteq> ?U"
+      using B1(1) B2(1) by auto
+    have B4: "finite ?Fab"
+      by (simp add: B1(2) B2(2)) 
+    have B5:"?Fab \<noteq> {}"
+      by (simp add: B2(3))
+    have B6:"?Fab \<subseteq> X"
+      by (metis B3 Sup_le_iff Un_subset_iff assms(1) filterD2 sup.absorb_iff2)
+    have B7: "Inf X ?Fab \<le> a \<and> Inf X ?Fab \<le> b"
+      by (meson B1(2) B1(3) B1(4) B2(2) B2(3) B2(4) B4 B5 B6 Un_upper1 csinf dual_order.trans inf_semilattice_finf is_inf_ant1 lattD41 sup.cobounded2)
+    have B8:"Inf X ?Fab \<in> ?A"
+      by (meson B3 B4 B5 B6 csinf dual_order.eq_iff filter_closure_memI2 inf_iff2 inf_semilattice_finf lattD41)
+    show "\<exists>c \<in> ?A.  a \<ge> c \<and>  b \<ge> c"
+      using B7 B8 by blast
+  qed
+  show ?thesis
+    by (simp add: B0 is_dwdirI1)
+qed
+  
+lemma filters_on_lattice_sup3:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> filter_closure X (\<Union>EF) \<noteq> {}"
+  by (simp add: Union_least csinf filterD2 filter_closure_ne lattD1)
+  
+lemma filters_on_lattice_sup4:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_filter X (filter_closure X (\<Union>EF))"
+  by (simp add: is_filter_def filter_closure_iff filters_on_lattice_sup1 filters_on_lattice_sup2 filters_on_lattice_sup3 subset_iff)
+
+lemma filters_on_lattice_sup5:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}; F \<in> EF\<rbrakk> \<Longrightarrow>  F \<subseteq> (filter_closure X (\<Union>EF))"
+  by (meson UnionI Union_least filterD2 filter_closure_singleton subsetI)
+
+lemma filters_on_lattice_sup6:
+  assumes A0:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" "EF \<noteq> {}" and A1:"is_filter X G" "(\<And>F. F \<in> EF \<Longrightarrow> F \<subseteq> G)"
+  shows "filter_closure X (\<Union>EF) \<subseteq> G"
+proof
+  fix x assume A2:"x \<in> filter_closure X (\<Union>EF)"
+  obtain Fx where  B1:"Fx \<subseteq>  (\<Union>EF)" "finite Fx" "Fx \<noteq> {}" "Inf X Fx \<le>x"
+    by (metis A2 Pow_empty assms(1) assms(2) filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
+  have B2:"Fx \<subseteq> G"
+    using B1(1) assms(4) by blast
+  have B3:"Fx \<subseteq> X"
+    using B2 is_filter_def assms(3) by auto
+  show "x \<in> G"
+    by (metis A2 B1(1) B1(2) B1(3) B1(4) B2 assms(3) bot.extremum_uniqueI csinf filterD4 filter_closure_iff filter_inf_closed3 is_ord_clE1 lattD41)
+qed
+
+lemma filters_on_lattice_sup7:
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}; F \<in> EF\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
+  by(simp add:is_sup_def filters_on_lattice_sup4 filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5 filters_on_lattice_sup6 least_iff)
 
 end
 
