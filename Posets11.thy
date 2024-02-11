@@ -1823,7 +1823,7 @@ lemma filter_inter_ne:
 lemma filter_inter_dir:
   assumes A0:"is_cinf_semilattice X" and
           A1:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" and
-          A2:"EF \<noteq> {}" and
+          A2:"EF \<noteq> {}" 
   shows "is_dir (\<Inter>EF) (\<ge>)"
 proof-
   let ?I="\<Inter>EF"
@@ -2011,6 +2011,8 @@ proof-
   qed
   have B2:"?I \<noteq> {}"
 *)
+
+
 end
 
 
