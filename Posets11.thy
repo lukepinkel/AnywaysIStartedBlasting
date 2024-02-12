@@ -2160,7 +2160,7 @@ proof (induct E rule: finite_ne_induct)
 next
   case (insert x F)
   obtain i where A6:"is_inf X F i"
-    by (meson A4 A5 inf_semilattice_finf insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
+    by (meson A4 A5 binf_finite2 insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
   have B0:"i \<in> A"
     using A4 A5 A6 inf_equality insert.hyps(4) insert.prems(1) by blast
   have B1:"x \<in> A"
@@ -2494,9 +2494,9 @@ proof-
     have B6:"?Fab \<subseteq> X"
       by (metis B3 Sup_le_iff Un_subset_iff assms(1) filterD2 sup.absorb_iff2)
     have B7: "Inf X ?Fab \<le> a \<and> Inf X ?Fab \<le> b"
-      by (meson B1(2) B1(3) B1(4) B2(2) B2(3) B2(4) B4 B5 B6 Un_upper1 csinf dual_order.trans inf_semilattice_finf is_inf_ant1 lattD41 sup.cobounded2)
+      by (meson B1(2) B1(3) B1(4) B2(2) B2(3) B2(4) B4 B5 B6 Un_upper1 binf_finite2 csinf dual_order.trans is_inf_ant1 lattD41 sup.cobounded2)
     have B8:"Inf X ?Fab \<in> ?A"
-      by (meson B3 B4 B5 B6 csinf dual_order.eq_iff filter_closure_memI2 inf_iff2 inf_semilattice_finf lattD41)
+      by (meson B3 B4 B5 B6 binf_finite2 csinf dual_order.refl filter_closure_memI1 is_infD111 lattD41)
     show "\<exists>c \<in> ?A.  a \<ge> c \<and>  b \<ge> c"
       using B7 B8 by blast
   qed
