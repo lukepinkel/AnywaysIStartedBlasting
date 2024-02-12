@@ -2221,8 +2221,13 @@ proof
 qed
 
 lemma filters_on_lattice_sup7:
-  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}; F \<in> EF\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
+  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
   by(simp add:is_sup_def filters_on_lattice_sup4 filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5 filters_on_lattice_sup6 least_iff)
+
+lemma filters_on_lattice_sup_semilattice1:
+  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_sup (filters_on X) {F1, F2} (filter_closure X (F1 \<union> F2))"
+  by (metis (no_types, lifting) Sup_insert ccpo_Sup_singleton filters_on_lattice_sup7 insert_iff insert_not_empty singletonD)
+
 
 end
 
