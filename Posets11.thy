@@ -53,6 +53,11 @@ lemma ub_double:
   "c ub {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
   by (metis insert_iff ubD ubI ub_singleton)
 
+lemma ub_union:
+  "\<lbrakk>x ub A; x ub B\<rbrakk> \<Longrightarrow> x ub A \<union> B"
+  by (simp add: ub_def)
+
+
 subsubsection UpperBoundsSet
 
 definition Upper_Bounds::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
@@ -118,6 +123,30 @@ lemma ub_single_D2:
   "x \<in> Upper_Bounds X {a}\<Longrightarrow> a \<le> x"
   by (simp add: Upper_BoundsD1)
 
+lemma ubd_mem1:
+  "\<lbrakk>A \<subseteq> B; x \<in> Upper_Bounds X B\<rbrakk> \<Longrightarrow> x \<in>  Upper_Bounds X A"
+  by (simp add: Upper_Bounds_mem_iff ub_ant2)
+
+lemma ubd_mem2:
+  "x \<in> X \<Longrightarrow> x \<in> Upper_Bounds X {}"
+  by (simp add: Upper_Bounds_empty)
+
+lemma ubd_mem_insert:
+  "\<lbrakk>c \<in> Upper_Bounds X F; c \<ge> x\<rbrakk> \<Longrightarrow> c \<in> Upper_Bounds X (insert x F)"
+  by (simp add: Upper_Bounds_mem_iff ub_insert)
+
+lemma ubd_mem_binary:
+  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> a \<le> b \<longleftrightarrow> b \<in> Upper_Bounds X {a, b}"
+  by (simp add: Upper_Bounds_mem_iff ub_binary)
+
+lemma ubd_mem_double:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> Upper_Bounds X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
+  by (simp add: Upper_Bounds_mem_iff ub_double)
+
+lemma ubd_mem_union:
+  "\<lbrakk>x \<in> Upper_Bounds X A; x \<in> Upper_Bounds X B\<rbrakk> \<Longrightarrow> x \<in> Upper_Bounds X (A \<union> B)"
+  by (simp add: Upper_Bounds_mem_iff ub_union)
+
 definition lb::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" (infix "lb" 50) where 
    "x lb  A \<equiv> (\<forall>a. a \<in> A \<longrightarrow> a \<ge> x)"
 
@@ -160,6 +189,11 @@ lemma lb_binary:
 lemma lb_double:
   "c lb {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
   by (metis insert_iff lbD lbI lb_singleton)
+
+lemma lb_union:
+  "\<lbrakk>x lb A; x lb B\<rbrakk> \<Longrightarrow> x lb A \<union> B"
+  by (simp add: lb_def)
+
 
 
 subsubsection LowerBounds
@@ -218,6 +252,31 @@ lemma Lower_Bounds_empty:
 lemma Lower_Bounds_singleton:
   "x \<in> X \<Longrightarrow> x \<in> Lower_Bounds X {x}"
   by (simp add: Lower_Bounds_def lb_singleton)
+
+
+lemma lbd_mem1:
+  "\<lbrakk>A \<subseteq> B; x \<in> Lower_Bounds X B\<rbrakk> \<Longrightarrow> x \<in>  Lower_Bounds X A"
+  by (simp add: Lower_Bounds_mem_iff lb_ant2)
+
+lemma lbd_mem2:
+  "x \<in> X \<Longrightarrow> x \<in> Lower_Bounds X {}"
+  by (simp add: Lower_Bounds_empty)
+
+lemma lbd_mem_insert:
+  "\<lbrakk>c \<in> Lower_Bounds X F; c \<le> x\<rbrakk> \<Longrightarrow> c \<in> Lower_Bounds X (insert x F)"
+  by (simp add: Lower_Bounds_mem_iff lb_insert)
+
+lemma lbd_mem_binary:
+  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> a \<le> b \<longleftrightarrow> a \<in> Lower_Bounds X {a, b}"
+  by (simp add: Lower_Bounds_mem_iff lb_binary)
+
+lemma lbd_mem_double:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> Lower_Bounds X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
+  by (simp add: Lower_Bounds_mem_iff lb_double)
+
+lemma lbd_mem_union:
+  "\<lbrakk>x \<in> Lower_Bounds X A; x \<in> Lower_Bounds X B\<rbrakk> \<Longrightarrow> x \<in> Lower_Bounds X (A \<union> B)"
+  by (simp add: Lower_Bounds_mem_iff lb_union)
 
 
 subsection LowerUpper
@@ -585,6 +644,30 @@ lemma binary_supD1:
   "\<lbrakk>x1 \<in> X; x2 \<in> X; is_sup X {x1, x2} x2\<rbrakk> \<Longrightarrow> x1 \<le> x2"
   by (simp add: is_supD1121)
 
+lemma binary_supI2:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; x3 \<ge> x1; x3 \<ge> x2; (\<And>z. \<lbrakk>z \<in> X; z \<ge> x1; z \<ge> x2\<rbrakk> \<Longrightarrow> x3 \<le> z)\<rbrakk> \<Longrightarrow> is_sup X {x1, x2} x3"
+  apply(erule is_supI115) by (simp add: ub_double)+
+
+lemma binary_supD21:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_sup X {x1, x2} s; x3 \<le> x1\<rbrakk> \<Longrightarrow>  x3 \<le> s"
+  by (metis dual_order.trans is_supD112 ub_double)
+
+lemma binary_supD22:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_sup X {x1, x2} s; x3 \<le> x2\<rbrakk> \<Longrightarrow>  x3 \<le> s"
+  by (metis dual_order.trans is_supD112 ub_double)
+
+lemma binary_supD31:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; s \<in> X; is_sup X {x1, x2} s\<rbrakk>  \<Longrightarrow>  x1 \<le> s"
+  by (simp add: is_supD1121)
+
+lemma binary_supD32:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; s \<in> X; is_sup X {x1, x2} s\<rbrakk>  \<Longrightarrow>  x2 \<le> s"
+  by (simp add: is_supD1121)
+
+lemma binary_supD4:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; s \<in> X; is_sup X {x1, x2} s\<rbrakk>  \<Longrightarrow> (s \<le> x3 \<longleftrightarrow> x1 \<le> x3 \<and> x2 \<le> x3)"
+  by (simp add: sup_iff2 ubd_mem_double)
+
 lemma binary_sup_iff:
   "\<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> (x1 \<le> x2 \<longleftrightarrow> is_sup X {x1, x2} x2)"
   by(auto simp add:binary_supI1 binary_supD1)
@@ -744,6 +827,43 @@ lemma inf_empty:
   "is_inf X {} i \<longleftrightarrow> (is_greatest X i)"
   by (simp add: Lower_Bounds_empty is_inf_def)
 
+lemma binary_infI1:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x1 \<le> x2\<rbrakk> \<Longrightarrow> is_inf X {x1, x2} x1"
+  by(simp add:is_inf_def is_greatest_def Upper_Bounds_def Lower_Bounds_def lb_def ub_def) 
+
+lemma binary_infI2:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; x3 \<le> x1; x3 \<le> x2; (\<And>z. \<lbrakk>z \<in> X; z \<le> x1; z \<le> x2\<rbrakk> \<Longrightarrow> x3 \<ge> z)\<rbrakk> \<Longrightarrow> is_inf X {x1, x2} x3"
+  apply(erule is_infI115) by (simp add: lb_double)+
+
+lemma binary_infD1:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; is_inf X {x1, x2} x1\<rbrakk> \<Longrightarrow> x1 \<le> x2"
+  by (simp add: is_infD1121)
+
+lemma binary_infD21:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_inf X {x1, x2} s; x3 \<ge> x1\<rbrakk> \<Longrightarrow>  x3 \<ge> s"
+  by (meson dual_order.trans is_infD112 lb_double)
+
+lemma binary_infD22:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_inf X {x1, x2} s; x3 \<ge> x2\<rbrakk> \<Longrightarrow>  x3 \<ge> s"
+  by (metis dual_order.trans is_infD112 lb_double)
+
+lemma binary_infD31:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; s \<in> X; is_inf X {x1, x2} s\<rbrakk>  \<Longrightarrow>  x1 \<ge> s"
+  by (simp add: is_infD1121)
+
+lemma binary_infD32:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; s \<in> X; is_inf X {x1, x2} s\<rbrakk>  \<Longrightarrow>  x2 \<ge> s"
+  by (simp add: is_infD1121)
+
+lemma binary_infD4:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; s \<in> X; is_inf X {x1, x2} s\<rbrakk>  \<Longrightarrow> (s \<ge> x3 \<longleftrightarrow> x1 \<ge> x3 \<and> x2 \<ge> x3)"
+  by (simp add: inf_iff2 lbd_mem_double)
+
+lemma binary_inf_iff:
+  "\<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> (x1 \<le> x2 \<longleftrightarrow> is_inf X {x1, x2} x1)"
+  by(auto simp add:binary_infI1 binary_infD1)
+
+
 subsubsection Operator
 
 definition Inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order" where
@@ -778,11 +898,11 @@ lemma Lower_eq_inf_eq:
   "Lower_Bounds X A = Lower_Bounds X B \<Longrightarrow> (is_inf X A i \<longleftrightarrow> is_inf X B i)"
   by (simp add: is_inf_def)
 
+
 subsection Completeness
 
 definition is_inf_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_inf_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x))"
-
 
 lemma sinfI1:
   "\<lbrakk>(X \<noteq> {});  (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x))\<rbrakk> \<Longrightarrow> is_inf_semilattice X"
@@ -812,14 +932,13 @@ lemma binf_commute:
   "is_inf X {a, b} c \<longleftrightarrow> is_inf X {b, a } c "
   by (simp add: insert_commute)
 
-
 lemma binf_leI1:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> (\<lambda>x y. Inf X {x, y}) a b \<le> c"
-  by (meson binfI sinfD3 dual_order.trans is_infD112 lb_double)
+  by (meson dual_order.trans insertCI is_infD1121 sinfD3)
 
 lemma binf_leI2:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<le> c\<rbrakk>  \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) a b \<le> c"
-  by (meson binfI sinfD3 dual_order.trans is_infD112 lb_double)
+  by (meson binary_infD32 order.trans sinfD3 sinfD4)
 
 lemma binf_leI3:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le> (\<lambda>x y. Inf X {x, y}) a b"
@@ -827,7 +946,7 @@ lemma binf_leI3:
 
 lemma binf_iff:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le>  (\<lambda>x y. Inf X {x, y}) a b \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
-  by (meson binf_leI3 binf_leI1 binf_leI2 order.trans order_refl)
+  by (simp add: binary_infD4 sinfD3 sinfD4)
 
 lemma binf_assoc1:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) ((\<lambda>x y. Inf X {x, y}) a b) c =  (\<lambda>x y. Inf X {x, y}) a ( (\<lambda>x y. Inf X {x, y}) b c)"
@@ -870,8 +989,7 @@ lemma binf_finite:
   using A1 A2 A3 
 proof (induct A rule: finite_ne_induct)
   case (singleton x)
-  then show ?case
-    using inf_equality inf_singleton by fastforce
+  then show ?case using A0 by force
 next
   case (insert x F)
   obtain i1 where B0:"is_inf X F i1"
@@ -880,15 +998,12 @@ next
     using B0 is_infD111 by auto
   obtain i2 where B2:"is_inf X {i1, x} i2"
     using A0 B1 insert.prems by auto
-  have B3:"i2 lb (insert x F)"
-    by (meson B0 B2 is_infD111 is_infD112 lb_double lb_insert lt_inf_iff)
+  have B3:"i2 \<in> Lower_Bounds X (insert x F)"
+    by (meson B0 B2 insert_iff is_infD111 is_infD1121 is_infD3 lbd_mem_insert)
   have B4:"\<And>l. l \<in> Lower_Bounds X (insert x F) \<longrightarrow> l \<le> i2"
-  proof 
-    fix l assume A4:"l \<in> Lower_Bounds X (insert x F)" show " l \<le> i2"
-      by (metis A4 B0 B2 Lower_BoundsD1 Lower_BoundsD2 Lower_BoundsD3 insertI1 is_infD122 lb_ant2 lb_double subset_insertI)
-  qed
+    by (metis B0 B2 Lower_Bounds_mem_iff Lower_Bounds_mem_iff2 inf_iff2 insertCI lb_double)
   have B3:"is_inf X (insert x F) i2"
-    using B2 B3 B4 is_infD111 is_infI114 by blast
+    by (simp add: B3 B4 is_infI113)
   then show ?case
     by (simp add: inf_equality)
 qed
@@ -899,10 +1014,6 @@ lemma binf_finite2:
 
 definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_sup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))"
-
-definition sup::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> 'a::order \<Rightarrow> 'a::order" where
-  "sup X a b = Sup X {a, b}"
-
 
 lemma ssupI1:
   "\<lbrakk>(X \<noteq> {});  (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))\<rbrakk> \<Longrightarrow> is_sup_semilattice X"
@@ -928,7 +1039,91 @@ lemma bsupI:
   "\<lbrakk>is_sup_semilattice X; (\<And>s. is_sup X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Sup X {a, b})"
   by (metis is_sup_semilattice_def sup_equality)
 
+lemma bsup_commute:
+  "is_sup X {a, b} c \<longleftrightarrow> is_sup X {b, a } c "
+  by (simp add: insert_commute)
 
+lemma bsup_geI1:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<ge> c\<rbrakk>  \<Longrightarrow> (\<lambda>x y. Sup X {x, y}) a b \<ge> c"
+  by (simp add: binary_supD21 ssupD3 ssupD4)
+
+lemma bsup_geI2:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<ge> c\<rbrakk>  \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b \<ge> c"
+  by (simp add: binary_supD22 ssupD3 ssupD4)
+
+lemma bsup_geI3:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow> c \<ge> (\<lambda>x y. Sup X {x, y}) a b"
+  by (simp add: binary_supD4 ssupD3 ssupD4)
+
+lemma bsup_iff:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge>  (\<lambda>x y. Sup X {x, y}) a b \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
+  by (simp add: binary_supD4 ssupD3 ssupD4)
+
+lemma bsup_assoc1:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) ((\<lambda>x y. Sup X {x, y}) a b) c =  (\<lambda>x y. Sup X {x, y}) a ( (\<lambda>x y. Sup X {x, y}) b c)"
+  apply(rule order.antisym) by (metis ssupD3 bsup_iff is_supD111 order_refl)+
+
+lemma bsup_assoc2:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>   (\<lambda>x y. Sup X {x, y}) a ( (\<lambda>x y. Sup X {x, y}) b c) = (\<lambda>x y. Sup X {x, y}) b ( (\<lambda>x y. Sup X {x, y}) a c)"
+  apply(rule order.antisym) by (metis ssupD3 bsup_iff is_supD111 order_refl)+
+
+lemma bsup_commute2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b =  (\<lambda>x y. Sup X {x, y}) b a"
+  by (simp add: insert_commute)
+
+lemma bsup_idem1:
+  "a\<in> X \<Longrightarrow> (\<lambda>x y. Sup X {x, y}) a a = a"
+  by (simp add: sup_equality sup_singleton)
+
+lemma bsup_idem2:
+  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a ( (\<lambda>x y. Sup X {x, y}) a b) =  (\<lambda>x y. Sup X {x, y}) a b"
+  by (metis bsup_assoc1 bsup_idem1)
+
+lemma bsup_idem3:
+  "is_sup_semilattice X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) ( (\<lambda>x y. Sup X {x, y}) a b) b =  (\<lambda>x y. Sup X {x, y}) a b"
+  by (metis bsup_assoc1 bsup_idem1)
+
+lemma bsup_ge1:
+  "is_sup_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b = b"
+  by (simp add: Orderings.order_eq_iff bsup_geI2 bsup_geI3)
+
+lemma bsup_ge2:
+  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b = a"
+  by (simp add: dual_order.eq_iff bsup_iff bsup_geI1)
+
+lemma bsup_finite:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_sup X {a1, a2} (Sup X {a1, a2})" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X"
+  shows "is_sup X A (Sup X A)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case using A0 by force
+next
+  case (insert x F)
+  obtain s1 where B0:"is_sup X F s1"
+    using insert.hyps(4) insert.prems by blast
+  have B1:"s1 \<in> X"
+    using B0 is_supD111 by auto
+  obtain s2 where B2:"is_sup X {s1, x} s2"
+    using A0 B1 insert.prems by auto
+  have B3:"s2 \<in> Upper_Bounds X (insert x F)"
+    by (metis B0 B2 binary_supD31 binary_supD32 insert.prems insert_subset sup_iff2 ubd_mem_insert)
+  have B4:"\<And>u. u \<in> Upper_Bounds X (insert x F) \<longrightarrow> s2 \<le> u"
+    by (metis B0 B2 Upper_Bounds_mem_iff Upper_Bounds_mem_iff2 sup_iff2 insertCI ub_double)
+  have B3:"is_sup X (insert x F) s2"
+    by (simp add: B3 B4 is_supI113)
+  then show ?case
+    by (simp add: sup_equality)
+qed
+
+lemma bsup_finite2:
+  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_sup X A (Sup X A)"
+  by (meson bsup_finite ssupD3)
+
+(*
 lemma bsup_in:
   assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (\<exists>s. is_sup X {a1, a2} s)" and 
           A1:"finite E" and
@@ -994,16 +1189,7 @@ next
   then show ?case
     by blast
 qed
-
-lemma sup_semilattice_fsup:
-  "\<lbrakk>is_sup_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_sup X F (Sup X F)"
-  by (metis bsup_in is_sup_semilattice_def sup_equality)
-   
-lemma inf_semilattice_finf:
-  "\<lbrakk>is_inf_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> is_inf X F (Inf X F)"
-  by (metis binf_in is_inf_semilattice_def inf_equality)
-   
-
+*)
 definition is_lattice::"'a::order set \<Rightarrow> bool" where
   "is_lattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))"
 
@@ -1147,14 +1333,6 @@ lemma cinfD43:
 lemma cinfD44:
   "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
   by (metis cinfD2 inf_equality)    
-
-lemma sinfD2:
-  "\<lbrakk>is_inf_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X F x)"
-  using inf_semilattice_finf by blast
-
-lemma ssupD2:
-  "\<lbrakk>is_sup_semilattice X; F \<subseteq> X; F \<noteq> {}; finite F\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X F x)"
-  using sup_semilattice_fsup by blast
 
 
 section Functions
