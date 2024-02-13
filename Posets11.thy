@@ -1223,6 +1223,9 @@ subsection Completeness
 definition is_inf_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_inf_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x))"
 
+definition is_finf_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_finf_closed X A \<equiv> (\<forall>a1 a2. a1 \<in> A \<and>  a2 \<in> A \<longrightarrow> Inf X {a1, a2} \<in> A)"
+
 lemma sinfI1:
   "\<lbrakk>(X \<noteq> {});  (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x))\<rbrakk> \<Longrightarrow> is_inf_semilattice X"
   by (simp add:is_inf_semilattice_def)
@@ -1332,8 +1335,55 @@ lemma binf_finite2:
   "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_inf X A (Inf X A)"
   by (meson binf_finite sinfD3)
 
+lemma finf_closedD1:
+  "is_finf_closed X A \<Longrightarrow> (\<And>a1 a2. a1 \<in> A\<Longrightarrow> a2 \<in> A \<Longrightarrow> Inf X {a1, a2} \<in> A)"
+  by (simp add: is_finf_closed_def)
+
+lemma finite_inf_closed2:
+  assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>  Inf X {a1, a2} \<in> A" and 
+          A1:"finite E" and
+          A2:"E \<noteq> {}" and
+          A3:"E \<subseteq> A" and
+          A4:"A \<subseteq> X" and
+          A5:"is_inf_semilattice X"
+  shows "Inf X E \<in> A"
+  using A1 A2 A3 A4 A5
+proof (induct E rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case
+    using A0 by fastforce
+next
+  case (insert x F)
+  obtain i where A6:"is_inf X F i"
+    by (meson A4 A5 binf_finite2 insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
+  have B0:"i \<in> A"
+    using A4 A5 A6 inf_equality insert.hyps(4) insert.prems(1) by blast
+  have B1:"x \<in> A"
+    using insert.prems(1) by auto
+  obtain t where A7:"is_inf X {x, i} t"
+    by (meson A4 A5 A6 B1 is_infD111 is_inf_semilattice_def subset_eq)
+  have B2:"t \<in> A"
+    using A0 A7 B0 B1 inf_equality by blast
+  have B3:"t \<in> (Lower_Bounds X (insert x F))"
+    by (metis A6 A7 Lower_Bounds_mem_iff is_infD111 is_infD112 is_infD5 lb_double lb_insert)
+  have B4:"\<And>y. y \<in> (Lower_Bounds X (insert x F)) \<longrightarrow> y \<le>t "
+    by (metis A6 A7 Lower_BoundsD3 Lower_Bounds_mem_iff2 insertCI is_infD42 lb_double)
+  have B5:"is_inf X (insert x F) t"
+    by (simp add: B3 B4 is_infI113)
+  then show ?case
+    by (simp add: B2 inf_equality)
+qed
+
+lemma inf_semilattice_finf_closed:
+  "\<lbrakk>is_finf_closed X A; A \<subseteq> X; E \<subseteq> A; finite E; E \<noteq> {}; is_inf_semilattice X\<rbrakk> \<Longrightarrow> Inf X E \<in> A "
+  by (metis finite_inf_closed2 is_finf_closed_def)
+
+
 definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_sup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))"
+
+definition is_fsup_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_fsup_closed X A \<equiv> (\<forall>a1 a2. a1 \<in> A \<and>  a2 \<in> A \<longrightarrow> Sup X {a1, a2} \<in> A)"
 
 lemma ssupI1:
   "\<lbrakk>(X \<noteq> {});  (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))\<rbrakk> \<Longrightarrow> is_sup_semilattice X"
@@ -1443,73 +1493,51 @@ lemma bsup_finite2:
   "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_sup X A (Sup X A)"
   by (simp add: bsup_finite ssupD3)
 
-(*
-lemma bsup_in:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (\<exists>s. is_sup X {a1, a2} s)" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> X"
-  shows "\<exists>s. is_sup X E s"
-  using A1 A2 A3 
+lemma fsup_closedD1:
+  "is_fsup_closed X A \<Longrightarrow> (\<And>a1 a2. a1 \<in> A\<Longrightarrow> a2 \<in> A \<Longrightarrow> Sup X {a1, a2} \<in> A)"
+  by (simp add: is_fsup_closed_def)
+
+lemma finite_sup_closed2:
+  assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow> Sup X {a1, a2} \<in> A" and 
+          A1: "finite E" and
+          A2: "E \<noteq> {}" and
+          A3: "E \<subseteq> A" and
+          A4: "A \<subseteq> X" and
+          A5: "is_sup_semilattice X"
+  shows "Sup X E \<in> A"
+  using A1 A2 A3 A4 A5
 proof (induct E rule: finite_ne_induct)
   case (singleton x)
   then show ?case
     using A0 by fastforce
 next
   case (insert x F)
-  obtain sF where B0:"is_sup X F sF"
-    using insert.hyps(4) insert.prems by blast
-  have B1:"sF \<in> X"
-    using B0 is_supD111 by blast
-  obtain s where B2:"is_sup X {sF, x} s"
-    using A0 B1 insert.prems by fastforce
-  have B3:"s \<in> Upper_Bounds X (insert x F)"
-    by (metis B0 B2 Upper_BoundsD1 Upper_Bounds_mem_iff insert_subset is_supD11 subset_insertI sup_iff2 ub_insert)
-  have B4:"\<And>t. t \<in> Upper_Bounds X (insert x F) \<longrightarrow> s \<le> t"
-  proof
-    fix t assume A4:"t \<in> Upper_Bounds X (insert x F)"
-    show "s \<le> t"
-      by (metis A4 B0 B2 Upper_BoundsD1 Upper_BoundsD2 Upper_BoundsD3 insertI1 is_supD42 subset_insertI ub_ant2 ub_double)
-   qed
-  have B5:"is_sup X (insert x F) s"
+  obtain s where A6: "is_sup X F s"
+    by (meson A4 A5 bsup_finite2 insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
+  have B0: "s \<in> A"
+    using A4 A5 A6 sup_equality insert.hyps(4) insert.prems(1) by blast
+  have B1: "x \<in> A"
+    using insert.prems(1) by auto
+  obtain t where A7: "is_sup X {x, s} t"
+    by (meson A4 A5 A6 B1 is_supD111 is_sup_semilattice_def subset_eq)
+  have B2: "t \<in> A"
+    using A0 A7 B0 B1 sup_equality by blast
+  have B3: "t \<in> Upper_Bounds X (insert x F)"
+    by (metis A6 A7 Upper_Bounds_mem_iff is_supD111 is_supD112 is_supD5 ub_double ub_insert)
+  have B4: "\<And>y. y \<in> Upper_Bounds X (insert x F) \<longrightarrow> t \<le> y"
+    by (metis A6 A7 Upper_BoundsD3 Upper_Bounds_mem_iff2 insertCI is_supD42 ub_double)
+  have B5: "is_sup X (insert x F) t"
     by (simp add: B3 B4 is_supI113)
   then show ?case
-    by blast
+    by (simp add: B2 sup_equality)
 qed
 
-lemma binf_in:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> (\<exists>i. is_inf X {a1, a2} i)" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> X"
-  shows "\<exists>i. is_inf X E i"
-  using A1 A2 A3 
-proof (induct E rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    using A0 by fastforce
-next
-  case (insert x F)
-  obtain iF where B0:"is_inf X F iF"
-    using insert.hyps(4) insert.prems by blast
-  have B1:"iF \<in> X"
-    using B0 is_infD111 by blast
-  obtain i where B2:"is_inf X {iF, x} i"
-    using A0 B1 insert.prems by fastforce
-  have B3:"i \<in> Lower_Bounds X (insert x F)"
-    by (metis B0 B2 Lower_Bounds_mem_iff inf_iff2 insertCI is_infD1121 lb_insert)
-  have B4:"\<And>t. t \<in> Lower_Bounds X (insert x F) \<longrightarrow> t \<le> i"
-  proof
-    fix t assume A4:"t \<in> Lower_Bounds X (insert x F)"
-    show "t \<le> i"
-      by (metis A4 B0 B2 Lower_BoundsD1 Lower_BoundsD2 Lower_BoundsD3 insertI1 is_infD122 lb_ant2 lb_double subset_insertI)
-   qed
-  have B5:"is_inf X (insert x F) i"
-    by (simp add: B3 B4 is_infI113)
-  then show ?case
-    by blast
-qed
-*)
+
+lemma sup_semilattice_fsup_closed:
+  "\<lbrakk>is_fsup_closed X A; A \<subseteq> X; E \<subseteq> A; finite E; E \<noteq> {}; is_sup_semilattice X\<rbrakk> \<Longrightarrow> Sup X E \<in> A "
+  by (metis finite_sup_closed2 is_fsup_closed_def)
+
+
 definition is_lattice::"'a::order set \<Rightarrow> bool" where
   "is_lattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))"
 
@@ -1556,8 +1584,22 @@ lemma latt_iff:
 definition is_cinf_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_cinf_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf X A x))"
 
+definition is_cinf_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_cinf_closed X A \<equiv> (\<forall>E. E \<subseteq> A\<longrightarrow> E \<noteq>{} \<longrightarrow> Inf X E \<in> A)"
+
+lemma cinf_closedI:
+  "\<lbrakk> (\<And>E.  \<lbrakk>E \<subseteq> A; E \<noteq> {}\<rbrakk> \<Longrightarrow>  Inf X E \<in> A)\<rbrakk> \<Longrightarrow> is_cinf_closed X A"
+  by (simp add: is_cinf_closed_def)
+
+lemma cinf_closedE:
+  "\<lbrakk>is_cinf_closed X A; E \<subseteq> A; E \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X E \<in> A"
+  by (simp add: is_cinf_closed_def)
+
 definition is_csup_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_csup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_sup X A x))"
+
+definition is_csup_closed::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_csup_closed X A \<equiv> (\<forall>E. E \<subseteq> A \<longrightarrow> E \<noteq>{} \<longrightarrow> Inf X E \<in> A)"
 
 definition is_clattice::"'a::order set \<Rightarrow> bool" where
   "is_clattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>A. A \<subseteq> X \<longrightarrow> (\<exists>s. is_sup X A s))"
@@ -1654,6 +1696,266 @@ lemma cinfD44:
   "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
   by (metis cinfD2 inf_equality)    
 
+lemma csupD41:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A ub A "
+  by (metis csupD2 is_supD112 sup_equality)
+
+lemma csupD42:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<in> X "
+  by (metis csupD2 sup_equality is_supD111)
+
+lemma csupD43:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<in> Upper_Bounds X A "
+  by (simp add: Upper_Bounds_mem_iff csupD41 csupD42)
+
+lemma csupD44:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
+  by (metis csupD2 sup_equality)    
+
+lemma cinf_sinf:
+  "is_cinf_semilattice X \<Longrightarrow> is_inf_semilattice X"
+  by (simp add: is_cinf_semilattice_def is_inf_semilattice_def)
+
+lemma csup_fsup:
+  "is_csup_semilattice X \<Longrightarrow> is_sup_semilattice X"
+  by (simp add: is_csup_semilattice_def is_sup_semilattice_def)
+
+section Locales
+subsection Poset
+
+
+locale inf_semilattice=
+  fixes X
+  assumes inf_ex:"is_inf_semilattice X"
+begin
+definition inf::"'a \<Rightarrow> 'a \<Rightarrow> 'a" where
+  "inf a b \<equiv> Inf X {a, b}"
+
+
+lemma binf_assoc1b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  inf (inf a b) c = inf a (inf b c)"
+  by (simp add: binf_assoc1 inf_ex inf_def)
+
+lemma binf_assoc2b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  inf a (inf b c) = inf b (inf a c)"
+  by (simp add: binf_assoc2 inf_ex inf_def)
+
+lemma binf_leI1b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow>inf a b \<le> c"
+  by (simp add: binary_infD21 sinfD3 sinfD4 inf_def inf_ex)
+
+lemma binf_leI2b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; b \<le> c\<rbrakk> \<Longrightarrow>inf a b \<le> c"
+  by (simp add: binary_infD22 sinfD3 sinfD4 inf_def inf_ex)
+
+lemma binf_leI3b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le>inf a b"
+  by (simp add: binary_infD4 sinfD3 sinfD4 inf_def inf_ex)
+
+lemma binf_iffb:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le> inf a b \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
+  by (simp add: binary_infD4 sinfD3 sinfD4 inf_def inf_ex)
+
+lemma binf_commute2b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  inf a b =inf b a"
+  by (simp add: insert_commute inf_def)
+
+lemma binf_idem1b:
+  "a\<in> X \<Longrightarrow>inf a a = a"
+  by (simp add:  inf_equality inf_singleton inf_def)
+
+lemma binf_idem2b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> inf a (inf a b) = inf a b"
+  by (simp add: binf_idem2 inf_ex inf_def)
+
+lemma binf_idem3b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> inf (inf a b) b = inf a b"
+  by (simp add: inf_def inf_ex binf_idem3)
+
+lemma binf_lt1b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> inf a b = a"
+  by (simp add: binf_lt1 inf_def inf_ex)
+
+lemma binf_lt2b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> inf a b = b"
+  by (simp add: binf_lt2 inf_ex inf_def)
+
+lemma finite_inf1:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_inf X A (Inf X A)"
+  by (simp add: binf_finite2 inf_ex)
+
+lemma finite_inf2:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  (\<exists>i. is_inf X A i)"
+  using finite_inf1 by blast
+
+
+end
+
+locale sup_semilattice=  
+  fixes X
+  assumes sup_ex:"is_sup_semilattice X"
+begin
+definition sup::"'a \<Rightarrow> 'a \<Rightarrow> 'a" where
+  "sup a b \<equiv> Sup X {a, b}"
+
+lemma bsup_commuteb:
+  "\<lbrakk>a \<in> X ; b \<in> X\<rbrakk> \<Longrightarrow>sup a b = sup b a"
+   by (simp add: insert_commute sup_def)
+
+lemma bsup_geI1b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; a \<ge> c\<rbrakk>  \<Longrightarrow>c \<le> sup a b"
+  by (simp add: bsup_geI1 sup_def sup_ex)
+
+lemma bsup_geI2b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; b \<ge> c\<rbrakk>  \<Longrightarrow> c \<le> sup a b"
+  by (simp add: bsup_geI2 sup_def sup_ex)
+
+lemma bsup_geI3:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow>sup a b \<le> c"
+  by (simp add: bsup_geI3 sup_def sup_ex)
+
+lemma bsup_iffb:
+  "\<lbrakk> a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (sup a b \<le> c \<longleftrightarrow> a \<le> c \<and> b \<le> c)"
+  by (simp add: bsup_iff sup_def sup_ex)
+
+lemma bsup_assoc1b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  sup (sup a b) c =  sup a (sup b c)"
+  by (simp add: bsup_assoc1 sup_def sup_ex)
+
+lemma bsup_assoc2b:
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow>  sup a (sup b c) = sup b (sup a c)"
+  by (simp add: bsup_assoc2 sup_def sup_ex)
+
+lemma bsup_idem1b:
+  "a\<in> X \<Longrightarrow> sup a a = a"
+  by (simp add: sup_def sup_singleton3)
+
+lemma bsup_idem2b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  sup a (sup a b) =  sup a b"
+  by (simp add: bsup_idem2 sup_def sup_ex)
+
+lemma bsup_idem3b:
+  " a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> sup (sup a b) b = sup a b"
+  by (simp add: bsup_idem3 sup_def sup_ex)
+
+lemma bsup_ge1b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  sup a b = b"
+  by (simp add: bsup_ge1 sup_def sup_ex)
+
+lemma bsup_ge2b:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow>  sup a b = a"
+  by (simp add: bsup_ge2 sup_def sup_ex)
+
+lemma finite_sup1:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_sup X A (Sup X A)"
+  by (simp add: bsup_finite2 sup_ex)
+
+lemma finite_sup2:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  (\<exists>s. is_sup X A s)"
+  using finite_sup1 by blast
+
+end
+
+locale lattice=inf_semilattice+sup_semilattice
+
+locale cinf_semilattice= fixes X
+  assumes cinf_ex:"is_cinf_semilattice X"
+begin
+
+lemma cinfD1b:
+  "X \<noteq> {}"
+  by (simp add: cinf_ex cinfD1)
+
+lemma cinfD2b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (simp add: cinf_ex cinfD2)
+
+lemma cinfD3b:
+  "(\<exists>x. is_least X x)"
+  by (simp add: cinf_ex cinfD3)
+
+
+lemma cinf_supb:
+  "\<lbrakk>A \<subseteq> X; Upper_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (simp add:cinf_ex cinf_sup)
+
+lemma cinfD41b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A lb A "
+  by (simp add:cinf_ex cinfD41)
+
+lemma cinfD42b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> X "
+  by (simp add:cinf_ex cinfD42)
+
+lemma cinfD43b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> Lower_Bounds X A "
+  by (simp add:cinf_ex cinfD43)
+
+lemma cinfD44b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
+  by (simp add:cinf_ex cinfD44)
+
+end
+
+sublocale cinf_semilattice \<subseteq> inf_semilattice
+  by(unfold_locales, simp add:is_inf_semilattice_def cinfD1 cinfD2 cinf_ex)
+
+locale csup_semilattice=fixes X
+  assumes csup_ex:"is_csup_semilattice X"
+begin
+lemma csupD1b:
+  "X \<noteq> {}"
+  by (simp add: csup_ex csupD1)
+
+lemma csupD2b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (simp add: csup_ex csupD2)
+
+lemma csupD3b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_greatest X x)"
+  by (simp add: csup_ex csupD3)
+
+lemma csup_infb:
+  "\<lbrakk>A \<subseteq> X; Lower_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (simp add:csup_ex csup_inf)
+
+lemma csupD41b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A ub A "
+  by (simp add:csup_ex csupD41)
+
+lemma csupD42b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<in> X "
+  by (simp add:csup_ex csupD42)
+
+lemma csupD43b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<in> Upper_Bounds X A "
+  by (simp add:csup_ex csupD43)
+
+lemma csupD44b:
+  "\<lbrakk> A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
+  by (simp add:csup_ex csupD44)
+
+end
+
+
+sublocale csup_semilattice \<subseteq> sup_semilattice
+  by(unfold_locales, simp add:is_sup_semilattice_def csupD1 csupD2 csup_ex)
+
+locale complete_lattice=cinf_semilattice+csup_semilattice
+begin
+
+lemma inf_empty_locale:
+  "Inf X {} = Greatest X"
+  by (simp add: Greatest_def Inf_def Lower_Bounds_empty is_inf_def)           
+
+lemma sup_empty_locale:
+  "Sup X {} = Least X"
+  by (simp add: Least_def Sup_def Upper_Bounds_empty is_sup_def)
+
+end
+
+sublocale complete_lattice \<subseteq> lattice by(unfold_locales)
+
 
 section Functions
 subsection Isotonicity
@@ -1704,13 +2006,7 @@ lemma isotoneD62:
   "\<lbrakk>is_isotone X f; is_inf X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f x) lb f`A"
   by (simp add: is_infD112 isotoneD32 inf_iff2)
 
-lemma cinf_sinf:
-  "is_cinf_semilattice X \<Longrightarrow> is_inf_semilattice X"
-  by (simp add: is_cinf_semilattice_def is_inf_semilattice_def)
 
-lemma csup_fsup:
-  "is_csup_semilattice X \<Longrightarrow> is_sup_semilattice X"
-  by (simp add: is_csup_semilattice_def is_sup_semilattice_def)
 
 subsection Extensivity
 definition is_extensive::" 'a::order set \<Rightarrow>  ('a::order \<Rightarrow> 'a::order) \<Rightarrow> bool" where
@@ -2468,44 +2764,9 @@ proof-
     using A1 A3 assms(3) assms(4) filter_inf_closed inf_equality by blast
 qed
 
-lemma filter_inf_closed2:
-  assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>  Inf X {a1, a2} \<in> A" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> A" and
-          A4:"A \<subseteq> X" and
-          A5:"is_inf_semilattice X"
-  shows "Inf X E \<in> A"
-  using A1 A2 A3 A4 A5
-proof (induct E rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    using A0 by fastforce
-next
-  case (insert x F)
-  obtain i where A6:"is_inf X F i"
-    by (meson A4 A5 binf_finite2 insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset order_trans)
-  have B0:"i \<in> A"
-    using A4 A5 A6 inf_equality insert.hyps(4) insert.prems(1) by blast
-  have B1:"x \<in> A"
-    using insert.prems(1) by auto
-  obtain t where A7:"is_inf X {x, i} t"
-    by (meson A4 A5 A6 B1 is_infD111 is_inf_semilattice_def subset_eq)
-  have B2:"t \<in> A"
-    using A0 A7 B0 B1 inf_equality by blast
-  have B3:"t \<in> (Lower_Bounds X (insert x F))"
-    by (metis A6 A7 Lower_Bounds_mem_iff is_infD111 is_infD112 is_infD5 lb_double lb_insert)
-  have B4:"\<And>y. y \<in> (Lower_Bounds X (insert x F)) \<longrightarrow> y \<le>t "
-    by (metis A6 A7 Lower_BoundsD3 Lower_Bounds_mem_iff2 insertCI is_infD42 lb_double)
-  have B5:"is_inf X (insert x F) t"
-    by (simp add: B3 B4 is_infI113)
-  then show ?case
-    by (simp add: B2 inf_equality)
-qed
-
 lemma filter_inf_closed3:
   "\<lbrakk>is_inf_semilattice X; is_filter X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf X A \<in> F"
-  by (simp add: is_filter_def filter_inf_closed1 filter_inf_closed2)
+  by (simp add: is_filter_def filter_inf_closed1 finite_inf_closed2)
 
 lemma min_filter1:
   "is_greatest X top \<Longrightarrow> is_filter X {top}"
@@ -2604,6 +2865,24 @@ lemma filter_closure_of_empty1:
 lemma filter_closure_of_empty2:
   "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
   by (simp add: cl_from_clr_def filter_closure_of_empty1 least_equality2)
+
+context inf_semilattice
+begin 
+
+lemma filter_inter_dirb:
+  "(\<And>F. F \<in> EF \<Longrightarrow> is_filter X F) \<Longrightarrow> EF \<noteq> {} \<Longrightarrow> is_dir (\<Inter>EF) (\<ge>)"
+  by (simp add:filter_inter_dir[of "X" "EF"] inf_ex)
+
+lemma filter_inter_dir2b:
+  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (\<Inter>{F1, F2}) (\<ge>)"
+  by(rule filter_inter_dir2[of "X" "F1" "F2"], rule inf_ex, simp+)
+
+lemma filter_inter_dir3b:
+  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
+  using filter_inter_dir2b by simp
+
+
+end
 
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "filter_closure X A \<equiv> if A={} then {Greatest X} else {x \<in> X. \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x}"
