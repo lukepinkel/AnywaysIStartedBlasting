@@ -2022,6 +2022,17 @@ lemma finite_sup2:
 end
 
 locale lattice=inf_semilattice+sup_semilattice
+begin
+
+lemma lattice_is_sinfs:
+  "is_inf_semilattice X"
+  by (simp add: inf_ex)
+
+lemma lattice_is_ssups:
+  "is_sup_semilattice X"
+  by (simp add: sup_ex)
+
+end
 
 locale cinf_semilattice= fixes X
   assumes cinf_ex:"is_cinf_semilattice X"
@@ -2854,6 +2865,20 @@ lemma cinf_dwdir:
   "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
   by (metis cinfD3 is_dwdirI1 leastD11 leastD2)
 
+
+lemma sinf_pair_lb:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X\<rbrakk>  \<Longrightarrow>\<exists>c. c \<in> X \<and> c \<le> a \<and>  c \<le> b"
+  by(rule_tac ?x="Inf X {a, b}" in exI, simp add:binf_leI1 binf_leI2 sinfD4)
+
+lemma ex_to_space:
+  " \<exists>x. x \<in> X \<and> Q x \<Longrightarrow>  \<exists>x \<in> X. Q x"
+  by blast
+
+lemma inf_dwdir:
+  "\<lbrakk>is_inf_semilattice X\<rbrakk> \<Longrightarrow> is_dir X (\<ge>)"
+  by(simp add:is_dir_def ex_to_space sinf_pair_lb)
+
+
 lemma is_ord_clE1:
   "is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A "
   by (simp add:is_ord_cl_def)
@@ -2997,13 +3022,8 @@ lemma filter_inf_closed:
   by (meson is_filter_def dwdir_inf)
 
 lemma filter_inf_closed1:
-  assumes A0:"is_inf_semilattice X" and A1:"is_filter X F" and  A2:"a \<in> F" " b \<in> F" shows "Inf X {a, b} \<in> F"
-proof-
-  obtain i where A3:"is_inf X {a, b} i"
-    by (meson A0 A1 assms(3) assms(4) filterD2 in_mono is_inf_semilattice_def)
-  show "Inf X {a, b} \<in> F"
-    using A1 A3 assms(3) assms(4) filter_inf_closed inf_equality by blast
-qed
+  "\<lbrakk>is_inf_semilattice X; is_filter X F; a \<in> F; b \<in> F\<rbrakk> \<Longrightarrow> Inf X {a, b} \<in> F"
+  by (meson filterD21 filter_inf_closed sinfD3)
 
 lemma filter_inf_closed3:
   "\<lbrakk>is_inf_semilattice X; is_filter X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf X A \<in> F"
@@ -3127,8 +3147,6 @@ lemma filter_inter_dir3b:
 end
 
 
-
-
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "filter_closure X A \<equiv> if A={} then {Greatest X} else {x \<in> X. \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x}"
 
@@ -3245,6 +3263,33 @@ lemma filter_closure_eq_closure:
 
 end
 
+context lattice
+begin
+context fixes F::"'a::order set" 
+        assumes in_sp:"F \<subseteq> X" and 
+                is_ne:"F \<noteq> {}"
+begin
+lemma lattice_filD1:
+  "is_filter X F \<Longrightarrow> \<lbrakk>x1 \<in> F; x2 \<in> F\<rbrakk> \<Longrightarrow> Inf X {x1, x2} \<in> F"
+  by (simp add: filter_inf_closed1 inf_ex)
+
+lemma lattice_filD2:
+  "is_filter X F \<Longrightarrow> \<lbrakk>x1 \<in> F; x2 \<in> X; x1 \<le> x2\<rbrakk> \<Longrightarrow> x2 \<in> F"
+  using filterD4 is_ord_clE1 by blast
+
+lemma lattice_dwdir:
+  "(\<And>x1 x2.  \<lbrakk>x1 \<in> F; x2 \<in> F\<rbrakk> \<Longrightarrow> Inf X {x1, x2} \<in> F) \<Longrightarrow> is_dir F (\<ge>)"
+  by (metis binf_iffb in_mono in_sp inf_def is_dwdirI1 order_refl)
+
+lemma lattice_filI1:
+  "(\<And>x1 x2.  \<lbrakk>x1 \<in> F; x2 \<in> F\<rbrakk> \<Longrightarrow> Inf X {x1, x2} \<in> F) \<Longrightarrow>
+   (\<And>x1 x2. \<lbrakk>x1 \<in> F; x2 \<in> X; x1 \<le> x2\<rbrakk> \<Longrightarrow> x2 \<in> F) \<Longrightarrow> is_filter X F"
+  by(simp add: is_filter_def is_ne in_sp,drule lattice_dwdir, simp,erule is_ord_clI1)
+
+
+end
+
+end
 
 context
   fixes X::"'a::order set"
