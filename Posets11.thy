@@ -147,6 +147,27 @@ lemma ubd_mem_union:
   "\<lbrakk>x \<in> Upper_Bounds X A; x \<in> Upper_Bounds X B\<rbrakk> \<Longrightarrow> x \<in> Upper_Bounds X (A \<union> B)"
   by (simp add: Upper_Bounds_mem_iff ub_union)
 
+lemma ne_subset_ne:
+  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
+  by blast
+
+lemma upbd_neD1:
+  "Upper_Bounds X A \<noteq> {} \<Longrightarrow> X \<noteq> {}"
+  using Upper_Bounds_sub by blast
+
+lemma upbd_neE1:
+  "Upper_Bounds X A \<noteq> {} \<Longrightarrow> a \<in> A \<Longrightarrow> (\<exists>x. x \<in> X \<and> a \<le> x)"
+  using Upper_BoundsD1 Upper_Bounds_sub by blast
+
+lemma upbd_neE2:
+  "Upper_Bounds X A \<noteq> {} \<Longrightarrow> (\<exists>x \<in> X. x ub A)"
+  using Upper_Bounds_def by blast
+
+lemma upbd_neE3:
+  "Upper_Bounds X {a} \<noteq> {} \<Longrightarrow> (\<exists>x \<in> X. a \<le> x)"
+  using upbd_neE1 by auto
+
+
 definition lb::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" (infix "lb" 50) where 
    "x lb  A \<equiv> (\<forall>a. a \<in> A \<longrightarrow> a \<ge> x)"
 
@@ -452,6 +473,10 @@ lemma greatest_equality2:
   "is_greatest A m \<Longrightarrow> Greatest A = m"
   by (simp add: greatest_equality greatest_iff)
 
+lemma greatest_equality3:
+  "m \<in> Upper_Bounds A A \<Longrightarrow> Greatest A = m"
+  by (simp add: greatest_equality2 is_greatest_def)
+
 lemma lb_single_least1:
   "x \<in> X \<Longrightarrow> is_greatest (Lower_Bounds X {x}) x"
   by (simp add: Lower_BoundsD1 Lower_Bounds_singleton greatestI3)
@@ -656,6 +681,10 @@ lemma least_equality1:
 lemma least_equality2:
   "is_least A m \<Longrightarrow> Least A = m"
   by (simp add: Least_def least_unique the_equality) 
+
+lemma least_equality3:
+  "m \<in> Lower_Bounds A A \<Longrightarrow> Least A = m"
+  by (simp add: least_equality2 is_least_def)
 
 lemma ub_single_least1:
   "x \<in> X \<Longrightarrow> is_least (Upper_Bounds X {x}) x"
@@ -1255,19 +1284,19 @@ lemma binf_commute:
   by (simp add: insert_commute)
 
 lemma binf_leI1:
-  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> (\<lambda>x y. Inf X {x, y}) a b \<le> c"
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> Inf X {a, b} \<le> c"
   by (simp add: binary_infD21 sinfD3 sinfD4)
 
 lemma binf_leI2:
-  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<le> c\<rbrakk>  \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) a b \<le> c"
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<le> c\<rbrakk>  \<Longrightarrow> Inf X {a, b} \<le> c"
   by (simp add: binary_infD22 sinfD3 sinfD4)
 
 lemma binf_leI3:
-  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le> (\<lambda>x y. Inf X {x, y}) a b"
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le> Inf X {a, b}"
   by (simp add: binary_infD4 sinfD3 sinfD4)
 
 lemma binf_iff:
-  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le>  (\<lambda>x y. Inf X {x, y}) a b \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le> Inf X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
   by (simp add: binary_infD4 sinfD3 sinfD4)
 
 lemma binf_assoc1:
@@ -1279,7 +1308,7 @@ lemma binf_assoc2:
   apply(rule order.antisym) by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)+
 
 lemma binf_commute2:
-  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) a b =  (\<lambda>x y. Inf X {x, y}) b a"
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, b}  =  Inf X {b,a}"
   by (simp add: insert_commute)
 
 lemma binf_idem1:
@@ -1295,11 +1324,11 @@ lemma binf_idem3:
   by (metis binf_assoc1 binf_idem1)
 
 lemma binf_lt1:
-  "is_inf_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) a b = a"
+  "is_inf_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Inf X {a, b} = a"
   by (simp add: dual_order.eq_iff binf_iff binf_leI1)
 
 lemma binf_lt2:
-  "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow>  (\<lambda>x y. Inf X {x, y}) a b = b"
+  "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Inf X {a, b} = b"
   by (simp add: dual_order.eq_iff binf_iff binf_leI2)
 
 lemma binf_finite:
@@ -1379,6 +1408,75 @@ lemma inf_semilattice_finf_closed:
   by (metis finite_inf_closed2 is_finf_closed_def)
 
 
+context fixes X::"'a::order set" and
+              x x1 y y1 z::"'a::order" 
+        assumes elem:"x \<in> X  \<and> x1 \<in> X \<and> y \<in> X \<and> y1 \<in> X \<and> z \<in> X" and
+                inf_latt:"is_inf_semilattice X"
+begin
+
+context assumes 
+  le:"x \<le> y"
+begin
+
+lemma sinfs_leD1:
+"Inf X {z, x} \<le> Inf X {z, y}"
+ by (simp add: binf_leI1 binf_leI2 binf_leI3 le local.elem sinfD4 inf_latt)
+
+lemma sinfs_leD2:
+"Inf X {z, x} \<le> Inf X {y, z}"
+ by (simp add: binf_leI1 binf_leI2 binf_leI3 le local.elem sinfD4 inf_latt)
+
+lemma sinfs_leD3:
+"Inf X {x, z} \<le> Inf X {z, y}"
+ by (simp add: binf_leI1 binf_leI2 binf_leI3 le local.elem sinfD4 inf_latt)
+
+lemma sinfs_leD4:
+"Inf X {x, z} \<le> Inf X {y, z}"
+ by (simp add: binf_leI1 binf_leI2 binf_leI3 le local.elem sinfD4 inf_latt)
+
+end
+
+context assumes 
+  le:"x \<le> z"
+begin
+
+lemma sinf_leD5:
+  "Inf X {x, y} \<le>z"
+  by (simp add: binf_leI1 le local.elem inf_latt)
+
+lemma sinf_leD6:
+  "Inf X {y, x} \<le> z"
+  by (simp add: binf_leI2 le local.elem inf_latt)
+
+end
+
+context assumes 
+  le:"x \<le> x1 \<and> y \<le> y1"
+begin
+lemma sinf_leD7:
+  "Inf X {x, y} \<le> Inf X {x1, y1}"
+  by (simp add: binf_leI1 binf_leI2 binf_leI3 le local.elem sinfD4 inf_latt)
+
+lemma sinf_leD8:
+  "Inf X {x, y} \<le> Inf X {y1, x1}"
+  by (simp add: insert_commute sinf_leD7)
+
+end
+
+
+context assumes 
+  le:"x \<ge> z\<and> y \<ge> z"
+begin
+lemma sinf_leD9:
+  "Inf X {x, y} \<ge> z"
+  by (simp add: binf_leI3 le local.elem inf_latt)
+end
+
+
+end
+
+
+
 definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
   "is_sup_semilattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup X {a, b} x))"
 
@@ -1414,19 +1512,19 @@ lemma bsup_commute:
   by (simp add: insert_commute)
 
 lemma bsup_geI1:
-  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<ge> c\<rbrakk>  \<Longrightarrow> (\<lambda>x y. Sup X {x, y}) a b \<ge> c"
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<ge> c\<rbrakk>  \<Longrightarrow> Sup X {a, b} \<ge> c"
   by (simp add: binary_supD21 ssupD3 ssupD4)
 
 lemma bsup_geI2:
-  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<ge> c\<rbrakk>  \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b \<ge> c"
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; b \<ge> c\<rbrakk>  \<Longrightarrow> Sup X {a, b} \<ge> c"
   by (simp add: binary_supD22 ssupD3 ssupD4)
 
 lemma bsup_geI3:
-  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow> c \<ge> (\<lambda>x y. Sup X {x, y}) a b"
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow> c \<ge> Sup X {a, b}"
   by (simp add: binary_supD4 ssupD3 ssupD4)
 
 lemma bsup_iff:
-  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge>  (\<lambda>x y. Sup X {x, y}) a b \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge> Sup X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
   by (simp add: binary_supD4 ssupD3 ssupD4)
 
 lemma bsup_assoc1:
@@ -1454,11 +1552,11 @@ lemma bsup_idem3:
   by (metis bsup_assoc1 bsup_idem1)
 
 lemma bsup_ge1:
-  "is_sup_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b = b"
+  "is_sup_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Sup X {a, b} = b"
   by (simp add: Orderings.order_eq_iff bsup_geI2 bsup_geI3)
 
 lemma bsup_ge2:
-  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow>  (\<lambda>x y. Sup X {x, y}) a b = a"
+  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Sup X {a, b} = a"
   by (simp add: dual_order.eq_iff bsup_iff bsup_geI1)
 
 lemma bsup_finite:
@@ -1538,8 +1636,75 @@ lemma sup_semilattice_fsup_closed:
   by (metis finite_sup_closed2 is_fsup_closed_def)
 
 
+context fixes X::"'a::order set" and
+              x x1 y y1 z::"'a::order" 
+        assumes elem:"x \<in> X  \<and> x1 \<in> X \<and> y \<in> X \<and> y1 \<in> X \<and> z \<in> X" and
+                sup_latt:"is_sup_semilattice X"
+begin
+
+context assumes 
+  le:"x \<le> y"
+begin
+lemma ssup_leD1:
+  "Sup X {z, x} \<le> Sup X {z, y}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_iff le local.elem ssupD4 sup_latt)
+
+lemma ssup_leD2:
+  "Sup X {x, z} \<le> Sup X {y, z}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_geI3 le local.elem ssupD4 sup_latt)
+
+lemma ssup_leD3:
+  "Sup X {x, z} \<le> Sup X {z, x}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_iff le local.elem ssupD4 sup_latt)
+
+lemma ssup_leD4:
+  "Sup X {z, x} \<le> Sup X {y, z}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_iff le local.elem ssupD4 sup_latt)
+
+end
+
+context assumes 
+  le:"x\<le> z"
+begin
+lemma ssup_leD5:
+  "x \<le> Sup X {y, z}"
+  by (simp add: bsup_geI2 le local.elem sup_latt)
+
+lemma ssup_leD6:
+  "x \<le> Sup X {z, y}"
+  by (simp add: bsup_geI1 le local.elem sup_latt)
+end
+
+
+context assumes 
+  le:"x\<le>x1 \<and> y\<le>y1"
+begin
+
+lemma ssup_leD7:
+  "Sup X {x, y} \<le> Sup X {x1, y1}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_geI3 le local.elem ssupD4 sup_latt)
+
+lemma ssup_leD8:
+  "Sup X {x, y} \<le> Sup X {y1, x1}"
+  by (simp add: bsup_geI1 bsup_geI2 bsup_geI3 le local.elem ssupD4 sup_latt)
+
+end
+
+context assumes 
+  le:"x\<le>z \<and> y\<le>z"
+begin
+lemma ssup_leD9:
+  "Sup X {x, y} \<le> z"
+  by (simp add: bsup_geI3 le local.elem sup_latt)
+end
+
+end
+
+
+
 definition is_lattice::"'a::order set \<Rightarrow> bool" where
-  "is_lattice X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))"
+  "is_lattice X \<equiv> ((X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x)))"
+
 
 lemma lattI1:
   "\<lbrakk>X \<noteq> {}; (\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>x. is_inf X {a, b} x) \<and>  (\<exists>x. is_sup X {a, b} x))\<rbrakk> \<Longrightarrow> is_lattice X"
@@ -1956,6 +2121,18 @@ end
 
 sublocale complete_lattice \<subseteq> lattice by(unfold_locales)
 
+locale cinf_semilattice_top=cinf_semilattice+
+  assumes ex_top:"\<exists>top. is_greatest X top"
+
+locale csup_semilattice_bot=csup_semilattice+
+  assumes ex_bot:"\<exists>bot. is_least X bot"
+
+sublocale cinf_semilattice_top \<subseteq> complete_lattice
+  by (unfold_locales, metis cinfD1b cinf_ex clatD21 clatI31 csupI1 inf_empty inf_equality ex_top)
+
+sublocale csup_semilattice_bot \<subseteq> complete_lattice
+  by (unfold_locales, metis csupD1b csup_ex clatD22 clatI32 cinfI1 sup_empty sup_equality ex_bot)
+
 
 section Functions
 subsection Isotonicity
@@ -2264,6 +2441,22 @@ lemma clrI2:
   "\<lbrakk>C \<noteq> {}; C \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_sup C {x} c)) \<rbrakk> \<Longrightarrow> is_clr C X"
   by (simp add: is_clr_def is_sup_def)
 
+lemma clrE21:
+  "is_clr C X \<Longrightarrow>(\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_sup C {x} c))"
+  by (simp add: is_clr_def is_sup_def)
+
+lemma clr_iff_sup:
+  "(is_clr C X) \<longleftrightarrow> ((C \<noteq> {}) \<and> (C \<subseteq> X) \<and> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>c. is_sup C {x} c)))"
+  by(simp add:is_clr_def is_sup_def)
+
+lemma clr_memI1:
+  "\<lbrakk>is_clr C X; x \<in> X; is_least (Upper_Bounds C {x}) x\<rbrakk> \<Longrightarrow> x \<in> C"
+  by (simp add: is_supD111 is_sup_def)
+
+lemma clr_memI2:
+  "\<lbrakk>is_clr C X; x \<in> X;  is_sup C {x} x\<rbrakk> \<Longrightarrow> x \<in> C"
+  by (simp add: is_supD111 is_sup_def)
+
 lemma clrD1:
   "is_clr C X \<Longrightarrow> C \<noteq> {}"
   by (simp add:is_clr_def)
@@ -2272,12 +2465,16 @@ lemma clrD2:
   "is_clr C X \<Longrightarrow> C \<subseteq> X"
   by (simp add:is_clr_def)
 
+lemma clrD2b:
+  "is_clr C X \<Longrightarrow> x \<in> C \<Longrightarrow>x \<in> X"
+  by(drule clrD2,simp add:subsetD)
+
 lemma clrD3:
-  "is_clr C X \<Longrightarrow>  (\<forall>x. x \<in> X \<longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c))"
+  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c))"
   by (simp add:is_clr_def)
 
 lemma clrD3b:
-  "is_clr C X \<Longrightarrow>  (\<forall>x. x \<in> X \<longrightarrow> (\<exists>c. is_sup C {x} c))"
+  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_sup C {x} c))"
   by (simp add: clrD3 is_sup_def)
 
 lemma clrD4:
@@ -2285,23 +2482,46 @@ lemma clrD4:
   by (simp add:is_clr_def)
 
 lemma clrD5:
-  "is_clr C X \<Longrightarrow>  (\<forall>x. x \<in> X \<longrightarrow> ((Upper_Bounds C {x}) \<noteq> {}))"
-  using clrD3 least_ne by blast
+  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X  \<Longrightarrow> ((Upper_Bounds C {x}) \<noteq> {}))"
+  by (simp add: clrD4 least_exD0)
+
+lemma clrD6:
+  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (Upper_Bounds C {x}) \<noteq> {}"
+  by (simp add: clrD5)
+
+lemma clrD61:
+  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>b \<in> C. b ub {x})"
+  by (simp add: clrD6 upbd_neE2)
 
 lemma clrD7:
-  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>c. c \<in> C \<and> x \<le> c)"
-  by (meson Upper_BoundsD2 clrD3 is_supD1121 is_supI1 leastD11 singletonI)
+  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>c \<in> C.  x \<le> c)"
+  by (simp add: clrD6 upbd_neE3)
+
+(*
+lemma clrD7:
+  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>c. c \<in> C \<and>  x \<le> c)"
+  by(rule_tac ?A="{x}" in upbd_neE1, simp add:clrD5,simp)
+*)
+
+
+lemma is_clr_cofinal1:
+  "is_clr C X \<Longrightarrow> is_greatest X m \<Longrightarrow> (\<exists>c \<in> C.  m \<le> c)"
+  by (simp add: clrD7 greatestD11)
+
+lemma is_clr_cofinal2:
+  "is_clr C X \<Longrightarrow> is_greatest X m \<Longrightarrow> c \<in> C \<Longrightarrow> m \<le> c \<Longrightarrow> m =c"
+  by (simp add: clrD2b greatestD2 order_antisym)
 
 lemma is_clr_cofinal:
   "is_clr C X \<Longrightarrow> is_greatest X m \<Longrightarrow> m \<in> C"
-  using clrD2 greatestD11 clrD7 greatestD12 ubD by fastforce
+  using is_clr_cofinal1 is_clr_cofinal2 by blast
 
 definition cl_from_clr::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
   "cl_from_clr C \<equiv> (\<lambda>x. Least (Upper_Bounds C {x}))"
 
 lemma cl_range1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (cl_from_clr C) x \<in> C"
-  by (metis Upper_BoundsD2 cl_from_clr_def clrD3 least_equality1 least_iff)
+  by(simp add:cl_from_clr_def, auto intro: Upper_BoundsD2 clrD4 least_exD1)
 
 lemma cl_range2:
   "is_clr C X  \<Longrightarrow> (cl_from_clr C)`X \<subseteq> C"
@@ -2311,17 +2531,25 @@ lemma cl_range3:
   "is_clr C X  \<Longrightarrow> x \<in> C \<Longrightarrow> (cl_from_clr C) x = x"
   by (simp add: cl_from_clr_def ub_single_least2)
 
+lemma cl_range3b:
+  "is_clr C X  \<Longrightarrow> c \<in> C \<Longrightarrow> (\<exists>x \<in> X.  (cl_from_clr C) x = c)"
+  using cl_range3 clrD2b by blast
+
 lemma cl_range4:
   "is_clr C X  \<Longrightarrow> (cl_from_clr C)`C = C"
   by (simp add: cl_range3)
 
+lemma cl_range5:
+  "is_clr C X \<Longrightarrow> x \<in> C  \<Longrightarrow> x \<in>  cl_from_clr C ` X"
+  using cl_range3b by blast
+
 lemma clr_induced_closure_id:
   "is_clr C X  \<Longrightarrow>  (cl_from_clr C)`X = C"
-  by (metis cl_range2 cl_range4 clrD2 image_mono order_antisym)
+   by (rule order_antisym, auto simp add: cl_range2 cl_range5)
 
 lemma cl_ext1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le> (cl_from_clr C) x"
-  by (metis Upper_BoundsD1 cl_from_clr_def clrD3 leastD11 least_equality2 singletonI)
+  by (metis Upper_BoundsD1 cl_from_clr_def clrD3 least_exD1 singletonI)
 
 lemma cl_ext2:
   "is_clr C X \<Longrightarrow> is_extensive X (cl_from_clr C)"
@@ -2337,7 +2565,7 @@ lemma cl_lt_ub2:
 
 lemma cl_iso1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> X  \<Longrightarrow> x \<le> y \<Longrightarrow> (cl_from_clr C) x \<le> (cl_from_clr C) y"
-  by (meson cl_ext1 cl_lt_ub2 cl_range1 order.trans)
+  by (meson cl_ext2 cl_lt_ub2 cl_range1 extensiveD3)
 
 lemma cl_iso2:
   "is_clr C X \<Longrightarrow> is_isotone X (cl_from_clr C)"
@@ -2357,7 +2585,7 @@ lemma closure_of_in_ub:
 
 lemma closure_of_lt_ub:
   "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> y \<in>  (Upper_Bounds (f`X) {x}) \<Longrightarrow> (f x) \<le> y"
-  by (meson Upper_BoundsD1 Upper_BoundsD2 cl_le_cl_iff_le singleton_iff)
+  by (meson Upper_BoundsD2 closureD7 ub_single_D2)
 
 lemma closure_of_least_closed1:
   "is_closure X f \<Longrightarrow> x \<in> X \<Longrightarrow> is_least (Upper_Bounds (f`X) {x}) (f x)"
@@ -2369,7 +2597,7 @@ lemma closure_of_least_closed2:
 
 lemma closure_induced_clr:
   "is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> is_clr (f`X) X"
-  by (metis closure_of_least_closed1 empty_is_image is_closure_def is_clr_def)
+  by (metis closure_iff2 closure_of_least_closed1 clrI1 empty_is_image)
 
 lemma closure_induced_clr_id:
   "is_closure X f \<Longrightarrow> X \<noteq> {} \<Longrightarrow> x  \<in> X \<Longrightarrow> (cl_from_clr (f`X)) x = f x"
@@ -2485,15 +2713,7 @@ lemma moore_clI3:
 lemma clr_cinf_semilattice1:
   assumes A0:"is_clr C X" and A1:"is_cinf_semilattice X"
   shows "\<And>A. A \<subseteq> C \<and> A \<noteq> {} \<longrightarrow> (\<exists>x. is_inf C A x \<and> is_inf X A x)"
-proof
-  fix A assume A2:"A \<subseteq> C \<and> A \<noteq> {}"
-  obtain x where B0:"is_inf X A x"
-    by (meson A0 A1 A2 clrD2 dual_order.trans is_cinf_semilattice_def)
-  have B1:"is_inf C A x"
-    by (meson A0 A2 B0 clrD11 clrD2 inf_in_subset)
-  show "(\<exists>x. is_inf C A x \<and> is_inf X A x)"
-    using B0 B1 by blast
-qed
+  by (meson A0 A1 cinfD2 clrD11 clrD2 dual_order.trans inf_in_subset)
 
 lemma clr_cinf_semilattice2:
   "\<lbrakk>is_clr C X; is_cinf_semilattice X\<rbrakk> \<Longrightarrow> (\<And>A. A \<subseteq> C \<and> A \<noteq> {} \<Longrightarrow> Inf C A = Inf X A)"
@@ -2545,6 +2765,28 @@ lemma ord_emb_imp2:
   by(simp add:ord_embedding_def)
 
 
+subsection ClosureLocales
+
+locale closure=
+  fixes X::"'a::order set" and
+        f::"'a::order \<Rightarrow> 'a::order"
+  assumes is_cl:"is_closure X f" and
+          is_ne:"X \<noteq> {}"
+
+locale closure_range=
+  fixes X::"'a::order set" and
+        C::"'a::order set" 
+  assumes is_cl_range:"is_clr C X"
+
+locale clr_closure=closure_range
+
+sublocale closure \<subseteq> cr:closure_range "X" "f`X"
+  by (unfold_locales,simp add: closure_induced_clr is_cl is_ne)
+
+sublocale clr_closure \<subseteq> cl:closure "X" "cl_from_clr X"
+  apply (unfold_locales,simp add: cl_from_clr_def is_closure_def is_extensive_def is_idempotent_def is_isotone_def ub_single_least2)
+  using clrD1 clr_induced_closure_id is_cl_range by blast
+
 section SpecialSubsets
 
 subsection DirectedSets
@@ -2581,7 +2823,7 @@ lemma csup_updir:
 
 lemma sup_updir:
   "\<lbrakk>is_sup_semilattice X; is_greatest X m\<rbrakk> \<Longrightarrow> is_dir X (\<le>)"
-  by (meson greatestD11 greatestD2 is_updirI1)
+  by (meson greatestD1 greatestD2 is_updirI1)
 
 lemma is_dwdirE1:
   "is_dir (X::'a::order set) (\<ge>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c) "
@@ -2611,7 +2853,6 @@ lemma dwdir_obtain:
 lemma cinf_dwdir:
   "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
   by (metis cinfD3 is_dwdirI1 leastD11 leastD2)
-
 
 lemma is_ord_clE1:
   "is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A "
@@ -2713,7 +2954,7 @@ lemma filterD4:
 
 lemma greatest_in_filter1:
   "is_greatest X m \<Longrightarrow> is_filter X F \<Longrightarrow>  (\<exists>f. f \<in> F \<and> f \<le> m)"
-  by (metis Posets11.is_filter_def bot.extremum_uniqueI greatestD12 subset_emptyI ubD ub_ant2)
+  by (metis is_filter_def bot.extremum_uniqueI greatestD12 subset_emptyI ubD ub_ant2)
 
 lemma greatest_in_filter2:
   "is_greatest X m \<Longrightarrow> is_filter X F \<Longrightarrow>  m \<in> F"
@@ -2866,6 +3107,8 @@ lemma filter_closure_of_empty2:
   "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
   by (simp add: cl_from_clr_def filter_closure_of_empty1 least_equality2)
 
+
+
 context inf_semilattice
 begin 
 
@@ -2882,6 +3125,8 @@ lemma filter_inter_dir3b:
   using filter_inter_dir2b by simp
 
 end
+
+
 
 
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
@@ -2937,6 +3182,18 @@ lemma ne_filter_cl0:
 lemma ne_filter_cl1:
   "is_ord_cl X (filter_closure X A) (\<le>)"
   apply(simp add:subs_ne filter_closure_ne_simp is_ord_cl_def) by (meson order.trans)
+
+end
+
+context inf_semilattice
+begin
+lemma ne_filter_cl0b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> A \<subseteq> (filter_closure X A)"
+  by (simp add: inf_ex ne_filter_cl0)
+
+lemma ne_filter_cl1b:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_ord_cl X (filter_closure X A) (\<le>)"
+  by (simp add: inf_ex ne_filter_cl1)
 
 end
 
@@ -3147,7 +3404,6 @@ lemma filters_on_lattice_sup_semilattice2:
   by (metis filters_on_iff filters_on_lattice_inf_semilattice filters_on_lattice_sup_semilattice1 is_inf_semilattice_def is_sup_semilattice_def)
 
 end
-
 
 
 end
