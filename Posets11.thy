@@ -2132,6 +2132,8 @@ end
 
 sublocale complete_lattice \<subseteq> lattice by(unfold_locales)
 
+
+
 locale cinf_semilattice_top=cinf_semilattice+
   assumes ex_top:"\<exists>top. is_greatest X top"
 
@@ -2144,6 +2146,25 @@ sublocale cinf_semilattice_top \<subseteq> complete_lattice
 sublocale csup_semilattice_bot \<subseteq> complete_lattice
   by (unfold_locales, metis csupD1b csup_ex clatD22 clatI32 cinfI1 sup_empty sup_equality ex_bot)
 
+locale inf_semilattice_top=inf_semilattice+
+  assumes ex_top:"\<exists>top. is_greatest X top"
+
+locale sup_semilattice_bot=sup_semilattice+
+  assumes ex_bot:"\<exists>bot. is_least X bot"
+
+
+locale inf_semilattice_bot=inf_semilattice+
+  assumes  ex_bot:"\<exists>bot. is_least X bot"
+
+locale sup_semilattice_top=sup_semilattice+
+  assumes ex_top:"\<exists>top. is_greatest X top"
+
+
+sublocale cinf_semilattice_top \<subseteq> inf_semilattice_top
+  by (unfold_locales, simp add: ex_top)
+
+sublocale csup_semilattice_bot \<subseteq> sup_semilattice_bot
+  by (unfold_locales, simp add: ex_bot)
 
 section Functions
 subsection Isotonicity
@@ -3291,42 +3312,30 @@ end
 
 end
 
+lemma filters_on_lattice_inf01:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> z \<in> F1 \<inter> F2 \<Longrightarrow> \<exists>f1 f2. f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2}"
+  by (metis Int_iff filterD21 insert_absorb2 sup_singleton3)
+
+
+lemma filters_on_lattice_inf02:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2} \<Longrightarrow> z \<in> F1 \<inter> F2 "
+  using filterD4[of "X" "F1"] is_ord_clE1[of "X" "F1" "f1" "z"] filterD4[of "X" "F2"] is_ord_clE1[of "X" "F2" "f2" "z"]
+  by (meson IntI dual_order.eq_iff filterD21 latt_iff ssupD4 ssup_leD5 ssup_leD6) 
+
 context
   fixes X::"'a::order set"
   assumes csinf:"is_lattice X" 
 begin
 
-lemma filters_on_lattice_inf1:
+
+
+lemma filters_on_lattice_inf0:
   assumes A0:"is_filter X F1" "is_filter X F2" 
   shows "(F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}" (is "?L = ?R")
 proof
-  show "?L \<subseteq> ?R"
-    proof
-      fix z assume A1:"z \<in> ?L"
-      have B0:"z \<in> F1 \<and> z \<in> F2"
-        using A1 by blast
-      have B1:"z = Sup X {z, z}"
-        by (metis B0 assms(2) bsup_idem1 filterD21)
-      have B2:"z \<in> ?R"
-        using B0 B1 by blast
-      show "z \<in> ?R"
-        using B2 by blast
-    qed
+  show "?L \<subseteq> ?R"  using assms(1) assms(2) csinf filters_on_lattice_inf01 by blast
 next
-  show "?R \<subseteq> ?L"
-  proof
-    fix z assume A2:"z \<in> ?R"
-    obtain f1 f2 where B3:"f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1,f2}"
-      using A2 by blast
-    have B4:"f1 \<le> z \<and> f2 \<le> z"
-      by (metis B3 assms(1) assms(2) csinf filterD2 insertI1 insert_commute is_supD1121 lattD32 subsetD)
-    have B5:"z \<in> X"
-      by (metis B3 assms(1) assms(2) csinf filterD2 is_supD111 lattD32 subsetD)
-    have B6:"z \<in> F1 \<and> z \<in> F2"
-      using B3 B4 B5 assms(1) assms(2) filterD4 is_ord_clE1 by blast
-    show "z \<in> ?L"
-      using B6 by blast
-  qed
+  show "?R \<subseteq> ?L"using assms(1) assms(2) csinf filters_on_lattice_inf02 by blast
 qed
 
 lemma filters_on_lattice_inf2:
@@ -3339,19 +3348,9 @@ lemma filters_on_lattice_inf3:
   using filterD4 is_ord_clE1 by blast+
 
 lemma filter_on_lattice_inf4:
-  assumes A0:"is_filter X F1" "is_filter X F2" shows "(F1 \<inter> F2) \<noteq> {}"
-proof-
-  obtain f1 f2 where A1:"f1 \<in> F1" "f2 \<in> F2"
-    using assms(1) assms(2) filterD1 by fastforce
-  obtain y where A2:"is_sup X {f1, f2} y"
-    by (meson A1(1) A1(2) assms(1) assms(2) csinf filterD2 in_mono is_lattice_def)
-  have B0:"Sup X {f1, f2} = y"
-    by (simp add: A2 sup_equality)
-  have B1:"y \<in> F1 \<inter> F2"
-    by (metis A1(1) A1(2) A2 Int_iff assms(1) assms(2) filterD4 insertI1 is_ord_clE1 is_supD111 is_supD1121 subset_iff subset_insertI)
-  show ?thesis
-    using B1 by blast
-qed 
+  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
+  by (metis csinf empty_iff equals0I filterD1 filters_on_lattice_inf02)
+
 
 lemma filters_on_lattice_inf5:
   "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_filter X (F1 \<inter> F2)"
@@ -3371,7 +3370,8 @@ lemma filters_on_lattice_inf8:
 
 lemma filters_on_lattice_inf_semilattice:
   "is_inf_semilattice (filters_on X)"
-  by (metis filters_on_lattice_inf8 csinf equals0D filters_is_clr1b filters_on_iff is_inf_semilattice_def lattD41)
+  by (metis csinf empty_iff filters_is_clr1b filters_on_iff filters_on_lattice_inf8 lattD41 sinfI1)
+
 
 lemma filters_on_lattice_sup1:
   "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_ord_cl X (filter_closure X (\<Union>EF)) (\<le>)"
