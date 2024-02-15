@@ -7,7 +7,7 @@ no_notation Cons (infixr "#" 65)
 hide_type list
 hide_const rev
 hide_const top
-declare [[show_consts,show_sorts,show_types]]
+declare [[show_consts,show_sorts,show_types, show_results]]
 
 section Bounds
 subsection Upper
@@ -386,6 +386,7 @@ lemma greatest_unique:
 lemma is_greatest_iso2:
   "A \<subseteq> B \<Longrightarrow> is_greatest A ma \<Longrightarrow> is_greatest B mb \<Longrightarrow> ma \<le> mb"
   using greatestD11 greatestD2 by blast
+
 
 lemma greatest_ne:
   "is_greatest A m \<Longrightarrow> A \<noteq> {}"
@@ -1076,7 +1077,7 @@ lemma is_infD42:
 lemma is_infD5:
   "is_inf X A x \<Longrightarrow> (\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A))"
   by(auto simp add:is_infD41[of "X" "A" "x"]  is_infD42[of "X" "A" "x"]) 
-   
+ 
 lemma is_infI3:
   "\<lbrakk>x \<in> A; A \<subseteq> X; (\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A))\<rbrakk> \<Longrightarrow> is_inf X A x"
   by (meson in_mono is_infI115 order_refl)
@@ -1246,6 +1247,60 @@ lemma Lower_eq_inf_eq:
 lemma lb_eq_inf_eq:
   "(\<And>x. x lb A \<longleftrightarrow> x lb B) \<Longrightarrow> (is_inf X A i \<longleftrightarrow> is_inf X B i)"
   by (simp add: Lower_Bounds_mem_iff inf_iff2)
+
+lemma inf_exI:
+  "\<exists>t. is_inf X A t \<Longrightarrow> (\<And>t. is_inf X A t \<Longrightarrow> P t) \<Longrightarrow> P (Inf X A)"
+  using inf_equality by auto
+
+lemma sup_exI:
+  "\<exists>s. is_sup X A s \<Longrightarrow> (\<And>s. is_sup X A s \<Longrightarrow> P s) \<Longrightarrow> P (Sup X A)"
+  using sup_equality by auto
+
+lemma lbd_eqI1:
+  "(\<And>x. x \<in> X \<Longrightarrow> x lb A \<Longrightarrow> x lb B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x lb B \<Longrightarrow> x lb A) \<Longrightarrow> Lower_Bounds X A = Lower_Bounds X B"
+  by(auto simp add:set_eq_iff Lower_Bounds_mem_iff)
+
+lemma ubd_eqI1:
+  "(\<And>x. x \<in> X \<Longrightarrow> x ub A \<Longrightarrow> x ub B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x ub B \<Longrightarrow> x ub A) \<Longrightarrow> Upper_Bounds X A = Upper_Bounds X B"
+  by(auto simp add:set_eq_iff Upper_Bounds_mem_iff)
+
+lemma image_p:
+  "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))"
+  by blast
+
+lemma lb_imageI:
+  "(\<And>a. a \<in> A \<Longrightarrow> x \<le> f a) \<Longrightarrow> x lb (f`A)"
+  by(simp add:lb_def image_p[of "A" "\<lambda>a. x \<le> a" "f"])
+
+lemma ub_imageI:
+  "(\<And>a. a \<in> A \<Longrightarrow> x \<ge> f a) \<Longrightarrow> x ub (f`A)"
+  by(simp add:ub_def image_p[of "A" "\<lambda>a. x \<ge> a" "f"])
+
+lemma inf_families1:
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb Inf X ` A \<Longrightarrow> x lb \<Union> A"
+  by (metis Union_iff imageI inf_equality is_infD32 lb_def)
+
+lemma inf_families2:
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb \<Union> A \<Longrightarrow>  x lb Inf X ` A"
+   by (metis lb_imageI  Union_upper inf_equality is_infD5 lb_ant2)
+
+lemma sup_families1:
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x ub Sup X ` A \<Longrightarrow> x ub \<Union> A"
+  by (metis Union_iff imageI sup_equality is_supD32 ub_def)
+
+lemma sup_families2:
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x ub \<Union> A \<Longrightarrow>  x ub Sup X ` A"
+   by (metis ub_imageI Union_upper sup_equality is_supD5 ub_ant2)
+
+lemma inf_families:
+  "A \<noteq> {} \<Longrightarrow>(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow>(is_inf X ((\<lambda>Ai. Inf X Ai)`A) t) \<longleftrightarrow> (is_inf X (\<Union>A) t)"
+  apply(rule Lower_eq_inf_eq, rule lbd_eqI1) using inf_families1 apply blast using inf_families2 by blast
+
+lemma sup_families:
+  "A \<noteq> {} \<Longrightarrow>(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow>(is_sup X ((\<lambda>Ai. Sup X Ai)`A) s) \<longleftrightarrow> (is_sup X (\<Union>A) s)"
+  apply(rule Upper_eq_sup_eq, rule ubd_eqI1) using sup_families1 apply blast using sup_families2 by blast
+
+
 
 subsection Completeness
 
@@ -3309,8 +3364,8 @@ lemma lattice_filI1:
 
 
 end
-
 end
+
 
 lemma filters_on_lattice_inf01:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> z \<in> F1 \<inter> F2 \<Longrightarrow> \<exists>f1 f2. f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2}"
@@ -3322,133 +3377,218 @@ lemma filters_on_lattice_inf02:
   using filterD4[of "X" "F1"] is_ord_clE1[of "X" "F1" "f1" "z"] filterD4[of "X" "F2"] is_ord_clE1[of "X" "F2" "f2" "z"]
   by (meson IntI dual_order.eq_iff filterD21 latt_iff ssupD4 ssup_leD5 ssup_leD6) 
 
-context
-  fixes X::"'a::order set"
-  assumes csinf:"is_lattice X" 
-begin
+lemma filters_on_lattice_inf03:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<Longrightarrow> f2 \<in> F2  \<Longrightarrow> Sup X {f1, f2} \<in> F1 \<inter> F2 "
+  using filters_on_lattice_inf02 by blast
 
 
+lemma filter_on_lattice_sup01:
+  "\<lbrakk>is_lattice X; is_filter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
+  by (meson binary_supD32 filterD21 filterD4 is_ord_clE1 lattD32 lattD42 ssupD4)
 
-lemma filters_on_lattice_inf0:
-  assumes A0:"is_filter X F1" "is_filter X F2" 
-  shows "(F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}" (is "?L = ?R")
-proof
-  show "?L \<subseteq> ?R"  using assms(1) assms(2) csinf filters_on_lattice_inf01 by blast
-next
-  show "?R \<subseteq> ?L"using assms(1) assms(2) csinf filters_on_lattice_inf02 by blast
-qed
+lemma filter_on_lattice_top0:
+  "is_lattice X \<Longrightarrow> Posets11.is_filter X {x} \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> x"
+  by (meson Posets11.is_filter_def bsup_iff filter_on_lattice_sup01 insertI1 latt_iff subsetD ubD ub_singleton)
 
-lemma filters_on_lattice_inf2:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
-  using csinf filter_inter_dir3 lattD41 by blast
+lemma filter_on_lattice_top:
+  "\<lbrakk>is_lattice X;  is_filter X {x}\<rbrakk> \<Longrightarrow>  is_greatest X x"
+  by(rule greatestI1, rule Upper_BoundsI, simp add: filter_on_lattice_top0, simp add:filterD21)
 
-lemma filters_on_lattice_inf3:
+lemma filter_on_lattice_eq:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}"
+  apply(auto simp add:set_eq_iff)  apply (metis bsup_idem1 filterD21) 
+  using filters_on_lattice_inf03[of "X" "F1" "F2"]  by blast+
+
+lemma filters_on_lattice_inf2b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
+  using filter_inter_dir3 lattD41 by blast
+
+lemma filters_upcl:
   "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)"
-  apply(auto simp add:is_ord_cl_def)
-  using filterD4 is_ord_clE1 by blast+
+  apply(auto simp add:is_ord_cl_def) using filterD4 is_ord_clE1 by blast+
 
-lemma filter_on_lattice_inf4:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
-  by (metis csinf empty_iff equals0I filterD1 filters_on_lattice_inf02)
+lemma filter_on_lattice_inf4b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
+  by (metis empty_iff equals0I filterD1 filters_on_lattice_inf02)
 
+lemma filters_on_lattice_inf5b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_filter X (F1 \<inter> F2)"
+  by (meson filterD2 filterI1 filter_on_lattice_inf4b filters_on_lattice_inf2b filters_upcl inf.coboundedI2) 
 
-lemma filters_on_lattice_inf5:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_filter X (F1 \<inter> F2)"
-  by (meson filterD2 filterI1 filter_on_lattice_inf4 filters_on_lattice_inf2 filters_on_lattice_inf3 inf.coboundedI2) 
+lemma filters_on_lattice_inf6b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (Lower_Bounds (filters_on X) {F1, F2})"
+  by (simp add: Lower_Bounds_mem_iff filters_on_iff filters_on_lattice_inf5b lb_double)
 
-lemma filters_on_lattice_inf6:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (Lower_Bounds (filters_on X) {F1, F2})"
-  by (simp add: Lower_Bounds_mem_iff filters_on_iff filters_on_lattice_inf5 lb_double)
-
-lemma filters_on_lattice_inf7:
+lemma filters_on_lattice_inf7b:
   "\<lbrakk>is_filter X F1; is_filter X F2; G \<in> (Lower_Bounds (filters_on X) {F1, F2})\<rbrakk>  \<Longrightarrow>  G \<subseteq>  (F1 \<inter> F2)"
   by (simp add: Lower_Bounds_mem_iff lb_double)
 
-lemma filters_on_lattice_inf8:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk>\<Longrightarrow> is_inf (filters_on X) {F1, F2} (F1 \<inter> F2)"
-  by (meson filters_on_lattice_inf6 filters_on_lattice_inf7 is_infI113)
+lemma filters_on_lattice_inf8b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk>\<Longrightarrow> is_inf (filters_on X) {F1, F2} (F1 \<inter> F2)"
+  by (meson filters_on_lattice_inf6b filters_on_lattice_inf7b is_infI113)
 
-lemma filters_on_lattice_inf_semilattice:
-  "is_inf_semilattice (filters_on X)"
-  by (metis csinf empty_iff filters_is_clr1b filters_on_iff filters_on_lattice_inf8 lattD41 sinfI1)
+lemma filters_on_lattice_inf_semilattice1:
+  "is_lattice X \<Longrightarrow> is_inf_semilattice (filters_on X)"
+  by (metis empty_iff filters_is_clr1b filters_on_iff filters_on_lattice_inf8b lattD41 sinfI1)
 
+lemma filters_on_lattice_sup1b:
+  "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_ord_cl X (filter_closure X (\<Union>EF)) (\<le>)"
+  by (metis Sup_least all_not_in_conv empty_Union_conv filterD1 filterD2 lattD41 ne_filter_cl1)
 
-lemma filters_on_lattice_sup1:
-  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_ord_cl X (filter_closure X (\<Union>EF)) (\<le>)"
-  by (metis Sup_least all_not_in_conv csinf empty_Union_conv filterD1 filterD2 lattD41 ne_filter_cl1)
-
-lemma filters_on_lattice_sup2:
-  assumes A0:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" "EF \<noteq> {}" 
-  shows " is_dir (filter_closure X (\<Union>EF)) (\<ge>)"
+lemma filters_on_lattice_sup2a:
+  assumes A0:"is_lattice X" and A1:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" and A2:"EF \<noteq> {}" and
+          A3: "a \<in> (filter_closure X (\<Union>EF))" and  A4:"b \<in> (filter_closure X (\<Union>EF))"
+  shows "(\<exists>c \<in> (filter_closure X (\<Union>EF)).  a \<ge> c \<and>  b \<ge> c)"
 proof-
-  let ?U="(\<Union>EF)"
-  let ?A="filter_closure X ?U"
-  have B0:"\<And>a b. a \<in> ?A \<and>  b \<in> ?A \<longrightarrow> (\<exists>c \<in> ?A.  a \<ge> c \<and>  b \<ge> c)"
-  proof
-    fix a b assume A1:"a \<in> ?A \<and> b \<in> ?A"
-    obtain Fa Fb where B1:"Fa \<subseteq> ?U" "finite Fa" "Fa \<noteq> {}" "Inf X Fa \<le> a" and 
-                       B2:"Fb \<subseteq> ?U" "finite Fb" "Fb \<noteq> {}" "Inf X Fb \<le> b"
-      by (metis A1 Pow_empty assms(1) assms(2) filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
-    let ?Fab="Fa \<union> Fb"
-    have B3:"?Fab \<subseteq> ?U"
-      using B1(1) B2(1) by auto
-    have B4: "finite ?Fab"
-      by (simp add: B1(2) B2(2)) 
-    have B5:"?Fab \<noteq> {}"
-      by (simp add: B2(3))
-    have B6:"?Fab \<subseteq> X"
-      by (meson B3 Sup_le_iff assms(1) filterD2 order.trans)
-    have B7: "Inf X ?Fab \<le> a \<and> Inf X ?Fab \<le> b"
-      by (meson B1(2) B1(3) B1(4) B2(2) B2(3) B2(4) B4 B5 B6 Un_upper1 binf_finite2 csinf dual_order.trans is_inf_ant1 lattD41 sup.cobounded2)
-    have B8:"Inf X ?Fab \<in> ?A"
-      by (meson B3 B4 B5 B6 binf_finite2 csinf dual_order.refl filter_closure_memI1 is_infD111 lattD41)
-    show "\<exists>c \<in> ?A.  a \<ge> c \<and>  b \<ge> c"
-      using B7 B8 by blast
-  qed
+  obtain Fa Fb where B1:"Fa \<subseteq> (\<Union>EF)" "finite Fa" "Fa \<noteq> {}" "Inf X Fa \<le> a" and 
+                     B2:"Fb \<subseteq> (\<Union>EF)" "finite Fb" "Fb \<noteq> {}" "Inf X Fb \<le> b"
+   by (metis A3 A4 Pow_empty A1 A2  filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
+  have B3:"Fa \<union> Fb \<subseteq> \<Union>EF \<and> finite (Fa \<union> Fb) \<and> (Fa \<union> Fb) \<noteq> {}"
+    by (simp add: B1(1) B1(2) B2(1) B2(2) B2(3))
+  have B4:"Fa \<union> Fb \<subseteq> X"
+    by (meson A1 B3 Sup_le_iff filterD2 subsetD subsetI)
+  have B5:"Inf X (Fa \<union> Fb) \<in>  (filter_closure X (\<Union>EF))"
+    by (meson A0 B3 B4 binf_finite2 dual_order.refl filter_closure_memI1 is_infD111 lattD41)
+  have B6:"Inf X (Fa \<union> Fb) \<le> a \<and> Inf X (Fa \<union> Fb) \<le> b"
+    by (meson A0 B1 B2 B3 B4 Un_upper1 binf_finite2 dual_order.trans is_inf_ant1 lattD41 sup.cobounded2)
   show ?thesis
-    by (simp add: B0 is_dwdirI1)
+    using B5 B6 by blast
 qed
-  
-lemma filters_on_lattice_sup3:
-  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> filter_closure X (\<Union>EF) \<noteq> {}"
-  by (simp add: Union_least csinf filterD2 filter_closure_ne lattD1)
-  
-lemma filters_on_lattice_sup4:
-  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_filter X (filter_closure X (\<Union>EF))"
-  by (simp add: is_filter_def filter_closure_iff filters_on_lattice_sup1 filters_on_lattice_sup2 filters_on_lattice_sup3 subset_iff)
 
-lemma filters_on_lattice_sup5:
+lemma filters_on_lattice_sup2b:
+  "\<lbrakk>is_lattice X;(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir (filter_closure X (\<Union>EF)) (\<ge>)"
+  by (simp add: filters_on_lattice_sup2a is_dwdirI1)
+
+lemma filters_on_lattice_sup3b:
+  "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> filter_closure X (\<Union>EF) \<noteq> {}"
+  by (simp add: Union_least filterD2 filter_closure_ne lattD1)
+  
+lemma filters_on_lattice_sup4b:
+  "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_filter X (filter_closure X (\<Union>EF))"
+  by (simp add: is_filter_def filter_closure_iff filters_on_lattice_sup1b filters_on_lattice_sup2b filters_on_lattice_sup3b subset_iff)
+
+lemma filters_on_lattice_sup5b:
   "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}; F \<in> EF\<rbrakk> \<Longrightarrow>  F \<subseteq> (filter_closure X (\<Union>EF))"
   by (meson UnionI Union_least filterD2 filter_closure_singleton subsetI)
 
-lemma filters_on_lattice_sup6:
-  assumes A0:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" "EF \<noteq> {}" and A1:"is_filter X G" "(\<And>F. F \<in> EF \<Longrightarrow> F \<subseteq> G)"
+lemma filters_on_lattice_sup6b:
+  assumes A0:"is_lattice X" and A1:"(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F)" and A2:"EF \<noteq> {}" and
+          A3:"is_filter X G"  and A4:"(\<And>F. F \<in> EF \<Longrightarrow> F \<subseteq> G)"
   shows "filter_closure X (\<Union>EF) \<subseteq> G"
 proof
-  fix x assume A2:"x \<in> filter_closure X (\<Union>EF)"
-  obtain Fx where  B1:"Fx \<subseteq>  (\<Union>EF)" "finite Fx" "Fx \<noteq> {}" "Inf X Fx \<le>x"
-    by (metis A2 Pow_empty assms(1) assms(2) filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
+  fix x assume A5:"x \<in> filter_closure X (\<Union>EF)"
+  obtain Fx where  B1:"Fx \<subseteq>  (\<Union>EF) \<and> finite Fx \<and> Fx \<noteq> {} \<and> Inf X Fx \<le>x"
+    by (metis A5 Pow_empty A1 A2 filterD1 filter_closure_obtains insertI1 subset_Pow_Union subset_singletonD)
   have B2:"Fx \<subseteq> G"
-    using B1(1) assms(4) by blast
+    using B1(1) A4  by blast
   have B3:"Fx \<subseteq> X"
-    using B2 is_filter_def assms(3) by auto
+    using B2 is_filter_def A3 by auto
   show "x \<in> G"
-    by (metis A2 B1(1) B1(2) B1(3) B1(4) B2 assms(3) bot.extremum_uniqueI csinf filterD4 filter_closure_iff filter_inf_closed3 is_ord_clE1 lattD41)
+    by (metis A0 A3 A5 B1 B2 bot.extremum_uniqueI filterD4 filter_closure_iff filter_inf_closed3 is_ord_clE1 lattD41)
 qed
 
-lemma filters_on_lattice_sup7:
-  "\<lbrakk>(\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
-  by(simp add:is_sup_def filters_on_lattice_sup4 filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5 filters_on_lattice_sup6 least_iff)
+lemma filters_on_lattice_sup7b:
+  "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
+  by(simp add:is_sup_def filters_on_lattice_sup4b filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5b filters_on_lattice_sup6b least_iff)
 
-lemma filters_on_lattice_sup_semilattice1:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_sup (filters_on X) {F1, F2} (filter_closure X (F1 \<union> F2))"
-  by (metis Union_insert ccpo_Sup_singleton empty_not_insert filters_on_lattice_sup7 insertE singleton_iff)
+lemma filters_on_lattice_sup_semilattice1b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_sup (filters_on X) {F1, F2} (filter_closure X (F1 \<union> F2))"
+  by (metis Union_insert ccpo_Sup_singleton empty_not_insert filters_on_lattice_sup7b insertE singleton_iff)
 
-lemma filters_on_lattice_sup_semilattice2:
-  "is_sup_semilattice (filters_on X)"
-  by (metis filters_on_iff filters_on_lattice_inf_semilattice filters_on_lattice_sup_semilattice1 is_inf_semilattice_def is_sup_semilattice_def)
+lemma filters_on_lattice_sup_semilattice2b:
+  "is_lattice X \<Longrightarrow> is_sup_semilattice (filters_on X)"
+  by (metis filters_on_iff filters_on_lattice_inf_semilattice1 filters_on_lattice_sup_semilattice1b is_inf_semilattice_def is_sup_semilattice_def)
+
+lemma filters_on_lattice_sup_semilattice3b:
+  "is_lattice X \<Longrightarrow> EF \<subseteq> (filters_on X) \<Longrightarrow> finite EF \<Longrightarrow> EF \<noteq> {} \<Longrightarrow> (Sup (filters_on X) EF) \<in> filters_on X"
+  by (meson bsup_finite2 filters_on_lattice_sup_semilattice2b is_supD111)
+
+
+definition lorc::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" ("(2[_')\<^sub>_)") where
+  "[a)\<^sub>X \<equiv> {y \<in> X. a \<le> y} "
+
+lemma lorcI1:"y \<in> X \<Longrightarrow> a \<le> y \<Longrightarrow> y \<in> [a)\<^sub>X" by (simp add:lorc_def)
+lemma lorcD1:"y \<in> [a)\<^sub>X \<Longrightarrow> y \<in> X \<and> a \<le> y" by (simp add:lorc_def)
+lemma lorcD11:"y \<in> [a)\<^sub>X \<Longrightarrow> y \<in> X " by (simp add:lorc_def)
+lemma lorcD12:"y \<in> [a)\<^sub>X \<Longrightarrow> a \<le> y" by (simp add:lorc_def)
+
+lemma lorcD2:"x \<in> X \<Longrightarrow> y \<in> [a)\<^sub>X \<Longrightarrow>  y \<le> x \<Longrightarrow> x \<in> [a)\<^sub>X"
+  by(drule lorcD12, erule lorcI1, simp)
+
+lemma lorcD3:
+  "(\<exists>b. b \<le> x \<and> b \<in> [a)\<^sub>X) \<Longrightarrow> x \<in> X \<Longrightarrow>  x \<in> [a)\<^sub>X"
+  using lorcD2 by blast
+
+lemma lorc_mem_iff1:
+  "y \<in> ([a)\<^sub>X) \<longleftrightarrow> (y \<in> X \<and> a \<le> y)" by (simp add:lorc_def)
+
+lemma lorc_mem_iff2:
+  "y \<in> ([a)\<^sub>X) \<longleftrightarrow> (y \<in> X \<and> y ub {a})" by (simp add:lorc_def ub_def)
+
+lemma lorc_eq_upbd:
+  "([a)\<^sub>X) = (Upper_Bounds X {a})"
+  by(simp add: set_eq_iff Upper_Bounds_mem_iff lorc_mem_iff2)
+
+lemma lorc_memI1:
+  "a \<in> X \<Longrightarrow> a \<in> [a)\<^sub>X "
+  by (simp add: lorcI1)
+
+lemma lorc_mem_point1:
+  "a \<in> X \<longleftrightarrow> a \<in> ([a)\<^sub>X)"
+  by (simp add: lorc_def)
+
+lemma lorc_subset1:
+  "([a)\<^sub>X) \<subseteq> X"
+  by (simp add: Upper_Bounds_sub lorc_eq_upbd)
+
+lemma lorc_top:
+  "is_greatest X m \<Longrightarrow> a \<in> X \<Longrightarrow> m \<in> [a)\<^sub>X"
+  by (simp add: greatestD11 greatestD2 lorcI1)
+
+lemma lorc_sup_latticeD1:
+  "\<lbrakk>is_sup_semilattice X; x \<in> X; y \<in> X\<rbrakk>\<Longrightarrow> Sup X {x, y} \<in> ([x)\<^sub>X)"
+  by (simp add: bsup_geI1 lorcI1 ssupD4)
+
+lemma lorc_inf_latticeD1:
+  "\<lbrakk>is_least X bot\<rbrakk> \<Longrightarrow> ([bot)\<^sub>X) = X"
+  by(auto simp add: lorc_mem_iff1 least_iff)
+
+lemma lorc_dual_iso:
+  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> ([a)\<^sub>X) \<subseteq> ([b)\<^sub>X)  \<longleftrightarrow> b \<le> a"
+  by(auto simp add:lorc_mem_iff1) 
+
+lemma lorc_upclI:
+  "a \<in> X \<Longrightarrow> is_ord_cl X ([a)\<^sub>X) (\<le>)"
+  by (simp add: is_ord_clI1 lorcD2)
+
+lemma lorc_upclD:
+  "U \<subseteq> X \<Longrightarrow> is_ord_cl X U (\<le>) \<Longrightarrow> is_least U x \<Longrightarrow> U = [x)\<^sub>X"
+  apply (auto simp add: in_mono leastD2 lorcI1)
+  by (meson is_ord_clE1 leastD11 lorcD1)
+
+lemma lorc_upcl1:
+  "\<lbrakk>is_greatest X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> m \<in> (\<Inter>a \<in> A. [a)\<^sub>X)"
+  by (simp add: greatestD11 greatestD2 in_mono lorcI1)
+
+lemma lorc_upcl3:
+  "\<lbrakk>is_greatest X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow>  is_ord_cl X (\<Inter>a \<in> A. [a)\<^sub>X) (\<le>)"
+  by(rule is_ord_cl_in2, auto simp add: lorc_mem_iff1, simp add: in_mono lorc_upclI)
+  
+
+definition ord_cl_sets::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order \<Rightarrow> bool) \<Rightarrow> 'a::order set set" where
+  "ord_cl_sets X ord \<equiv> {A. A \<subseteq> X \<and> is_ord_cl X A (ord)}"
+
+lemma lorc_upcl4:
+  "\<lbrakk>is_greatest X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> {m} \<in> ord_cl_sets X (\<le>)"
+  by (simp add: filterD4 greatestD11 min_filter1 ord_cl_sets_def)
+
+lemma lorc_moore:
+  "\<lbrakk>is_greatest X m\<rbrakk> \<Longrightarrow> is_clr (ord_cl_sets X (\<le>)) (Pow X)"  
+  apply(rule moore_clI3, auto simp add:ord_cl_sets_def is_ord_cl_space is_ord_cl_def) by blast
+
+
 
 end
 
 
-end
+
