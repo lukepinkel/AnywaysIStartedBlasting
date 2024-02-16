@@ -3587,6 +3587,31 @@ lemma lorc_moore:
   apply(rule moore_clI3, auto simp add:ord_cl_sets_def is_ord_cl_space is_ord_cl_def) by blast
 
 
+definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
+  "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
+
+lemma galois_connD11:
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> x \<le>  g y \<Longrightarrow> y \<le> f x" by (simp add:galois_conn_def)
+
+lemma galois_connD21:
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> f x \<Longrightarrow> x \<le> g y" by (simp add:galois_conn_def)
+
+lemma galois_connD12:
+  "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y \<in> X" by (simp add:galois_conn_def image_subset_iff)
+
+lemma galois_connD22:
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X  \<Longrightarrow> f x \<in> Y" by (simp add:galois_conn_def image_subset_iff)
+
+
+lemma gc_cext1:
+  "\<lbrakk>galois_conn f X g Y; x \<in> X\<rbrakk> \<Longrightarrow> x \<le> g (f x) "
+  by(simp add: galois_connD22[of f X g Y x] galois_connD21[of f X g Y x "f x"])
+
+lemma gc_cext2:
+  "\<lbrakk>galois_conn f X g Y; y \<in> Y\<rbrakk> \<Longrightarrow> y \<le> f (g y) "
+  by(simp add: galois_connD12[of f X g Y "y"] galois_connD11[of f X g Y "g y" y])
+ 
+
 
 end
 
