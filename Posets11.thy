@@ -3638,6 +3638,11 @@ lemma gcI:
   by(auto simp add:galois_conn_def anti_ext_gc)
 
 
+lemma gcD:
+  "galois_conn f X g Y \<Longrightarrow>is_antitone X f \<and> is_extensive X (g \<circ> f) \<and>
+                           is_antitone Y g \<and>  is_extensive Y (f \<circ> g) \<and> f`X \<subseteq> Y \<and> g`Y \<subseteq> X"
+  by (simp add: galois_conn_def gc_anti1 gc_anti2 gc_cext1 gc_cext2 is_antitone_def is_extensive_def)
+
 
 end
 
