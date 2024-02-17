@@ -3621,6 +3621,13 @@ lemma filters_on_top_lattices_clattice:
   "\<lbrakk>is_greatest X top; is_lattice X\<rbrakk> \<Longrightarrow> is_clattice (filters_on X)"
   using clr_is_clattice filter_is_clr lattD1 lattD41 pow_is_clattice by blast
 
+(*
+TOOD compactness stuff then show filters on lattice with top forms compactly generated lattice
+with the principal elements the compact ones
+*)
+
+
+
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
 
