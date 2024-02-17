@@ -3644,6 +3644,200 @@ lemma gcD:
   by (simp add: galois_conn_def gc_anti1 gc_anti2 gc_cext1 gc_cext2 is_antitone_def is_extensive_def)
 
 
+
+lemma gc_triple1:
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> f (g (f x)) = f x"
+  by (simp add: dual_order.eq_iff galois_connD12 galois_connD22 gc_anti1 gc_cext1 gc_cext2)
+
+lemma gc_triple2:
+  "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g (f (g y)) =g y"
+  by (simp add: antisym galois_connD12 galois_connD22 gc_anti2 gc_cext1 gc_cext2)
+
+lemma gc_idem1a:
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> g (f ( g (f x) ) ) = g (f x)"
+  by (simp add: gc_triple1)
+
+lemma gc_idem1b:
+  "galois_conn f X g Y \<Longrightarrow> is_idempotent X (g \<circ> f)"
+  by (simp add: gc_idem1a is_idempotent_def)
+
+
+lemma gc_idem2a:
+  "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> f (g ( f (g y) ) ) = f (g y)"
+  by (simp add: gc_triple2)
+
+
+lemma gc_idem2b:
+  "galois_conn f X g Y \<Longrightarrow> is_idempotent Y (f \<circ> g)"
+  by (simp add: gc_idem2a is_idempotent_def)
+
+lemma gc_iso1a:
+  "galois_conn f X g Y \<Longrightarrow> x1 \<in> X \<Longrightarrow>x2 \<in> X \<Longrightarrow> x1 \<le> x2 \<Longrightarrow> g (f x1 ) \<le> g (f x2)"
+  by (simp add: galois_connD22 gc_anti1 gc_anti2)
+
+lemma gc_iso1b:
+  "galois_conn f X g Y \<Longrightarrow> is_isotone X (g \<circ> f)"
+  by (simp add: gc_iso1a  is_isotone_def)
+
+lemma gc_iso2a:
+  "galois_conn f X g Y \<Longrightarrow> y1 \<in> Y \<Longrightarrow>y2 \<in> Y \<Longrightarrow>y1 \<le> y2 \<Longrightarrow> f (g y1 ) \<le> f (g y2)"
+  by (simp add: galois_connD12 gc_anti1 gc_anti2)
+
+lemma gc_iso2b:
+  "galois_conn f X g Y \<Longrightarrow> is_isotone Y (f \<circ> g)"
+  by (simp add: gc_iso2a  is_isotone_def)
+   
+lemma gc_ext1:
+  "galois_conn f X g Y \<Longrightarrow> is_extensive X (g \<circ> f)"
+  by (simp add: gcD)
+
+lemma gc_ext2:
+  "galois_conn f X g Y \<Longrightarrow> is_extensive Y (f \<circ> g)"
+  by (simp add: gcD)
+     
+    
+lemma gc_sub1:
+  "galois_conn f X g Y \<Longrightarrow>(\<lambda>x.  g (f x)) ` X \<subseteq> X"
+  by (simp add: galois_connD12 galois_connD22 image_subset_iff)       
+    
+lemma gc_sub2:
+  "galois_conn f X g Y \<Longrightarrow>(\<lambda>y. f (g y)) ` Y \<subseteq> Y"
+  by (simp add: galois_connD12 galois_connD22 image_subset_iff)       
+
+
+lemma gc_closure1:
+  "galois_conn f X g Y \<Longrightarrow> is_closure X (g \<circ> f)"
+  by (simp add: is_closure_def gc_sub1 gc_ext1 gc_iso1b gc_idem1b)
+
+lemma gc_closure2:
+  "galois_conn f X g Y \<Longrightarrow> is_closure Y (f \<circ> g)"
+  by (simp add: is_closure_def gc_sub2 gc_ext2 gc_iso2b gc_idem2b)
+
+lemma ub_galois:
+  "galois_conn (\<lambda>A. Upper_Bounds X A) (Pow X) (\<lambda>A. Lower_Bounds X A) (Pow X)"
+  apply(rule gcI) 
+  apply(simp add: Upper_Bounds_ant1 is_antitone_def)
+  apply(simp add: Lower_Upper_comp1 is_extensive_def)
+  apply(simp add: Lower_Bounds_ant1 is_antitone_def)
+  apply(simp add: Upper_Lower_comp1 is_extensive_def)
+  apply (simp add: Upper_Bounds_sub image_subset_iff)
+  by (simp add: Lower_Bounds_sub image_subset_iff)
+
+subsection PolarPairs
+
+definition lgc_from_rel::"('a \<times> 'b) set \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> ('a set \<Rightarrow> 'b set)" where
+  "lgc_from_rel R X Y \<equiv> (\<lambda>A. {y. y \<in> Y \<and> (\<forall>x. x \<in> A \<longrightarrow> (x, y) \<in> R)})"
+
+definition rgc_from_rel::"('a \<times> 'b) set \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> ('b set \<Rightarrow> 'a set)" where
+  "rgc_from_rel R X Y \<equiv> (\<lambda>B. {x. x \<in> X \<and> (\<forall>y. y \<in> B \<longrightarrow> (x, y) \<in> R)})"
+
+lemma lcgD1:
+  "\<lbrakk>A \<subseteq> X; y \<in> (lgc_from_rel R X Y) A\<rbrakk> \<Longrightarrow> (\<forall>x \<in> A.  (x, y) \<in> R)"
+  by (simp add: lgc_from_rel_def)
+
+lemma rcgD1:
+  "\<lbrakk>B \<subseteq> Y; x \<in> (rgc_from_rel R X Y) B\<rbrakk> \<Longrightarrow> (\<forall>y \<in> B.  (x, y) \<in> R)"
+  by (simp add: rgc_from_rel_def)
+
+lemma lcg_iff:
+  "\<lbrakk>A \<subseteq> X\<rbrakk> \<Longrightarrow> y \<in> (lgc_from_rel R X Y) A \<longleftrightarrow> (y \<in> Y \<and> (\<forall>x \<in> A.  (x, y) \<in> R))"
+   by (auto simp add: lgc_from_rel_def)
+
+lemma rcg_iff:
+  "\<lbrakk>B \<subseteq> Y\<rbrakk> \<Longrightarrow> x \<in> (rgc_from_rel R X Y) B \<longleftrightarrow> (x \<in> X \<and> (\<forall>y \<in> B.  (x, y) \<in> R))"
+   by (auto simp add: rgc_from_rel_def)
+
+lemma lcg_iff2:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> Y; y \<in> B\<rbrakk> \<Longrightarrow> y \<in> (lgc_from_rel R X Y) A \<longleftrightarrow> (\<forall>x \<in> A.  (x, y) \<in> R)"
+   by (auto simp add: lgc_from_rel_def)
+
+lemma rcg_iff2:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> Y; x \<in> A\<rbrakk> \<Longrightarrow> x \<in> (rgc_from_rel R X Y) B \<longleftrightarrow> (\<forall>y \<in> B.  (x, y) \<in> R)"
+  by (simp add: in_mono rcg_iff)
+
+lemma lcg_iff3:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> Y\<rbrakk>  \<Longrightarrow> (\<forall>b \<in> B. b \<in> lgc_from_rel R X Y A) \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B.(a, b) \<in> R)"
+  by (meson lcg_iff2)
+  
+lemma rcg_iff3:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> Y\<rbrakk>  \<Longrightarrow> (\<forall>a \<in> A. a \<in> rgc_from_rel R X Y B) \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B.(a, b) \<in> R)"
+  by (meson rcg_iff2)
+
+lemma rcg_range1:
+  "B \<subseteq> Y \<Longrightarrow>  rgc_from_rel R X Y B \<subseteq> X"
+  by (meson rcg_iff subset_eq)
+  
+lemma rcg_range2:
+  "(rgc_from_rel R X Y)`(Pow Y) \<subseteq> Pow X"
+  by (simp add: image_subset_iff rcg_range1)
+  
+lemma lcg_range1:
+  "A \<subseteq> X \<Longrightarrow>  lgc_from_rel R X Y A \<subseteq> Y"
+  by (meson lcg_iff subset_eq)
+  
+lemma lcg_range2:
+  "(lgc_from_rel R X Y)`(Pow X) \<subseteq> Pow Y"
+  by (simp add: image_subset_iff lcg_range1)
+  
+subsection PolarPairToGalois
+
+
+lemma gc1_to_gc2:
+  assumes A0:"B \<subseteq> Y" and A1:"A \<subseteq> X" 
+  shows "B \<subseteq> (lgc_from_rel R X Y) A  \<longleftrightarrow> A \<subseteq> (rgc_from_rel R X Y) B" (is "?L \<longleftrightarrow> ?R")
+proof-
+  let ?f="(lgc_from_rel R X Y)" and ?g="(rgc_from_rel R X Y)"
+  have B0:"?L  \<longleftrightarrow> (\<forall>b. b \<in> B \<longrightarrow> b \<in> ?f A)" by auto
+  have B1:"... \<longleftrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B.(a, b) \<in> R)" by (meson A0 A1 in_mono lcg_iff)
+  have B2:"... \<longleftrightarrow> (\<forall>a. a \<in> A \<longrightarrow> a \<in> ?g B)" by (meson A0 A1 in_mono rcg_iff) 
+  have B3:"... \<longleftrightarrow> ?R" by (simp add: subset_iff)
+  show "?L \<longleftrightarrow> ?R"
+    using B0 B1 B2 B3 by presburger
+qed
+
+lemma polar_pair_gc:
+  "galois_conn (lgc_from_rel R X Y) (Pow X) (rgc_from_rel R X Y) (Pow Y)"
+  by (simp add: galois_conn_def gc1_to_gc2 lcg_range2 rcg_range2)
+  
+
+subsubsection RecoveryOfOriginalRelation
+
+definition rel_from_pair::"('a set \<Rightarrow> 'b set) \<Rightarrow> 'a set \<Rightarrow> ('b set \<Rightarrow> 'a set) \<Rightarrow> 'b set \<Rightarrow> ('a \<times> 'b) set" where
+  "rel_from_pair f X g Y \<equiv> {(x, y). (x, y) \<in> (X \<times> Y) \<and> y \<in> f {x}}"
+
+lemma gc_polar_pair:
+  assumes A0:"(x, y) \<in> (X \<times> Y)"
+  shows "(x, y) \<in> rel_from_pair (lgc_from_rel R X Y) X  (rgc_from_rel R X Y) Y \<longleftrightarrow>  (x, y) \<in> R" (is "?L \<longleftrightarrow> ?R")
+proof-
+  let ?f="(lgc_from_rel R X Y)" and ?g="(rgc_from_rel R X Y)" let ?GFR=" rel_from_pair ?f X  ?g Y"
+  have B0:"?L \<longleftrightarrow> y \<in> ?f {x}"  using A0 by(auto simp add:lgc_from_rel_def rel_from_pair_def rgc_from_rel_def)
+  have B1:"... \<longleftrightarrow> ?R"  using A0 by(auto simp add:lgc_from_rel_def)
+  show ?thesis
+    by (simp add: B0 B1)
+qed
+  
+subsubsection GaloisToPolar
+
+lemma gc_to_polar0:
+  "galois_conn f (Pow X) g (Pow Y) \<Longrightarrow> a \<in> X \<Longrightarrow> y \<in> Y  \<Longrightarrow>  {y} \<subseteq> f {a} \<longleftrightarrow> {a} \<subseteq> g {y}"
+  by (meson Pow_bottom Pow_iff galois_connD11 galois_connD21 insert_subsetI)
+
+lemma gc_to_polar1:
+  assumes A0:"galois_conn f (Pow X) g (Pow Y)" and A1:"A \<subseteq> X" and A2:"y \<in> Y"
+  shows "y \<in> (lgc_from_rel (rel_from_pair f X g Y) X Y) A \<longleftrightarrow> y \<in> f A" (is "?LHS \<longleftrightarrow> ?RHS")
+proof-
+  have B0:"\<forall>a \<in> A.  {y} \<subseteq> f {a} \<longleftrightarrow> {a} \<subseteq> g {y}"
+    by (meson A0 A1 A2 gc_to_polar0 in_mono)  
+  let ?R="rel_from_pair f X g Y" let ?f="lgc_from_rel ?R X Y" let ?g="rgc_from_rel ?R X Y"
+  have B0:"?LHS \<longleftrightarrow> (\<forall>a \<in> A. (a, y) \<in> ?R)" by (simp add: A1 A2 lcg_iff)
+  have B1:"...  \<longleftrightarrow> (\<forall>a \<in> A.  y \<in> f {a})" using A1 A2 by(auto simp add:rel_from_pair_def)
+  have B2:"...  \<longleftrightarrow> (\<forall>a \<in> A.  {y} \<subseteq> f {a})" by simp
+  have B3:"...  \<longleftrightarrow> (\<forall>a \<in> A. {a} \<subseteq> g {y})" by (meson A0 A1 A2 gc_to_polar0 subsetD)
+  have B4:"...  \<longleftrightarrow> (A \<subseteq> g {y})" by blast
+  have B5:"...  \<longleftrightarrow> y \<in>  f A" by (meson A0 A1 A2 PowD PowI Pow_bottom galois_connD11 galois_connD21 insert_subset)
+  show "?LHS \<longleftrightarrow> ?RHS"
+    using B0 B1 B2 B3 B4 B5 by presburger
+qed
 end
 
 
