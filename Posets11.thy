@@ -3611,6 +3611,16 @@ lemma lorc_is_clattice:
   "is_greatest X m \<Longrightarrow> is_clattice (ord_cl_sets X (\<le>))"
   using clr_is_clattice lorc_moore pow_is_clattice by blast
 
+lemma filters_on_top_inf_semilattice_is_cinf:
+  "\<lbrakk>is_greatest X top; is_inf_semilattice X\<rbrakk> \<Longrightarrow> is_cinf_semilattice (filters_on X)"
+  apply(auto simp add:is_cinf_semilattice_def)
+  using filters_is_clr1b apply auto[1]
+  by (metis clatD22 clr_is_clattice filterD1 filter_is_clr filters_max0 pow_is_clattice)
+
+lemma filters_on_top_lattices_clattice:
+  "\<lbrakk>is_greatest X top; is_lattice X\<rbrakk> \<Longrightarrow> is_clattice (filters_on X)"
+  using clr_is_clattice filter_is_clr lattD1 lattD41 pow_is_clattice by blast
+
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
 
