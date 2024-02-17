@@ -1912,6 +1912,66 @@ lemma is_updir_empty:
   "is_dir {} (\<le>)"
   by (simp add: is_dir_def)
 
+lemma updir_finite1:
+  assumes A0: "\<And>a1 a2. a1 \<in> (X::'a::order set) \<Longrightarrow> a2 \<in> X \<Longrightarrow>  (\<exists>c \<in> X. a1 \<le> c \<and> a2 \<le> c)" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X"
+  shows " (\<exists>c \<in> X. \<forall>a. a \<in> A \<longrightarrow> a \<le> c)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case by blast
+next
+  case (insert x F)
+  then show ?case
+    by (metis A0 dual_order.trans insert_iff insert_subset)
+qed
+
+lemma updir_finite2:
+  "\<lbrakk>is_dir (X::'a::order set) (\<le>); A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c ub A)"
+  by (metis is_dir_def ubI updir_finite1)
+
+lemma updir_finite3:
+  "(\<And>A. \<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c ub A)) \<Longrightarrow> is_dir (X::'a::order set) (\<le>)"
+  apply(auto simp add:ub_def is_dir_def) 
+   by (metis bot_least finite.simps insert_iff insert_not_empty insert_subset)
+
+lemma updir_finite:
+  "is_dir (X::'a::order set) (\<le>) \<longleftrightarrow> (\<forall>A. A \<subseteq> X \<and> finite A \<and> A \<noteq> {} \<longrightarrow>  (\<exists>c \<in> X. c ub A))"
+  by (meson updir_finite2 updir_finite3)
+
+
+lemma dwdir_finite1:
+  assumes A0: "\<And>a1 a2. a1 \<in> (X::'a::order set) \<Longrightarrow> a2 \<in> X \<Longrightarrow>  (\<exists>c \<in> X. a1 \<ge> c \<and> a2 \<ge> c)" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X"
+  shows " (\<exists>c \<in> X. \<forall>a. a \<in> A \<longrightarrow> a \<ge> c)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case by blast
+next
+  case (insert x F)
+  then show ?case
+    by (metis A0 dual_order.trans insert_iff insert_subset)
+qed
+
+lemma dwdir_finite2:
+  "\<lbrakk>is_dir (X::'a::order set) (\<ge>); A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c lb A)"
+  by (metis is_dir_def lbI dwdir_finite1)
+
+lemma dwdir_finite3:
+  "(\<And>A. \<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c lb A)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
+  apply(auto simp add:lb_def is_dir_def) 
+  by (metis bot_least finite.simps insert_iff insert_not_empty insert_subset)
+
+lemma dwdir_finite:
+  "is_dir (X::'a::order set) (\<ge>) \<longleftrightarrow> (\<forall>A. A \<subseteq> X \<and> finite A \<and> A \<noteq> {} \<longrightarrow>  (\<exists>c \<in> X. c lb A))"
+  by (metis dwdir_finite2 dwdir_finite3)
+
+
 lemma is_updir_singleton:
   "is_dir {x::'a::order} (\<le>)"
   by (simp add: is_dir_def)
@@ -2685,7 +2745,7 @@ lemma gc_closure2:
   "galois_conn f X g Y \<Longrightarrow> is_closure Y (f \<circ> g)"
   by (simp add: is_closure_def gc_sub2 gc_ext2 gc_iso2b gc_idem2b)
 
-lemma ub_galois:
+lemma ul_galois:
   "galois_conn (\<lambda>A. Upper_Bounds X A) (Pow X) (\<lambda>A. Lower_Bounds X A) (Pow X)"
   apply(rule gcI) 
   apply(simp add: Upper_Bounds_ant1 is_antitone_def)
@@ -2694,6 +2754,14 @@ lemma ub_galois:
   apply(simp add: Upper_Lower_comp1 is_extensive_def)
   apply (simp add: Upper_Bounds_sub image_subset_iff)
   by (simp add: Lower_Bounds_sub image_subset_iff)
+
+lemma ul_closure:
+  "is_closure (Pow X) ((\<lambda>A. Upper_Bounds X A) \<circ> (\<lambda>A. Lower_Bounds X A))"
+  using gc_closure2 ul_galois by blast
+
+lemma lu_closure:
+  "is_closure (Pow X) ((\<lambda>A. Lower_Bounds X A) \<circ> (\<lambda>A. Upper_Bounds X A))"
+  using gc_closure1 ul_galois by blast
 
 subsection PolarPairs
 
