@@ -3491,6 +3491,10 @@ lemma filters_on_lattice_sup7b:
   "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
   by(simp add:is_sup_def filters_on_lattice_sup4b filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5b filters_on_lattice_sup6b least_iff)
 
+lemma filters_on_lattice_csup:
+  "\<lbrakk>is_lattice X\<rbrakk> \<Longrightarrow> is_csup_semilattice (filters_on X)"
+  by (metis empty_not_insert filters_is_clr1b filters_on_iff filters_on_lattice_sup7b insert_absorb insert_subset is_csup_semilattice_def lattD41)
+
 lemma filters_on_lattice_sup_semilattice1b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_sup (filters_on X) {F1, F2} (filter_closure X (F1 \<union> F2))"
   by (metis Union_insert ccpo_Sup_singleton empty_not_insert filters_on_lattice_sup7b insertE singleton_iff)
@@ -3586,6 +3590,26 @@ lemma lorc_moore:
   "\<lbrakk>is_greatest X m\<rbrakk> \<Longrightarrow> is_clr (ord_cl_sets X (\<le>)) (Pow X)"  
   apply(rule moore_clI3, auto simp add:ord_cl_sets_def is_ord_cl_space is_ord_cl_def) by blast
 
+lemma pow_is_clattice1:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (Pow X) A  (\<Inter>A)"
+  by(auto simp add:is_inf_def is_greatest_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+
+lemma pow_is_clattice2:
+  "is_inf (Pow X) {} X"
+  by(auto simp add:is_inf_def is_greatest_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+
+lemma pow_is_clattice3:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_sup (Pow X) A  ( \<Union>A)"
+  by(auto simp add:is_sup_def is_least_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+
+lemma pow_is_clattice:
+  "is_clattice (Pow X)"
+   using  pow_is_clattice3 apply(auto simp add:is_clattice_def)
+   by (metis Pow_not_empty Upper_Bounds_empty pow_is_clattice1 subset_refl sup_if_inf_ub)
+
+lemma lorc_is_clattice:
+  "is_greatest X m \<Longrightarrow> is_clattice (ord_cl_sets X (\<le>))"
+  using clr_is_clattice lorc_moore pow_is_clattice by blast
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
