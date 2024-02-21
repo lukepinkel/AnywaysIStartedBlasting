@@ -2686,6 +2686,12 @@ lemma lorc_is_clattice:
   "is_greatest X m \<Longrightarrow> is_clattice (ord_cl_sets X (\<le>))"
   using clr_is_clattice lorc_moore pow_is_clattice by blast
 
+lemma lorc_filter:
+  "x \<in> X \<Longrightarrow> is_filter X [x)\<^sub>X"
+  apply(auto simp add:is_filter_def) using lorc_memI1 apply auto[1] 
+  apply (simp add: lorc_mem_iff1) apply (metis is_dwdirI1 lorcD12 lorc_memI1)
+  by (simp add: lorc_upclI)
+
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
@@ -3795,6 +3801,60 @@ proof-
     by (simp add: A1 P0 compcatI)
 qed
 
+
+definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "prime X A \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. (Sup X {a, b}) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
+
+abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+                    
+
+
+
+lemma primefilterD1:
+  "\<lbrakk>prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
+  by (simp add: prime_def)
+
+lemma primefilterD2:
+  "\<lbrakk>is_lattice X; prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> A \<or> b \<in> A)\<rbrakk> \<Longrightarrow> (Sup X {a, b}) \<in> A)"
+  by (metis doubleton_eq_iff filter_on_lattice_sup01)
+
+lemma primefilterD3:
+  "\<lbrakk>is_lattice X; prime X F; pfilter X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
+  apply(auto simp add:prime_def) apply (meson filterD2 filters_on_lattice_inf02 in_mono) using filterD21 by blast
+
+
+lemma primefilterI2:
+  assumes A0:"is_lattice X" and A1:"pfilter X F" and 
+          A2:"(\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"
+  shows "prime X F"
+proof-
+  have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and> (Sup X {a, b}) \<in> F \<longrightarrow> (a \<in> F \<or> b \<in> F)"
+  proof
+    fix a b assume A3:" a \<in> X \<and> b \<in> X \<and> (Sup X {a, b}) \<in> F"
+    have B1:"(([a)\<^sub>X) \<inter> ([b)\<^sub>X)) \<subseteq> F"
+      apply(auto simp add:lorc_def)  by (meson A0 A1 A3 binary_supD4 filterD4 is_ord_clE1 lattD32 latt_iff ssupD4)
+    have B2:"([a)\<^sub>X) \<subseteq> F \<or> ([b)\<^sub>X) \<subseteq> F"
+      by (simp add: A2 A3 B1 lorc_filter)
+    show "(a \<in> F \<or> b \<in> F)"
+      using A3 B2 lorc_memI1 by blast
+  qed
+  show ?thesis
+    by (simp add: B0 prime_def)
+qed
+
+
+lemma primefilterI1:
+  "\<lbrakk>is_lattice X;  pfilter X A; (\<forall>a b. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup X {a, b}) \<in> A)) \<rbrakk> \<Longrightarrow> prime X A"
+  by (simp add: prime_def)
+
+lemma primefilter_iff1:
+  "is_lattice X \<Longrightarrow> ( prime X A \<and> pfilter X A) \<longleftrightarrow> (pfilter X A \<and>  (\<forall>a \<in> X. \<forall>b \<in> X. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup X {a, b}) \<in> A)))"
+  by (metis prime_def primefilterD2)
+
+lemma prime_filter_iff2:
+  "is_lattice X \<Longrightarrow>  (prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
+  by (metis primefilterD3 primefilterI2)
 
 unused_thms  
 
