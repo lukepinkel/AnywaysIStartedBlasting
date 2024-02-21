@@ -25,6 +25,69 @@ lemma int_to_ind_int:
   "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Inter>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Inter>i \<in> I. f i))"
   by simp
 
+definition Pow_ne::"'a set \<Rightarrow> 'a set set" where
+  "Pow_ne X = Pow X - {{}}"
+
+lemma pow_ne_iff1:
+  "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"
+  by (simp add: Pow_ne_def)
+
+lemma pow_ne_iff2:
+  "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}"
+  by (simp add: Pow_ne_def)
+
+lemma pow_neI:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X"
+  by(simp add:Pow_ne_def)
+
+lemma pow_neD1:
+  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X "
+  by(simp add:Pow_ne_def)
+
+lemma pow_neD2:
+  " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} "
+  by(simp add:Pow_ne_def)
+
+lemma pow_ne_bot:
+  "{} \<notin> Pow_ne X"
+  by(simp add:Pow_ne_def)
+               
+lemma pow_ne_top:
+  "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X"
+  by(simp add:Pow_ne_def)
+
+
+definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where
+  "Fpow_ne X = Fpow X - {{}}"
+
+lemma fpow_ne_iff1:
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"
+  by (simp add: Fpow_ne_def)
+
+lemma fpow_ne_iff2:
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}"
+  by (simp add: Fpow_Pow_finite fpow_ne_iff1)
+
+lemma fpow_neI:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X"
+  by (simp add: Fpow_def fpow_ne_iff1)
+
+lemma fpow_neD0:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X "
+  by (simp add: fpow_ne_iff2)
+
+lemma fpow_neD1:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X "
+  by (simp add: fpow_ne_iff2)
+
+lemma fpow_neD2:
+  " A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} "
+  by (simp add: fpow_ne_iff2)
+
+lemma fpow_ne_bot:
+  "{} \<notin> Fpow_ne X"
+  by (simp add: fpow_ne_iff1)
+
 
 section Bounds
 subsection UpperBoundsPredicate
@@ -3635,47 +3698,102 @@ qed
   
 section Compactness
 
+
 definition is_compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "is_compact X c \<equiv> c \<in> X \<and> (\<forall>A \<in> Pow X. c \<le> Sup X A \<longrightarrow> (\<exists>A0 \<in> Fpow A. A0 \<noteq> {} \<and> c \<le> Sup X A0))"
+  "is_compact X c \<equiv> c \<in> X \<and> (\<forall>A. A \<in> Pow_ne X \<and> c \<le> Sup X A \<longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0))"
 
-lemma compact_ne:
-  "is_compact X c \<Longrightarrow> X \<noteq> {}"
-  using is_compact_def by auto
+definition compact_elements::"'a::order set \<Rightarrow> 'a::order set" where
+  "compact_elements X \<equiv> {c. is_compact X c}"
 
-lemma compactD1:
-  "\<lbrakk>is_compact X c; A \<subseteq> X; c \<le> Sup  X A\<rbrakk> \<Longrightarrow> (\<exists>A0 \<in> Fpow A.  A0 \<noteq> {} \<and> c \<le> Sup X A0)"
-  by (simp add: is_compact_def)
+definition compactly_generated::"'a::order set \<Rightarrow> bool" where
+  "compactly_generated X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>C \<in> Pow_ne (compact_elements X). is_sup X C x))"
 
+lemma compcatI:
+  "\<lbrakk>c \<in> X; (\<And>A. \<lbrakk>A \<in> Pow_ne X; c \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0))\<rbrakk> \<Longrightarrow> is_compact X c"
+  by(simp add:is_compact_def)
 
-lemma compactD2:
-  assumes A0:"is_sup_semilattice X" and A1:"is_compact X c" and A2:"A \<subseteq> X" and A3:"A \<noteq> {}" and A4:"c \<le> Sup X A" and A5:"is_dir A (\<le>)"
+lemma compcatD:
+  "\<lbrakk>is_compact X c; A \<in> Pow_ne X; c \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
+  by(simp add:is_compact_def)
+
+lemma compact_elements_mem_iff1:
+  "x \<in> compact_elements X \<longleftrightarrow> is_compact X x"
+  by (simp add: compact_elements_def)
+
+(*
+  in a csup semilattice an element is compact iff directed coverings contain an upper bound
+*)
+
+lemma ccompact0:
+  assumes A0:"is_sup_semilattice X" and
+          A1:"is_compact X c" and
+          A2:"A \<in> Pow_ne X" and
+          A3:"c \<le> Sup X A" and
+          A4:"is_dir A (\<le>)"
   shows "\<exists>a \<in> A. c \<le> a"
 proof-
-  obtain A0 where B0:"A0 \<in> Fpow A \<and> A0 \<noteq> {} \<and> c \<le> Sup X A0"
-    using A1 A2 A4 compactD1 by blast
-  obtain a where B1:"a \<in> A \<and> a ub A0"
-    by (metis A5 B0 Fpow_Pow_finite Int_Collect Pow_iff updir_finite)
-  have B2:"A0 \<subseteq> X \<and> finite A0"
-    by (metis A2 B0 Fpow_Pow_finite Int_Collect Pow_iff dual_order.trans)
-  have B3:"Sup X A0 \<le> a"
-    by (meson A0 A2 B0 B1 B2 bsup_finite2 is_supD122 subsetD)
-  have B4:"c \<le> a"
-    using B0 B3 dual_order.trans by blast
+  obtain A0 where A5:"A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0"
+    using A1 A2 A3 compcatD by blast  
+  obtain a where A6:"a \<in> A \<and> a ub A0"
+    by (metis A4 A5 fpow_ne_iff2 updir_finite2)
+  have B0:"Sup X A0 \<le> a"
+    by (metis A0 A2 A5 A6 bsup_finite2 dual_order.trans fpow_ne_iff2 is_supD42 pow_neD1 subsetD)
+  have B1:"c \<le> a"
+    using A5 B0 by fastforce
   show ?thesis
-    using B1 B4 by blast
+    using A6 B1 by blast
 qed
 
-definition compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "compact X c \<equiv> (c \<in> X) \<and> (\<forall>D s. D \<subseteq> X \<and> (is_dir D (\<le>)) \<and> is_sup X D s \<and> c \<le> s\<longrightarrow> (\<exists>d \<in> D. c \<le> d))"
+lemma ccompact1:
+  assumes A0:"is_csup_semilattice X" and
+          A1:"c \<in> X" and
+          A2:"(\<And>A. \<lbrakk>A \<in> Pow_ne X; c \<le> Sup X A; is_dir A (\<le>)\<rbrakk> \<Longrightarrow> (\<exists>a \<in> A. c \<le> a))"
+  shows "is_compact X c"
+proof-
+  have P0:"(\<And>A. A \<in> Pow_ne X \<and> c \<le> Sup X A \<longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0))"
+  proof
+    fix A assume A3:"A \<in> Pow_ne X \<and> c \<le> Sup X A"
+    let ?C="fne_sup_cl X A"
+    have B0:"is_dir ?C (\<le>)"
+      by (simp add: A0 A3 csup_fsup fne_sup_cl_dir pow_neD1)
+    have B1:"A \<subseteq> ?C"
+      by (simp add: A3 fne_sup_cl_extensive pow_neD1)
+    have B2:"A \<subseteq> X \<and> ?C \<subseteq> X"
+      using B1 fne_sup_cl_imp0 by blast
+    have B2:"Sup X A \<le> Sup X ?C"
+      by (metis A0 A3 B1 B2 bot.extremum_uniqueI csupD2 is_sup_iso1 pow_ne_iff2 sup_equality)
+    have B3:"c \<le> Sup X ?C"
+      using A3 B2 dual_order.trans by blast
+    obtain d where B4:"d \<in> ?C \<and> c \<le> d"
+      by (metis A2 A3 B0 B1 B3 bot.extremum_uniqueI fne_sup_cl_range image_subset_iff pow_ne_iff1)
+    obtain Fd where B5:"Fd \<in> Fpow_ne A \<and> Sup X Fd = d"
+      by (meson B4 fne_sup_cl_imp1 fpow_ne_iff1 sup_equality)
+    have B6:"Fd \<in> Fpow_ne A \<and> c \<le> Sup X Fd"
+      by (simp add: B4 B5)
+    show "(\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
+      using B6 by blast
+  qed
+  show ?thesis
+    by (simp add: A1 P0 compcatI)
+qed
 
-lemma compact_ne:
-  "compact X c \<Longrightarrow> X \<noteq> {}"
-  using compact_def by blast
-
-lemma compactD1:
-  "\<lbrakk>c \<in> X; compact X c; D \<subseteq> X; is_dir D (\<le>);is_sup X D s; c \<le> s\<rbrakk> \<Longrightarrow> (\<exists>d \<in> D. c \<le> d)"
-  by(auto simp add:compact_def)
-
+lemma bot_compact:
+  assumes A1:"bot \<in> X" and A2:"(\<And>x. x \<in> X \<Longrightarrow> bot \<le> x)"
+  shows "is_compact X bot"
+proof-
+  have P0:"(\<And>A. A \<in> Pow_ne X \<and> bot \<le> Sup X A \<longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> bot \<le> Sup X A0))" 
+    proof
+      fix A assume A3:"A \<in> Pow_ne X \<and> bot \<le> Sup X A"
+      obtain a where A4:"a \<in> A"
+        using A3 pow_ne_bot by fastforce
+      have B0:"{a} \<in> Fpow_ne A \<and> bot \<le> Sup X {a}"
+        by (metis A2 A3 A4 bsup_idem1 empty_subsetI finite.emptyI finite.insertI fpow_neI in_mono insert_absorb2 insert_not_empty insert_subsetI pow_neD1)
+      show "(\<exists>A0. A0 \<in> Fpow_ne A \<and> bot \<le> Sup X A0)"
+        using B0 by auto
+    qed
+  show ?thesis
+    by (simp add: A1 P0 compcatI)
+qed
 
 
 unused_thms  
