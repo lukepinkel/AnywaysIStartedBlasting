@@ -11,6 +11,7 @@ hide_type list
 hide_const rev
 declare [[show_consts,show_sorts,show_types, show_results]]
 
+
 section Misc
 
 lemma image_p:
@@ -3856,6 +3857,55 @@ lemma prime_filter_iff2:
   "is_lattice X \<Longrightarrow>  (prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis primefilterD3 primefilterI2)
 
+
+definition distributive_lattice::"'a::order set \<Rightarrow> bool" where
+  "distributive_lattice X \<equiv> (is_lattice X) \<and> (\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}})"
+
+lemma distri_lattD1:
+  "\<lbrakk>distributive_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Inf X {Sup X {y, z}, x} = Sup X {Inf X {y, x}, Inf X {z, x}} "
+  by (simp add: distributive_lattice_def insert_commute)
+
+lemma distrib_sup_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, Inf X {y, z}} \<le> Inf X {Sup X {x, y}, Sup X {x, z}}"
+  by (smt (z3) bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff order_refl sinfD3 sinfD4 ssupD4)
+
+lemma distrib_inf_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"
+  by (smt (z3) bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff order_refl sinfD3 sinfD4 ssupD4)
+
+
+lemma lattice_id11:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, y} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  by (simp add: binf_leI1 binf_leI2 bsup_geI1 latt_iff lb_double lb_insert sinfD4)
+
+lemma lattice_id12:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {y, z} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  by (smt (verit, best) insert_commute lattice_id11)
+
+lemma lattice_id13:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, z} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  by (metis doubleton_eq_iff lattice_id12)
+
+lemma lattice_id15:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  by (simp add: binf_leI1 bsup_geI1 bsup_geI2 latt_iff ssupD4 ub_double ub_insert)
+
+lemma lattice_id16:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  by (smt (verit, best) insert_commute lattice_id15)
+
+lemma lattice_id17:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, z} ub  {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  by (metis doubleton_eq_iff lattice_id16)
+
+
+lemma lattice_id2:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, Sup X {y, z}} \<ge> Sup X {Inf X {x, y}, Inf X {x, z}}"
+  by (smt (z3) binary_infD22 binary_infD4 binary_supD4 lattD41 lattD42 leastD2 least_singleton sinfD3 sinfD4 singletonI ssupD3 ssupD4)
+
+lemma lattice_id3:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x,Inf X {y, z}} \<le> Inf X {Sup X {x, y}, Sup X {x, z}}"
+  by (smt (z3) binary_infD22 binary_infD4 binary_supD4 insert_commute lattD41 lattD42 leastD2 least_singleton sinfD3 sinfD4 singletonI ssupD3 ssupD4)
+
+ 
 unused_thms  
 
 end
