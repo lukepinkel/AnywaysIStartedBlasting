@@ -1908,9 +1908,18 @@ lemma is_updirI1:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<le> c \<and> b \<le> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<le>)"
   by (simp add: is_dir_def)
 
+lemma is_updirD1:
+  "\<lbrakk>is_dir (X::'a::order set) (\<le>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c ub {a, b})"
+  by (simp add: is_updirE1 ub_double)
+
 lemma is_updir_empty:
   "is_dir {} (\<le>)"
   by (simp add: is_dir_def)
+
+lemma is_updir_singleton:
+  "is_dir {x::'a::order} (\<le>)"
+  by (simp add: is_dir_def)
+
 
 lemma updir_finite1:
   assumes A0: "\<And>a1 a2. a1 \<in> (X::'a::order set) \<Longrightarrow> a2 \<in> X \<Longrightarrow>  (\<exists>c \<in> X. a1 \<le> c \<and> a2 \<le> c)" and 
@@ -1941,6 +1950,25 @@ lemma updir_finite:
   "is_dir (X::'a::order set) (\<le>) \<longleftrightarrow> (\<forall>A. A \<subseteq> X \<and> finite A \<and> A \<noteq> {} \<longrightarrow>  (\<exists>c \<in> X. c ub A))"
   by (meson updir_finite2 updir_finite3)
 
+lemma is_dwdirE1:
+  "is_dir (X::'a::order set) (\<ge>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c) "
+  by (simp add: is_dir_def)
+
+lemma is_dwdirI1:
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdir_empty:
+  "is_dir {} (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdir_singleton:
+  "is_dir {x::'a::order} (\<ge>)"
+  by (simp add: is_dir_def)
+
+lemma is_dwdirD1:
+  "\<lbrakk>is_dir (X::'a::order set) (\<ge>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c lb {a, b})"
+  by (simp add: is_dwdirE1 lb_double)
 
 lemma dwdir_finite1:
   assumes A0: "\<And>a1 a2. a1 \<in> (X::'a::order set) \<Longrightarrow> a2 \<in> X \<Longrightarrow>  (\<exists>c \<in> X. a1 \<ge> c \<and> a2 \<ge> c)" and 
@@ -1972,14 +2000,6 @@ lemma dwdir_finite:
   by (metis dwdir_finite2 dwdir_finite3)
 
 
-lemma is_updir_singleton:
-  "is_dir {x::'a::order} (\<le>)"
-  by (simp add: is_dir_def)
-
-lemma is_updirD1:
-  "\<lbrakk>is_dir (X::'a::order set) (\<le>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c ub {a, b})"
-  by (simp add: is_updirE1 ub_double)
-
 lemma csup_updir:
   "is_csup_semilattice X \<Longrightarrow> is_dir X (\<le>)"
   by (metis csupD3 is_updirI1 greatestD11 greatestD2)
@@ -1988,25 +2008,6 @@ lemma sup_updir:
   "\<lbrakk>is_sup_semilattice X; is_greatest X m\<rbrakk> \<Longrightarrow> is_dir X (\<le>)"
   by (meson greatestD1 greatestD2 is_updirI1)
 
-lemma is_dwdirE1:
-  "is_dir (X::'a::order set) (\<ge>)  \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c) "
-  by (simp add: is_dir_def)
-
-lemma is_dwdirI1:
-  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
-  by (simp add: is_dir_def)
-
-lemma is_dwdir_empty:
-  "is_dir {} (\<ge>)"
-  by (simp add: is_dir_def)
-
-lemma is_dwdir_singleton:
-  "is_dir {x::'a::order} (\<ge>)"
-  by (simp add: is_dir_def)
-
-lemma is_dwdirD1:
-  "\<lbrakk>is_dir (X::'a::order set) (\<ge>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c lb {a, b})"
-  by (simp add: is_dwdirE1 lb_double)
 
 lemma cinf_dwdir:
   "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
@@ -2879,6 +2880,604 @@ proof-
     using B0 B1 B2 B3 B4 B5 by presburger
 qed
 
+subsection SomeClosures
+
+definition sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+ "sup_cl X A \<equiv> {x \<in> X. \<exists>E \<in> Pow A. E \<noteq> {} \<and> is_sup X E x}"
+
+definition inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "inf_cl X A \<equiv> {x \<in> X. \<exists>E \<in> Pow A. E \<noteq> {} \<and> is_inf X E x}"
+
+definition fne_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
+  "fne_inf_cl X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_inf X F x}"
+
+definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
+  "fin_inf_cl X A \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. is_inf X F x}"
+
+lemma sup_cl_imp0:
+  "x \<in> sup_cl X A  \<Longrightarrow> x \<in> X "
+  by (simp add: sup_cl_def)
+
+lemma inf_cl_imp0:
+  "x \<in> inf_cl X A \<Longrightarrow> x \<in> X "
+  by (simp add: inf_cl_def)
+
+lemma fin_inf_cl_imp0:
+  "x \<in> fin_inf_cl X A \<Longrightarrow> x \<in> X"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_imp0:
+  "x \<in> fne_inf_cl X A\<Longrightarrow> x \<in> X"
+  by (simp add: fne_inf_cl_def)
+
+lemma sup_cl_imp1:
+  "x \<in> sup_cl X A \<Longrightarrow>  (\<exists>E \<in> Pow A. E \<noteq> {} \<and> is_sup X E x)"
+   by (simp add: sup_cl_def) 
+
+lemma inf_cl_imp1:
+  "x \<in> inf_cl X A \<Longrightarrow>  (\<exists>E \<in> Pow A. E \<noteq> {} \<and>  is_inf X E x)"
+   by (simp add: inf_cl_def) 
+
+lemma fin_inf_cl_imp1:
+  "x \<in> fin_inf_cl X A \<Longrightarrow> ( \<exists>F \<in> Fpow A.  is_inf X F x)"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_imp1:
+  "x \<in> fne_inf_cl X A \<Longrightarrow> (\<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_inf X F x)"
+  by (simp add: fne_inf_cl_def)
+
+lemma sup_cl_if1:
+  " x \<in> X \<Longrightarrow>  (\<exists>E \<in> Pow A. E \<noteq> {} \<and> is_sup X E x) \<Longrightarrow> x \<in> sup_cl X A"
+   by (simp add: sup_cl_def) 
+
+lemma inf_cl_if1:
+  " x \<in> X \<Longrightarrow>  (\<exists>E \<in> Pow A. E \<noteq> {} \<and>  is_inf X E x) \<Longrightarrow> x \<in> inf_cl X A"
+   by (simp add: inf_cl_def) 
+
+lemma fin_inf_cl_if1:
+  "x \<in> X \<Longrightarrow> (\<exists>F \<in> Fpow A. is_inf X F x) \<Longrightarrow> x \<in> fin_inf_cl X A"
+  by (simp add: fin_inf_cl_def)
+
+lemma fne_inf_cl_if1:
+  "x \<in> X \<Longrightarrow> (\<exists>F \<in> Fpow A. F \<noteq> {} \<and>  is_inf X F x) \<Longrightarrow> x \<in> fne_inf_cl X A"
+  by (simp add: fne_inf_cl_def)
+
+lemma sup_cl_obtains:
+  assumes "x \<in> sup_cl X A"
+  obtains Ex where "Ex \<in> Pow A \<and> Ex \<noteq> {}  \<and>is_sup X Ex x"
+  by (meson assms sup_cl_imp1)
+
+lemma inf_cl_obtains:
+  assumes "x \<in> inf_cl X A"
+  obtains Ex where "Ex \<in> Pow A \<and> Ex \<noteq> {} \<and> is_inf X Ex x"
+  by (meson assms inf_cl_imp1)
+
+lemma fin_inf_cl_obtains:
+  assumes "x \<in> fin_inf_cl X A"
+  obtains F where "F \<in> Fpow A \<and> is_inf X F x"
+  by (meson assms fin_inf_cl_imp1)
+
+lemma fne_inf_cl_obtains:
+  assumes "x \<in> fne_inf_cl X A"
+  obtains F where "F \<in> Fpow A \<and> F \<noteq> {} \<and> is_inf X F x"
+  by (meson assms fne_inf_cl_imp1)
+
+
+definition is_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_sup_cl X A\<equiv> (\<forall>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_sup X E x \<longrightarrow> x \<in> A)"
+
+definition is_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_inf_cl X A \<equiv>  (\<forall>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_inf X E x \<longrightarrow> x \<in> A)"
+
+definition is_fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_fin_inf_cl X A \<equiv>  (\<forall>E x. E \<in> Pow A \<and>  is_inf X E x \<longrightarrow> x \<in> A)"
+
+definition is_fne_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_fne_inf_cl X A \<equiv>  (\<forall>E x. E \<in> Fpow A \<and> E \<noteq> {} \<and> is_inf X E x \<longrightarrow> x \<in> A)"
+
+lemma up_closed_supin_closed0:
+  "is_ord_cl X A (\<le>) \<Longrightarrow> E \<in> Pow A \<Longrightarrow> E \<noteq> {} \<Longrightarrow> is_sup X E x  \<Longrightarrow> x \<in> A"
+  using is_supD111 is_supD32 ord_cl_memI1 by fastforce
+
+lemma up_closed_supin_closed:
+  "is_ord_cl X A (\<le>) \<Longrightarrow> is_sup_cl X A"
+  using is_sup_cl_def up_closed_supin_closed0 by blast
+
+lemma dw_closed_infin_closed0:
+  "is_ord_cl X A (\<ge>) \<Longrightarrow> E \<in> Pow A \<Longrightarrow> E \<noteq> {} \<Longrightarrow> is_inf X E x  \<Longrightarrow> x \<in> A"
+  using is_infD111 is_infD1121 ord_cl_memI1 by fastforce
+
+lemma down_closed_infin_closed:
+  "is_ord_cl X A (\<ge>) \<Longrightarrow> is_inf_cl X A"
+  by (metis dw_closed_infin_closed0 is_inf_cl_def)
+
+lemma sup_cl_extensive:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> sup_cl X A"
+  apply(auto simp add:sup_cl_def) by (metis PowI empty_not_insert empty_subsetI insert_subsetI subsetD sup_singleton)
+
+lemma inf_cl_extensive:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> inf_cl X A"
+  apply(auto simp add:inf_cl_def)
+  by (metis PowI empty_not_insert empty_subsetI insert_subsetI subsetD inf_singleton)
+
+
+
+lemma fin_inf_cl_extensive:
+  assumes A0:"A \<subseteq> X"
+  shows "A \<subseteq> fin_inf_cl X A"
+proof
+  fix a assume A1: "a \<in> A"
+  have B0: "is_inf X {a} a"
+    using A1 assms inf_singleton by blast
+  have B2: "{a} \<in> Fpow A"
+    by (simp add: A1 Fpow_def)
+  show "a \<in> fin_inf_cl X A" apply(simp add:fin_inf_cl_def) using B0 B2 is_infD111 by blast
+qed
+
+lemma fne_inf_cl_extensive:
+  assumes A0: "A \<subseteq> X"
+  shows "A \<subseteq> fne_inf_cl X A"
+proof
+  fix a assume A1: "a \<in> A"
+  have B0: "is_inf X {a} a"
+    using A1 assms inf_singleton by blast
+  have B2: "{a} \<in> Fpow A"
+    by (simp add: A1 Fpow_def)
+  show "a \<in> fne_inf_cl X A"
+    apply(simp add:fne_inf_cl_def)
+    using A1 B0 B2 assms by blast
+qed
+
+
+lemma sup_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. sup_cl X A)"
+  by (meson PowD extensiveI1 sup_cl_extensive)
+
+lemma inf_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. inf_cl X A)"
+  by (meson PowD extensiveI1 inf_cl_extensive)
+
+lemma fin_inf_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. fin_inf_cl X A)"
+  by (meson PowD extensiveI1 fin_inf_cl_extensive)
+
+lemma fne_inf_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. fne_inf_cl X A)"
+  by (meson PowD extensiveI1 fne_inf_cl_extensive)
+
+lemma sup_cl_isotone:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> sup_cl X A \<subseteq> sup_cl X B"
+  by(auto simp add:sup_cl_def)
+
+lemma inf_cl_isotone:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> inf_cl X A \<subseteq> inf_cl X B"
+  by(auto simp add:inf_cl_def)
+
+lemma fin_inf_cl_isotone:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> fin_inf_cl X A \<subseteq> fin_inf_cl X B"
+  apply(auto simp add:fin_inf_cl_def) using Fpow_mono by blast
+
+lemma fne_inf_cl_isotone:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> fne_inf_cl X A \<subseteq> fne_inf_cl X B"
+  apply(auto simp add:fne_inf_cl_def) by (metis Fpow_mono empty_iff subsetD)
+
+lemma sup_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. sup_cl X A)"
+  by (meson PowD isotoneI1 sup_cl_isotone)
+
+lemma inf_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. inf_cl X A)"
+  by (meson PowD isotoneI1 inf_cl_isotone)
+
+lemma fin_inf_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. fin_inf_cl X A)"
+  by (meson PowD isotoneI1 fin_inf_cl_isotone)
+
+lemma fne_inf_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. fne_inf_cl X A)"
+  by (meson PowD isotoneI1 fne_inf_cl_isotone)
+
+
+lemma sup_cl_idempotent0:
+  "s \<in> sup_cl X (sup_cl X A) \<Longrightarrow> (\<exists>E. E \<in> Pow (sup_cl X A) \<and> E \<noteq> {} \<and> is_sup X E s)"
+  by (meson sup_cl_imp1)
+
+lemma inf_cl_idempotent0:
+  "s \<in> inf_cl X (inf_cl X A) \<Longrightarrow> (\<exists>E. E \<in> Pow (inf_cl X A) \<and> E \<noteq> {} \<and> is_inf X E s)"
+  by (meson inf_cl_imp1)
+
+lemma fin_inf_cl_idempotent0:
+  "s \<in> fin_inf_cl X (fin_inf_cl X A) \<Longrightarrow> (\<exists>E. E \<in> Fpow (fin_inf_cl X A) \<and> is_inf X E s)"
+  by (meson fin_inf_cl_imp1)
+
+lemma fne_inf_cl_idempotent0:
+  "s \<in> fne_inf_cl X (fne_inf_cl X A) \<Longrightarrow> (\<exists>E. E \<in> Fpow (fne_inf_cl X A) \<and> E \<noteq> {} \<and> is_inf X E s)"
+  by (meson fne_inf_cl_imp1)
+
+lemma sup_cl_idempotent1:
+  "\<lbrakk>E \<in> Pow (sup_cl X A); E \<noteq> {}; x \<in> E\<rbrakk> \<Longrightarrow> (\<exists>Ex. Ex \<in> Pow A \<and> Ex \<noteq> {} \<and> is_sup X Ex x)"
+  by (meson PowD in_mono sup_cl_imp1)
+
+lemma inf_cl_idempotent1:
+  "\<lbrakk>E \<in> Pow (inf_cl X A); E \<noteq> {}; x \<in> E\<rbrakk> \<Longrightarrow> (\<exists>Ex. Ex \<in> Pow A \<and> Ex \<noteq> {} \<and> is_inf X Ex x)"
+  by (meson PowD in_mono inf_cl_imp1)
+
+lemma fin_inf_cl_idempotent1:
+  "\<lbrakk>E \<in> Pow (fin_inf_cl X A); E \<noteq> {}; x \<in> E\<rbrakk> \<Longrightarrow> (\<exists>Ex. Ex \<in> Fpow A  \<and> is_inf X Ex x)"
+  by (meson PowD in_mono fin_inf_cl_imp1)
+
+lemma fne_inf_cl_idempotent1:
+  "\<lbrakk>E \<in> Pow (fne_inf_cl X A); E \<noteq> {}; x \<in> E\<rbrakk> \<Longrightarrow> (\<exists>Ex. Ex \<in> Fpow A \<and> Ex \<noteq> {}  \<and> is_inf X Ex x)"
+  by (meson PowD in_mono fne_inf_cl_imp1)
+
+lemma sup_cl_idempotent2:
+  "sup_cl X A \<subseteq> sup_cl X (sup_cl X A)"
+  by (meson subsetI sup_cl_extensive sup_cl_imp0)
+
+lemma inf_cl_idempotent2:
+  "inf_cl X A \<subseteq> inf_cl X (inf_cl X A)"
+  by (meson inf_cl_extensive inf_cl_imp0 subsetI)
+
+lemma fin_inf_cl_idempotent2:
+  "fin_inf_cl X A \<subseteq> fin_inf_cl X (fin_inf_cl X A)"
+  by (meson fin_inf_cl_extensive fin_inf_cl_imp0 subsetI)
+
+lemma fne_inf_cl_idempotent2:
+  "fne_inf_cl X A \<subseteq> fne_inf_cl X (fne_inf_cl X A)"
+  by (meson fne_inf_cl_extensive fne_inf_cl_imp0 subsetI)
+
+lemma sup_cl_idempotent:
+   "sup_cl X (sup_cl X A) = sup_cl X A"
+proof-
+  let ?L1="sup_cl X A" let ?L2="sup_cl X ?L1"
+  show "sup_cl X (sup_cl X A) = sup_cl X A"
+  proof
+    show "?L1 \<subseteq>?L2"
+      by (meson subset_iff sup_cl_extensive sup_cl_imp0)
+    next
+    show "?L2 \<subseteq> ?L1"
+  proof
+    fix s assume P0:"s \<in>?L2"
+    show "s \<in> ?L1"
+    proof-
+      let ?P="\<lambda>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_sup X E x"
+      let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+      obtain E where P1:"E \<in> Pow (?L1) \<and> E \<noteq> {} \<and> is_sup X E s"
+        by (meson P0 sup_cl_idempotent0)
+      have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)"
+        using P1 sup_cl_idempotent1 by auto
+      let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Sup X Ai}"
+      have B00:"((\<lambda>Ai. Sup X Ai)`?fE) = ?S" apply(auto) 
+          by (metis (mono_tags, lifting) B0 PowD is_supD111 someI_ex sup_equality)
+      have B1:"\<forall>x \<in> E. ?P (?f x) x"
+        by (metis (mono_tags, lifting) B0 tfl_some)
+      have B2:"?S = E"
+      proof
+        show "?S \<subseteq> E"
+          proof
+            fix s assume B6A0:"s \<in>?S"
+            have B60:"\<exists>Ai \<in> ?fE. s = Sup X Ai"
+              using B6A0 by blast
+            show "s \<in> E"
+              using B1 B60 sup_equality by fastforce
+          qed
+        next  
+        show "E \<subseteq> ?S"
+          proof
+            fix s assume B6A1:"s \<in> E"
+            show "s \<in> ?S"
+              using B1 B6A1 is_supD111 sup_equality by fastforce
+        qed
+      qed
+      obtain se where B11A0:"is_sup X E se"
+        using P1 by blast
+      obtain ss where B11A1:"is_sup X ?S ss"
+        using B11A0 B2 by auto
+      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_sup X Ai si)"
+        using B1 by blast
+      have B11:"(\<And>Ai. Ai \<in> ?fE \<Longrightarrow> \<exists>ti. is_sup X Ai ti)"
+        using B1 by blast
+      have B12:"?fE \<noteq> {}"
+        by (simp add: P1)
+      have B13:"is_sup X ((\<lambda>Ai. Sup X Ai)`?fE) ss"
+        using B00 B11A1 by presburger
+      have B14:"is_sup X (\<Union>?fE) ss"
+        by (metis (no_types, lifting) B12 B13 B8 sup_families) 
+      have B15:"(\<Union>?fE) \<in> Pow A"
+        using B1 by blast
+      have B16:"(\<Union>?fE) \<noteq> {}"
+        using B1 P1 by auto
+      show "s \<in> ?L1"
+        by (metis (no_types, lifting) B11A1 B14 B15 B16 B2 P1 sup_cl_if1 sup_iff2)
+      qed
+    qed
+  qed
+qed
+
+
+lemma inf_cl_idempotent:
+   "inf_cl X (inf_cl X A) = inf_cl X A"
+proof-
+  let ?L1="inf_cl X A" let ?L2="inf_cl X ?L1"
+  show "inf_cl X (inf_cl X A) = inf_cl X A"
+  proof
+    show "?L1 \<subseteq>?L2"
+      by (meson subset_iff inf_cl_extensive inf_cl_imp0)
+    next
+    show "?L2 \<subseteq> ?L1"
+  proof
+    fix s assume P0:"s \<in>?L2"
+    show "s \<in> ?L1"
+    proof-
+      let ?P="\<lambda>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_inf X E x"
+      let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+      obtain E where P1:"E \<in> Pow (?L1) \<and> E \<noteq> {} \<and> is_inf X E s"
+        by (meson P0 inf_cl_idempotent0)
+      have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)"
+        using P1 inf_cl_idempotent1 by auto
+      let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
+      have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto) 
+          by (metis (mono_tags, lifting) B0 PowD is_infD111 someI_ex inf_equality)
+      have B1:"\<forall>x \<in> E. ?P (?f x) x"
+        by (metis (mono_tags, lifting) B0 tfl_some)
+      have B2:"?S = E"
+      proof
+        show "?S \<subseteq> E"
+          proof
+            fix s assume B6A0:"s \<in>?S"
+            have B60:"\<exists>Ai \<in> ?fE. s = Inf X Ai"
+              using B6A0 by blast
+            show "s \<in> E"
+              using B1 B60 inf_equality by fastforce
+          qed
+        next  
+        show "E \<subseteq> ?S"
+          proof
+            fix s assume B6A1:"s \<in> E"
+            show "s \<in> ?S"
+              using B1 B6A1 is_infD111 inf_equality by fastforce
+        qed
+      qed
+      obtain se where B11A0:"is_inf X E se"
+        using P1 by blast
+      obtain ss where B11A1:"is_inf X ?S ss"
+        using B11A0 B2 by auto
+      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_inf X Ai si)"
+        using B1 by blast
+      have B11:"(\<And>Ai. Ai \<in> ?fE \<Longrightarrow> \<exists>ti. is_inf X Ai ti)"
+        using B1 by blast
+      have B12:"?fE \<noteq> {}"
+        by (simp add: P1)
+      have B13:"is_inf X ((\<lambda>Ai. Inf X Ai)`?fE) ss"
+        using B00 B11A1 by presburger
+      have B14:"is_inf X (\<Union>?fE) ss"
+        by (metis (no_types, lifting) B12 B13 B8 inf_families) 
+      have B15:"(\<Union>?fE) \<in> Pow A"
+        using B1 by blast
+      have B16:"(\<Union>?fE) \<noteq> {}"
+        using B1 P1 by auto
+      show "s \<in> ?L1"
+        by (metis (no_types, lifting) B11A1 B14 B15 B16 B2 P1 inf_cl_if1 inf_iff2)
+      qed
+    qed
+  qed
+qed
+
+
+lemma fin_inf_cl_idempotent:
+   "fin_inf_cl X (fin_inf_cl X A) = fin_inf_cl X A"
+proof-
+  let ?L1="fin_inf_cl X A" let ?L2="fin_inf_cl X ?L1"
+  show "fin_inf_cl X (fin_inf_cl X A) = fin_inf_cl X A"
+  proof
+    show "?L1 \<subseteq>?L2"
+      by (meson subset_iff fin_inf_cl_extensive fin_inf_cl_imp0)
+    next
+    show "?L2 \<subseteq> ?L1"
+  proof
+    fix s assume P0:"s \<in>?L2"
+    show "s \<in> ?L1"
+    proof-
+      let ?P="\<lambda>E x. E \<in> Fpow A \<and> is_inf X E x"
+      let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+      obtain E where P1:"E \<in> Fpow (?L1) \<and> is_inf X E s"
+        by (meson P0 fin_inf_cl_idempotent0)
+      have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)"
+        using Fpow_subset_Pow P1 fin_inf_cl_idempotent1 by fastforce
+      let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
+      have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto)
+        by (metis (no_types, lifting) B0 inf_equality is_infD111 someI_ex) 
+      have B1:"\<forall>x \<in> E. ?P (?f x) x"
+        by (metis (mono_tags, lifting) B0 tfl_some)
+      have B2:"?S = E"
+      proof
+        show "?S \<subseteq> E"
+          proof
+            fix s assume B6A0:"s \<in>?S"
+            have B60:"\<exists>Ai \<in> ?fE. s = Inf X Ai"
+              using B6A0 by blast
+            show "s \<in> E"
+              using B1 B60 inf_equality by fastforce
+          qed
+        next  
+        show "E \<subseteq> ?S"
+          proof
+            fix s assume B6A1:"s \<in> E"
+            show "s \<in> ?S"
+              by (metis (mono_tags, lifting) B00 B1 B6A1 image_iff inf_equality)
+        qed
+      qed
+      obtain se where B11A0:"is_inf X E se"
+        using P1 by blast
+      obtain ss where B11A1:"is_inf X ?S ss"
+        using B11A0 B2 by auto
+      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_inf X Ai si)"
+        using B1 by blast
+      have B11:"(\<And>Ai. Ai \<in> ?fE \<Longrightarrow> \<exists>ti. is_inf X Ai ti)"
+        using B1 by blast
+      have B13:"is_inf X ((\<lambda>Ai. Inf X Ai)`?fE) ss"
+        using B00 B11A1 by presburger
+      have B14:"is_inf X (\<Union>?fE) ss"
+        by (metis (no_types, lifting) B11 B13 Sup_empty image_empty inf_families)
+      have B15:"(\<Union>?fE) \<in> Fpow A"
+      proof-
+        have B130: "(\<forall>Ai \<in> ?fE. Ai \<in> Fpow A)"
+          using B1 by fastforce
+        have B131:"finite ?fE"
+          using Fpow_def P1 by blast
+       have B132:"finite (\<Union>?fE)"
+         using B130 B131 Fpow_def by blast
+        have B133:"(\<Union>?fE) \<in> Pow A"
+          using B1 Fpow_subset_Pow by blast
+       show ?thesis
+         using B132 B133 Fpow_Pow_finite by blast
+      qed
+      show "s \<in> ?L1"
+        by (metis (no_types, lifting) B11A1 B14 B15 B2 P0 P1 fin_inf_cl_if1 fin_inf_cl_imp0 is_inf_unique)
+      qed
+    qed
+  qed
+qed
+
+
+lemma fne_inf_cl_idempotent:
+  "fne_inf_cl X (fne_inf_cl X A) = fne_inf_cl X A"
+proof-
+  let ?L1="fne_inf_cl X A" let ?L2="fne_inf_cl X ?L1"
+  show "fne_inf_cl X (fne_inf_cl X A) = fne_inf_cl X A"
+  proof
+    show "?L1 \<subseteq>?L2"
+      by (simp add: fne_inf_cl_idempotent2)
+    next
+    show "?L2 \<subseteq> ?L1"
+  proof
+    fix s assume P0:"s \<in>?L2"
+    show "s \<in> ?L1"
+    proof-
+      let ?P="\<lambda>E x. E \<in> Fpow A \<and> E \<noteq> {} \<and> is_inf X E x"
+      let ?f= "(\<lambda>x. SOME Ex. ?P Ex x)"
+      obtain E where P1:"E \<in> Fpow (?L1) \<and> E \<noteq> {} \<and> is_inf X E s"
+        using P0 fne_inf_cl_imp1 by blast
+      have B0:"\<forall>x \<in> E. (\<exists>Ex. ?P Ex x)"
+        using Fpow_subset_Pow P1 fne_inf_cl_idempotent1 by blast
+      let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
+      have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto)
+        by (metis (mono_tags, lifting) B0 inf_equality is_infD111 someI_ex)
+      have B1:"\<forall>x \<in> E. ?P (?f x) x"
+        by (metis (mono_tags, lifting) B0 tfl_some)
+      have B2:"?S = E"
+      proof
+        show "?S \<subseteq> E"
+          proof
+            fix s assume B6A0:"s \<in>?S"
+            have B60:"\<exists>Ai \<in> ?fE. s = Inf X Ai"
+              using B6A0 by blast
+            show "s \<in> E"
+              using B1 B60 inf_equality by fastforce
+          qed
+        next  
+        show "E \<subseteq> ?S"
+          proof
+            fix s assume B6A1:"s \<in> E"
+            show "s \<in> ?S"
+              by (metis (mono_tags, lifting) B00 B1 B6A1 image_iff inf_equality)
+        qed
+      qed
+      obtain se where B11A0:"is_inf X E se"
+        using P1 by blast
+      obtain ss where B11A1:"is_inf X ?S ss"
+        using B11A0 B2 by auto
+      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_inf X Ai si)"
+        using B1 by blast
+      have B11:"(\<And>Ai. Ai \<in> ?fE \<Longrightarrow> \<exists>ti. is_inf X Ai ti)"
+        using B1 by blast
+      have B13:"is_inf X ((\<lambda>Ai. Inf X Ai)`?fE) ss"
+        using B00 B11A1 by presburger
+      have B14:"is_inf X (\<Union>?fE) ss"
+        by (metis (no_types, lifting) B11 B13 Sup_empty image_empty inf_families)
+      have B15:"(\<Union>?fE) \<in> Fpow A"
+      proof-
+        have B130: "(\<forall>Ai \<in> ?fE. Ai \<in> Fpow A)"
+          using B1 by fastforce
+        have B131:"finite ?fE"
+          using Fpow_def P1 by blast
+       have B132:"finite (\<Union>?fE)"
+         using B130 B131 Fpow_def by blast
+        have B133:"(\<Union>?fE) \<in> Pow A"
+          using B1 Fpow_subset_Pow by blast
+       show ?thesis
+         using B132 B133 Fpow_Pow_finite by blast
+      qed
+      show "s \<in> ?L1"
+        by (metis (no_types, lifting) B1 B11A1 B14 B15 B2 P1 SUP_bot_conv(2) equals0I fne_inf_cl_if1 inf_equality is_infD111)
+      qed
+    qed
+  qed
+qed
+
+
+lemma sup_cl_ide:
+  "is_idempotent (Pow X) (\<lambda>A. sup_cl X A)"
+  by (simp add: is_idempotent_def sup_cl_idempotent)
+
+lemma inf_cl_ide:
+  "is_idempotent (Pow X) (\<lambda>A. inf_cl X A)"
+  by (simp add: is_idempotent_def inf_cl_idempotent)
+
+lemma fin_inf_cl_ide:
+  "is_idempotent (Pow X) (\<lambda>A. fin_inf_cl X A)"
+  by (simp add: is_idempotent_def fin_inf_cl_idempotent)
+
+lemma fne_inf_cl_ide:
+  "is_idempotent (Pow X) (\<lambda>A. fne_inf_cl X A)"
+  by (simp add: is_idempotent_def fne_inf_cl_idempotent)
+
+
+lemma sup_cl_range:
+  "(\<lambda>A. sup_cl X A)`(Pow X) \<subseteq> Pow X"
+  by (metis PowI idempotentD3 subsetI sup_cl_ide sup_cl_imp0)
+
+lemma inf_cl_range:
+  "(\<lambda>A. inf_cl X A)`(Pow X) \<subseteq> Pow X"
+  by (metis PowI idempotentD3 inf_cl_ide inf_cl_imp0 subsetI)
+
+lemma fin_inf_cl_range:
+  "(\<lambda>A. fin_inf_cl X A)`(Pow X) \<subseteq> Pow X"
+  by (metis PowI idempotentD3 subsetI fin_inf_cl_ide fin_inf_cl_imp0)
+
+lemma fne_inf_cl_range:
+  "(\<lambda>A. fne_inf_cl X A)`(Pow X) \<subseteq> Pow X"
+  by (metis PowI idempotentD3 subsetI fne_inf_cl_ide fne_inf_cl_imp0)
+
+lemma sup_cl_is_cl:
+  "is_closure (Pow X) (\<lambda>A. sup_cl X A)"
+  by (simp add: is_closure_def sup_cl_ext sup_cl_ide sup_cl_iso sup_cl_range)
+
+lemma inf_cl_is_cl:
+  "is_closure (Pow X) (\<lambda>A. inf_cl X A)"
+  by (simp add: inf_cl_ext inf_cl_ide inf_cl_iso inf_cl_range is_closure_def)
+
+lemma fin_inf_cl_is_cl:
+  "is_closure (Pow X) (\<lambda>A. fin_inf_cl X A)"
+  by (simp add: fin_inf_cl_ext fin_inf_cl_ide fin_inf_cl_iso fin_inf_cl_range is_closure_def)
+
+lemma fne_inf_cl_is_cl:
+  "is_closure (Pow X) (\<lambda>A. fne_inf_cl X A)"
+  by (simp add: fne_inf_cl_ext fne_inf_cl_ide fne_inf_cl_iso fne_inf_cl_range is_closure_def)
+
+
+section Compactness
+
+definition compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "compact X a \<equiv> (a \<in> X) \<and> (\<forall>D s. D \<subseteq> X \<and> (is_dir D (\<le>)) \<and> is_sup X D s \<and> a \<le> s\<longrightarrow> (\<exists>d \<in> D. a \<le> d))"
+
+lemma compact_ne:
+  "compact X a \<Longrightarrow> X \<noteq> {}"
+  using compact_def by blast
+
+lemma compactD1:
+  "\<lbrakk>a \<in> X; compact X a; D \<subseteq> X; is_dir D (\<le>);is_sup X D s; a \<le> s\<rbrakk> \<Longrightarrow> (\<exists>d \<in> D. a \<le> d)"
+  by (meson compact_def)
 
 unused_thms  
 
