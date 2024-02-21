@@ -3607,7 +3607,32 @@ lemma fne_sup_cl_is_cl:
   "is_closure (Pow X) (\<lambda>A. fne_sup_cl X A)"
   by (simp add: fne_sup_cl_ext fne_sup_cl_ide fne_sup_cl_iso fne_sup_cl_range is_closure_def)
 
-
+lemma fne_sup_cl_dir:
+  assumes A0:"is_sup_semilattice X" and A1:"A \<subseteq> X"
+  shows  "is_dir (fne_sup_cl X A) (\<le>)"
+proof-
+  have B0:"\<And>a b. a \<in> fne_sup_cl X A \<and> b \<in> fne_sup_cl X A \<longrightarrow> (\<exists>c\<in>fne_sup_cl X A. a \<le> c \<and> b \<le> c)"
+  proof
+    fix a b assume A2:"a \<in> fne_sup_cl X A \<and> b \<in> fne_sup_cl X A "
+    obtain Ea where A3:"Ea \<in> Fpow A \<and> Ea \<noteq> {} \<and> is_sup X Ea a"
+      using A2 fne_sup_cl_imp1 by blast
+    obtain Eb where A4:"Eb \<in> Fpow A \<and> Eb \<noteq> {} \<and> is_sup X Eb b"
+      using A2 fne_sup_cl_imp1 by blast
+    have B1:"Ea \<union> Eb \<in> Fpow A \<and> Ea \<union> Eb \<noteq> {}"
+      by (metis A3 A4 Fpow_Pow_finite Int_Collect Pow_iff Un_empty Un_subset_iff finite_UnI)
+    have B2:"(Ea \<union> Eb) \<subseteq> X"
+      by (metis A1 A3 A4 Fpow_Pow_finite Int_Collect Pow_iff dual_order.trans sup.boundedI)
+    obtain c where A5:"is_sup X (Ea \<union> Eb) c"
+      by (metis A0 B1 B2 Fpow_Pow_finite Int_Collect bsup_finite2)
+    have B3:"c \<in> fne_sup_cl X A \<and> a \<le> c \<and> b \<le> c"
+      by (meson A3 A4 A5 B1 Un_upper2 fne_sup_cl_if1 is_supD111 is_sup_iso1 sup.cobounded1)
+    show "(\<exists>c\<in>fne_sup_cl X A. a \<le> c \<and> b \<le> c)"
+      using B3 by blast
+  qed
+  show ?thesis
+    by (simp add: B0 is_updirI1)
+qed
+  
 section Compactness
 
 definition compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
