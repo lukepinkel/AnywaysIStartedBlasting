@@ -3635,16 +3635,48 @@ qed
   
 section Compactness
 
-definition compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "compact X a \<equiv> (a \<in> X) \<and> (\<forall>D s. D \<subseteq> X \<and> (is_dir D (\<le>)) \<and> is_sup X D s \<and> a \<le> s\<longrightarrow> (\<exists>d \<in> D. a \<le> d))"
+definition is_compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "is_compact X c \<equiv> c \<in> X \<and> (\<forall>A \<in> Pow X. c \<le> Sup X A \<longrightarrow> (\<exists>A0 \<in> Fpow A. A0 \<noteq> {} \<and> c \<le> Sup X A0))"
 
 lemma compact_ne:
-  "compact X a \<Longrightarrow> X \<noteq> {}"
+  "is_compact X c \<Longrightarrow> X \<noteq> {}"
+  using is_compact_def by auto
+
+lemma compactD1:
+  "\<lbrakk>is_compact X c; A \<subseteq> X; c \<le> Sup  X A\<rbrakk> \<Longrightarrow> (\<exists>A0 \<in> Fpow A.  A0 \<noteq> {} \<and> c \<le> Sup X A0)"
+  by (simp add: is_compact_def)
+
+
+lemma compactD2:
+  assumes A0:"is_sup_semilattice X" and A1:"is_compact X c" and A2:"A \<subseteq> X" and A3:"A \<noteq> {}" and A4:"c \<le> Sup X A" and A5:"is_dir A (\<le>)"
+  shows "\<exists>a \<in> A. c \<le> a"
+proof-
+  obtain A0 where B0:"A0 \<in> Fpow A \<and> A0 \<noteq> {} \<and> c \<le> Sup X A0"
+    using A1 A2 A4 compactD1 by blast
+  obtain a where B1:"a \<in> A \<and> a ub A0"
+    by (metis A5 B0 Fpow_Pow_finite Int_Collect Pow_iff updir_finite)
+  have B2:"A0 \<subseteq> X \<and> finite A0"
+    by (metis A2 B0 Fpow_Pow_finite Int_Collect Pow_iff dual_order.trans)
+  have B3:"Sup X A0 \<le> a"
+    by (meson A0 A2 B0 B1 B2 bsup_finite2 is_supD122 subsetD)
+  have B4:"c \<le> a"
+    using B0 B3 dual_order.trans by blast
+  show ?thesis
+    using B1 B4 by blast
+qed
+
+definition compact::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "compact X c \<equiv> (c \<in> X) \<and> (\<forall>D s. D \<subseteq> X \<and> (is_dir D (\<le>)) \<and> is_sup X D s \<and> c \<le> s\<longrightarrow> (\<exists>d \<in> D. c \<le> d))"
+
+lemma compact_ne:
+  "compact X c \<Longrightarrow> X \<noteq> {}"
   using compact_def by blast
 
 lemma compactD1:
-  "\<lbrakk>a \<in> X; compact X a; D \<subseteq> X; is_dir D (\<le>);is_sup X D s; a \<le> s\<rbrakk> \<Longrightarrow> (\<exists>d \<in> D. a \<le> d)"
-  by (meson compact_def)
+  "\<lbrakk>c \<in> X; compact X c; D \<subseteq> X; is_dir D (\<le>);is_sup X D s; c \<le> s\<rbrakk> \<Longrightarrow> (\<exists>d \<in> D. c \<le> d)"
+  by(auto simp add:compact_def)
+
+
 
 unused_thms  
 
