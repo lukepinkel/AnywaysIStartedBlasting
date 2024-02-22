@@ -1145,10 +1145,59 @@ next
     by (simp add: inf_equality)
 qed
 
-
 lemma binf_finite2:
   "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_inf X A (Inf X A)"
   by (meson binf_finite sinfD3)
+
+
+lemma binfI:
+  "\<lbrakk>is_inf_semilattice X; (\<And>s. is_inf X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Inf X {a, b})"
+  by (simp add: sinfD3)
+
+lemma binf_commute:
+  "is_inf X {a, b} c \<longleftrightarrow> is_inf X {b, a } c "
+  by (simp add: insert_commute)
+
+lemma binf_leI3:
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le> Inf X {a, b}"
+  by (simp add: binary_infD4 sinfD3 sinfD4)
+
+lemma binf_iff:
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le> Inf X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
+  by (simp add: binary_infD4 sinfD3 sinfD4)
+
+lemma binf_assoc1:
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  Inf X {Inf X {a, b}, c} = Inf X {a,  Inf X {b, c}}"
+  apply(rule order.antisym) by (metis sinfD3 binf_iff is_infD111 order_refl)+
+
+lemma binf_assoc2:
+  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, Inf X {b, c}} = Inf X {b, Inf X {a, c}}"
+  apply(rule order.antisym) by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)+
+
+lemma binf_commute2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, b}  =  Inf X {b,a}"
+  by (simp add: insert_commute)
+
+lemma binf_idem1:
+  "a\<in> X \<Longrightarrow> (\<lambda>x y. Inf X {x, y}) a a = a"
+  by (simp add:  inf_equality inf_singleton)
+
+lemma binf_idem2:
+  "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, Inf X {a, b}} = Inf X {a, b}"
+  by (metis binf_assoc1 binf_idem1)
+
+lemma binf_idem3:
+  "is_inf_semilattice X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  Inf X {Inf X {a, b}, b} = Inf X {a, b}"
+  by (metis binf_assoc1 binf_idem1)
+
+lemma binf_lt1:
+  "is_inf_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Inf X {a, b} = a"
+  by (simp add: dual_order.eq_iff binf_iff binf_leI1)
+
+lemma binf_lt2:
+  "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Inf X {a, b} = b"
+  by (simp add: dual_order.eq_iff binf_iff binf_leI2)
+
 
 lemma finf_closedD1:
   "is_finf_closed X A \<Longrightarrow> (\<And>a1 a2. a1 \<in> A\<Longrightarrow> a2 \<in> A \<Longrightarrow> Inf X {a1, a2} \<in> A)"
@@ -1230,6 +1279,46 @@ lemma bsup_idem1:
   "a\<in> X \<Longrightarrow> (\<lambda>x y. Sup X {x, y}) a a = a"
   by (simp add: sup_equality sup_singleton)
 
+
+lemma bsupI:
+  "\<lbrakk>is_sup_semilattice X; (\<And>s. is_sup X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Sup X {a, b})"
+  by (metis is_sup_semilattice_def sup_equality)
+
+lemma bsup_commute:
+  "is_sup X {a, b} c \<longleftrightarrow> is_sup X {b, a } c "
+  by (simp add: insert_commute)
+
+lemma bsup_geI3:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow> c \<ge> Sup X {a, b}"
+  by (simp add: binary_supD4 ssupD3 ssupD4)
+
+lemma bsup_assoc1:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {Sup X {a, b}, c} =Sup X {a, Sup X {b, c}}"
+  apply(rule order.antisym) by (metis ssupD3 bsup_iff is_supD111 order_refl)+
+
+lemma bsup_assoc2:
+  "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, Sup X {b, c}} = Sup X {b, Sup X {a, c}}"
+  apply(rule order.antisym) by (metis ssupD3 bsup_iff is_supD111 order_refl)+
+
+lemma bsup_commute2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Sup X {a, b} =  Sup X  {b, a}"
+  by (simp add: insert_commute)
+
+lemma bsup_idem2:
+  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  Sup X{ a, Sup X {a, b}} =  Sup X {a, b}"
+  by (metis bsup_assoc1 bsup_idem1)
+
+lemma bsup_idem3:
+  "is_sup_semilattice X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Sup X {Sup X {a, b}, b} =  Sup X {a, b}"
+  by (metis bsup_assoc1 bsup_idem1)
+
+lemma bsup_ge1:
+  "is_sup_semilattice X\<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Sup X {a, b} = b"
+  by (simp add: Orderings.order_eq_iff bsup_geI2 bsup_geI3)
+
+lemma bsup_ge2:
+  "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Sup X {a, b} = a"
+  by (simp add: dual_order.eq_iff bsup_iff bsup_geI1)
 
 
 lemma bsup_finite:
@@ -3857,55 +3946,133 @@ lemma prime_filter_iff2:
   "is_lattice X \<Longrightarrow>  (prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis primefilterD3 primefilterI2)
 
+lemma lattice_absorb1:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x,Inf X {x, y} } = x"
+  by (simp add: binf_leI1 bsup_ge2 latt_iff sinfD4)
 
-definition distributive_lattice::"'a::order set \<Rightarrow> bool" where
-  "distributive_lattice X \<equiv> (is_lattice X) \<and> (\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}})"
-
-lemma distri_lattD1:
-  "\<lbrakk>distributive_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Inf X {Sup X {y, z}, x} = Sup X {Inf X {y, x}, Inf X {z, x}} "
-  by (simp add: distributive_lattice_def insert_commute)
+lemma lattice_absorb2:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf X {x,Sup X {x, y} } = x"
+  by (simp add: binf_lt1 bsup_geI1 latt_iff ssupD4)
 
 lemma distrib_sup_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, Inf X {y, z}} \<le> Inf X {Sup X {x, y}, Sup X {x, z}}"
-  by (smt (z3) bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff order_refl sinfD3 sinfD4 ssupD4)
+  by(auto simp add: bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff sinfD3 sinfD4 ssupD4 binf_leI3 binf_leI1 binf_leI2)
 
 lemma distrib_inf_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"
-  by (smt (z3) bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff order_refl sinfD3 sinfD4 ssupD4)
+  by(auto simp add:bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff sinfD3 sinfD4 ssupD4 binf_leI1 binf_leI2 binf_leI3)
+
+lemma distibD1:
+  assumes A0:"is_lattice X" and 
+          A1:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}}" and
+          A2:" x \<in> X \<and> y \<in> X \<and> z \<in> X"
+  shows "Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}"
+proof-
+  have B0:"Sup X {x, Inf X {y, z}} = Sup X {Sup X {x, Inf X {x, z}}, Inf X {y, z}}"
+    by (simp add: A0 A2 lattice_absorb1)
+  have B1:"... = Sup X {x, Inf X {z, Sup X {x, y}}}"
+    by (simp add: A0 A1 A2 binf_commute2 bsup_assoc1 lattD41 lattD42 sinfD4)
+  have B2:"... = Sup X {Inf X {Sup X {x, y}, x}, Inf X {Sup X {x, y}, z}}"
+    by (simp add: A0 A2 insert_commute lattice_absorb2)
+  have B3:"... = Inf X {Sup X {x, y}, Sup X {x, z}}"
+    by (simp add: A0 A1 A2 lattD42 ssupD4)
+  show ?thesis
+    by (simp add: B0 B1 B2 B3)
+qed
+  
+lemma distribD2:
+  assumes A0: "is_lattice X" and
+          A1: "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}" and
+          A2: "x \<in> X \<and> y \<in> X \<and> z \<in> X"
+  shows "Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}}"
+proof -
+  have B0:"Inf X {x, Sup X {y, z}} = Inf X {Inf X {x, Sup X {x, z}}, Sup X {y, z}}"
+    by (simp add: A0 A2 lattice_absorb2)
+  have B1:"... = Inf X {x, Sup X {z, Inf X {x, y}}}"
+    by (simp add: A0 A1 A2 binf_assoc1 bsup_commute2 lattD41 lattD42 ssupD4)
+  have B2:"... = Inf X {Sup X {Inf X {x, y}, x}, Sup X {Inf X {x, y}, z}}"
+    by (simp add: A0 A2 insert_commute lattice_absorb1)
+  have B3:"... = Sup X {Inf X {x, y}, Inf X {x, z}}"
+    by (simp add: A0 A1 A2 lattD41 sinfD4)
+  show ?thesis
+    by (simp add: B0 B1 B2 B3)
+qed
 
 
-lemma lattice_id11:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, y} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
-  by (simp add: binf_leI1 binf_leI2 bsup_geI1 latt_iff lb_double lb_insert sinfD4)
 
-lemma lattice_id12:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {y, z} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
-  by (smt (verit, best) insert_commute lattice_id11)
 
-lemma lattice_id13:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, z} lb {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
-  by (metis doubleton_eq_iff lattice_id12)
+definition distributive_lattice::"'a::order set \<Rightarrow> bool" where
+  "distributive_lattice X \<equiv> (is_lattice X) \<and> (\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}})"
 
-lemma lattice_id15:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
-  by (simp add: binf_leI1 bsup_geI1 bsup_geI2 latt_iff ssupD4 ub_double ub_insert)
+lemma distr_latticeD1:
+  "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}} "
+  by (simp add: distributive_lattice_def insert_commute)
 
-lemma lattice_id16:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
-  by (smt (verit, best) insert_commute lattice_id15)
+lemma distr_latticeD2:
+  "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup X {Inf X {y, z}, x} = Inf X {Sup X {y, x}, Sup X {z, x}}"
+  by (simp add: distributive_lattice_def insert_commute)
+ 
+lemma distr_latticeD3:
+  "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}}"
+  using distribD2 distributive_lattice_def by fastforce
+ 
+lemma distr_latticeD4:
+  "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf X {Sup X {y, z}, x} = Sup X {Inf X {y, x}, Inf X {z, x}}"
+  by (simp add: distr_latticeD3 insert_commute)
 
-lemma lattice_id17:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, z} ub  {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
-  by (metis doubleton_eq_iff lattice_id16)
+lemma lattice_ne_inf_le_sup:
+  "\<lbrakk>A \<noteq> {}; is_inf X A i; is_sup X A s\<rbrakk> \<Longrightarrow> i \<le> s"
+  by (meson all_not_in_conv dual_order.trans is_infD1121 is_supD1121)
 
+lemma lattice_in_inf_le_sup:
+  "\<lbrakk>A \<inter> B \<noteq> {}; is_inf X A i; is_sup X B s\<rbrakk> \<Longrightarrow> i \<le> s"
+  by (meson Int_emptyI is_infD1121 is_supD1121 order_trans)
+
+lemma lattice_id0:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, y} lb  {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  by (simp add: lb_def binf_leI1 binf_leI2 bsup_geI1 lattD41 lattD42 ssupD4)
+
+lemma lattice_id1:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {y, z} lb  {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  by(simp add:lb_def  binary_supD32 binf_leI1 binf_leI2 lattD32 latt_iff ssupD4)
 
 lemma lattice_id2:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, Sup X {y, z}} \<ge> Sup X {Inf X {x, y}, Inf X {x, z}}"
-  by (smt (z3) binary_infD22 binary_infD4 binary_supD4 lattD41 lattD42 leastD2 least_singleton sinfD3 sinfD4 singletonI ssupD3 ssupD4)
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, z} lb  {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  using lattice_id0[of "X" "x" "z" "y"] by (simp add: insert_commute)
+
 
 lemma lattice_id3:
-  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x,Inf X {y, z}} \<le> Inf X {Sup X {x, y}, Sup X {x, z}}"
-  by (smt (z3) binary_infD22 binary_infD4 binary_supD4 insert_commute lattD41 lattD42 leastD2 least_singleton sinfD3 sinfD4 singletonI ssupD3 ssupD4)
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  by (simp add: ub_def binf_leI1 bsup_geI1 bsup_geI2 lattD41 lattD42 sinfD4)
 
- 
+lemma lattice_id4:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  by (simp add: ub_def binf_leI2 bsup_geI1 bsup_geI2 latt_iff sinfD4)
+
+lemma lattice_id5:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
+  using lattice_id3[of X x z y] by (simp add: insert_commute)
+
+lemma lattice_id6:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i \<Longrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b) "
+  using is_infD32 is_supD32 by blast
+
+lemma lattice_id7:
+  "\<lbrakk>A \<subseteq> Lower_Bounds X B; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i "
+  by (meson Lower_Bounds_sub is_infD1 is_sup_iso1 sup_max_eq)
+
+lemma lattice_id7:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)\<rbrakk> \<Longrightarrow> s \<le> i"
+  by (meson Lower_BoundsI in_mono lattice_id7 subsetI)
+
+
+
+lemma lattice_id1:
+  assumes A0:"is_lattice X" and A1:" x \<in> X \<and> y \<in> X \<and> z \<in> X" 
+  shows  "Sup X {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}} \<le> Inf X {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+proof-
+  let ?A="{Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"  let ?B="{Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  
+  
+
 unused_thms  
 
 end
