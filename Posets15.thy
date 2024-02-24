@@ -4059,19 +4059,48 @@ lemma lattice_id7:
   "\<lbrakk>A \<subseteq> Lower_Bounds X B; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i "
   by (meson Lower_Bounds_sub is_infD1 is_sup_iso1 sup_max_eq)
 
-lemma lattice_id7:
+lemma lattice_id8:
   "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)\<rbrakk> \<Longrightarrow> s \<le> i"
   by (meson Lower_BoundsI in_mono lattice_id7 subsetI)
 
+lemma lattice_id9:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. a lb B)\<rbrakk> \<Longrightarrow> s \<le> i"
+  by (meson lattice_id8 lbD)
 
 
-lemma lattice_id1:
+lemma lattice_id10:
   assumes A0:"is_lattice X" and A1:" x \<in> X \<and> y \<in> X \<and> z \<in> X" 
   shows  "Sup X {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}} \<le> Inf X {Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
 proof-
   let ?A="{Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"  let ?B="{Sup X {x, y}, Sup X {y, z}, Sup X {x, z}}"
+  have B0:"\<forall>a \<in> ?A. a lb ?B" by (simp add: A0 A1 lattice_id0 lattice_id1 lattice_id2)
+  have B1:"finite ?A \<and> ?A \<subseteq> X \<and> finite ?B \<and> ?B \<subseteq> X"
+    by (metis A0 A1 empty_subsetI finite.emptyI finite_insert insert_subset latt_iff sinfD4 ssupD4)
+  have B2:"is_sup X ?A (Sup X ?A) \<and> is_inf X ?B (Inf X ?B)"
+    by (meson A0 B1 binf_finite2 bsup_finite2 insert_not_empty lattD41 lattD42)
+  have B3:"Sup X ?A \<le> Inf X ?B"
+    by (meson B0 B1 B2 lattice_id9)
+  show ?thesis
+    using B3 by force
+qed
+
+lemma distrib_I3:
+  "\<lbrakk>distributive_lattice X ;x \<in> X; y \<in>X; z \<in> X; Inf X {x, z} = Inf X {y, z}; Sup X {x, z}=Sup X {y, z}\<rbrakk> \<Longrightarrow> x=y"
+  by (metis distributive_lattice_def doubleton_eq_iff lattice_absorb1)
+
+(*lemma distrib_D3:
+  assumes A0:"is_lattice X" and
+          A1:"(\<And>x y z. \<lbrakk>x \<in> X; y \<in>X; z \<in> X; Inf X {x, z} = Inf X {y, z}; Sup X {x, z}=Sup X {y, z}\<rbrakk> \<Longrightarrow> x=y)"
+  shows "distributive_lattice X"
+proof-
+  have B0:"\<And>x y z. x \<in> X \<and>  y \<in> X \<and> z \<in> X \<longrightarrow> Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}"
+  proof
+    fix x y z assume A2:"x \<in> X \<and>  y \<in> X \<and> z \<in> X " 
+    show "Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}"
+*)  
   
-  
+
+
 
 unused_thms  
 
