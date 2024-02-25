@@ -15,7 +15,7 @@ declare [[show_consts,show_sorts,show_types, show_results]]
 section Misc
 
 lemma image_p:
-  "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))"
+  "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))" 
   by blast
 
 lemma un_to_ind_un:
@@ -28,6 +28,9 @@ lemma int_to_ind_int:
 
 definition Pow_ne::"'a set \<Rightarrow> 'a set set" where
   "Pow_ne X = Pow X - {{}}"
+
+definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where
+  "Fpow_ne X = Fpow X - {{}}"
 
 lemma pow_ne_iff1:
   "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"
@@ -57,10 +60,6 @@ lemma pow_ne_top:
   "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X"
   by(simp add:Pow_ne_def)
 
-
-definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where
-  "Fpow_ne X = Fpow X - {{}}"
-
 lemma fpow_ne_iff1:
   "A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"
   by (simp add: Fpow_ne_def)
@@ -89,6 +88,9 @@ lemma fpow_ne_bot:
   "{} \<notin> Fpow_ne X"
   by (simp add: fpow_ne_iff1)
 
+lemma ne_subset_ne:
+  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
+  by blast
 
 section Bounds
 subsection UpperBoundsPredicate
@@ -96,14 +98,21 @@ subsection UpperBoundsPredicate
 definition ub::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" (infix "ub" 50) where 
    "x ub  A \<equiv> (\<forall>a. a \<in> A \<longrightarrow> a \<le> x)"
 
+lemma ub_iff1:
+  "x ub A \<longleftrightarrow> (\<forall>a \<in> A. a \<le> x)"
+  by(auto simp add:ub_def)
+
 lemma ubI: 
   "(\<And>a. a \<in> A \<Longrightarrow> a \<le> x) \<Longrightarrow> x ub A" 
   by (simp add:ub_def)
-print_facts!
 
 lemma ubD:
    "\<lbrakk>x ub A;  a \<in> A\<rbrakk>  \<Longrightarrow> a \<le> x "
     by (simp add:ub_def)
+
+lemma ubE:
+  "x ub A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> x)"
+  by (simp add: ubD)
 
 lemma ub_ant2:
   "\<lbrakk>A \<subseteq> B; x ub B\<rbrakk> \<Longrightarrow> x ub A"
@@ -111,8 +120,7 @@ lemma ub_ant2:
 
 lemma ub_iso1:
   "\<lbrakk>x \<le> y; x ub A\<rbrakk> \<Longrightarrow> y ub A" 
-   apply(intro ubI; drule ubD) 
-   by(simp)+
+   by(intro ubI; drule ubD, simp+) 
 
 lemma ub_empty:
   "x ub {}"
@@ -122,21 +130,69 @@ lemma ub_singleton:
   "x ub {x}"
   by (simp add: ub_def)
 
+lemma ub_singletonI:
+  "x ub {y} \<Longrightarrow> x \<ge> y"
+  by (simp add: ubE)
+
+lemma ub_singletonD:
+  "x \<ge> y \<Longrightarrow> x ub {y}"
+  by (simp add: ub_iso1 ub_singleton)
+
+lemma ub_singleton_simp:
+  "x ub {y} \<longleftrightarrow> x \<ge> y"
+  by (simp add: ub_def)
+
 lemma ub_insert:
   "\<lbrakk>c ub F; c \<ge> x\<rbrakk> \<Longrightarrow> c ub (insert x F)"
   by (simp add: ub_def)
 
-lemma ub_binary:
+lemma ub_binaryI:
+  "a \<le> b \<Longrightarrow> b ub {a, b}"
+  by (simp add: ub_insert ub_singleton)
+
+lemma ub_binaryD:
+  "b ub {a, b} \<Longrightarrow> a \<le> b"
+  by (simp add: ubE)
+
+lemma ub_binary_iff1:
   "a \<le> b \<longleftrightarrow> b ub {a, b}"
   by (simp add: ub_def)
 
-lemma ub_double:
-  "c ub {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
-  by (metis insert_iff ubD ubI ub_singleton)
+lemma ub_doubleE1:
+  "c ub {a, b} \<Longrightarrow> a \<le> c"
+  by (simp add: ubD)
 
-lemma ub_union:
+lemma ub_doubleE2:
+  "c ub {a, b} \<Longrightarrow> b \<le> c"
+  by (simp add: ubD)
+
+lemma ub_doubleI:
+  "\<lbrakk>a \<le> c; b \<le> c\<rbrakk> \<Longrightarrow> c ub {a, b}"
+  by (simp add: ub_empty ub_insert)
+
+lemma ub_double_iff1:
+  "c ub {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
+  by(auto, erule ub_doubleE1, erule ub_doubleE2, erule ub_doubleI, simp)
+
+lemma ub_unionI:
   "\<lbrakk>x ub A; x ub B\<rbrakk> \<Longrightarrow> x ub A \<union> B"
   by (simp add: ub_def)
+
+lemma ub_unionD1:
+  "x ub A \<union> B \<Longrightarrow> x ub A"
+  by (simp add: ub_def)
+
+lemma ub_unionD2:
+  "x ub A \<union> B \<Longrightarrow> x ub B"
+  by (simp add: ub_def)
+
+lemma ub_unI:
+  "(\<And>A. A \<in> S \<Longrightarrow> x ub A) \<Longrightarrow> x ub (\<Union>S)"
+  by (simp add: ub_iff1)
+
+lemma ub_unD:
+  "x ub (\<Union>S) \<Longrightarrow> A \<in> S \<Longrightarrow> x ub A"
+ using ub_ant2[of A "\<Union>S" x] by blast
 
 lemma ub_imageI:
   "(\<And>a. a \<in> A \<Longrightarrow> x \<ge> f a) \<Longrightarrow> x ub (f`A)"
@@ -145,98 +201,191 @@ lemma ub_imageI:
 
 subsection UpperBoundsSet
 
-definition Upper_Bounds::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
-  "Upper_Bounds X A \<equiv> {b \<in> X. b ub A}"
+definition ubd::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "ubd X A \<equiv> {b \<in> X. b ub A}"
 
-lemma Upper_Bounds_mem_iff:
-  "b \<in> Upper_Bounds X A \<longleftrightarrow> (b \<in> X \<and> b ub A)" 
-   by(simp add: Upper_Bounds_def)
+lemma ubdI:
+  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<le> b); b \<in> X\<rbrakk> \<Longrightarrow> b \<in> ubd X A"
+   by(simp add: ubd_def ubI)
 
-lemma Upper_Bounds_mem_iff2:
-  "b \<in> Upper_Bounds X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a. a \<in> A \<longrightarrow>  a \<le> b))"
-  by (simp add: Upper_Bounds_mem_iff ub_def)
+lemma ubdI2:
+  "\<lbrakk>b ub A; b \<in> X\<rbrakk> \<Longrightarrow> b \<in> ubd X A"
+  by (simp add: ubdI ub_def) 
 
-lemma Upper_BoundsI:
-  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<le> b); b \<in> X\<rbrakk> \<Longrightarrow> b \<in> Upper_Bounds X A"
-   by(simp add: Upper_Bounds_def ubI)
+lemma ubdD1:
+  "\<lbrakk>b \<in> ubd X A; x \<in> A\<rbrakk> \<Longrightarrow> x \<le> b"
+  by (simp add: ubd_def ub_def)
 
-lemma Upper_BoundsD1:
-  "\<lbrakk>b \<in> Upper_Bounds X A; x \<in> A\<rbrakk> \<Longrightarrow> x \<le> b"
-  by (simp add: Upper_Bounds_mem_iff ub_def)  
+lemma ubdD2:
+  "b \<in> ubd X A \<Longrightarrow> b \<in> X"
+  by (simp add: ubd_def)
 
-lemma Upper_BoundsD2:
-  "\<lbrakk>b \<in> Upper_Bounds X A\<rbrakk> \<Longrightarrow> b \<in> X"
-   by(simp add: Upper_Bounds_def)
+lemma ubdD3:
+  "b \<in> ubd X A \<Longrightarrow> b ub A"
+  by (simp add: ubd_def)
 
-lemma Upper_BoundsD3:
-  "b \<in> Upper_Bounds X A \<Longrightarrow> b ub A"
-  by (simp add: Upper_Bounds_mem_iff)
+lemma ubd_D31:
+  "b \<in> ubd X A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> b)"
+  by (simp add: ubdD1)
 
-lemma Upper_Bounds_sub:
-  "Upper_Bounds X A \<subseteq> X"
-   by(simp add: Upper_Bounds_def)
+lemma ubd_mem_iff:
+  "b \<in> ubd X A \<longleftrightarrow> (b \<in> X \<and> b ub A)" 
+   by(simp add: ubd_def)
 
-lemma Upper_Bounds_ant1:
-  "A \<subseteq> B \<Longrightarrow> Upper_Bounds X B \<subseteq> Upper_Bounds X A"
-  by (simp add: Upper_Bounds_mem_iff subset_iff ub_ant2) 
+lemma ubd_mem_iff2:
+  "b \<in> ubd X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a. a \<in> A \<longrightarrow>  a \<le> b))"
+  by (simp add: ubd_mem_iff ub_def)
 
-lemma Upper_Bounds_iso2:
-  "Y \<subseteq> X \<Longrightarrow> Upper_Bounds Y A \<subseteq> Upper_Bounds X A" 
-  by (simp add:subset_iff Upper_Bounds_def)
+lemma ubd_mem_iff3:
+  "b \<in> ubd X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a \<in> A. a \<le> b))"
+  by (simp add: ubd_mem_iff ub_iff1)
 
-lemma Upper_Bounds_iso2b:
-  "\<lbrakk>Y \<subseteq> X; x \<in> Upper_Bounds Y A \<rbrakk> \<Longrightarrow> x \<in> Upper_Bounds X A"
-  by (simp add: Upper_Bounds_mem_iff in_mono)
+lemma ubd_sub:
+  "ubd X A \<subseteq> X"
+   by(simp add: ubd_def)
 
-lemma Upper_Bounds_empty:
-  "Upper_Bounds X {} = X"
-   by(simp add: set_eq_iff Upper_Bounds_mem_iff ub_def)
+lemma ubd_ant1:
+  "A \<subseteq> B \<Longrightarrow> ubd X B \<subseteq> ubd X A"
+  by (simp add: ubd_mem_iff subset_iff ub_ant2) 
 
-lemma Upper_Bounds_singleton:
-  "x \<in> X \<Longrightarrow> x \<in> Upper_Bounds X {x}"
-  by (simp add: Upper_Bounds_def ub_singleton)
+lemma ubd_ant1b:
+  "\<lbrakk>A \<subseteq> B; b \<in> ubd X B\<rbrakk> \<Longrightarrow> b \<in> ubd X A"
+  using ubd_ant1 by blast
 
-lemma Upper_Bounds_singleton2:
-  "\<lbrakk>x \<in> X; a \<le> x \<rbrakk> \<Longrightarrow>  x \<in> Upper_Bounds X {a}"
-  by (simp add: Upper_Bounds_mem_iff ub_iso1 ub_singleton)
+lemma ubd_iso2:
+  "Y \<subseteq> X \<Longrightarrow> ubd Y A \<subseteq> ubd X A" 
+  by (simp add:subset_iff ubd_def)
 
-lemma ub_single_D2:
-  "x \<in> Upper_Bounds X {a}\<Longrightarrow> a \<le> x"
-  by (simp add: Upper_BoundsD1)
+lemma ubd_iso2b:
+  "\<lbrakk>Y \<subseteq> X; x \<in> ubd Y A \<rbrakk> \<Longrightarrow> x \<in> ubd X A"
+  by (simp add: ubd_mem_iff in_mono)
+
+lemma ubd_emptyI:
+  "x \<in> X \<Longrightarrow> x \<in> ubd X {}"
+  by (simp add: ubd_mem_iff3)
+
+lemma ubd_empty:
+  "ubd X {} = X"
+   by(simp add: set_eq_iff ubd_mem_iff ub_def)
+
+lemma ubd_singleton:
+  "x \<in> X \<Longrightarrow> x \<in> ubd X {x}"
+  by (simp add: ubd_def ub_singleton)
+
+lemma ubd_singleton2:
+  "\<lbrakk>x \<in> X; y \<le> x \<rbrakk> \<Longrightarrow>  x \<in> ubd X {y}"
+  by (simp add: ubd_mem_iff ub_iso1 ub_singleton)
+
+lemma ubd_singleton_iff:
+  "x \<in> ubd X {y} \<longleftrightarrow> (x \<in> X \<and> x \<ge> y)"
+  by (simp add: ubd_mem_iff ub_singleton_simp)
 
 lemma ubd_mem_insert:
-  "\<lbrakk>c \<in> Upper_Bounds X F; c \<ge> x\<rbrakk> \<Longrightarrow> c \<in> Upper_Bounds X (insert x F)"
-  by (simp add: Upper_Bounds_mem_iff ub_insert)
+  "\<lbrakk>c \<in> ubd X F; c \<ge> x\<rbrakk> \<Longrightarrow> c \<in> ubd X (insert x F)"
+  by (simp add: ubd_mem_iff ub_insert)
+
+lemma ubd_mem_binaryI:
+  "\<lbrakk>a \<le> b; b \<in> X\<rbrakk> \<Longrightarrow> b \<in> ubd X {a, b}"
+  by (simp add: ubdI2 ub_binaryI)
+
+lemma ubd_mem_binaryD:
+  "b \<in> ubd X {a, b} \<Longrightarrow> a \<le> b"
+  by (simp add: ubdD1)
+
+lemma ubd_mem_binary_iff1:
+  "b \<in> ubd X {a, b} \<longleftrightarrow> a \<le> b \<and> b \<in> X"
+  using ubdD2 ubd_mem_binaryD ubd_mem_binaryI by blast
+
+lemma ubd_mem_doubleE1:
+  "c \<in> ubd X {a, b} \<Longrightarrow> a \<le> c"
+  by (simp add: ubdD1)
+
+lemma ubd_mem_doubleE2:
+  "c \<in> ubd X {a, b} \<Longrightarrow> b \<le> c"
+  by (simp add: ubdD1)
+
+lemma ubd_mem_doubleI:
+  "\<lbrakk>a \<le> c; b \<le> c; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> ubd X {a, b}"
+  by (simp add: ubd_empty ubd_mem_insert)
+
+lemma ubd_mem_singleE:
+  "x \<in> ubd X {a}\<Longrightarrow> a \<le> x"
+  by (simp add: ubdD1)
 
 lemma ubd_mem_binary:
-  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> a \<le> b \<longleftrightarrow> b \<in> Upper_Bounds X {a, b}"
-  by (simp add: Upper_Bounds_mem_iff ub_binary)
+  "b \<in> X \<Longrightarrow> a \<le> b \<longleftrightarrow> b \<in> ubd X {a, b}"
+  by (simp add: ubd_mem_iff ub_binary_iff1)
 
 lemma ubd_mem_double:
-  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> Upper_Bounds X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
-  by (simp add: Upper_Bounds_mem_iff ub_double)
-
-lemma ne_subset_ne:
-  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
-  by blast
+  "c \<in> X \<Longrightarrow> c \<in> ubd X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b"
+  by (simp add: ubd_mem_iff ub_double_iff1)
 
 lemma upbd_neE1:
-  "Upper_Bounds X A \<noteq> {} \<Longrightarrow> a \<in> A \<Longrightarrow> (\<exists>x. x \<in> X \<and> a \<le> x)"
-  using Upper_BoundsD1 Upper_Bounds_sub by blast
+  "ubd X A \<noteq> {} \<Longrightarrow> a \<in> A \<Longrightarrow> (\<exists>x. x \<in> X \<and> a \<le> x)"
+  using ubdD1 ubd_sub by blast
 
 lemma upbd_neE3:
-  "Upper_Bounds X {a} \<noteq> {} \<Longrightarrow> (\<exists>x \<in> X. a \<le> x)"
+  "ubd X {a} \<noteq> {} \<Longrightarrow> (\<exists>x \<in> X. a \<le> x)"
   using upbd_neE1 by auto
 
+lemma ubd_mem_unionI:
+  "\<lbrakk>x \<in> ubd X A; x \<in> ubd X B\<rbrakk> \<Longrightarrow> x \<in> ubd X (A \<union> B)"
+  by (simp add: ubd_mem_iff ub_unionI)
+
+lemma ubd_mem_unionD1:
+  " x \<in> ubd X (A \<union> B) \<Longrightarrow> x \<in> ubd X A "
+  using ubd_ant1b[of A "A \<union> B" x X]  by blast
+
+lemma ubd_mem_unionD2:
+  " x \<in> ubd X (A \<union> B) \<Longrightarrow> x \<in> ubd X B "
+  using ubd_ant1b[of B "A \<union> B" x X]  by blast
+
+lemma ubd_unI:
+  "x \<in> X \<Longrightarrow> (\<And>A. A \<in> S \<Longrightarrow> x \<in> ubd X A) \<Longrightarrow> x \<in> ubd X (\<Union>S)"
+  by (simp add: ubd_mem_iff3)
+
+lemma ubd_unD:
+  "x \<in> X \<Longrightarrow> x \<in> ubd X (\<Union>S) \<Longrightarrow> A \<in> S \<Longrightarrow> x \<in> ubd X A"
+  using ubd_ant1b[of A "\<Union>S" x X] by blast
+
+lemma ubd_imageI:
+  "x \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> x \<ge> f a) \<Longrightarrow> x \<in> ubd X (f`A)"
+  by (simp add: ub_imageI ubdI2)
+
 lemma ubd_eqI1:
-  "(\<And>x. x \<in> X \<Longrightarrow> x ub A \<Longrightarrow> x ub B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x ub B \<Longrightarrow> x ub A) \<Longrightarrow> Upper_Bounds X A = Upper_Bounds X B"
-  by(auto simp add:set_eq_iff Upper_Bounds_mem_iff)
+  "(\<And>x. x \<in> X \<Longrightarrow> x ub A \<Longrightarrow> x ub B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x ub B \<Longrightarrow> x ub A) \<Longrightarrow> ubd X A = ubd X B"
+  by(auto simp add:set_eq_iff ubd_mem_iff)
+
+lemma ubd_double1:
+  " a \<le> b \<Longrightarrow>  ubd X {a, b} \<subseteq> ubd X {b}"
+  by (simp add: ubd_ant1)
+
+lemma ubd_double1b:
+  " a \<le> b \<Longrightarrow> x \<in> ubd X {a, b} \<Longrightarrow> x \<in> ubd X {b}"
+  by (simp add: ubd_mem_iff2)
+
+lemma ubd_double2:
+  " a \<le> b \<Longrightarrow>  ubd X {b} \<subseteq> ubd X {a, b}"
+  by (meson dual_order.trans subset_iff ubd_mem_insert ubd_mem_singleE)
+
+lemma ubd_double2b:
+  " a \<le> b \<Longrightarrow> x \<in> ubd X {b} \<Longrightarrow> x \<in> ubd X {a, b}"
+  using ubd_double2 by fastforce
+
+lemma ubd_double3:
+  "a \<le> b \<Longrightarrow> ubd X {a, b} = ubd X {b}"
+  by (simp add: subset_antisym ubd_double1 ubd_double2)
 
 
 subsection LowerBoundsPredicate
 
 definition lb::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" (infix "lb" 50) where 
    "x lb  A \<equiv> (\<forall>a. a \<in> A \<longrightarrow> a \<ge> x)"
+
+
+lemma lb_iff1:
+  "x lb A \<longleftrightarrow> (\<forall>a \<in> A. a \<ge> x)"
+  by(auto simp add:lb_def)
 
 lemma lbI:
   "(\<And>a. a \<in> A \<Longrightarrow> a \<ge> x) \<Longrightarrow> x lb A" 
@@ -245,6 +394,10 @@ lemma lbI:
 lemma lbD:
   "\<lbrakk>x lb A; a \<in> A\<rbrakk> \<Longrightarrow> a \<ge> x"
   by (simp add: lb_def)
+
+lemma lbE:
+  "x lb A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<ge> x)"
+  by (simp add: lbD)
 
 lemma lb_ant2:
   "\<lbrakk>A \<subseteq> B; x lb B\<rbrakk> \<Longrightarrow> x lb A"
@@ -263,20 +416,72 @@ lemma lb_singleton:
   "x lb {x}"
   by (simp add: lb_def)
 
+lemma lb_singletonI:
+  "x lb {y} \<Longrightarrow> x \<le> y"
+  by (simp add: lbE)
+
+lemma lb_singletonD:
+  "x \<le> y \<Longrightarrow> x lb {y}"
+  by (simp add: lb_iso1 lb_singleton)
+
 lemma lb_insert:
   "\<lbrakk>c lb F; c \<le> x\<rbrakk> \<Longrightarrow> c lb (insert x F)"
   by (simp add: lb_def)
 
-lemma lb_binary:
-  "a \<le> b \<longleftrightarrow> a lb {a, b}"
+lemma lb_binaryI:
+  "a \<ge> b \<Longrightarrow> b lb {a, b}"
+  by (simp add: lb_insert lb_singleton)
+
+lemma lb_binaryD:
+  "b lb {a, b} \<Longrightarrow> a \<ge> b"
+  by (simp add: lbE)
+
+lemma lb_binary_iff1:
+  "a \<ge> b \<longleftrightarrow> b lb {a, b}"
   by (simp add: lb_def)
 
-lemma lb_double:
-  "c lb {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
-  by (metis insert_iff lbD lbI lb_singleton)
+lemma lb_doubleE1:
+  "c lb {a, b} \<Longrightarrow> a \<ge> c"
+  by (simp add: lbD)
 
-lemma lb_union:
+lemma lb_doubleE2:
+  "c lb {a, b} \<Longrightarrow> b \<ge> c"
+  by (simp add: lbD)
+
+lemma lb_doubleI:
+  "\<lbrakk>a \<ge> c; b \<ge> c\<rbrakk> \<Longrightarrow> c lb {a, b}"
+  by (simp add: lb_empty lb_insert)
+
+lemma lb_double_iff1:
+  "c lb {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
+  using lb_doubleE1 lb_doubleE2 lb_doubleI by blast
+
+lemma lb_unionI:
   "\<lbrakk>x lb A; x lb B\<rbrakk> \<Longrightarrow> x lb A \<union> B"
+  by (simp add: lb_def)
+
+lemma lb_unionD1:
+  "x lb A \<union> B \<Longrightarrow> x lb A"
+  by (simp add: lb_def)
+
+lemma lb_unionD2:
+  "x lb A \<union> B \<Longrightarrow> x lb B"
+  by (simp add: lb_def)
+
+lemma lb_unI:
+  "(\<And>A. A \<in> S \<Longrightarrow> x lb A) \<Longrightarrow> x lb (\<Union>S)"
+  by (simp add: lb_iff1)
+
+lemma lb_unD:
+  "x lb (\<Union>S) \<Longrightarrow> A \<in> S \<Longrightarrow> x lb A"
+ using lb_ant2[of A "\<Union>S" x] by blast
+
+lemma lb_singleton_simp:
+  "x lb {y} \<longleftrightarrow> x \<le> y"
+  by (simp add: lb_def)
+
+lemma lb_binary:
+  "a \<le> b \<longleftrightarrow> a lb {a, b}"
   by (simp add: lb_def)
 
 lemma lb_imageI:
@@ -285,136 +490,256 @@ lemma lb_imageI:
 
 
 subsection LowerBoundsSet
-definition Lower_Bounds::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
-  "Lower_Bounds X A \<equiv> {b \<in> X. b lb A}"
+definition lbd::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "lbd X A \<equiv> {b \<in> X. b lb A}"
 
-lemma Lower_Bounds_mem_iff:
-  "b \<in> Lower_Bounds X A \<longleftrightarrow> (b \<in> X \<and> b lb A)" 
-   by(simp add: Lower_Bounds_def)
+lemma lbdI:
+  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<ge> b); b \<in> X\<rbrakk> \<Longrightarrow> b \<in> lbd X A"
+   by(simp add: lbd_def lbI)
 
-lemma Lower_Bounds_mem_iff2:
-  "b \<in> Lower_Bounds X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a. a \<in> A \<longrightarrow>  b \<le> a))"
-  by (simp add: Lower_Bounds_mem_iff lb_def)
+lemma lbdI2:
+  "\<lbrakk>b lb A; b \<in> X\<rbrakk> \<Longrightarrow> b \<in> lbd X A"
+  by (simp add: lbdI lb_def) 
 
-lemma Lower_BoundsI:
-  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> b \<le> a); b \<in> X\<rbrakk> \<Longrightarrow> b \<in> Lower_Bounds X A"
-   by(simp add: Lower_Bounds_def lbI)
+lemma lbdD1:
+  "\<lbrakk>b \<in> lbd X A; x \<in> A\<rbrakk> \<Longrightarrow> x \<ge> b"
+  by (simp add: lbd_def lb_def)
 
-lemma Lower_BoundsD1:
-  "\<lbrakk>b \<in> Lower_Bounds X A; x \<in> A\<rbrakk> \<Longrightarrow> b \<le> x"
-  by (simp add: Lower_Bounds_mem_iff lb_def)  
+lemma lbdD2:
+  "b \<in> lbd X A \<Longrightarrow> b \<in> X"
+  by (simp add: lbd_def)
 
-lemma Lower_BoundsD2:
-  "\<lbrakk>b \<in> Lower_Bounds X A\<rbrakk> \<Longrightarrow> b \<in> X"
-   by(simp add: Lower_Bounds_def)
+lemma lbdD3:
+  "b \<in> lbd X A \<Longrightarrow> b lb A"
+  by (simp add: lbd_def)
 
-lemma Lower_BoundsD3:
-  "b \<in> Lower_Bounds X A \<Longrightarrow> b lb A"
-  by (simp add: Lower_Bounds_mem_iff)
+lemma lbd_D31:
+  "b \<in> lbd X A \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<ge> b)"
+  by (simp add: lbdD1)
 
-lemma Lower_Bounds_sub:
-  "Lower_Bounds X A \<subseteq> X"
-   by(simp add: Lower_Bounds_def)
+lemma lbd_mem_iff:
+  "b \<in> lbd X A \<longleftrightarrow> (b \<in> X \<and> b lb A)" 
+   by(simp add: lbd_def)
 
-lemma Lower_Bounds_ant1:
-  "A \<subseteq> B \<Longrightarrow> Lower_Bounds X B \<subseteq> Lower_Bounds X A"
-  by (simp add: Lower_Bounds_mem_iff lb_ant2 subset_iff) 
+lemma lbd_mem_iff2:
+  "b \<in> lbd X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a. a \<in> A \<longrightarrow>  a \<ge> b))"
+  by (simp add: lbd_mem_iff lb_def)
 
-lemma Lower_Bounds_iso2:
-  "Y \<subseteq> X \<Longrightarrow> Lower_Bounds Y A \<subseteq> Lower_Bounds X A" 
-  by (simp add:subset_iff Lower_Bounds_def)
+lemma lbd_mem_iff3:
+  "b \<in> lbd X A \<longleftrightarrow> (b \<in> X \<and> (\<forall>a \<in> A. a \<ge> b))"
+  by (simp add: lbd_mem_iff lb_iff1)
 
-lemma Lower_Bounds_iso2b:
-  "\<lbrakk>Y \<subseteq> X; x \<in> Lower_Bounds Y A \<rbrakk> \<Longrightarrow> x \<in> Lower_Bounds X A"
-  by (simp add: Lower_Bounds_mem_iff in_mono)
+lemma lbd_sub:
+  "lbd X A \<subseteq> X"
+   by(simp add: lbd_def)
 
-lemma Lower_Bounds_empty:
-  "Lower_Bounds X {} = X"
-   by(simp add: set_eq_iff Lower_Bounds_mem_iff lb_def)
+lemma lbd_ant1:
+  "A \<subseteq> B \<Longrightarrow> lbd X B \<subseteq> lbd X A"
+  by (simp add: lbd_mem_iff lb_ant2 subset_iff) 
 
-lemma Lower_Bounds_singleton:
-  "x \<in> X \<Longrightarrow> x \<in> Lower_Bounds X {x}"
-  by (simp add: Lower_Bounds_def lb_singleton)
+lemma lbd_ant1b:
+  "\<lbrakk>A \<subseteq> B; b \<in> lbd X B\<rbrakk> \<Longrightarrow> b \<in> lbd X A"
+  using lbd_ant1 by blast
 
-lemma lbd_mem1:
-  "\<lbrakk>A \<subseteq> B; x \<in> Lower_Bounds X B\<rbrakk> \<Longrightarrow> x \<in>  Lower_Bounds X A"
-  by (simp add: Lower_Bounds_mem_iff lb_ant2)
+lemma lbd_iso2:
+  "Y \<subseteq> X \<Longrightarrow> lbd Y A \<subseteq> lbd X A" 
+  by (simp add:subset_iff lbd_def)
 
-lemma lbd_mem2:
-  "x \<in> X \<Longrightarrow> x \<in> Lower_Bounds X {}"
-  by (simp add: Lower_Bounds_empty)
+lemma lbd_iso2b:
+  "\<lbrakk>Y \<subseteq> X; x \<in> lbd Y A \<rbrakk> \<Longrightarrow> x \<in> lbd X A"
+  by (simp add: lbd_mem_iff in_mono)
+
+lemma lbd_emptyI:
+  "x \<in> X \<Longrightarrow> x \<in> lbd X {}"
+  by (simp add: lbd_mem_iff3)
+
+lemma lbd_empty:
+  "lbd X {} = X"
+   by(simp add: set_eq_iff lbd_mem_iff lb_def)
+
+lemma lbd_singleton:
+  "x \<in> X \<Longrightarrow> x \<in> lbd X {x}"
+  by (simp add: lbd_def lb_singleton)
+
+lemma lbd_singleton2:
+  "\<lbrakk>x \<in> X; x \<le> y \<rbrakk> \<Longrightarrow>  x \<in> lbd X {y}"
+  by (simp add: lbd_mem_iff lb_iso1 lb_singleton)
+
+lemma lbd_singleton_iff:
+  "x \<in> lbd X {y} \<longleftrightarrow> (x \<in> X \<and> x \<le> y)"
+  by (simp add: lbd_mem_iff lb_singleton_simp)
 
 lemma lbd_mem_insert:
-  "\<lbrakk>c \<in> Lower_Bounds X F; c \<le> x\<rbrakk> \<Longrightarrow> c \<in> Lower_Bounds X (insert x F)"
-  by (simp add: Lower_Bounds_mem_iff lb_insert)
+  "\<lbrakk>c \<in> lbd X F; c \<le> x\<rbrakk> \<Longrightarrow> c \<in> lbd X (insert x F)"
+  by (simp add: lbd_mem_iff lb_insert)
+
+lemma lbd_mem_binaryI:
+  "\<lbrakk>b \<le> a; b \<in> X\<rbrakk> \<Longrightarrow> b \<in> lbd X {a, b}"
+  by (simp add: lbdI2 lb_binaryI)
+
+lemma lbd_mem_binaryD:
+  "b \<in> lbd X {a, b} \<Longrightarrow> a \<ge> b"
+  by (simp add: lbdD1)
+
+lemma lbd_mem_binary_iff1:
+  "b \<in> lbd X {a, b} \<longleftrightarrow> a \<ge> b \<and> b \<in> X"
+  using lbdD2 lbd_mem_binaryD lbd_mem_binaryI by blast
+
+lemma lbd_mem_doubleE1:
+  "c \<in> lbd X {a, b} \<Longrightarrow> a \<ge> c"
+  by (simp add: lbdD1)
+
+lemma lbd_mem_doubleE2:
+  "c \<in> lbd X {a, b} \<Longrightarrow> b \<ge> c"
+  by (simp add: lbdD1)
+
+lemma lbd_mem_doubleI:
+  "\<lbrakk>a \<ge> c; b \<ge> c; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> lbd X {a, b}"
+  by (simp add: lbd_empty lbd_mem_insert)
+
+lemma lbd_mem_singleE:
+  "x \<in> lbd X {a}\<Longrightarrow> a \<ge> x"
+  by (simp add: lbdD1)
 
 lemma lbd_mem_binary:
-  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> a \<le> b \<longleftrightarrow> a \<in> Lower_Bounds X {a, b}"
-  by (simp add: Lower_Bounds_mem_iff lb_binary)
+  "b \<in> X \<Longrightarrow> a \<ge> b \<longleftrightarrow> b \<in> lbd X {a, b}"
+  by (simp add: lbd_mem_iff lb_binary_iff1)
 
 lemma lbd_mem_double:
-  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> c \<in> Lower_Bounds X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
-  by (simp add: Lower_Bounds_mem_iff lb_double)
+  "c \<in> X \<Longrightarrow> c \<in> lbd X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b"
+  by (simp add: lbd_mem_iff lb_double_iff1)
 
-lemma lbd_mem_union:
-  "\<lbrakk>x \<in> Lower_Bounds X A; x \<in> Lower_Bounds X B\<rbrakk> \<Longrightarrow> x \<in> Lower_Bounds X (A \<union> B)"
-  by (simp add: Lower_Bounds_mem_iff lb_union)
+lemma lpbd_neE1:
+  "lbd X A \<noteq> {} \<Longrightarrow> a \<in> A \<Longrightarrow> (\<exists>x. x \<in> X \<and> a \<ge> x)"
+  using lbdD1 lbd_sub by blast
+
+lemma lpbd_neE3:
+  "lbd X {a} \<noteq> {} \<Longrightarrow> (\<exists>x \<in> X. a \<ge> x)"
+  using lpbd_neE1 by auto
 
 lemma lbd_eqI1:
-  "(\<And>x. x \<in> X \<Longrightarrow> x lb A \<Longrightarrow> x lb B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x lb B \<Longrightarrow> x lb A) \<Longrightarrow> Lower_Bounds X A = Lower_Bounds X B"
-  by(auto simp add:set_eq_iff Lower_Bounds_mem_iff)
+  "(\<And>x. x \<in> X \<Longrightarrow> x lb A \<Longrightarrow> x lb B) \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x lb B \<Longrightarrow> x lb A) \<Longrightarrow> lbd X A = lbd X B"
+  by(auto simp add:set_eq_iff lbd_mem_iff)
+
+lemma lbd_mem_unionI:
+  "\<lbrakk>x \<in> lbd X A; x \<in> lbd X B\<rbrakk> \<Longrightarrow> x \<in> lbd X (A \<union> B)"
+  by (simp add: lbd_mem_iff lb_unionI)
+
+lemma lbd_mem_unionD1:
+  " x \<in> lbd X (A \<union> B) \<Longrightarrow> x \<in> lbd X A "
+  using lbd_ant1b[of A "A \<union> B" x X]  by blast
+
+lemma lbd_mem_unionD2:
+  " x \<in> lbd X (A \<union> B) \<Longrightarrow> x \<in> lbd X B "
+  using lbd_ant1b[of B "A \<union> B" x X]  by blast
+
+lemma lbd_unI:
+  "x \<in> X \<Longrightarrow> (\<And>A. A \<in> S \<Longrightarrow> x \<in> lbd X A) \<Longrightarrow> x \<in> lbd X (\<Union>S)"
+  by (simp add: lbd_mem_iff3)
+
+lemma lbd_unD:
+  "x \<in> X \<Longrightarrow> x \<in> lbd X (\<Union>S) \<Longrightarrow> A \<in> S \<Longrightarrow> x \<in> lbd X A"
+  using lbd_ant1b[of A "\<Union>S" x X] by blast
+
+lemma lbd_imageI:
+  "x \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> x \<le> f a) \<Longrightarrow> x \<in> lbd X (f`A)"
+  by (simp add: lb_imageI lbdI2)
+
+lemma lbd_double1:
+  "a \<ge> b \<Longrightarrow>  lbd X {a, b} \<subseteq> lbd X {b}"
+  by (simp add: lbd_ant1)
+
+lemma lbd_double1b:
+  "a \<ge> b \<Longrightarrow> x \<in> lbd X {a, b} \<Longrightarrow> x \<in> lbd X {b}"
+  by (simp add: lbd_mem_iff2)
+
+lemma lbd_double2:
+  "a \<ge> b \<Longrightarrow> lbd X {b} \<subseteq> lbd X {a, b}"
+  by (meson dual_order.trans subset_iff lbd_mem_insert lbd_mem_singleE)
+
+lemma lbd_double2b:
+  "a \<ge> b \<Longrightarrow> x \<in> lbd X {b} \<Longrightarrow> x \<in> lbd X {a, b}"
+  using lbd_double2 by fastforce
+
+lemma lbd_double3:
+  "a \<ge> b \<Longrightarrow> lbd X {a, b} = lbd X {b}"
+  by (simp add: subset_antisym lbd_double1 lbd_double2)
 
 subsection Composition
 
-lemma Lower_Upper_comp1:
-  "A \<subseteq> X \<Longrightarrow> A \<subseteq> Lower_Bounds X (Upper_Bounds X A)"
-  by (simp add: Lower_BoundsI Upper_BoundsD1 subset_iff) 
+lemma lubd_comp1:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> lbd X (ubd X A)"
+  by (simp add: lbdI ubdD1 subset_iff) 
 
-lemma Upper_Lower_comp1:
-  "A \<subseteq> X \<Longrightarrow> A \<subseteq> Upper_Bounds X (Lower_Bounds X A)"
-  by (simp add: Lower_BoundsD1 Upper_BoundsI subset_iff)
+lemma lubd_comp1b:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> ((\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E)) A"
+  by (simp add: lbdI ubdD1 subset_iff) 
 
-lemma Lower_Upper_comp2:
-  "A \<subseteq> B \<Longrightarrow> Lower_Bounds X (Upper_Bounds X A) \<subseteq> Lower_Bounds X (Upper_Bounds X B)"
-  by (simp add: Lower_Bounds_ant1 Upper_Bounds_ant1)
+lemma ulbd_comp1:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> ubd X (lbd X A)"
+  by (simp add: lbdD1 ubdI subset_iff)
 
-lemma Upper_Lower_comp2:
-  "A \<subseteq> B  \<Longrightarrow> Upper_Bounds X (Lower_Bounds X A) \<subseteq> Upper_Bounds X (Lower_Bounds X B)"
-  by (simp add: Lower_Bounds_ant1 Upper_Bounds_ant1)
+lemma ulbd_comp1b:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> ((\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E)) A"
+  by (simp add: ubdI lbdD1 subset_iff) 
 
-lemma Lower_Upper_comp3:
-  "Lower_Bounds X (Upper_Bounds X A) = Lower_Bounds X (Upper_Bounds X (Lower_Bounds X (Upper_Bounds X A)))"
-  by (simp add: Lower_Upper_comp1 Lower_Bounds_ant1 Lower_Bounds_sub Upper_Lower_comp1 Upper_Bounds_sub order_antisym)
+lemma lubd_comp2:
+  "A \<subseteq> B \<Longrightarrow> lbd X (ubd X A) \<subseteq> lbd X (ubd X B)"
+  by (simp add: lbd_ant1 ubd_ant1)
 
-lemma Upper_Lower_comp3:
-  "Upper_Bounds X (Lower_Bounds X A) = Upper_Bounds X (Lower_Bounds X (Upper_Bounds X (Lower_Bounds X A)))"
-  by (simp add: Lower_Upper_comp1 Lower_Bounds_sub Upper_Lower_comp1 Upper_Bounds_ant1 Upper_Bounds_sub order_antisym)
+lemma lubd_comp2b:
+  "A \<subseteq> B \<Longrightarrow> ((\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E)) A  \<subseteq> ((\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E)) B"
+  by (simp add: lbd_ant1 ubd_ant1)
+
+lemma ulbd_comp2:
+  "A \<subseteq> B  \<Longrightarrow> ubd X (lbd X A) \<subseteq> ubd X (lbd X B)"
+  by (simp add: lbd_ant1 ubd_ant1)
+
+lemma ulbd_comp2b:
+  "A \<subseteq> B \<Longrightarrow> ((\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E)) A  \<subseteq> ((\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E)) B"
+  by (simp add: lbd_ant1 ubd_ant1)
+
+lemma lubd_comp3:
+  "lbd X (ubd X A) = lbd X (ubd X (lbd X (ubd X A)))"
+  by (simp add: lbd_ant1 lbd_sub lubd_comp1 subset_antisym ubd_sub ulbd_comp1)
+
+lemma lubd_comp3b:
+  " ((\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E)) A  = ((\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E)) A"
+  by (simp add: lbd_ant1 lbd_sub lubd_comp1 subset_antisym ubd_sub ulbd_comp1)
+
+lemma ulbd_comp3:
+  "ubd X (lbd X A) = ubd X (lbd X (ubd X (lbd X A)))"
+  by (simp add: lbd_sub lubd_comp1 subset_antisym ubd_ant1 ubd_sub ulbd_comp1)
+
+lemma ulbd_comp3b:
+  "((\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E)) A  = ((\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E) \<circ> (\<lambda>E. ubd X E) \<circ> (\<lambda>E. lbd X E)) A"
+  by (simp add: ubd_ant1 lbd_sub ulbd_comp1 subset_antisym ubd_sub lubd_comp1)
 
 
 section AbsoluteExtrema
 subsection GreatestPredicate
 definition is_greatest::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "is_greatest A m \<equiv> m \<in> Upper_Bounds A A"
+  "is_greatest A m \<equiv> m \<in> ubd A A"
 
 lemma greatestI1:
-  "m \<in> Upper_Bounds A A \<Longrightarrow> is_greatest A m" 
+  "m \<in> ubd A A \<Longrightarrow> is_greatest A m" 
   by (simp add: is_greatest_def)
 
 lemma greatestI2:
   "\<lbrakk>m ub A; m \<in> A\<rbrakk> \<Longrightarrow> is_greatest A m"
-  by (simp add: Upper_Bounds_mem_iff is_greatest_def)
+  by (simp add: ubd_mem_iff is_greatest_def)
 
 lemma greatestI3:
   "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<le> m); m \<in> A\<rbrakk> \<Longrightarrow> is_greatest A m"
   by (simp add: ubI greatestI2)
 
 lemma greatestI4:
-  "\<lbrakk>m \<in> Upper_Bounds X A; A \<subseteq> X; m \<in> A\<rbrakk> \<Longrightarrow> is_greatest A m"
-  by (simp add: Upper_BoundsD3 greatestI2)
+  "\<lbrakk>m \<in> ubd X A; A \<subseteq> X; m \<in> A\<rbrakk> \<Longrightarrow> is_greatest A m"
+  by (simp add: ubdD3 greatestI2)
 
 lemma greatestD1:
   "is_greatest A m \<Longrightarrow> (m \<in> A \<and> m ub A)"
-  by (simp add: Upper_Bounds_mem_iff is_greatest_def)
+  by (simp add: ubd_mem_iff is_greatest_def)
 
 lemma greatestD11:
   "is_greatest A m \<Longrightarrow> m \<in> A"
@@ -430,7 +755,7 @@ lemma greatestD2:
 
 lemma greatest_iff:
   "is_greatest A m \<longleftrightarrow> (m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<le> m))"
-  by (simp add: Upper_Bounds_mem_iff is_greatest_def ub_def)
+  by (simp add: ubd_mem_iff is_greatest_def ub_def)
 
 lemma greatest_unique:
   "is_greatest A m1 \<Longrightarrow> is_greatest A m2 \<Longrightarrow> m1 =m2"
@@ -440,8 +765,6 @@ lemma is_greatest_iso2:
   "A \<subseteq> B \<Longrightarrow> is_greatest A ma \<Longrightarrow> is_greatest B mb \<Longrightarrow> ma \<le> mb"
   using greatestD11 greatestD2 by blast
 
-
-
 lemma greatest_singleton:
   "is_greatest {x} x"
   by (simp add: greatestI2 ub_singleton)
@@ -449,7 +772,6 @@ lemma greatest_singleton:
 lemma singleton_ex_greatest:
   "\<exists>m. is_greatest {x} m"
   using greatest_singleton by blast
-
 
 lemma greatest_insert1:
   "x ub A \<Longrightarrow> is_greatest (insert x A) x"
@@ -470,29 +792,7 @@ lemma greatest_insert5:
 lemma greatest_finite_linear:
   assumes A0:"finite A" and A1:"A \<noteq> {}" and A3:"(\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (a \<le> b) \<or> (b \<le> a))"
   shows "\<exists>m. is_greatest A m"
-  unfolding atomize_conj
-  using assms
-proof(induction A rule:finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    by (simp add: singleton_ex_greatest)
-next
-  case (insert x F)
-  obtain m where B0:"is_greatest F m"
-    using insert.IH insert.prems by blast
-  then show ?case 
-  proof(cases "x \<le> m")
-    case True
-    then show ?thesis
-      using B0 greatest_insert2 by blast
-  next
-    case False
-    have B1:"x > m"
-      by (meson B0 False greatestD11 insert.prems insert_iff less_le_not_le)
-    then show ?thesis
-      using B0 greatest_insert5 by auto
-  qed
-qed
+  by (metis A0 A1 A3 finite_has_maximal greatestI3)
 
 subsection GreatestOperator
 
@@ -500,62 +800,101 @@ definition Greatest::"'a::order set \<Rightarrow> 'a::order" where
   "Greatest A \<equiv> (THE m. is_greatest A m)"
 
 lemma greatest_equality:
-  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<le> m); m \<in> A\<rbrakk> \<Longrightarrow> Greatest A = m" 
-  apply(simp add: Greatest_def) 
-    apply(rule the_equality)
-  by (simp add: greatest_iff order_antisym)+
+  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<le> m); m \<in> A\<rbrakk> \<Longrightarrow> Greatest A = m"
+  by (simp add: Greatest_def greatestI3 greatest_unique the_equality) 
 
 lemma greatest_equality2:
   "is_greatest A m \<Longrightarrow> Greatest A = m"
   by (simp add: greatest_equality greatest_iff)
 
-lemma lb_single_least1:
-  "x \<in> X \<Longrightarrow> is_greatest (Lower_Bounds X {x}) x"
-  by (simp add: Lower_BoundsD1 Lower_Bounds_singleton greatestI3)
+lemma greatest_equality3:
+  "m \<in> ubd A A \<Longrightarrow> Greatest A = m"
+  by (simp add: greatest_equality2 is_greatest_def)
 
-lemma lb_single_least2:
-  "x \<in> X \<Longrightarrow> Greatest (Lower_Bounds X {x}) = x"
-  by (simp add: greatest_equality2 lb_single_least1)
+lemma lb_single_greatest1:
+  "x \<in> X \<Longrightarrow> is_greatest (lbd X {x}) x"
+  by (simp add: greatest_iff lbd_singleton_iff)
+
+lemma lb_single_greatest2:
+  "x \<in> X \<Longrightarrow> Greatest (lbd X {x}) = x"
+  by (simp add: greatest_equality2 lb_single_greatest1)
+
+lemma greatest_exD0:
+  "(\<exists>m. is_greatest A m) \<Longrightarrow> A \<noteq> {}"
+  using greatestD1 by auto
+
+lemma greatest_exD1:
+  "(\<exists>m. is_greatest A m) \<Longrightarrow> Greatest A \<in> A"
+  using greatestD11 greatest_equality2 by auto
+
+lemma greatest_exD2:
+  "(\<exists>m. is_greatest A m) \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> a \<le> (Greatest A))"
+  using greatestD2 greatest_equality2 by blast
+
+lemma greatest_exD3:
+  "(\<exists>m. is_greatest A m) \<Longrightarrow> (Greatest A) \<in> ubd A A"
+  using greatest_equality2 is_greatest_def by blast
 
 lemma greatest_exD4:
   "(\<exists>m. is_greatest A m) \<Longrightarrow>  Greatest A ub A"
   using greatestD1 greatest_equality2 by blast
 
+lemma greatest_exD5:
+  "\<lbrakk>A \<subseteq> B; (\<exists>m. is_greatest A m); (\<exists>m. is_greatest B m)\<rbrakk> \<Longrightarrow> Greatest A \<le> Greatest B"
+  using greatest_equality2 is_greatest_iso2 by blast
+
+lemma greatest_singleton2:
+  "Greatest {x} = x"
+  by (simp add: greatest_equality2 greatest_singleton)
+
 lemma greatest_insert1b:
   "x ub A \<Longrightarrow> Greatest (insert x A) = x"
   by (simp add: greatest_equality2 greatest_insert1)
 
+lemma greatest_insert2b:
+  "is_greatest A m \<Longrightarrow> x \<le> m \<Longrightarrow> Greatest (insert x A) = m"
+  by (simp add: greatest_equality2 greatest_insert2)
+
+lemma greatest_insert3b:
+  "is_greatest A m \<Longrightarrow> m \<le> x \<Longrightarrow> Greatest (insert x A) =  x"
+  by (simp add: greatest_equality2 greatest_insert3)
+
+lemma greatest_insert4b:
+  "is_greatest A m \<Longrightarrow> x < m \<Longrightarrow> Greatest (insert x A) = m"
+  by (simp add: greatest_insert2b)
+
+lemma greatest_insert5b:
+  "is_greatest A m \<Longrightarrow> m < x \<Longrightarrow> Greatest (insert x A) = x"
+  by (simp add: greatest_insert3b)
 
 lemma greatest_ub:
-  "is_greatest A m \<Longrightarrow> Upper_Bounds A A = {m}"
+  "is_greatest A m \<Longrightarrow> ubd A A = {m}"
   by(rule order_antisym, auto intro: greatestI1 greatest_unique, simp add: is_greatest_def)
-
 
 subsection LeastPredicate
 
 definition is_least::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "is_least A m \<equiv> m \<in> Lower_Bounds A A"
+  "is_least A m \<equiv> m \<in> lbd A A"
 
 lemma leastI1:
-  "m \<in> Lower_Bounds A A \<Longrightarrow> is_least A m" 
+  "m \<in> lbd A A \<Longrightarrow> is_least A m" 
   by (simp add: is_least_def)
 
 lemma leastI2:
   "\<lbrakk>m lb A; m \<in> A\<rbrakk> \<Longrightarrow> is_least A m"
-  by (simp add: Lower_Bounds_mem_iff is_least_def)
+  by (simp add: lbd_mem_iff is_least_def)
 
 lemma leastI3:
   "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> m \<le> a); m \<in> A\<rbrakk> \<Longrightarrow> is_least A m"
   by (simp add: lbI leastI2)
 
 lemma leastI4:
-  "\<lbrakk>m \<in> Lower_Bounds X A; A \<subseteq> X; m \<in> A\<rbrakk> \<Longrightarrow> is_least A m"
-  by (simp add: Lower_BoundsD3 leastI2)
-
+  "\<lbrakk>m \<in> lbd X A; A \<subseteq> X; m \<in> A\<rbrakk> \<Longrightarrow> is_least A m"
+  by (simp add: lbdD3 leastI2)
 
 lemma leastD1:
   "is_least A m \<Longrightarrow> (m \<in> A \<and> m lb A)"
-  by (simp add: Lower_Bounds_mem_iff is_least_def)
+  by (simp add: lbd_mem_iff is_least_def)
 
 lemma leastD11:
   "is_least A m \<Longrightarrow> m \<in> A"
@@ -571,7 +910,7 @@ lemma leastD2:
 
 lemma least_iff:
   "is_least A m \<longleftrightarrow> (m \<in> A \<and> (\<forall>a. a \<in> A \<longrightarrow> a \<ge>  m))"
-  by (simp add: Lower_Bounds_mem_iff is_least_def lb_def)
+  by (simp add: lbd_mem_iff is_least_def lb_def)
 
 lemma least_unique:
   "is_least A m1 \<Longrightarrow> is_least A m2 \<Longrightarrow> m1 =m2"
@@ -616,45 +955,31 @@ lemma least_insert4:
 lemma least_finite_linear:
   assumes A0:"finite A" and A1:"A \<noteq> {}" and A3:"(\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (a \<le> b) \<or> (b \<le> a))"
   shows "\<exists>m. is_least A m"
-  unfolding atomize_conj
-  using assms
-proof(induction A rule:finite_ne_induct)
-  case (singleton x)
-  then show ?case
-    by (simp add: singleton_ex_least)
-next
-  case (insert x F)
-  obtain m where B0:"is_least F m"
-    using insert.IH insert.prems by blast
-  then show ?case 
-  proof(cases "x \<le> m")
-    case True
-    then show ?thesis
-      using B0 least_insert3 by blast
-  next
-    case False
-    have B1:"x > m"
-      by (meson B0 False insert.prems insert_iff leastD11 less_le_not_le)
-    then show ?thesis
-      using B0 least_insert4 by auto
-  qed
-qed
+  by (metis A0 A1 A3 finite_has_minimal least_iff)
 
 subsection LeastOperator
 
 definition Least::"'a::order set \<Rightarrow> 'a::order" where
   "Least A \<equiv> (THE m. is_least A m)"
 
+lemma least_equality:
+  "\<lbrakk>(\<And>a. a \<in> A \<Longrightarrow> a \<ge> m); m \<in> A\<rbrakk> \<Longrightarrow> Least A = m"
+  by (simp add: Least_def leastI3 least_unique the_equality)
+
 lemma least_equality2:
   "is_least A m \<Longrightarrow> Least A = m"
   by (simp add: Least_def least_unique the_equality) 
 
+lemma least_equality3:
+  "m \<in> lbd A A \<Longrightarrow> Least A = m"
+  by (simp add: least_equality2 is_least_def)
+
 lemma ub_single_least1:
-  "x \<in> X \<Longrightarrow> is_least (Upper_Bounds X {x}) x"
-  by (simp add: Upper_BoundsD1 Upper_Bounds_singleton least_iff)
+  "x \<in> X \<Longrightarrow> is_least (ubd X {x}) x"
+  by (simp add: ubdD1 ubd_singleton least_iff)
 
 lemma ub_single_least2:
-  "x \<in> X \<Longrightarrow> Least (Upper_Bounds X {x}) = x"
+  "x \<in> X \<Longrightarrow> Least (ubd X {x}) = x"
   by (simp add: least_equality2 ub_single_least1)
 
 lemma least_exD0:
@@ -669,170 +994,239 @@ lemma least_exD2:
   "(\<exists>m. is_least A m) \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (Least A) \<le> a)"
   using leastD2 least_equality2 by blast
 
+lemma least_exD3:
+  "(\<exists>m. is_least A m) \<Longrightarrow> (Least A) \<in> lbd A A"
+  using is_least_def least_equality2 by auto
+
+lemma least_exD4:
+  "(\<exists>m. is_least A m) \<Longrightarrow>  Least A lb A"
+  using leastD1 least_equality2 by blast
+
+lemma least_exD5:
+  "\<lbrakk>A \<subseteq> B; (\<exists>m. is_least A m); (\<exists>m. is_least B m)\<rbrakk> \<Longrightarrow> Least B \<le> Least A"
+  using is_least_iso2 least_equality2 by blast
+
+lemma least_singleton2:
+  "Least {x} = x"
+  by (simp add: least_equality2 least_singleton)
+
+lemma least_insert1b:
+  "x lb A \<Longrightarrow> Least (insert x A) =  x"
+  by (simp add: least_equality2 least_insert1)
+
+lemma least_insert2b:
+  "is_least A m \<Longrightarrow> m \<le> x \<Longrightarrow> Least (insert x A) = m"
+  by (simp add: least_equality2 least_insert2)
+
+lemma least_insert3b:
+  "is_least A m \<Longrightarrow> x \<le> m \<Longrightarrow> Least (insert x A) = x"
+  by (simp add: least_equality2 least_insert3)
+
+lemma least_insert4b:
+  "is_least A m \<Longrightarrow> m < x \<Longrightarrow> Least (insert x A) =  m"
+  by (simp add: least_insert2b)
+
+lemma least_insert5b:
+  "is_least A m \<Longrightarrow> x < m \<Longrightarrow> Least (insert x A) = x"
+  by (simp add: least_insert3b)
 
 lemma least_lb:
-  "is_least A m \<Longrightarrow> Lower_Bounds A A = {m}"
+  "is_least A m \<Longrightarrow> lbd A A = {m}"
   by(rule order_antisym, auto intro: leastI1 least_unique, simp add: is_least_def)
-
-
 
 section Extrema
 subsection Suprema
 
 definition is_sup::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "is_sup X A x \<equiv> (is_least (Upper_Bounds X A) x)"
+  "is_sup X A x \<equiv> (is_least (ubd X A) x)"
+
+lemma is_supI1:
+  "is_least (ubd X A) x \<Longrightarrow> is_sup X A x"
+  by (simp add: is_sup_def) 
 
 lemma is_supD1:
-  "is_sup X A x \<Longrightarrow> (is_least (Upper_Bounds X A) x)"
+  "is_sup X A x \<Longrightarrow> (is_least (ubd X A) x)"
   by (simp add: is_sup_def)
 
-lemma is_supD11:
-  "is_sup X A x \<Longrightarrow> (x \<in> (Upper_Bounds X A))"
+lemma is_supI2:
+  "x \<in> lbd (ubd X A) (ubd X A) \<Longrightarrow> is_sup X A x"
+  using is_least_def is_supI1 by blast
+
+lemma is_supD2:
+  "is_sup X A x \<Longrightarrow> x \<in> lbd (ubd X A) (ubd X A)"
+  using is_least_def is_supD1 by blast
+
+lemma is_supI3:
+  "\<lbrakk>x lb (ubd X A); x \<in> (ubd X A)\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: is_supI1 leastI2)
+
+lemma is_supD31:
+  "is_sup X A x \<Longrightarrow> x lb (ubd X A)"
+  by (simp add: is_sup_def leastD12)
+
+lemma is_supD32:
+  "is_sup X A x \<Longrightarrow> x \<in>  (ubd X A)"
   by (simp add: is_supD1 leastD1)
 
-lemma is_supD111:
+lemma is_supI4:
+  "\<lbrakk>x lb (ubd X A); x \<in> X; x ub A\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: ubd_mem_iff leastI2 is_supI1)
+
+lemma is_supE1:
   "is_sup X A x \<Longrightarrow> x \<in> X" 
-  by (simp add:is_supD11[of "X" "A" "x"] Upper_BoundsD2[of "x" "X" "A"])
+  by (simp add:is_supD32[of "X" "A" "x"] ubdD2[of "x" "X" "A"])
 
-lemma is_supD12:
-  "is_sup X A x \<Longrightarrow> x lb (Upper_Bounds X A)"
-  by (simp add: is_supD1 leastD1)
+lemma is_supI5:
+  "\<lbrakk>(\<And>a. a \<in> (ubd X A) \<Longrightarrow> x \<le> a); x \<in> (ubd X A)\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: is_supI1 leastI3)
 
-lemma is_supD112:
+lemma is_supI6:
+  "\<lbrakk>x \<in> X; x ub A; (\<And>a. a \<in> (ubd X A) \<Longrightarrow> x \<le> a)\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: is_supI5 ubdI2)
+
+lemma is_supI7:
+  "\<lbrakk>x \<in> X; x ub A; (\<And>a. a \<in> X \<Longrightarrow> a ub A \<Longrightarrow>  x \<le> a)\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: is_supI4 lb_def ubd_mem_iff)
+
+lemma is_supI8:
+  "\<lbrakk>x \<in> X; (\<And>z. z \<in> ubd X A \<longleftrightarrow> z \<ge> x)\<rbrakk> \<Longrightarrow> is_sup X A x"
+  by (simp add: is_supI1 least_iff)
+
+lemma is_supI9:
+  "\<lbrakk>x \<in> X; (\<forall>z \<in> X. (z \<ge> x) \<longleftrightarrow> (z ub A))\<rbrakk> \<Longrightarrow> is_sup X A x"
+  using is_supI7 by blast
+
+lemma is_supE2:
   "is_sup X A x \<Longrightarrow> x ub A" 
-  by(simp add: Upper_BoundsD3[of "x" "X" "A"] is_supD11[of "X" "A" "x"])            
+  by(simp add: ubdD3[of "x" "X" "A"] is_supD32[of "X" "A" "x"])            
 
-lemma is_supD121:
-  "\<lbrakk> is_sup X A x; y \<in> Upper_Bounds X A\<rbrakk> \<Longrightarrow> x \<le> y "
+lemma is_supE3:
+  "\<lbrakk> is_sup X A x; y \<in> ubd X A\<rbrakk> \<Longrightarrow> x \<le> y "
   by (simp add: is_sup_def leastD2)
                      
-lemma is_supD122:
+lemma is_supE4:
   "\<lbrakk>is_sup X A x; y \<in> X; y ub A\<rbrakk> \<Longrightarrow> x \<le> y "
-  by (simp add: Upper_Bounds_mem_iff is_supD121)
+  by (simp add: ubd_mem_iff is_supE3)
         
-lemma is_supD3:
-  "\<lbrakk>is_sup X A x; z \<in> X;  x \<le> z\<rbrakk> \<Longrightarrow> z \<in> Upper_Bounds X A"
-  by (simp add: Upper_Bounds_mem_iff is_supD112 ub_iso1)
+lemma is_supE5:
+  "\<lbrakk>is_sup X A x; z \<in> X;  x \<le> z\<rbrakk> \<Longrightarrow> z \<in> ubd X A"
+  by (simp add: is_supE2 ub_iso1 ubdI2)
 
 lemma is_supD1121:
   "\<lbrakk>is_sup X A x; a \<in> A \<rbrakk> \<Longrightarrow> a \<le> x"
-  by(simp add: ubD[of "x" "A" "a"] is_supD112[of "X" "A" "x"])
-   
-lemma is_supI1:
-  "is_least (Upper_Bounds X A) x \<Longrightarrow> is_sup X A x"
-  by (simp add: is_sup_def) 
+  using is_supE2 ubE by blast
 
-lemma is_supI111:
-  "\<lbrakk>x lb (Upper_Bounds X A); x \<in> (Upper_Bounds X A)\<rbrakk> \<Longrightarrow> is_sup X A x"
-  by (simp add: is_supI1 leastI2)
-
-lemma is_supI112:
-  "\<lbrakk>x lb (Upper_Bounds X A); x \<in> X; x ub A\<rbrakk> \<Longrightarrow> is_sup X A x"
-  by (simp add: Upper_Bounds_mem_iff leastI2 is_supI1)
-
-lemma is_supI113:
-  "\<lbrakk>(\<And>a. a \<in> (Upper_Bounds X A) \<Longrightarrow> x \<le> a); x \<in> (Upper_Bounds X A)\<rbrakk> \<Longrightarrow> is_sup X A x"
-  by (simp add: is_supI111 lbI)
-
-lemma is_supI114:
-  "\<lbrakk>x \<in> X; x ub A; (\<And>a. a \<in> (Upper_Bounds X A) \<Longrightarrow> x \<le> a)\<rbrakk> \<Longrightarrow> is_sup X A x"
-  by (simp add: is_supI112 lb_def)
-
-lemma is_supI115:
-  "\<lbrakk>x \<in> X; x ub A; (\<And>a. a \<in> X \<Longrightarrow> a ub A \<Longrightarrow>  x \<le> a)\<rbrakk> \<Longrightarrow> is_sup X A x"
-  using is_supI114[of "x" "X" "A"]  by (simp add: Upper_Bounds_mem_iff)
-
-lemma is_supD31:
+lemma is_supE6:
   "\<lbrakk>is_sup X A x;  x \<le> z\<rbrakk> \<Longrightarrow> z ub A"
-  by (simp add: is_supD112 ub_iso1)
+  by (simp add: is_supE2 ub_iso1)
 
-lemma is_supD32:
+lemma is_supE7:
   "\<lbrakk>is_sup X A x;  x \<le> z; a \<in> A\<rbrakk> \<Longrightarrow> a \<le> z"
-  by (simp add: is_supD31[of "X" "A" "x" "z"] ubD[of "z" "A" "a"])
+  by (simp add: is_supE6[of "X" "A" "x" "z"] ubD[of "z" "A" "a"])
 
 lemma is_supD41:
   "is_sup X A x \<Longrightarrow> (\<And>z. z \<in> X \<Longrightarrow> z \<ge> x \<Longrightarrow> z ub A)"
-  by (simp add: is_supD31)
+  by (simp add: is_supE6)
 
 lemma is_supD42:
   "is_sup X A x \<Longrightarrow> (\<And>z. z \<in> X \<Longrightarrow>  z ub A \<Longrightarrow> z \<ge> x)"
-  by (simp add: is_supD122)
+  by (simp add: is_supE4)
 
 lemma is_supD5:
   "is_sup X A x \<Longrightarrow> (\<forall>z \<in> X. (z \<ge> x) \<longleftrightarrow> (z ub A))"
-  by(auto simp add:is_supD41[of "X" "A" "x"]  is_supD42[of "X" "A" "x"]) 
+  using is_supE4 is_supE6 by blast
    
-lemma is_supI3:
-  "\<lbrakk>x \<in> A; A \<subseteq> X; (\<forall>z \<in> X. (z \<ge> x) \<longleftrightarrow> (z ub A))\<rbrakk> \<Longrightarrow> is_sup X A x"
-  by (meson in_mono is_supI115 order_refl)
-
 lemma is_sup_iff1:
-  "\<lbrakk>x \<in> A; A \<subseteq> X\<rbrakk> \<Longrightarrow> ((\<forall>z \<in> X. (z \<ge> x) \<longleftrightarrow> (z ub A)) \<longleftrightarrow> is_sup X A x)"
-  by (meson is_supD5 is_supI3)
+  "\<lbrakk>x \<in> X; A \<subseteq> X\<rbrakk> \<Longrightarrow> ((\<forall>z \<in> X. (z \<ge> x) \<longleftrightarrow> (z ub A)) \<longleftrightarrow> is_sup X A x)"
+  by (meson is_supD5 is_supI9)
    
 lemma sup_iff2:
-  "is_sup X A s \<longleftrightarrow>  s \<in> X \<and> (\<forall>z \<in> X.  s \<le> z \<longleftrightarrow> z \<in> Upper_Bounds X A)"
-  by (meson Upper_BoundsD2 is_supD3 is_sup_def least_iff order_refl)
+  "is_sup X A s \<longleftrightarrow>  s \<in> X \<and> (\<forall>z \<in> X.  s \<le> z \<longleftrightarrow> z \<in> ubd X A)"
+  by (meson dual_order.refl is_supE1 is_supE3 is_supE5 is_supI5 ubdD2)
 
 lemma is_sup_unique:
   "is_sup X A m1 \<Longrightarrow> is_sup X A m2 \<Longrightarrow> m1 = m2"
-  by (simp add: is_supD11 is_supD121 order_antisym)
+  using is_supD1 least_unique by blast
 
 lemma is_sup_iso1:
   "A \<subseteq> B \<Longrightarrow> is_sup X A ma \<Longrightarrow> is_sup X B mb \<Longrightarrow> ma \<le> mb "
-  by (simp add: is_supD111 is_supD112 is_supD122 ub_ant2)
+  by (simp add: is_supE1 is_supE2 is_supE4 ub_ant2)
 
 lemma is_sup_iso2:
   "A \<subseteq> Y \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> is_sup Y A my \<Longrightarrow> is_sup X A mx \<Longrightarrow> mx \<le> my"
-  by (simp add: in_mono is_supD111 is_supD112 is_supD122)
+  by (simp add: in_mono is_supD42 is_supE1 is_supE2)
+
+lemma sup_maxI1:
+  "is_sup X A x \<Longrightarrow> x \<in> A \<Longrightarrow> (is_greatest A x)"
+  by (simp add: greatestI2 is_supE2)
+
+lemma sup_maxE1:
+  "(is_greatest A x) \<Longrightarrow> x \<in> X \<Longrightarrow> is_sup X A x"
+  by (simp add: greatestD11 greatestD12 is_supI6 ubdD1)
+
+lemma sup_maxE2:
+  "(is_greatest A x) \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_sup X A x"
+  using greatestD11 sup_maxE1 by blast
 
 lemma sup_max_eq:
   "A \<subseteq> X \<Longrightarrow> (is_sup X A x \<and> x \<in> A) \<longleftrightarrow> (is_greatest A x)"
-  by (meson Upper_BoundsD1 greatestD11 greatestI4 greatestD12 is_supD11 is_supI114 subsetD)
+  using greatestD11 sup_maxE2 sup_maxI1 by blast
 
 lemma sup_max_eq2:
   "(is_sup A A x) \<longleftrightarrow> (is_greatest A x)"
-  using is_supD111 sup_max_eq by blast
+  using greatestD11 is_supE1 sup_maxE1 sup_maxI1 by blast
 
 lemma sup_in_subset:
   "A \<subseteq> B \<Longrightarrow>  B \<subseteq> X \<Longrightarrow> is_sup X A s \<Longrightarrow> s \<in> B \<Longrightarrow> is_sup B A s"
-  by(simp add:in_mono sup_iff2 Upper_Bounds_mem_iff)
+  by(simp add:in_mono sup_iff2 ubd_mem_iff)
 
 lemma sup_singleton:
   "s \<in> X \<Longrightarrow> is_sup X {s} s"
   by (simp add: is_supI1 ub_single_least1)
 
+lemma sup_emptyI:
+  "is_least X i \<Longrightarrow> is_sup X {} i"
+  by (simp add: is_sup_def ubd_empty)
+
+lemma sup_emptyD:
+  "is_sup X {} i \<Longrightarrow> is_least X i "
+  by (simp add: is_sup_def ubd_empty)
+
 lemma sup_empty:
   "is_sup X {} i \<longleftrightarrow> (is_least X i)"
-  by (simp add: Upper_Bounds_empty is_sup_def)
+  by (simp add: ubd_empty is_sup_def)
 
 lemma binary_supI1:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x1 \<le> x2\<rbrakk> \<Longrightarrow> is_sup X {x1, x2} x2"
-  by(simp add:is_sup_def is_least_def Lower_Bounds_def Upper_Bounds_def lb_def ub_def) 
+  "\<lbrakk>a \<in> X; b \<in> X; a \<le> b\<rbrakk> \<Longrightarrow> is_sup X {a, b} b"
+  by (simp add: greatest_insert2 greatest_singleton sup_maxE1)
 
 lemma binary_supD21:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_sup X {x1, x2} s; x3 \<le> x1\<rbrakk> \<Longrightarrow>  x3 \<le> s"
-  by (metis dual_order.trans is_supD112 ub_double)
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X;s \<in> X;is_sup X {a, b} s; c \<le> a\<rbrakk> \<Longrightarrow>  c \<le> s"
+  using is_supD1121 by fastforce
 
 lemma binary_supD22:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_sup X {x1, x2} s; x3 \<le> x2\<rbrakk> \<Longrightarrow>  x3 \<le> s"
-  by (metis dual_order.trans is_supD112 ub_double)
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X;s \<in> X;is_sup X {a, b} s; c \<le> b\<rbrakk> \<Longrightarrow>  c \<le> s"
+  by (simp add: binary_supD21 insert_commute)
+
+lemma binary_supD31:
+  "\<lbrakk>a \<in> X; b \<in> X; s \<in> X; is_sup X {a, b} s\<rbrakk>  \<Longrightarrow>  a \<le> s"
+  by (simp add: is_supD1121)
 
 lemma binary_supD32:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; s \<in> X; is_sup X {x1, x2} s\<rbrakk>  \<Longrightarrow>  x2 \<le> s"
+  "\<lbrakk>a \<in> X; b \<in> X; s \<in> X; is_sup X {a, b} s\<rbrakk>  \<Longrightarrow>  b \<le> s"
   by (simp add: is_supD1121)
 
 lemma binary_supD4:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; s \<in> X; is_sup X {x1, x2} s\<rbrakk>  \<Longrightarrow> (s \<le> x3 \<longleftrightarrow> x1 \<le> x3 \<and> x2 \<le> x3)"
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; s \<in> X; is_sup X {a, b} s\<rbrakk>  \<Longrightarrow> (s \<le> c \<longleftrightarrow> a \<le> c \<and> b \<le> c)"
   by (simp add: sup_iff2 ubd_mem_double)
 
 lemma sup_insert1:
   "\<lbrakk>x ub A; x \<in> X\<rbrakk> \<Longrightarrow> is_sup X (insert x A) x"
-  by (metis greatest_exD4 greatest_insert1 greatest_insert1b insertI1 is_supI115 ubD)
+  by (simp add: greatest_insert1 sup_maxE1)
 
 lemma sup_insert2:
   "\<lbrakk>is_sup X A m;  x \<le> m\<rbrakk> \<Longrightarrow> is_sup X (insert x A) m"
-  by (meson Upper_Bounds_ant1 is_supD111 is_supD112 is_supD12 is_supI112 lb_ant2 subset_insertI ub_insert)
+  by (meson is_supE1 is_supE2 is_supE4 is_supI9 subset_insertI ub_ant2 ub_insert ub_iso1)
 
 lemma sup_insert3:
   "\<lbrakk>is_sup X A m; m \<le> x; x \<in> X\<rbrakk> \<Longrightarrow> is_sup X (insert x A) x"
@@ -840,22 +1234,22 @@ lemma sup_insert3:
 
 lemma sup_insert61:
   "\<lbrakk>is_sup X A s1; is_sup X {s1, x} s2\<rbrakk> \<Longrightarrow> s2 ub A"
-  by (simp add: is_supD1121 is_supD31)  
+  by (simp add: is_supD1121 is_supE6)
 
 lemma sup_insert62:
-  "\<lbrakk>is_sup X A s1; is_sup X {s1, x} s2\<rbrakk> \<Longrightarrow> s2 \<in> Upper_Bounds X A"
-  by (simp add: Upper_Bounds_mem_iff sup_insert61 is_supD111)
+  "\<lbrakk>is_sup X A s1; is_sup X {s1, x} s2\<rbrakk> \<Longrightarrow> s2 \<in> ubd X A"
+  by (simp add: is_supE1 sup_insert61 ubd_mem_iff)
 
 lemma sup_insert7:
-  "\<lbrakk>is_sup X A s1; is_sup X {s1, x} s2; u \<in> Upper_Bounds X (insert x A)\<rbrakk> \<Longrightarrow>  s2 \<le> u"
-  by (simp add: Upper_Bounds_mem_iff2 is_supD121)
+  "\<lbrakk>is_sup X A s1; is_sup X {s1, x} s2; u \<in> ubd X (insert x A)\<rbrakk> \<Longrightarrow>  s2 \<le> u"
+  by (simp add: ubd_mem_iff2 is_supE3)
 
 lemma ub_eq_sup_eq:
   "(\<And>x. x ub A \<longleftrightarrow> x ub B) \<Longrightarrow> (is_sup X A s \<longleftrightarrow> is_sup X B s)"
-  by (simp add: Upper_Bounds_mem_iff sup_iff2)
+  by (simp add: ubd_mem_iff sup_iff2)
 
 lemma Upper_eq_sup_eq:
-  "Upper_Bounds X A = Upper_Bounds X B \<Longrightarrow> (is_sup X A s \<longleftrightarrow> is_sup X B s)"
+  "ubd X A = ubd X B \<Longrightarrow> (is_sup X A s \<longleftrightarrow> is_sup X B s)"
   by (simp add: is_sup_def)
 
 definition Sup::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order" where
@@ -869,192 +1263,281 @@ lemma sup_exI:
   "\<exists>s. is_sup X A s \<Longrightarrow> (\<And>s. is_sup X A s \<Longrightarrow> P s) \<Longrightarrow> P (Sup X A)"
   using sup_equality by auto
 
+lemma sup_unc:
+  "\<lbrakk>is_sup X (A \<union> B) s; is_sup X A s1; is_sup X B s2; is_sup X {s1, s2} s3\<rbrakk> \<Longrightarrow> s=s3"
+  by (metis binary_supD4 is_supD42 is_supE6 order_class.order_eq_iff sup_iff2 ub_unionD1 ub_unionD2 ub_unionI)
+
 lemma sup_families1:
   "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x ub Sup X ` A \<Longrightarrow> x ub \<Union> A"
-  by (metis Union_iff imageI sup_equality is_supD32 ub_def)
+  by (metis imageI is_supD5 sup_equality ub_def ub_unI)
 
 lemma sup_families2:
   "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x ub \<Union> A \<Longrightarrow>  x ub Sup X ` A"
-   by (metis ub_imageI Union_upper sup_equality is_supD5 ub_ant2)
+  by (metis is_supD5 sup_equality ub_imageI ub_unD)
 
 lemma sup_families:
   "A \<noteq> {} \<Longrightarrow>(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup X Ai si) \<Longrightarrow>(is_sup X ((\<lambda>Ai. Sup X Ai)`A) s) \<longleftrightarrow> (is_sup X (\<Union>A) s)"
-  apply(rule Upper_eq_sup_eq, rule ubd_eqI1) using sup_families1 apply blast using sup_families2 by blast
+  apply(rule Upper_eq_sup_eq, rule ubd_eqI1)  using sup_families1 apply blast using sup_families2 by blast
+
+
+lemma bsup_finite:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_sup X {a1, a2} (Sup X {a1, a2})" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X"
+  shows "is_sup X A (Sup X A)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x)
+  then show ?case using A0 by force
+next
+  case (insert x F)
+  obtain s1 where B0:"is_sup X F s1"
+    using insert.hyps(4) insert.prems by blast
+  have B1:"s1 \<in> X"
+    using B0 is_supE1 by blast
+  obtain s2 where B2:"is_sup X {s1, x} s2"
+    using A0 B1 insert.prems by auto
+  have B3:"s2 \<in> ubd X (insert x F)"
+    by (meson B0 B2 insertI2 is_supD1121 singleton_iff sup_insert62 ubd_mem_insert)
+  have B4:"\<And>u. u \<in> ubd X (insert x F) \<longrightarrow> s2 \<le> u"
+    using B0 B2 sup_insert7 by blast
+  have B3:"is_sup X (insert x F) s2"
+    by (simp add: B3 B4 is_supI5)
+  then show ?case
+    by (simp add: sup_equality)
+qed
+
+lemma bsup_commute:
+  "is_sup X {a, b} c \<longleftrightarrow> is_sup X {b, a } c "
+  by (simp add: insert_commute)
+
+lemma bsup_commute2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Sup X {a, b} =  Sup X  {b, a}"
+  by (simp add: insert_commute)
+
+lemma bsup_idem1:
+  "a\<in> X \<Longrightarrow> Sup X {a, a} = a"
+  by (simp add: sup_equality sup_singleton)
 
 subsection Infima
 
 definition is_inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "is_inf X A x \<equiv> (is_greatest (Lower_Bounds X A) x)"
+  "is_inf X A x \<equiv> (is_greatest (lbd X A) x)"
+
+lemma is_infI1:
+  "is_greatest (lbd X A) x \<Longrightarrow> is_inf X A x"
+  by (simp add: is_inf_def) 
 
 lemma is_infD1:
-  "is_inf X A x \<Longrightarrow> (is_greatest (Lower_Bounds X A) x)"
+  "is_inf X A x \<Longrightarrow> (is_greatest (lbd X A) x)"
   by (simp add: is_inf_def)
 
-lemma is_infD11:
-  "is_inf X A x \<Longrightarrow> (x \<in> (Lower_Bounds X A))"
-  by (simp add: is_infD1 greatestD1)
+lemma is_infI2:
+  "x \<in> ubd (lbd X A) (lbd X A) \<Longrightarrow> is_inf X A x"
+  using is_greatest_def is_infI1 by blast
 
-lemma is_infD111:
-  "is_inf X A x \<Longrightarrow> x \<in> X" 
-  by (simp add:is_infD11[of "X" "A" "x"] Lower_BoundsD2[of "x" "X" "A"])
+lemma is_infD2:
+  "is_inf X A x \<Longrightarrow> x \<in> ubd (lbd X A) (lbd X A)"
+  using is_greatest_def is_infD1 by blast
 
-lemma is_infD112:
-  "is_inf X A x \<Longrightarrow> x lb A" 
-  by(simp add: Lower_BoundsD3[of "x" "X" "A"] is_infD11[of "X" "A" "x"])            
-
-lemma is_infD121:
-  "\<lbrakk>is_inf X A x; y \<in> Lower_Bounds X A\<rbrakk> \<Longrightarrow> y \<le> x "
-  by (simp add: is_inf_def greatestD2)
-
-lemma is_infD122:
-  "\<lbrakk>is_inf X A x; y \<in> X; y lb A\<rbrakk> \<Longrightarrow> y \<le> x "
-  by (simp add: Lower_Bounds_mem_iff is_infD121)
-        
-lemma is_infD1121:
-  "\<lbrakk>is_inf X A x; a \<in> A \<rbrakk> \<Longrightarrow> x \<le> a"
-  by(simp add: lbD[of "x" "A" "a"] is_infD112[of "X" "A" "x"])
-                
-lemma is_infI1:
-  "is_greatest (Lower_Bounds X A) x \<Longrightarrow> is_inf X A x"
-  by (simp add: is_inf_def) 
-             
-lemma is_infI111:
-  "\<lbrakk>x ub (Lower_Bounds X A); x \<in> (Lower_Bounds X A)\<rbrakk> \<Longrightarrow> is_inf X A x"
+lemma is_infI3:
+  "\<lbrakk>x ub (lbd X A); x \<in> (lbd X A)\<rbrakk> \<Longrightarrow> is_inf X A x"
   by (simp add: is_infI1 greatestI2)
 
-lemma is_infI112:
-  "\<lbrakk>x ub (Lower_Bounds X A); x \<in> X; x lb A\<rbrakk> \<Longrightarrow> is_inf X A x"
-  by (simp add: Lower_Bounds_mem_iff greatestI2 is_infI1)
-
-lemma is_infI113:
-  "\<lbrakk>(\<And>a. a \<in> (Lower_Bounds X A) \<Longrightarrow> a \<le> x); x \<in>  (Lower_Bounds X A)\<rbrakk> \<Longrightarrow> is_inf X A x"
-  by (simp add: is_infI111 ubI)
-
-lemma is_infI114:
-  "\<lbrakk>x \<in> X; x lb A; (\<And>a. a \<in> (Lower_Bounds X A) \<Longrightarrow> a \<le> x)\<rbrakk> \<Longrightarrow> is_inf X A x"
-  by (simp add: is_infI112 ub_def)
-
-lemma is_infI115:
-  "\<lbrakk>x \<in> X; x lb A; (\<And>a. a \<in> X \<Longrightarrow> a lb A \<Longrightarrow>  a \<le> x)\<rbrakk> \<Longrightarrow> is_inf X A x"
-  using is_infI114[of "x" "X" "A"] by (auto simp add: Lower_Bounds_mem_iff)
-
-lemma is_infD3:
-  "\<lbrakk>is_inf X A x; z \<in> X;  z \<le> x\<rbrakk> \<Longrightarrow> z \<in> Lower_Bounds X A"
-  by (simp add: Lower_Bounds_mem_iff is_infD112 lb_iso1)
-
 lemma is_infD31:
-  "\<lbrakk>is_inf X A x;  z \<le> x\<rbrakk> \<Longrightarrow> z lb A"
-  by (simp add: is_infD112 lb_iso1)
+  "is_inf X A x \<Longrightarrow> x ub (lbd X A)"
+  by (simp add: is_inf_def greatestD12)
 
 lemma is_infD32:
-  "\<lbrakk>is_inf X A x;  z \<le> x; a \<in> A\<rbrakk> \<Longrightarrow> z \<le> a"
-  by (simp add: is_infD31[of "X" "A" "x" "z"] lbD[of "z" "A" "a"])
+  "is_inf X A x \<Longrightarrow> x \<in> (lbd X A)"
+  by (simp add: is_infD1 greatestD1)
 
+lemma is_infI4:
+  "\<lbrakk>x ub (lbd X A); x \<in> X; x lb A\<rbrakk> \<Longrightarrow> is_inf X A x"
+  by (simp add: lbd_mem_iff greatestI2 is_infI1)
+
+lemma is_infE1:
+  "is_inf X A x \<Longrightarrow> x \<in> X" 
+  by (simp add:is_infD32[of "X" "A" "x"] lbdD2[of "x" "X" "A"])
+
+lemma is_infI5:
+  "\<lbrakk>(\<And>a. a \<in> (lbd X A) \<Longrightarrow> x \<ge> a); x \<in> (lbd X A)\<rbrakk> \<Longrightarrow> is_inf X A x"
+  by (simp add: is_infI1 greatestI3)
+
+lemma is_infI6:
+  "\<lbrakk>x \<in> X; x lb A; (\<And>a. a \<in> (lbd X A) \<Longrightarrow> x \<ge> a)\<rbrakk> \<Longrightarrow> is_inf X A x"
+  by (simp add: is_infI5 lbdI2)
+
+lemma is_infI7:
+  "\<lbrakk>x \<in> X; x lb A; (\<And>a. a \<in> X \<Longrightarrow> a lb A \<Longrightarrow>  x \<ge> a)\<rbrakk> \<Longrightarrow> is_inf X A x"
+  by (simp add: is_infI4 ub_def lbd_mem_iff)
+
+lemma is_infI8:
+  "\<lbrakk>x \<in> X; (\<And>z. z \<in> lbd X A \<longleftrightarrow> z \<le> x)\<rbrakk> \<Longrightarrow> is_inf X A x"
+  by (simp add: is_infI1 greatest_iff)
+
+lemma is_infI9:
+  "\<lbrakk>x \<in> X; (\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A))\<rbrakk> \<Longrightarrow> is_inf X A x"
+  using is_infI7 by blast
+
+lemma is_infE2:
+  "is_inf X A x \<Longrightarrow> x lb A" 
+  by(simp add: lbdD3[of "x" "X" "A"] is_infD32[of "X" "A" "x"])            
+
+lemma is_infE3:
+  "\<lbrakk> is_inf X A x; y \<in> lbd X A\<rbrakk> \<Longrightarrow> x \<ge> y "
+  by (simp add: is_inf_def greatestD2)
+
+              
+lemma is_infE4:
+  "\<lbrakk>is_inf X A x; y \<in> X; y lb A\<rbrakk> \<Longrightarrow> x \<ge> y "
+  by (simp add: lbd_mem_iff is_infE3)
+        
+lemma is_infE5:
+  "\<lbrakk>is_inf X A x; z \<in> X;  x \<ge> z\<rbrakk> \<Longrightarrow> z \<in> lbd X A"
+  by (simp add: is_infE2 lb_iso1 lbdI2)
+
+lemma is_infD1121:
+  "\<lbrakk>is_inf X A x; a \<in> A \<rbrakk> \<Longrightarrow> a \<ge> x"
+  using is_infE2 lbE by blast
+
+lemma is_infE6:
+  "\<lbrakk>is_inf X A x;  x \<ge> z\<rbrakk> \<Longrightarrow> z lb A"
+  by (simp add: is_infE2 lb_iso1)
+
+lemma is_infE7:
+  "\<lbrakk>is_inf X A x;  x \<ge> z; a \<in> A\<rbrakk> \<Longrightarrow> a \<ge> z"
+  by (simp add: is_infE6[of "X" "A" "x" "z"] lbD[of "z" "A" "a"])
 
 lemma is_infD41:
   "is_inf X A x \<Longrightarrow> (\<And>z. z \<in> X \<Longrightarrow> z \<le> x \<Longrightarrow> z lb A)"
-  by (simp add: is_infD31)
+  by (simp add: is_infE6)
 
 lemma is_infD42:
   "is_inf X A x \<Longrightarrow> (\<And>z. z \<in> X \<Longrightarrow>  z lb A \<Longrightarrow> z \<le> x)"
-  by (simp add: is_infD122)
+  by (simp add: is_infE4)
 
 lemma is_infD5:
   "is_inf X A x \<Longrightarrow> (\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A))"
-  by(auto simp add:is_infD41[of "X" "A" "x"]  is_infD42[of "X" "A" "x"]) 
- 
-lemma is_infI3:
-  "\<lbrakk>x \<in> A; A \<subseteq> X; (\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A))\<rbrakk> \<Longrightarrow> is_inf X A x"
-  by (meson in_mono is_infI115 order_refl)
+  using is_infE4 is_infE6 by blast
 
 lemma is_inf_iff1:
-  "\<lbrakk>x \<in> A; A \<subseteq> X\<rbrakk> \<Longrightarrow> ((\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A)) \<longleftrightarrow> is_inf X A x)"
-  by (meson is_infD31 is_infI3 lbD)
-
-lemma lt_inf_iff:
-  "\<lbrakk>z \<in> X; is_inf X A x\<rbrakk> \<Longrightarrow> (z \<le> x \<longleftrightarrow> z lb A)"
-  by (simp add: is_infD5)
+  "\<lbrakk>x \<in> X; A \<subseteq> X\<rbrakk> \<Longrightarrow> ((\<forall>z \<in> X. (z \<le> x) \<longleftrightarrow> (z lb A)) \<longleftrightarrow> is_inf X A x)"
+  by (meson is_infD5 is_infI9)
 
 lemma inf_iff2:
-  "is_inf X A s \<longleftrightarrow>  s \<in> X \<and> (\<forall>z \<in> X.  s \<ge> z \<longleftrightarrow> z \<in> Lower_Bounds X A)"
-  by (meson Lower_BoundsD2 greatest_iff is_infD3 is_inf_def order_refl)
+  "is_inf X A s \<longleftrightarrow>  s \<in> X \<and> (\<forall>z \<in> X.  s \<ge> z \<longleftrightarrow> z \<in> lbd X A)"
+  by (meson dual_order.refl is_infE1 is_infE3 is_infE5 is_infI5 lbdD2)
 
 lemma is_inf_unique:
   "is_inf X A m1 \<Longrightarrow> is_inf X A m2 \<Longrightarrow> m1 = m2"
-  by (simp add: is_infD11 is_infD121 order_antisym)
+  using is_infD1 greatest_unique by blast
 
 lemma is_inf_ant1:
-  "A \<subseteq> B \<Longrightarrow> is_inf X A ma \<Longrightarrow> is_inf X B mb \<Longrightarrow> mb \<le> ma"
-  by (simp add: is_infD111 is_infD112 is_infD122 lb_ant2)
-       
-lemma is_inf_ant2:
-  "A \<subseteq> Y \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> is_inf Y A my \<Longrightarrow> is_inf X A mx \<Longrightarrow> my \<le> mx"
-  by (simp add: in_mono is_infD111 is_infD112 is_infD122)
+  "A \<subseteq> B \<Longrightarrow> is_inf X A ma \<Longrightarrow> is_inf X B mb \<Longrightarrow> ma \<ge> mb "
+  by (simp add: is_infE1 is_infE2 is_infE4 lb_ant2)
+
+lemma is_inf_iso2:
+  "A \<subseteq> Y \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> is_inf Y A my \<Longrightarrow> is_inf X A mx \<Longrightarrow> mx \<ge> my"
+  by (simp add: in_mono is_infD42 is_infE1 is_infE2)
+
+
+lemma inf_minI1:
+  "is_inf X A x \<Longrightarrow> x \<in> A \<Longrightarrow> (is_least A x)"
+  by (simp add: leastI2 is_infE2)
+
+lemma inf_minE1:
+  "(is_least A x) \<Longrightarrow> x \<in> X \<Longrightarrow> is_inf X A x"
+  by (simp add: leastD11 leastD12 is_infI6 lbdD1)
+
+lemma inf_minE2:
+  "(is_least A x) \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf X A x"
+  using leastD11 inf_minE1 by blast
 
 lemma inf_min_eq:
   "A \<subseteq> X \<Longrightarrow> (is_inf X A x \<and> x \<in> A) \<longleftrightarrow> (is_least A x)"
-  by (meson Lower_BoundsD1 is_infD11 is_infI114 leastD11 leastD12 leastI4 subsetD)
+  using leastD11 inf_minE2 inf_minI1 by blast
 
 lemma inf_min_eq2:
   "(is_inf A A x) \<longleftrightarrow> (is_least A x)"
-  using is_infD111 inf_min_eq by blast
+  using leastD11 is_infE1 inf_minE1 inf_minI1 by blast
 
 lemma inf_in_subset:
   "A \<subseteq> B \<Longrightarrow>  B \<subseteq> X \<Longrightarrow> is_inf X A s \<Longrightarrow> s \<in> B \<Longrightarrow> is_inf B A s"
-  by(simp add:in_mono inf_iff2 Lower_Bounds_mem_iff)
+  by(simp add:in_mono inf_iff2 lbd_mem_iff)
 
 lemma inf_singleton:
   "s \<in> X \<Longrightarrow> is_inf X {s} s"
-  by (simp add: is_infI115 lbD lb_singleton)
+  by (simp add: inf_minE1 least_singleton)
+
+lemma inf_emptyI:
+  "is_greatest X i \<Longrightarrow> is_inf X {} i"
+  by (simp add: is_inf_def lbd_empty)
+
+lemma inf_emptyD:
+  "is_inf X {} i \<Longrightarrow> is_greatest X i "
+  by (simp add: is_inf_def lbd_empty)
 
 lemma inf_empty:
   "is_inf X {} i \<longleftrightarrow> (is_greatest X i)"
-  by (simp add: Lower_Bounds_empty is_inf_def)
+  by (simp add: lbd_empty is_inf_def)
+
+lemma binary_infI1:
+  "\<lbrakk>a \<in> X; b \<in> X; a \<ge> b\<rbrakk> \<Longrightarrow> is_inf X {a, b} b"
+  by (simp add: least_insert2 least_singleton inf_minE1)
 
 lemma binary_infD21:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_inf X {x1, x2} s; x3 \<ge> x1\<rbrakk> \<Longrightarrow>  x3 \<ge> s"
-  by (meson dual_order.trans is_infD112 lb_double)
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; s \<in> X; is_inf X {a, b} s; c \<ge> a\<rbrakk> \<Longrightarrow>  c \<ge> s"
+  using is_infD1121 by fastforce
 
 lemma binary_infD22:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X;s \<in> X;is_inf X {x1, x2} s; x3 \<ge> x2\<rbrakk> \<Longrightarrow>  x3 \<ge> s"
-  by (metis dual_order.trans is_infD112 lb_double)
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; s \<in> X; is_inf X {a, b} s; c \<ge> b\<rbrakk> \<Longrightarrow>  c \<ge> s"
+  by (simp add: binary_infD21 insert_commute)
+
+lemma binary_infD31:
+  "\<lbrakk>a \<in> X; b \<in> X; s \<in> X; is_inf X {a, b} s\<rbrakk>  \<Longrightarrow>  a \<ge> s"
+  by (simp add: is_infD1121)
+
+lemma binary_infD32:
+  "\<lbrakk>a \<in> X; b \<in> X; s \<in> X; is_inf X {a, b} s\<rbrakk>  \<Longrightarrow>  b \<ge> s"
+  by (simp add: is_infD1121)
 
 lemma binary_infD4:
-  "\<lbrakk>x1 \<in> X; x2 \<in> X; x3 \<in> X; s \<in> X; is_inf X {x1, x2} s\<rbrakk>  \<Longrightarrow> (s \<ge> x3 \<longleftrightarrow> x1 \<ge> x3 \<and> x2 \<ge> x3)"
+  "\<lbrakk>a \<in> X; b \<in> X; c \<in> X; s \<in> X; is_inf X {a, b} s\<rbrakk>  \<Longrightarrow> (s \<ge> c \<longleftrightarrow> a \<ge> c \<and> b \<ge> c)"
   by (simp add: inf_iff2 lbd_mem_double)
 
 lemma inf_insert1:
   "\<lbrakk>x lb A; x \<in> X\<rbrakk> \<Longrightarrow> is_inf X (insert x A) x"
-  by (simp add: is_infI115 lbD leastD1 least_insert1)
+  by (simp add: least_insert1 inf_minE1)
 
 lemma inf_insert2:
-  "\<lbrakk>is_inf X A m;  m \<le> x\<rbrakk> \<Longrightarrow> is_inf X (insert x A) m"
-  by (metis insert_iff is_infD111 is_infD112 is_infD122 is_infI115 lb_def)
+  "\<lbrakk>is_inf X A m;  x \<ge> m\<rbrakk> \<Longrightarrow> is_inf X (insert x A) m"
+  by (meson is_infE1 is_infE2 is_infE4 is_infI9 subset_insertI lb_ant2 lb_insert lb_iso1)
 
 lemma inf_insert3:
-  "\<lbrakk>is_inf X A m; x \<le> m; x \<in> X\<rbrakk> \<Longrightarrow> is_inf X (insert x A) x"
+  "\<lbrakk>is_inf X A m; m \<ge> x; x \<in> X\<rbrakk> \<Longrightarrow> is_inf X (insert x A) x"
   by (simp add: is_infD41 inf_insert1)
 
 lemma inf_insert61:
-  "\<lbrakk>is_inf X A i1; is_inf X {i1, x} i2\<rbrakk> \<Longrightarrow> i2 lb A"
-  by (simp add: is_infD1121 is_infD31)  
+  "\<lbrakk>is_inf X A s1; is_inf X {s1, x} s2\<rbrakk> \<Longrightarrow> s2 lb A"
+  by (simp add: is_infD1121 is_infE6)
 
 lemma inf_insert62:
-  "\<lbrakk>is_inf X A i1; is_inf X {i1, x} i2\<rbrakk> \<Longrightarrow> i2 \<in> Lower_Bounds X A"
-  by (simp add: Lower_Bounds_mem_iff inf_insert61 is_infD111)
+  "\<lbrakk>is_inf X A s1; is_inf X {s1, x} s2\<rbrakk> \<Longrightarrow> s2 \<in> lbd X A"
+  by (simp add: is_infE1 inf_insert61 lbd_mem_iff)
 
 lemma inf_insert7:
-  "\<lbrakk>is_inf X A i1; is_inf X {i1, x} i2; l \<in> Lower_Bounds X (insert x A)\<rbrakk> \<Longrightarrow>  l \<le> i2"
-  by (simp add: Lower_Bounds_mem_iff2 is_infD121)
-
-lemma Lower_eq_inf_eq:
-  "Lower_Bounds X A = Lower_Bounds X B \<Longrightarrow> (is_inf X A i \<longleftrightarrow> is_inf X B i)"
-  by (simp add: is_inf_def)
+  "\<lbrakk>is_inf X A s1; is_inf X {s1, x} s2; u \<in> lbd X (insert x A)\<rbrakk> \<Longrightarrow>  s2 \<ge> u"
+  by (simp add: lbd_mem_iff2 is_infE3)
 
 lemma lb_eq_inf_eq:
-  "(\<And>x. x lb A \<longleftrightarrow> x lb B) \<Longrightarrow> (is_inf X A i \<longleftrightarrow> is_inf X B i)"
-  by (simp add: Lower_Bounds_mem_iff inf_iff2)
+  "(\<And>x. x lb A \<longleftrightarrow> x lb B) \<Longrightarrow> (is_inf X A s \<longleftrightarrow> is_inf X B s)"
+  by (simp add: lbd_mem_iff inf_iff2)
 
+lemma Lower_eq_inf_eq:
+  "lbd X A = lbd X B \<Longrightarrow> (is_inf X A s \<longleftrightarrow> is_inf X B s)"
+  by (simp add: is_inf_def)
 
 definition Inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order" where
   "Inf X A \<equiv> (THE m. is_inf X A m)"
@@ -1067,36 +1550,140 @@ lemma inf_exI:
   "\<exists>t. is_inf X A t \<Longrightarrow> (\<And>t. is_inf X A t \<Longrightarrow> P t) \<Longrightarrow> P (Inf X A)"
   using inf_equality by auto
 
+lemma inf_unc:
+  "\<lbrakk>is_inf X (A \<union> B) x; is_inf X A a; is_inf X B b; is_inf X {a, b} c\<rbrakk> \<Longrightarrow> x=c"
+  by (metis binary_infD4 inf_iff2 is_infD42 is_infE6 lb_unionD1 lb_unionD2 lb_unionI order_class.order_eq_iff)
+
 lemma inf_families1:
-  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb Inf X ` A \<Longrightarrow> x lb \<Union> A"
-  by (metis Union_iff imageI inf_equality is_infD32 lb_def)
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_inf X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb Inf X ` A \<Longrightarrow> x lb \<Union> A"
+  by (metis imageI is_infD5 inf_equality lb_def lb_unI)
 
 lemma inf_families2:
-  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb \<Union> A \<Longrightarrow>  x lb Inf X ` A"
-   by (metis lb_imageI  Union_upper inf_equality is_infD5 lb_ant2)
+  "A \<noteq> {} \<Longrightarrow> (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_inf X Ai si) \<Longrightarrow> x \<in> X \<Longrightarrow> x lb \<Union> A \<Longrightarrow>  x lb Inf X ` A"
+  by (metis is_infD5 inf_equality lb_imageI lb_unD)
 
 lemma inf_families:
-  "A \<noteq> {} \<Longrightarrow>(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>ti. is_inf X Ai ti) \<Longrightarrow>(is_inf X ((\<lambda>Ai. Inf X Ai)`A) t) \<longleftrightarrow> (is_inf X (\<Union>A) t)"
+  "A \<noteq> {} \<Longrightarrow>(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_inf X Ai si) \<Longrightarrow>(is_inf X ((\<lambda>Ai. Inf X Ai)`A) s) \<longleftrightarrow> (is_inf X (\<Union>A) s)"
   apply(rule Lower_eq_inf_eq, rule lbd_eqI1) using inf_families1 apply blast using inf_families2 by blast
+
+
+lemma binf_finite:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_inf X {a1, a2} (Inf X {a1, a2})" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X"
+  shows "is_inf X A (Inf X A)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x) then show ?case using A0 by force
+next
+  case (insert x F)
+  obtain i1 where B0:"is_inf X F i1"  using insert.hyps(4) insert.prems by blast
+  have B1:"i1 \<in> X" using B0 is_infE1 by auto
+  obtain i2 where B2:"is_inf X {i1, x} i2" using A0 B1 insert.prems by blast
+  have B3:"i2 \<in> lbd X (insert x F)" by (meson B0 B2 inf_insert62 insertI2 is_infD1121 lbd_mem_insert singleton_iff)
+  have B4:"\<And>l. l \<in> lbd X (insert x F) \<longrightarrow> l \<le> i2"using B0 B2 inf_insert7 by blast
+  have B3:"is_inf X (insert x F) i2" by (simp add: B3 B4 is_infI5)
+  then show ?case  by (simp add: inf_equality)
+qed
+
+lemma binf_commute:
+  "is_inf X {a, b} c \<longleftrightarrow> is_inf X {b, a} c "
+  by (simp add: insert_commute)
+
+lemma binf_commute2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, b}  =  Inf X {b,a}"
+  by (simp add: insert_commute)
+
+lemma binf_idem1:
+  "a\<in> X \<Longrightarrow>Inf X {a, a} = a"
+  by (simp add:  inf_equality inf_singleton)
+
 
 subsection Duality
 
 lemma sup_imp_inf_ub:
-  "A \<subseteq> X \<Longrightarrow> is_sup X A s \<Longrightarrow>  is_inf X (Upper_Bounds X A) s"
-  by(simp add:is_sup_def is_inf_def is_least_def is_greatest_def Upper_Bounds_def Lower_Bounds_def lb_def ub_def)
+  "is_sup X A s \<Longrightarrow>  is_inf X (ubd X A) s"
+  by(simp add:is_sup_def is_inf_def is_least_def is_greatest_def ubd_def lbd_def lb_def ub_def)
   
 lemma sup_if_inf_ub:
-  "A \<subseteq> X \<Longrightarrow> is_inf X (Upper_Bounds X A) s \<Longrightarrow>  is_sup X A s"
-  by(auto simp add:is_sup_def is_inf_def is_least_def is_greatest_def Upper_Bounds_def Lower_Bounds_def lb_def ub_def)
+  "A \<subseteq> X \<Longrightarrow> is_inf X (ubd X A) s \<Longrightarrow>  is_sup X A s"
+  by(auto simp add:is_sup_def is_inf_def is_least_def is_greatest_def ubd_def lbd_def lb_def ub_def)
   
 lemma inf_imp_sup_lb:
-  "A \<subseteq> X \<Longrightarrow> is_inf X A s \<Longrightarrow>  is_sup X (Lower_Bounds X A) s"
-  by(simp add:is_sup_def is_inf_def is_least_def is_greatest_def Upper_Bounds_def Lower_Bounds_def lb_def ub_def)
+  "is_inf X A s \<Longrightarrow>  is_sup X (lbd X A) s"
+  by(simp add:is_sup_def is_inf_def is_least_def is_greatest_def ubd_def lbd_def lb_def ub_def)
   
 lemma inf_if_sup_lb:
-  "A \<subseteq> X \<Longrightarrow> is_sup X (Lower_Bounds X A) s \<Longrightarrow>  is_inf X A s"
-  by(auto simp add:is_sup_def is_inf_def is_least_def is_greatest_def Upper_Bounds_def Lower_Bounds_def lb_def ub_def)
+  "A \<subseteq> X \<Longrightarrow> is_sup X (lbd X A) s \<Longrightarrow>  is_inf X A s"
+  by(auto simp add:is_sup_def is_inf_def is_least_def is_greatest_def ubd_def lbd_def lb_def ub_def)
+
+
+subsection Misc
+
+lemma sup_of_ineq1:
+  "\<lbrakk>a \<le> b; is_sup X {a, c} x; is_sup X {b, c} y\<rbrakk> \<Longrightarrow> x \<le> y"
+  by (meson is_supE1 is_supE2 is_supE3 order_trans ub_double_iff1 ubd_mem_double)
  
+lemma inf_of_ineq1:
+  "\<lbrakk>a \<le> b; is_inf X {a, c} x; is_inf X {b, c} y\<rbrakk> \<Longrightarrow> x \<le> y"
+  by (meson dual_order.trans is_infD42 is_infE1 is_infE2 lb_doubleE1 lb_doubleE2 lb_doubleI)
+
+lemma sup_of_ineq2:
+  "\<lbrakk>a \<le> b; c \<le> d; is_sup X {a, c} x; is_sup X {b, d} y\<rbrakk> \<Longrightarrow> x \<le> y"
+  by (meson is_supE1 is_supE2 is_supE4 order_trans ub_double_iff1)
+ 
+lemma inf_of_ineq2:
+  "\<lbrakk>a \<le> b; c \<le> d; is_inf X {a, c} x; is_inf X {b, d} y\<rbrakk> \<Longrightarrow> x \<le> y"
+  by (meson dual_order.trans insertI1 is_infD1121 is_infD42 is_infE1 is_infE2 lb_doubleE2 lb_doubleI)
+
+lemma sup_of_ineq3:
+  "\<lbrakk>b \<le> a; is_sup X {b, c} x; a \<le> x; is_sup X {a, c} y\<rbrakk> \<Longrightarrow> x =y"
+  by (meson dual_order.eq_iff is_supE1 is_supE2 is_supE4 sup_of_ineq1 ub_double_iff1)
+ 
+lemma inf_of_ineq3:
+  "\<lbrakk>b \<ge> a; is_inf X {b, c} x; a \<ge> x; is_inf X {a, c} y\<rbrakk> \<Longrightarrow> x =y"
+  by (meson inf_of_ineq1 is_infD42 is_infE1 is_infE2 lb_double_iff1 order_antisym)
+
+lemma int_inf1:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (Pow X) A  (\<Inter>A)"
+  by(auto simp add:is_inf_def is_greatest_def ubd_def lbd_def ub_def lb_def)
+
+lemma int_inf2:
+  "is_inf (Pow X) A (X \<inter> \<Inter>A)"
+  by(auto simp add:is_inf_def is_greatest_def ubd_def lbd_def ub_def lb_def)
+
+lemma uni_sup1:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_sup (Pow X) A  (\<Union>A)"
+  by(auto simp add:is_sup_def is_least_def lbd_def ubd_def lb_def ub_def)
+
+lemma uni_sup_fam:
+  "\<lbrakk>S \<subseteq> Pow X; A \<subseteq> S; \<Union>A \<in> S\<rbrakk> \<Longrightarrow> is_sup S A (\<Union>A) "
+  by (meson Sup_le_iff is_supI9 ub_def)
+
+lemma uni_inf_fam:
+  "\<lbrakk>S \<subseteq> Pow X; A \<subseteq> S; \<Inter>A \<in> S\<rbrakk> \<Longrightarrow> is_inf S A (\<Inter>A) "
+  by (meson is_infI9 lb_def le_Inf_iff)
+
+
+lemma lattice_id6:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i \<Longrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b) "
+  using is_infE7 is_supE7 by blast
+
+lemma lattice_id7:
+  "\<lbrakk>A \<subseteq> lbd X B; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i "
+  using inf_imp_sup_lb is_sup_iso1 by blast
+
+lemma lattice_id8:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)\<rbrakk> \<Longrightarrow> s \<le> i"
+  by (simp add: in_mono is_infD42 is_infE1 is_supE4 lb_iff1 ubI)
+
+lemma lattice_id9:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. a lb B)\<rbrakk> \<Longrightarrow> s \<le> i"
+  using is_infD42 is_infE1 is_supD5 ubI by fastforce
+
+
+
 subsection InfSemilattices
 
 definition is_inf_semilattice::"'a::order set \<Rightarrow> bool" where
@@ -1119,8 +1706,7 @@ lemma sinfD3:
 
 lemma sinfD4:
   "\<lbrakk>is_inf_semilattice X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow> (Inf X {a, b}) \<in> X"
-  using is_infD111 sinfD3 by blast
-
+  using is_infE1 sinfD3 by blast
 
 lemma binf_leI1:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> Inf X {a, b} \<le> c"
@@ -1142,47 +1728,13 @@ lemma binf_leI5:
   "\<lbrakk>is_inf_semilattice X; x1 \<in> X; x2 \<in> X; y1 \<in> X; y2 \<in>X;x1 \<le> y1; x2 \<le> y2\<rbrakk> \<Longrightarrow> Inf X {x1, x2} \<le> Inf X {y1, y2}"
   by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)
 
-
-lemma binf_finite:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_inf X {a1, a2} (Inf X {a1, a2})" and 
-          A1:"finite A" and
-          A2:"A \<noteq> {}" and
-          A3:"A \<subseteq> X"
-  shows "is_inf X A (Inf X A)"
-  using A1 A2 A3 
-proof (induct A rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case using A0 by force
-next
-  case (insert x F)
-  obtain i1 where B0:"is_inf X F i1"
-    using insert.hyps(4) insert.prems by blast
-  have B1:"i1 \<in> X"
-    using B0 is_infD111 by auto
-  obtain i2 where B2:"is_inf X {i1, x} i2"
-    using A0 B1 insert.prems by auto
-  have B3:"i2 \<in> Lower_Bounds X (insert x F)"
-    by (meson B0 B2 inf_insert62 insertI2 is_infD1121 lbd_mem_insert singleton_iff)
-  have B4:"\<And>l. l \<in> Lower_Bounds X (insert x F) \<longrightarrow> l \<le> i2"
-    using B0 B2 inf_insert7 by blast
-  have B3:"is_inf X (insert x F) i2"
-    by (simp add: B3 B4 is_infI113)
-  then show ?case
-    by (simp add: inf_equality)
-qed
-
 lemma binf_finite2:
   "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_inf X A (Inf X A)"
   by (meson binf_finite sinfD3)
 
-
 lemma binfI:
   "\<lbrakk>is_inf_semilattice X; (\<And>s. is_inf X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Inf X {a, b})"
   by (simp add: sinfD3)
-
-lemma binf_commute:
-  "is_inf X {a, b} c \<longleftrightarrow> is_inf X {b, a} c "
-  by (simp add: insert_commute)
 
 lemma binf_commute1:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, b} = Inf X {b, a}"
@@ -1200,13 +1752,6 @@ lemma binf_assoc2:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, Inf X {b, c}} = Inf X {b, Inf X {a, c}}"
   apply(rule order.antisym) by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)+
 
-lemma binf_commute2:
-  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, b}  =  Inf X {b,a}"
-  by (simp add: insert_commute)
-
-lemma binf_idem1:
-  "a\<in> X \<Longrightarrow>Inf X {a, a} = a"
-  by (simp add:  inf_equality inf_singleton)
 
 lemma binf_idem2:
   "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, Inf X {a, b}} = Inf X {a, b}"
@@ -1258,16 +1803,15 @@ next
     using A4 A5 A6 inf_equality insert.hyps(4) insert.prems(1) by blast
   have B1:"x \<in> A"
     using insert.prems(1) by auto
-  obtain t where A7:"is_inf X {x, i} t"
-    by (meson A4 A5 A6 B1 is_infD111 is_inf_semilattice_def subset_eq)
+  obtain t where A7:"is_inf X {x, i} t" by (meson A4 A5 A6 dual_order.trans insert.prems(1) insert_subset is_infE1 sinfD2)
   have B2:"t \<in> A"
     using A0 A7 B0 B1 inf_equality by blast
-  have B3:"t \<in> (Lower_Bounds X (insert x F))"
-    by (metis A6 A7 Lower_Bounds_mem_iff is_infD111 is_infD112 is_infD5 lb_double lb_insert)
-  have B4:"\<And>y. y \<in> (Lower_Bounds X (insert x F)) \<longrightarrow> y \<le>t "
-    by (metis A6 A7 Lower_BoundsD3 Lower_Bounds_mem_iff2 insertCI is_infD42 lb_double)
+  have B3:"t \<in> (lbd X (insert x F))"
+    by (meson A6 A7 insertCI is_infD1121 is_infE1 is_infE5 lbd_mem_insert)
+  have B4:"\<And>y. y \<in> (lbd X (insert x F)) \<longrightarrow> y \<le>t "
+    by (metis A6 A7 lbdD3 lbd_mem_iff2 insertCI is_infD42 lb_double_iff1)
   have B5:"is_inf X (insert x F) t"
-    by (simp add: B3 B4 is_infI113)
+    by (simp add: B3 B4 is_infI5)
   then show ?case
     by (simp add: B2 inf_equality)
 qed
@@ -1294,7 +1838,7 @@ lemma ssupD3:
 
 lemma ssupD4:
   "\<lbrakk>is_sup_semilattice X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow>  (Sup X {a, b}) \<in> X"
-  using is_supD111 ssupD3 by blast
+  using ssupD3 sup_iff2 by blast
 
 lemma bsup_geI1:
   "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X; a \<ge> c\<rbrakk>  \<Longrightarrow> Sup X {a, b} \<ge> c"
@@ -1320,18 +1864,9 @@ lemma bsup_iff:
   "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge> Sup X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
   by (simp add: binary_supD4 ssupD3 ssupD4)
 
-lemma bsup_idem1:
-  "a\<in> X \<Longrightarrow> Sup X {a, a} = a"
-  by (simp add: sup_equality sup_singleton)
-
-
 lemma bsupI:
   "\<lbrakk>is_sup_semilattice X; (\<And>s. is_sup X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Sup X {a, b})"
   by (metis is_sup_semilattice_def sup_equality)
-
-lemma bsup_commute:
-  "is_sup X {a, b} c \<longleftrightarrow> is_sup X {b, a } c "
-  by (simp add: insert_commute)
 
 lemma bsup_commute1:
   "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, b} = Sup X {b, a}"
@@ -1344,10 +1879,6 @@ lemma bsup_assoc1:
 lemma bsup_assoc2:
   "\<lbrakk>is_sup_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, Sup X {b, c}} = Sup X {b, Sup X {a, c}}"
   apply(rule order.antisym)  by(simp add:bsup_geI1 bsup_geI2 bsup_geI3 ssupD4)+
-
-lemma bsup_commute2:
-  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Sup X {a, b} =  Sup X  {b, a}"
-  by (simp add: insert_commute)
 
 lemma bsup_idem2:
   "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  Sup X {a, Sup X {a, b}} =  Sup X {a, b}"
@@ -1365,7 +1896,6 @@ lemma bsup_ge2:
   "is_sup_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Sup X {a, b} = a"
   by (simp add: dual_order.eq_iff bsup_iff bsup_geI1)
 
-
 lemma ge_bsup1:
   "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; Sup X {a, b} = b\<rbrakk> \<Longrightarrow> a \<le> b"
   by (metis bsup_geI1 order_refl)
@@ -1373,35 +1903,6 @@ lemma ge_bsup1:
 lemma ge_bsup2:
   "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; Sup X {a, b} = a\<rbrakk> \<Longrightarrow>  b \<le> a"
   by (simp add: bsup_commute1 ge_bsup1)
-
-
-lemma bsup_finite:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_sup X {a1, a2} (Sup X {a1, a2})" and 
-          A1:"finite A" and
-          A2:"A \<noteq> {}" and
-          A3:"A \<subseteq> X"
-  shows "is_sup X A (Sup X A)"
-  using A1 A2 A3 
-proof (induct A rule: finite_ne_induct)
-  case (singleton x)
-  then show ?case using A0 by force
-next
-  case (insert x F)
-  obtain s1 where B0:"is_sup X F s1"
-    using insert.hyps(4) insert.prems by blast
-  have B1:"s1 \<in> X"
-    using B0 is_supD111 by auto
-  obtain s2 where B2:"is_sup X {s1, x} s2"
-    using A0 B1 insert.prems by auto
-  have B3:"s2 \<in> Upper_Bounds X (insert x F)"
-    by (meson B0 B2 insertI2 is_supD1121 singleton_iff sup_insert62 ubd_mem_insert)
-  have B4:"\<And>u. u \<in> Upper_Bounds X (insert x F) \<longrightarrow> s2 \<le> u"
-    using B0 B2 sup_insert7 by blast
-  have B3:"is_sup X (insert x F) s2"
-    by (simp add: B3 B4 is_supI113)
-  then show ?case
-    by (simp add: sup_equality)
-qed
 
 lemma bsup_finite2:
   "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_sup X A (Sup X A)"
@@ -1433,15 +1934,15 @@ next
   have B1: "x \<in> A"
     using insert.prems(1) by auto
   obtain t where A7: "is_sup X {x, s} t"
-    by (meson A4 A5 A6 B1 is_supD111 is_sup_semilattice_def subset_eq)
+    by (meson A4 A5 A6 B1 in_mono is_supE1 ssupD2)
   have B2: "t \<in> A"
     using A0 A7 B0 B1 sup_equality by blast
-  have B3: "t \<in> Upper_Bounds X (insert x F)"
-    by (metis A6 A7 Upper_Bounds_mem_iff is_supD111 is_supD112 is_supD5 ub_double ub_insert)
-  have B4: "\<And>y. y \<in> Upper_Bounds X (insert x F) \<longrightarrow> t \<le> y"
-    by (metis A6 A7 Upper_BoundsD3 Upper_Bounds_mem_iff2 insertCI is_supD42 ub_double)
+  have B3: "t \<in> ubd X (insert x F)"
+    by (meson A6 A7 insertCI is_supD1121 is_supE1 is_supE5 ubd_mem_insert)
+  have B4: "\<And>y. y \<in> ubd X (insert x F) \<longrightarrow> t \<le> y"
+    by (metis A6 A7 ubdD3 ubd_mem_iff2 insertCI is_supD42 ub_double_iff1)
   have B5: "is_sup X (insert x F) t"
-    by (simp add: B3 B4 is_supI113)
+    by (simp add: B3 B4 is_supI5)
   then show ?case
     by (simp add: B2 sup_equality)
 qed
@@ -1495,11 +1996,9 @@ lemma lattD5:
   "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; Sup X {x, y} = y\<rbrakk> \<Longrightarrow> x \<le> y"
   by (metis bsup_geI1 dual_order.refl lattD42)
 
-
 lemma latt_iff:
   "is_lattice X \<longleftrightarrow> (is_inf_semilattice X) \<and> (is_sup_semilattice X)"
   using lattD41 lattD42 lattI2 by blast
-
 
 lemma latt_ge_iff1:
   "\<lbrakk>is_lattice X; x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> (x \<le> y \<longleftrightarrow> Sup X {x, y} = y)"
@@ -1517,7 +2016,6 @@ lemma latt_le_iff2:
   "\<lbrakk>is_lattice X; x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> (y \<le> x \<longleftrightarrow> Inf X {x, y} = y)"
   by (simp add: binf_commute2 latt_le_iff1)
 
-
 lemma lattice_absorb1:
   "\<lbrakk>is_lattice X; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x,Inf X {x, y}} = x"
   by (simp add: binf_leI1 bsup_ge2 latt_iff sinfD4)
@@ -1531,7 +2029,6 @@ lemma distrib_sup_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rb
 
 lemma distrib_inf_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"
   by(auto simp add:bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff sinfD3 sinfD4 ssupD4 binf_leI1 binf_leI2 binf_leI3)
-
 
 subsection DistributiveLattices
 
@@ -1624,22 +2121,6 @@ lemma lattice_id5:
   "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
   using lattice_id3[of X x z y] by (simp add: insert_commute)
 
-lemma lattice_id6:
-  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i \<Longrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b) "
-  using is_infD32 is_supD32 by blast
-
-lemma lattice_id7:
-  "\<lbrakk>A \<subseteq> Lower_Bounds X B; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i "
-  by (meson Lower_Bounds_sub is_infD1 is_sup_iso1 sup_max_eq)
-
-lemma lattice_id8:
-  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b)\<rbrakk> \<Longrightarrow> s \<le> i"
-  by (meson Lower_BoundsI in_mono lattice_id7 subsetI)
-
-lemma lattice_id9:
-  "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. a lb B)\<rbrakk> \<Longrightarrow> s \<le> i"
-  by (meson lattice_id8 lbD)
-
 
 lemma lattice_id10:
   assumes A0:"is_lattice X" and A1:" x \<in> X \<and> y \<in> X \<and> z \<in> X" 
@@ -1711,16 +2192,16 @@ lemma csupD3:
   by (metis is_csup_semilattice_def order_refl sup_max_eq2)
 
 lemma cinf_sup:
-  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; Upper_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
-  by (meson Upper_Bounds_sub cinfD2 sup_if_inf_ub)
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; ubd X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
+  by (meson ubd_sub cinfD2 sup_if_inf_ub)
 
 lemma csup_inf:
-  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; Lower_Bounds X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
-  by (meson Lower_Bounds_sub csupD2 inf_if_sup_lb)
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; lbd X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (meson lbd_sub csupD2 inf_if_sup_lb)
 
 lemma clatD22:
   "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
-  by (meson Lower_Bounds_sub clatD21 inf_if_sup_lb)
+  by (meson lbd_sub clatD21 inf_if_sup_lb)
 
 
 lemma csup_fsup:
@@ -1733,20 +2214,20 @@ lemma cinf_sinf:
 
 lemma pow_is_clattice1:
   "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (Pow X) A  (\<Inter>A)"
-  by(auto simp add:is_inf_def is_greatest_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+  by(auto simp add:is_inf_def is_greatest_def ubd_def lbd_def ub_def lb_def)
 
 lemma pow_is_clattice2:
   "is_inf (Pow X) {} X"
-  by(auto simp add:is_inf_def is_greatest_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+  by(auto simp add:is_inf_def is_greatest_def ubd_def lbd_def ub_def lb_def)
 
 lemma pow_is_clattice3:
   "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_sup (Pow X) A  ( \<Union>A)"
-  by(auto simp add:is_sup_def is_least_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+  by(auto simp add:is_sup_def is_least_def ubd_def lbd_def ub_def lb_def)
 
 lemma pow_is_clattice:
   "is_clattice (Pow X)"
    using  pow_is_clattice3 apply(auto simp add:is_clattice_def)
-   by (metis Pow_not_empty Upper_Bounds_empty pow_is_clattice1 subset_refl sup_if_inf_ub)
+   by (metis Pow_not_empty ubd_empty pow_is_clattice1 subset_refl sup_if_inf_ub)
 
 
 section Functions
@@ -1776,12 +2257,12 @@ lemma isotoneD32:
   by(auto simp add:lb_def image_iff is_isotone_def subset_iff)
 
 lemma isotoneD41:
-  "\<lbrakk>is_isotone X f; b \<in> Upper_Bounds X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> Upper_Bounds (f`X) (f`A)"
-  by (simp add: Upper_Bounds_mem_iff isotoneD31)
+  "\<lbrakk>is_isotone X f; b \<in> ubd X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> ubd (f`X) (f`A)"
+  by (simp add: ubd_mem_iff isotoneD31)
              
 lemma isotoneD42:
-  "\<lbrakk>is_isotone X f; b \<in> Lower_Bounds X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> Lower_Bounds (f`X) (f`A)"
-  by (simp add: Lower_Bounds_mem_iff isotoneD32)
+  "\<lbrakk>is_isotone X f; b \<in> lbd X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd (f`X) (f`A)"
+  by (simp add: lbd_mem_iff isotoneD32)
 
 lemma isotoneD51:
   "\<lbrakk>is_isotone X f; is_least A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> is_least (f`A) (f x)"
@@ -1793,11 +2274,11 @@ lemma isotoneD52:
 
 lemma isotoneD61:
   "\<lbrakk>is_isotone X f; is_sup X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f x) ub f`A"
-  by (simp add: is_supD112 isotoneD31 sup_iff2)
+  by (simp add: is_supE1 is_supE2 isotoneD31)
 
 lemma isotoneD62:
   "\<lbrakk>is_isotone X f; is_inf X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f x) lb f`A"
-  by (simp add: is_infD112 isotoneD32 inf_iff2)
+  by (simp add: inf_iff2 is_infE2 isotoneD32)
 
 subsection Extensivity
 
@@ -1825,12 +2306,12 @@ lemma extensiveD4:
   by (meson dual_order.trans extensiveD1)
 
 lemma extensive_ub_imp:
-  "\<lbrakk>is_extensive X f ; (f`X \<subseteq> X); A \<subseteq> X ; b \<in> Upper_Bounds (f`X)  (f`A) \<rbrakk> \<Longrightarrow> b \<in> Upper_Bounds X A"
-  by (metis Upper_Bounds_mem_iff extensiveD1 extensiveD2 extensiveI1 in_mono)
+  "\<lbrakk>is_extensive X f ; (f`X \<subseteq> X); A \<subseteq> X ; b \<in> ubd (f`X)  (f`A) \<rbrakk> \<Longrightarrow> b \<in> ubd X A"
+  by (metis ubd_mem_iff extensiveD1 extensiveD2 extensiveI1 in_mono)
 
 lemma extensive_ub_imp2:
-  "\<lbrakk>is_extensive X f; (f`X \<subseteq> X); A \<subseteq> X; b \<in> Upper_Bounds X  (f`A)\<rbrakk> \<Longrightarrow> b \<in> Upper_Bounds X A"
-  by (metis Upper_Bounds_mem_iff extensiveD2 in_mono is_extensive_def)
+  "\<lbrakk>is_extensive X f; (f`X \<subseteq> X); A \<subseteq> X; b \<in> ubd X  (f`A)\<rbrakk> \<Longrightarrow> b \<in> ubd X A"
+  by (metis ubd_mem_iff extensiveD2 in_mono is_extensive_def)
 
 lemma is_iso_extD1:
   "\<lbrakk>is_isotone X f;  is_extensive X f;  (f`X \<subseteq> X);  x \<in> X\<rbrakk> \<Longrightarrow> f x \<le> f (f x)"
@@ -1839,11 +2320,11 @@ lemma is_iso_extD1:
 
 lemma is_iso_sup:
   "is_isotone X f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_sup X A x \<Longrightarrow> is_sup (f`X) (f`A) y  \<Longrightarrow> y \<le> f x"
-  by (simp add: Upper_Bounds_mem_iff is_sup_def isotoneD31 least_iff)
+  by (simp add: ubd_mem_iff is_sup_def isotoneD31 least_iff)
 
 lemma is_iso_inf:
   "is_isotone X f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf A X x \<Longrightarrow> is_inf (f`X) (f`A) y  \<Longrightarrow> f x \<le> y"
-  by(simp add: is_inf_def Lower_Bounds_mem_iff lb_ant2 subsetD greatest_iff isotoneD32)
+  by(simp add: is_inf_def lbd_mem_iff lb_ant2 subsetD greatest_iff isotoneD32)
 
 subsection Idempotency
 
@@ -1943,20 +2424,20 @@ lemma closureD11:
   using closureD10 by blast
 
 lemma cl_sup_eq_sup_cl1:
-  "\<lbrakk>is_closure X f; is_sup X A s; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s) \<in> Upper_Bounds (f`X) (f`A)"
-  by (simp add: is_closure_def is_supD11 isotoneD41)
+  "\<lbrakk>is_closure X f; is_sup X A s; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s) \<in> ubd (f`X) (f`A)"
+  by (simp add: is_closure_def is_supD32 isotoneD41)
 
 lemma cl_le_cl_iff_le:
-  "\<lbrakk>is_closure X f;  is_inf X A i;  A \<subseteq> X\<rbrakk> \<Longrightarrow> (f i) \<in> Lower_Bounds (f`X) (f`A)"
-  by (simp add: is_closure_def is_infD11 isotoneD42)
+  "\<lbrakk>is_closure X f;  is_inf X A i;  A \<subseteq> X\<rbrakk> \<Longrightarrow> (f i) \<in> lbd (f`X) (f`A)"
+  by (simp add: is_closure_def is_infD32 isotoneD42)
 
 lemma cl_sup_eq_sup_cl2:
-  "\<lbrakk>is_closure X f;  is_sup X A s; b \<in> Upper_Bounds (f`X) (f`A); A \<subseteq> X\<rbrakk> \<Longrightarrow> s \<le> b"
-  by(simp add: is_closure_def[of "X" "f"] Upper_BoundsD2[of "b" "f`X" "f`A"]  closureD2[of "X" "f" "b"] extensive_ub_imp[of "X" "f" "A" "b"]  is_supD121[of "X" "A" "s"] )
+  "\<lbrakk>is_closure X f;  is_sup X A s; b \<in> ubd (f`X) (f`A); A \<subseteq> X\<rbrakk> \<Longrightarrow> s \<le> b"
+  by(simp add: is_closure_def[of "X" "f"] ubdD2[of "b" "f`X" "f`A"]  closureD2[of "X" "f" "b"] extensive_ub_imp[of "X" "f" "A" "b"]  is_supE3[of "X" "A" "s"] )
 
 lemma cl_sup_eq_sup_cl3:
-  "\<lbrakk>is_closure X f;  is_sup X A s; b \<in> Upper_Bounds (f`X) (f`A);A \<subseteq> X\<rbrakk> \<Longrightarrow> f s \<le> b"
-  by (meson Upper_BoundsD2 cl_sup_eq_sup_cl2 closureD7 is_supD111)
+  "\<lbrakk>is_closure X f;  is_sup X A s; b \<in> ubd (f`X) (f`A);A \<subseteq> X\<rbrakk> \<Longrightarrow> f s \<le> b"
+  by (meson cl_sup_eq_sup_cl2 closureD7 is_supE1 ubd_mem_iff)
 
 (*
 cl_sup_eq_sup and cl_sup_ge_sup_cl have converses in extensiveI4 idempotentI4 and isotoneI4 
@@ -1965,7 +2446,7 @@ cl_sup_eq_sup and cl_sup_ge_sup_cl have converses in extensiveI4 idempotentI4 an
 
 lemma cl_sup_eq_sup:
   "\<lbrakk>is_closure X f;  is_sup X A s;A \<subseteq> X\<rbrakk> \<Longrightarrow> is_sup (f`X) (f`A) (f s)"
-  by(simp add:is_sup_def[of "f`X" "f`A" "f s"] cl_sup_eq_sup_cl1 cl_sup_eq_sup_cl3 is_least_def Lower_Bounds_mem_iff2)
+  by(simp add:is_sup_def[of "f`X" "f`A" "f s"] cl_sup_eq_sup_cl1 cl_sup_eq_sup_cl3 is_least_def lbd_mem_iff2)
          
 lemma closure_iff2:
   "is_closure X f \<longleftrightarrow> (f`X \<subseteq> X) \<and> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. x1 \<le> f x2 \<longleftrightarrow> f x1 \<le> f x2)"
@@ -1973,19 +2454,19 @@ lemma closure_iff2:
 
 lemma cl_sup_ge_sup_cl11:
   "\<lbrakk>is_closure X f; is_sup X A s1; is_sup X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> s1 \<le> s2"
-  by (meson extensive_ub_imp2 is_closure_def is_supD11 is_supD121)
+  by (meson extensive_ub_imp2 is_closure_def is_supD32 is_supE3)
 
 lemma cl_sup_ge_sup_cl2:
   "\<lbrakk>is_closure X f;  is_sup X A s1;  is_sup X (f`A) s2; A \<subseteq>  X\<rbrakk> \<Longrightarrow> s2  \<le> f s1"
-  by (meson closureD1 is_closure_def is_supD111 is_supD122 isotoneD61)
+  by (meson closureD1 is_closure_def is_supD42 isotoneD61 sup_iff2)
 
 lemma cl_sup_ge_sup_cl3:
   "\<lbrakk>is_closure X f;  is_sup X A s1;  is_sup X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> f s2  \<le> f s1"
-  by (meson cl_sup_ge_sup_cl2 is_closure_def is_supD111 iso_idemD3)
+  by (simp add: cl_sup_ge_sup_cl2 closureD7 is_supE1)
 
 lemma cl_sup_ge_sup_cl4:
   "\<lbrakk>is_closure X f; is_sup X A s1;  is_sup X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> f s1  \<le> f s2"
-  by (simp add: cl_sup_ge_sup_cl11 closureD4 is_supD111)
+  by (simp add: cl_sup_ge_sup_cl11 closureD4 is_supE1)
 
 lemma cl_sup_ge_sup_cl:
   "\<lbrakk>is_closure X f; is_sup X A s1;  is_sup X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> f s1  = f s2"
@@ -1994,10 +2475,10 @@ lemma cl_sup_ge_sup_cl:
 subsection ClosureRanges
 
 definition is_clr::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_clr C X \<equiv> (C \<noteq> {}) \<and> (C \<subseteq> X) \<and> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c))"
+  "is_clr C X \<equiv> (C \<noteq> {}) \<and> (C \<subseteq> X) \<and> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>c. is_least (ubd C {x}) c))"
 
 lemma clrI1:
-  "\<lbrakk>C \<noteq> {}; C \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c)) \<rbrakk> \<Longrightarrow> is_clr C X"
+  "\<lbrakk>C \<noteq> {}; C \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least (ubd C {x}) c)) \<rbrakk> \<Longrightarrow> is_clr C X"
   by (simp add:is_clr_def)
 
 lemma clrD2:
@@ -2009,21 +2490,20 @@ lemma clrD2b:
   by(drule clrD2,simp add:subsetD)
 
 lemma clrD3:
-  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c))"
+  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least (ubd C {x}) c))"
   by (simp add:is_clr_def)
 
 lemma clrD4:
-  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>c. is_least (Upper_Bounds C {x}) c)"
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>c. is_least (ubd C {x}) c)"
   by (simp add:is_clr_def)
 
 lemma clrD5:
-  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X  \<Longrightarrow> ((Upper_Bounds C {x}) \<noteq> {}))"
+  "is_clr C X \<Longrightarrow>  (\<And>x. x \<in> X  \<Longrightarrow> ((ubd C {x}) \<noteq> {}))"
   by (simp add: clrD4 least_exD0)
 
 lemma clrD6:
-  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (Upper_Bounds C {x}) \<noteq> {}"
+  "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (ubd C {x}) \<noteq> {}"
   by (simp add: clrD5)
-
 
 lemma clrD7:
   "is_clr C X \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>c \<in> C.  x \<le> c)"
@@ -2048,11 +2528,11 @@ lemma is_clr_cofinal:
   using is_clr_cofinal1 is_clr_cofinal2 by blast
 
 definition cl_from_clr::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order)" where
-  "cl_from_clr C \<equiv> (\<lambda>x. Least (Upper_Bounds C {x}))"
+  "cl_from_clr C \<equiv> (\<lambda>x. Least (ubd C {x}))"
 
 lemma cl_range1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> (cl_from_clr C) x \<in> C"
-  by(simp add:cl_from_clr_def, auto intro: Upper_BoundsD2 clrD4 least_exD1)
+  by(simp add:cl_from_clr_def, auto intro: ubdD2 clrD4 least_exD1)
 
 lemma cl_range2:
   "is_clr C X  \<Longrightarrow> (cl_from_clr C)`X \<subseteq> C"
@@ -2080,19 +2560,19 @@ lemma clr_induced_closure_id:
 
 lemma cl_ext1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le> (cl_from_clr C) x"
-  by (metis Upper_BoundsD1 cl_from_clr_def clrD3 least_exD1 singletonI)
+  by (metis ubdD1 cl_from_clr_def clrD3 least_exD1 singletonI)
 
 lemma cl_ext2:
   "is_clr C X \<Longrightarrow> is_extensive X (cl_from_clr C)"
   by (simp add: cl_ext1 is_extensive_def)
 
 lemma cl_lt_ub1:
-  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> c \<in> Upper_Bounds C {x} \<Longrightarrow> (cl_from_clr C) x \<le> c"
+  "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> c \<in> ubd C {x} \<Longrightarrow> (cl_from_clr C) x \<le> c"
   by (simp add: cl_from_clr_def clrD3 least_exD2)
 
 lemma cl_lt_ub2:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> c \<in> C \<Longrightarrow> x \<le> c \<Longrightarrow> (cl_from_clr C) x \<le> c"
-  by (simp add: Upper_Bounds_singleton2 cl_lt_ub1)
+  by (simp add: ubd_singleton2 cl_lt_ub1)
 
 lemma cl_iso1:
   "is_clr C X \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> X  \<Longrightarrow> x \<le> y \<Longrightarrow> (cl_from_clr C) x \<le> (cl_from_clr C) y"
@@ -2111,19 +2591,19 @@ lemma cl_is_closure:
   by(simp add:is_closure_def cl_ext2 cl_ide cl_iso2 clr_induced_closure_id clrD2)
 
 lemma closure_of_in_ub:
-  "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> (f x) \<in> (Upper_Bounds (f`X) {x})"
-  by (simp add: Upper_Bounds_singleton2 closureD5)
+  "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> (f x) \<in> (ubd (f`X) {x})"
+  by (simp add: ubd_singleton2 closureD5)
 
 lemma closure_of_lt_ub:
-  "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> y \<in>  (Upper_Bounds (f`X) {x}) \<Longrightarrow> (f x) \<le> y"
-  by (meson Upper_BoundsD2 closureD7 ub_single_D2)
+  "is_closure X f \<Longrightarrow>x \<in> X \<Longrightarrow> y \<in>  (ubd (f`X) {x}) \<Longrightarrow> (f x) \<le> y"
+  by (simp add: closureD7 ubd_singleton_iff)
 
 lemma closure_of_least_closed1:
-  "is_closure X f \<Longrightarrow> x \<in> X \<Longrightarrow> is_least (Upper_Bounds (f`X) {x}) (f x)"
+  "is_closure X f \<Longrightarrow> x \<in> X \<Longrightarrow> is_least (ubd (f`X) {x}) (f x)"
   by (simp add: closure_of_in_ub closure_of_lt_ub leastI3)
 
 lemma closure_of_least_closed2:
-  "is_closure X f \<Longrightarrow> x \<in> X \<Longrightarrow> Least (Upper_Bounds (f`X) {x}) =  (f x)"
+  "is_closure X f \<Longrightarrow> x \<in> X \<Longrightarrow> Least (ubd (f`X) {x}) =  (f x)"
   by (simp add: closure_of_in_ub closure_of_lt_ub least_equality2 least_iff)
 
 lemma closure_induced_clr:
@@ -2203,24 +2683,24 @@ qed
 (*so closure ranges are infimum closed and moreover if the poset is topped then this element is closed*)
 
 lemma clrD8:
-  "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow> (cl_from_clr C) i \<in> Lower_Bounds X A"
-  by (simp add: Lower_BoundsI cl_is_closure cl_lt_ub2 closureD1 in_mono is_infD111 is_infD32)
+  "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow> (cl_from_clr C) i \<in> lbd X A"
+  by(simp add: lbdI cl_is_closure cl_lt_ub2 closureD1 in_mono is_infE1 is_infE7)
 
 lemma clrD9:
   "is_clr C X \<Longrightarrow> A \<subseteq> C \<Longrightarrow> is_inf X A i \<Longrightarrow> (cl_from_clr C) i \<le> i"
-  by (simp add: clrD8 is_infD121)
+  by (simp add: clrD8 is_infE3)
 
 lemma clrD10:
   "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow>  (cl_from_clr C) i = i"
-  by (simp add: cl_ext1 clrD9 is_infD111 order_antisym)
+  by (simp add: cl_ext1 clrD9 is_infE1 order_antisym)
 
 lemma clrD11:
   "is_clr C X \<Longrightarrow> A \<subseteq> C  \<Longrightarrow> is_inf X A i \<Longrightarrow>  i \<in> C"
-  by (metis cl_range1 clrD10 is_infD111)
+  by (metis cl_range1 clrD10 is_infE1)
 
 lemma moore_clI1:
-  "C \<subseteq> Pow X \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> (X \<inter> (\<Inter>E)) \<in> C) \<Longrightarrow> x \<in> Pow X \<Longrightarrow> is_least (Upper_Bounds C {x})  (X \<inter> (\<Inter>(Upper_Bounds C {x}))) "
-  by(auto simp add:is_clr_def is_least_def Upper_Bounds_def Lower_Bounds_def ub_def lb_def)
+  "C \<subseteq> Pow X \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> (X \<inter> (\<Inter>E)) \<in> C) \<Longrightarrow> x \<in> Pow X \<Longrightarrow> is_least (ubd C {x})  (X \<inter> (\<Inter>(ubd C {x}))) "
+  by(auto simp add:is_clr_def is_least_def ubd_def lbd_def ub_def lb_def)
 
 (*
 two ways to introduce a moore system; either by demonstrating it is inf closed where the infimum
@@ -2244,14 +2724,14 @@ lemma clr_cinf_semilattice1:
 
 lemma clr_clattice1:
   assumes A0:"is_clr C X" and A1:"is_clattice X"
-  shows "\<And>A. A \<subseteq> C \<longrightarrow> (\<exists>x. is_sup C A x \<and> is_inf X (Upper_Bounds C A) x)"
+  shows "\<And>A. A \<subseteq> C \<longrightarrow> (\<exists>x. is_sup C A x \<and> is_inf X (ubd C A) x)"
 proof
   fix A assume A2:"A \<subseteq> C"
-  obtain x where B0:"is_inf X (Upper_Bounds C A) x"
-    by (meson A0 A1 Upper_Bounds_sub clatD22 is_clr_def order_trans)
+  obtain x where B0:"is_inf X (ubd C A) x"
+    by (meson A0 A1 ubd_sub clatD22 is_clr_def order_trans)
   have B1:"is_sup C A x"
-    by (meson A0 A2 B0 Upper_Bounds_sub clrD11 clrD2 inf_in_subset sup_if_inf_ub)
-  show "(\<exists>x. is_sup C A x \<and> is_inf X (Upper_Bounds C A) x)"
+    by (meson A0 A2 B0 ubd_sub clrD11 clrD2 inf_in_subset sup_if_inf_ub)
+  show "(\<exists>x. is_sup C A x \<and> is_inf X (ubd C A) x)"
     using B0 B1 by blast
 qed
 
@@ -2262,6 +2742,7 @@ lemma clr_is_clattice:
 lemma closure_range_is_clattice:
   "\<lbrakk>is_closure X f; is_clattice X\<rbrakk> \<Longrightarrow> is_clattice (f`X)"
   using closure_induced_clr clr_is_clattice is_clattice_def by blast
+
 
 definition ord_embedding::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "ord_embedding f X \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> (x1 \<le> x2  \<longleftrightarrow> f x1 \<le> f x2))"
@@ -2296,7 +2777,7 @@ lemma is_updirI1:
 
 lemma is_updirD1:
   "\<lbrakk>is_dir (X::'a::order set) (\<le>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c ub {a, b})"
-  by (simp add: is_updirE1 ub_double)
+  by (simp add: is_updirE1 ub_double_iff1)
 
 lemma is_updir_empty:
   "is_dir {} (\<le>)"
@@ -2354,7 +2835,7 @@ lemma is_dwdir_singleton:
 
 lemma is_dwdirD1:
   "\<lbrakk>is_dir (X::'a::order set) (\<ge>);a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X. c lb {a, b})"
-  by (simp add: is_dwdirE1 lb_double)
+  by (simp add: is_dwdirE1 lb_double_iff1)
 
 lemma dwdir_finite1:
   assumes A0: "\<And>a1 a2. a1 \<in> (X::'a::order set) \<Longrightarrow> a2 \<in> X \<Longrightarrow>  (\<exists>c \<in> X. a1 \<ge> c \<and> a2 \<ge> c)" and 
@@ -2487,9 +2968,9 @@ proof
   have B1:"c lb {a, b}"
     by (simp add: B0 lb_def)
   have B2:"c \<le> i"
-    using A0 A3 B0 B1 lt_inf_iff by blast
+    using A0 A3 B0 B1 is_infE4 by blast
   show "i \<in> A"
-    using A2 A3 B0 B2 is_infD111 is_ord_clE1 by blast
+    using A2 A3 B0 B2 is_infE1 is_ord_clE1 by blast
 qed
 
 subsection Filters
@@ -2603,7 +3084,7 @@ proof-
     have B2:"\<forall>F \<in> EF. i \<in> F"
       by (meson A1 A5 B1 InterE filter_finf_closed)
     show "(\<exists>c\<in>?I. c \<le> a \<and> c \<le> b)"
-      by (meson B1 B2 InterI dual_order.refl insert_iff is_infD32)
+      by (meson B1 B2 InterI dual_order.refl insert_iff is_infE7)
   qed
   show ?thesis
     by (metis P is_dwdirI1)
@@ -2641,8 +3122,8 @@ lemma filter_is_clr:
   by (simp add: cinf_sinf filter_inter_closed2 filters_is_clr1 filters_is_clr1b moore_clI3)
 
 lemma filter_closure_of_empty1:
-  "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (Upper_Bounds (filters_on X) {{}}) {top}"
-  by (simp add: Upper_Bounds_mem_iff2 filters_on_def filter_greatestD2 least_iff min_filter1)
+  "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (ubd (filters_on X) {{}}) {top}"
+  by (simp add: ubd_mem_iff2 filters_on_def filter_greatestD2 least_iff min_filter1)
 
 lemma filter_closure_of_empty2:
   "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (filters_on X)) {} = {top}"
@@ -2725,19 +3206,19 @@ lemma filter_cl_least:
   by (meson filter_greatestD2 subsetI toped)
 
 lemma filter_cl_is_ub:
-  "A \<subseteq> X \<Longrightarrow> (filter_closure X A) \<in>  (Upper_Bounds (filters_on X) {A})"
-  by (simp add: Upper_Bounds_singleton2 filter_cl0 filter_cl3 filters_on_def)
+  "A \<subseteq> X \<Longrightarrow> (filter_closure X A) \<in>  (ubd (filters_on X) {A})"
+  by (simp add: ubd_singleton2 filter_cl0 filter_cl3 filters_on_def)
 
 lemma filter_cl_lt_ub:
-  "A \<subseteq> X  \<Longrightarrow> F \<in>  (Upper_Bounds (filters_on X) {A}) \<Longrightarrow> (filter_closure X A) \<le> F"
-  by (meson Upper_BoundsD1 Upper_Bounds_mem_iff filter_cl_least filters_on_iff insertI1)
+  "A \<subseteq> X  \<Longrightarrow> F \<in>  (ubd (filters_on X) {A}) \<Longrightarrow> (filter_closure X A) \<le> F"
+  by (meson ubdD1 ubd_mem_iff filter_cl_least filters_on_iff insertI1)
 
 lemma filter_cl_is_lub:
-  "A \<subseteq> X \<Longrightarrow>  is_inf (Pow X) (Upper_Bounds (filters_on X) {A}) (filter_closure X A) "
-  by (meson Upper_BoundsD2 filter_cl_is_ub filter_cl_lt_ub filters_is_clr1 is_infI115 lb_def subset_iff)
+  "A \<subseteq> X \<Longrightarrow>  is_inf (Pow X) (ubd (filters_on X) {A}) (filter_closure X A) "
+  by (simp add: filterD2 filter_cl3 filter_cl_is_ub filter_cl_lt_ub inf_minE1 leastI3)
 
 lemma filter_cl_is_lcl:
-  "A \<subseteq> X \<Longrightarrow>  is_least (Upper_Bounds (filters_on X) {A}) (filter_closure X A) "
+  "A \<subseteq> X \<Longrightarrow>  is_least (ubd (filters_on X) {A}) (filter_closure X A) "
   by (simp add: filter_cl_is_ub filter_cl_lt_ub leastI3)
 
 lemma filter_closure_eq_closure:                                      
@@ -2770,7 +3251,7 @@ lemma filter_on_lattice_top0:
 
 lemma filter_on_lattice_top:
   "\<lbrakk>is_lattice X;  is_filter X {x}\<rbrakk> \<Longrightarrow>  is_greatest X x"
-  by(rule greatestI1, rule Upper_BoundsI, simp add: filter_on_lattice_top0, simp add:filterD21)
+  by(rule greatestI1, rule ubdI, simp add: filter_on_lattice_top0, simp add:filterD21)
 
 lemma filter_on_lattice_eq:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}"
@@ -2794,16 +3275,16 @@ lemma filters_on_lattice_inf5b:
   by (meson filterD2 filterI1 filter_on_lattice_inf4b filters_on_lattice_inf2b filters_upcl inf.coboundedI2) 
 
 lemma filters_on_lattice_inf6b:
-  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (Lower_Bounds (filters_on X) {F1, F2})"
-  by (simp add: Lower_Bounds_mem_iff filters_on_iff filters_on_lattice_inf5b lb_double)
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (lbd (filters_on X) {F1, F2})"
+  by (simp add: lbd_mem_iff filters_on_iff filters_on_lattice_inf5b lb_double_iff1)
 
 lemma filters_on_lattice_inf7b:
-  "\<lbrakk>is_filter X F1; is_filter X F2; G \<in> (Lower_Bounds (filters_on X) {F1, F2})\<rbrakk>  \<Longrightarrow>  G \<subseteq>  (F1 \<inter> F2)"
-  by (simp add: Lower_Bounds_mem_iff lb_double)
+  "\<lbrakk>is_filter X F1; is_filter X F2; G \<in> (lbd (filters_on X) {F1, F2})\<rbrakk>  \<Longrightarrow>  G \<subseteq>  (F1 \<inter> F2)"
+  by (simp add: lbd_mem_iff lb_double_iff1)
 
 lemma filters_on_lattice_inf8b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk>\<Longrightarrow> is_inf (filters_on X) {F1, F2} (F1 \<inter> F2)"
-  by (meson filters_on_lattice_inf6b filters_on_lattice_inf7b is_infI113)
+  by (meson filters_on_lattice_inf6b filters_on_lattice_inf7b is_infI5)
 
 (*
   On a lattice filters form an inf semilattice
@@ -2830,7 +3311,7 @@ proof-
   have B4:"Fa \<union> Fb \<subseteq> X"
     by (meson A1 B3 Sup_le_iff filterD2 subsetD subsetI)
   have B5:"Inf X (Fa \<union> Fb) \<in>  (filter_closure X (\<Union>EF))"
-    by (meson A0 B3 B4 binf_finite2 dual_order.refl filter_closure_memI1 is_infD111 lattD41)
+    by (meson A0 B3 B4 binf_finite2 dual_order.refl filter_closure_memI1 is_infE1 lattD41)
   have B6:"Inf X (Fa \<union> Fb) \<le> a \<and> Inf X (Fa \<union> Fb) \<le> b"
     by (meson A0 B1 B2 B3 B4 Un_upper1 binf_finite2 dual_order.trans is_inf_ant1 lattD41 sup.cobounded2)
   show ?thesis
@@ -2871,7 +3352,7 @@ qed
 
 lemma filters_on_lattice_sup7b:
   "\<lbrakk>is_lattice X; (\<forall>F. F \<in> EF \<longrightarrow> is_filter X F); EF \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (filters_on X) EF (filter_closure X (\<Union>EF))"
-  by(simp add:is_sup_def filters_on_lattice_sup4b filters_on_iff  Upper_Bounds_mem_iff2  filters_on_lattice_sup5b filters_on_lattice_sup6b least_iff)
+  by(simp add:is_sup_def filters_on_lattice_sup4b filters_on_iff  ubd_mem_iff2  filters_on_lattice_sup5b filters_on_lattice_sup6b least_iff)
 
 (*On a lattice filters form a complete sup semilattice*)
 
@@ -2889,7 +3370,7 @@ lemma filters_on_lattice_sup_semilattice2b:
 
 lemma filters_on_lattice_sup_semilattice3b:
   "is_lattice X \<Longrightarrow> EF \<subseteq> (filters_on X) \<Longrightarrow> finite EF \<Longrightarrow> EF \<noteq> {} \<Longrightarrow> (Sup (filters_on X) EF) \<in> filters_on X"
-  by (meson bsup_finite2 filters_on_lattice_sup_semilattice2b is_supD111)
+  by (meson bsup_finite2 filters_on_lattice_sup_semilattice2b is_supE1)
 
 (*On a topped inf semilattice filters form a complete inf semilattice*)
 
@@ -2944,8 +3425,8 @@ lemma lorc_mem_iff2:
   "y \<in> ([a)\<^sub>X) \<longleftrightarrow> (y \<in> X \<and> y ub {a})" by (simp add:lorc_def ub_def)
 
 lemma lorc_eq_upbd:
-  "([a)\<^sub>X) = (Upper_Bounds X {a})"
-  by(simp add: set_eq_iff Upper_Bounds_mem_iff lorc_mem_iff2)
+  "([a)\<^sub>X) = (ubd X {a})"
+  by(simp add: set_eq_iff ubd_mem_iff lorc_mem_iff2)
 
 lemma lorc_memI1:
   "a \<in> X \<Longrightarrow> a \<in> [a)\<^sub>X "
@@ -2957,7 +3438,7 @@ lemma lorc_mem_point1:
 
 lemma lorc_subset1:
   "([a)\<^sub>X) \<subseteq> X"
-  by (simp add: Upper_Bounds_sub lorc_eq_upbd)
+  by (simp add: ubd_sub lorc_eq_upbd)
 
 lemma lorc_top:
   "is_greatest X m \<Longrightarrow> a \<in> X \<Longrightarrow> m \<in> [a)\<^sub>X"
@@ -3139,21 +3620,21 @@ lemma gc_closure2:
   by (simp add: is_closure_def gc_sub2 gc_ext2 gc_iso2b gc_idem2b)
 
 lemma ul_galois:
-  "galois_conn (\<lambda>A. Upper_Bounds X A) (Pow X) (\<lambda>A. Lower_Bounds X A) (Pow X)"
+  "galois_conn (\<lambda>A. ubd X A) (Pow X) (\<lambda>A. lbd X A) (Pow X)"
   apply(rule gcI) 
-  apply(simp add: Upper_Bounds_ant1 is_antitone_def)
-  apply(simp add: Lower_Upper_comp1 is_extensive_def)
-  apply(simp add: Lower_Bounds_ant1 is_antitone_def)
-  apply(simp add: Upper_Lower_comp1 is_extensive_def)
-  apply (simp add: Upper_Bounds_sub image_subset_iff)
-  by (simp add: Lower_Bounds_sub image_subset_iff)
+  apply(simp add: ubd_ant1 is_antitone_def)
+  apply(simp add: lubd_comp1 is_extensive_def)
+  apply(simp add: lbd_ant1 is_antitone_def)
+  apply(simp add: ulbd_comp1 is_extensive_def)
+  apply (simp add: ubd_sub image_subset_iff)
+  by (simp add: lbd_sub image_subset_iff)
 
 lemma ul_closure:
-  "is_closure (Pow X) ((\<lambda>A. Upper_Bounds X A) \<circ> (\<lambda>A. Lower_Bounds X A))"
+  "is_closure (Pow X) ((\<lambda>A. ubd X A) \<circ> (\<lambda>A. lbd X A))"
   using gc_closure2 ul_galois by blast
 
 lemma lu_closure:
-  "is_closure (Pow X) ((\<lambda>A. Lower_Bounds X A) \<circ> (\<lambda>A. Upper_Bounds X A))"
+  "is_closure (Pow X) ((\<lambda>A. lbd X A) \<circ> (\<lambda>A. ubd X A))"
   using gc_closure1 ul_galois by blast
 
 subsection PolarPairs
@@ -3289,6 +3770,18 @@ definition fne_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 
 definition fin_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow>  'a::order set" where
   "fin_inf_cl X A \<equiv> {x \<in> X. \<exists>F \<in> Fpow A. is_inf X F x}"
 
+
+abbreviation sup_inv where  "sup_inv X A \<equiv> (\<lambda>y. SOME E. E \<in> Pow A \<and> E \<noteq> {} \<and> is_sup X E y)"
+
+abbreviation inf_inv where "inf_inv X A \<equiv> (\<lambda>y. SOME E. E \<in> Pow A \<and> E \<noteq> {} \<and> is_inf X E y)"
+
+abbreviation fne_inf_inv where "fne_inf_inv X A \<equiv> (\<lambda>y. SOME E. E \<in> Fpow A \<and> E \<noteq> {} \<and> is_inf X E y)"
+
+abbreviation fne_sup_inv where "fne_sup_inv X A \<equiv> (\<lambda>y. SOME E. E \<in> Fpow A \<and> E \<noteq> {} \<and> is_sup X E y)"
+
+abbreviation fin_inf_inv where "fin_inf_inv X A \<equiv> (\<lambda>y. SOME E. E \<in> Fpow A \<and>  is_inf X E y)"
+
+
 lemma sup_cl_imp0:
   "x \<in> sup_cl X A  \<Longrightarrow> x \<in> X "
   by (simp add: sup_cl_def)
@@ -3374,6 +3867,18 @@ lemma fne_sup_cl_obtains:
   obtains F where "F \<in> Fpow A \<and> F \<noteq> {} \<and> is_sup X F x"
   by (meson assms fne_sup_cl_imp1)
 
+lemma sup_cl_vimage:
+  "x \<in> sup_cl X A \<Longrightarrow> vimage (\<lambda>E. Sup X E) {x} \<noteq> {}"
+  by (metis empty_iff sup_cl_imp0 sup_equality sup_singleton vimage_singleton_eq)
+
+lemma sup_cl_inv:
+  "x \<in> sup_cl X A \<Longrightarrow> Sup X (sup_inv X A x) =x"
+  by(rule someI2_ex, meson sup_cl_obtains, simp add: sup_equality)
+
+lemma sup_cl_inv2:
+  "x \<in> sup_cl X A \<Longrightarrow> Sup X (sup_inv X A x)  \<in> sup_cl X A"
+  using sup_cl_inv by force
+
 
 definition is_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_sup_cl X A\<equiv> (\<forall>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_sup X E x \<longrightarrow> x \<in> A)"
@@ -3389,7 +3894,7 @@ definition is_fne_inf_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarro
 
 lemma up_closed_supin_closed0:
   "is_ord_cl X A (\<le>) \<Longrightarrow> E \<in> Pow A \<Longrightarrow> E \<noteq> {} \<Longrightarrow> is_sup X E x  \<Longrightarrow> x \<in> A"
-  using is_supD111 is_supD32 ord_cl_memI1 by fastforce
+  using is_supE1 is_supE7 ord_cl_memI1 by fastforce
 
 lemma up_closed_supin_closed:
   "is_ord_cl X A (\<le>) \<Longrightarrow> is_sup_cl X A"
@@ -3397,7 +3902,7 @@ lemma up_closed_supin_closed:
 
 lemma dw_closed_infin_closed0:
   "is_ord_cl X A (\<ge>) \<Longrightarrow> E \<in> Pow A \<Longrightarrow> E \<noteq> {} \<Longrightarrow> is_inf X E x  \<Longrightarrow> x \<in> A"
-  using is_infD111 is_infD1121 ord_cl_memI1 by fastforce
+  using is_infE1 is_infD1121 ord_cl_memI1 by fastforce
 
 lemma down_closed_infin_closed:
   "is_ord_cl X A (\<ge>) \<Longrightarrow> is_inf_cl X A"
@@ -3421,7 +3926,7 @@ proof
     using A1 assms inf_singleton by blast
   have B2: "{a} \<in> Fpow A"
     by (simp add: A1 Fpow_def)
-  show "a \<in> fin_inf_cl X A" apply(simp add:fin_inf_cl_def) using B0 B2 is_infD111 by blast
+  show "a \<in> fin_inf_cl X A" apply(simp add:fin_inf_cl_def) using B0 B2 is_infE1 by blast
 qed
 
 lemma fne_inf_cl_extensive:
@@ -3595,7 +4100,7 @@ proof-
         using P1 sup_cl_idempotent1 by auto
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Sup X Ai}"
       have B00:"((\<lambda>Ai. Sup X Ai)`?fE) = ?S" apply(auto) 
-          by (metis (mono_tags, lifting) B0 PowD is_supD111 someI_ex sup_equality)
+          by (metis (mono_tags, lifting) B0 PowD is_supE1 someI_ex sup_equality)
       have B1:"\<forall>x \<in> E. ?P (?f x) x"
         by (metis (mono_tags, lifting) B0 tfl_some)
       have B2:"?S = E"
@@ -3613,7 +4118,7 @@ proof-
           proof
             fix s assume B6A1:"s \<in> E"
             show "s \<in> ?S"
-              using B1 B6A1 is_supD111 sup_equality by fastforce
+              using B1 B6A1 is_supE1 sup_equality by fastforce
         qed
       qed
       obtain se where B11A0:"is_sup X E se"
@@ -3664,7 +4169,7 @@ proof-
         using P1 inf_cl_idempotent1 by auto
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
       have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto) 
-          by (metis (mono_tags, lifting) B0 PowD is_infD111 someI_ex inf_equality)
+          by (metis (mono_tags, lifting) B0 PowD is_infE1 someI_ex inf_equality)
       have B1:"\<forall>x \<in> E. ?P (?f x) x"
         by (metis (mono_tags, lifting) B0 tfl_some)
       have B2:"?S = E"
@@ -3682,7 +4187,7 @@ proof-
           proof
             fix s assume B6A1:"s \<in> E"
             show "s \<in> ?S"
-              using B1 B6A1 is_infD111 inf_equality by fastforce
+              using B1 B6A1 is_infE1 inf_equality by fastforce
         qed
       qed
       obtain se where B11A0:"is_inf X E se"
@@ -3733,7 +4238,7 @@ proof-
         using Fpow_subset_Pow P1 fin_inf_cl_idempotent1 by fastforce
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
       have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto)
-        by (metis (no_types, lifting) B0 inf_equality is_infD111 someI_ex) 
+        by (metis (no_types, lifting) B0 inf_equality is_infE1 someI_ex) 
       have B1:"\<forall>x \<in> E. ?P (?f x) x"
         by (metis (mono_tags, lifting) B0 tfl_some)
       have B2:"?S = E"
@@ -3809,7 +4314,7 @@ proof-
         using Fpow_subset_Pow P1 fne_inf_cl_idempotent1 by blast
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Inf X Ai}"
       have B00:"((\<lambda>Ai. Inf X Ai)`?fE) = ?S" apply(auto)
-        by (metis (mono_tags, lifting) B0 inf_equality is_infD111 someI_ex)
+        by (metis (mono_tags, lifting) B0 inf_equality is_infE1 someI_ex)
       have B1:"\<forall>x \<in> E. ?P (?f x) x"
         by (metis (mono_tags, lifting) B0 tfl_some)
       have B2:"?S = E"
@@ -3856,7 +4361,7 @@ proof-
          using B132 B133 Fpow_Pow_finite by blast
       qed
       show "s \<in> ?L1"
-        by (metis (no_types, lifting) B1 B11A1 B14 B15 B2 P1 SUP_bot_conv(2) equals0I fne_inf_cl_if1 inf_equality is_infD111)
+        by (metis (no_types, lifting) B1 B11A1 B14 B15 B2 P1 SUP_bot_conv(2) equals0I fne_inf_cl_if1 inf_equality is_infE1)
       qed
     qed
   qed
@@ -3885,7 +4390,7 @@ proof-
         using Fpow_subset_Pow P1 fne_sup_cl_idempotent1 by blast
       let ?fE="?f`E" let ?S="{s \<in> X. \<exists>Ai \<in> ?fE. s = Sup X Ai}"
       have B00:"((\<lambda>Ai. Sup X Ai)`?fE) = ?S" apply(auto)
-        by (metis (mono_tags, lifting) B0 sup_equality is_supD111 someI_ex)
+        by (metis (mono_tags, lifting) B0 sup_equality is_supE1 someI_ex)
       have B1:"\<forall>x \<in> E. ?P (?f x) x"
         by (metis (mono_tags, lifting) B0 tfl_some)
       have B2:"?S = E"
@@ -3932,7 +4437,7 @@ proof-
          using B132 B133 Fpow_Pow_finite by blast
       qed
       show "s \<in> ?L1"
-        by (metis (no_types, lifting) B1 B11A1 B14 B15 B2 P1 SUP_bot_conv(2) equals0I fne_sup_cl_if1 sup_equality is_supD111)
+        by (metis (no_types, lifting) B1 B11A1 B14 B15 B2 P1 SUP_bot_conv(2) equals0I fne_sup_cl_if1 sup_equality is_supE1)
       qed
     qed
   qed
@@ -4017,7 +4522,7 @@ proof-
     obtain c where A5:"is_sup X (Ea \<union> Eb) c"
       by (metis A0 B1 B2 Fpow_Pow_finite Int_Collect bsup_finite2)
     have B3:"c \<in> fne_sup_cl X A \<and> a \<le> c \<and> b \<le> c"
-      by (meson A3 A4 A5 B1 Un_upper2 fne_sup_cl_if1 is_supD111 is_sup_iso1 sup.cobounded1)
+      by (meson A3 A4 A5 B1 Un_upper2 fne_sup_cl_if1 is_supE1 is_sup_iso1 sup.cobounded1)
     show "(\<exists>c\<in>fne_sup_cl X A. a \<le> c \<and> b \<le> c)"
       using B3 by blast
   qed
@@ -4025,6 +4530,9 @@ proof-
     by (simp add: B0 is_updirI1)
 qed
   
+lemma sup_density_test1:
+  "\<lbrakk>sup_cl X A =X; x \<in> X\<rbrakk> \<Longrightarrow> (\<exists>Ex \<in> Pow A. Sup X Ex = x)"
+  using sup_cl_imp1 sup_equality by blast
 
 section Compactness
 
@@ -4185,6 +4693,7 @@ lemma prime_filter_iff2:
 
 
 unused_thms  
-
+print_definitions
+print_term_bindings
 end
 
