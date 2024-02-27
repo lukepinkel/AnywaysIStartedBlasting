@@ -26,6 +26,15 @@ lemma int_to_ind_int:
   "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Inter>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Inter>i \<in> I. f i))"
   by simp
 
+lemma leq_iff_leq_eq:
+  "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> a \<longleftrightarrow> x \<le> b) \<Longrightarrow> a =b"
+  by (simp add: order_class.order_eq_iff)
+
+lemma geq_iff_geq_eq:
+  "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<ge> a \<longleftrightarrow> x \<ge> b) \<Longrightarrow> a =b"
+  by (simp add: order_class.order_eq_iff)
+
+
 definition Pow_ne::"'a set \<Rightarrow> 'a set set" where
   "Pow_ne X = Pow X - {{}}"
 
@@ -1200,6 +1209,10 @@ lemma binary_supI1:
   "\<lbrakk>a \<in> X; b \<in> X; a \<le> b\<rbrakk> \<Longrightarrow> is_sup X {a, b} b"
   by (simp add: greatest_insert2 greatest_singleton sup_maxE1)
 
+lemma binary_supI2:
+  "\<lbrakk>a \<in> X; b \<in> X; b \<le> a\<rbrakk> \<Longrightarrow> is_sup X {a, b} a"
+  by (simp add: greatest_insert1 sup_maxE1 ub_singleton_simp)
+
 lemma binary_supD21:
   "\<lbrakk>a \<in> X; b \<in> X; c \<in> X;s \<in> X;is_sup X {a, b} s; c \<le> a\<rbrakk> \<Longrightarrow>  c \<le> s"
   using is_supD1121 by fastforce
@@ -1319,6 +1332,54 @@ lemma bsup_commute2:
 lemma bsup_idem1:
   "a\<in> X \<Longrightarrow> Sup X {a, a} = a"
   by (simp add: sup_equality sup_singleton)
+
+lemma sup_ge1:
+  "\<lbrakk>c \<in> X; a \<in> X;b \<in> X; a \<ge> c; is_sup X {a, b} s\<rbrakk>  \<Longrightarrow> s \<ge> c "
+  by (meson binary_supD21 is_supE1)
+
+lemma sup_ge2:
+  "\<lbrakk>is_sup X {a, b} s;a \<in> X; b \<in> X; c \<in> X; b \<ge> c\<rbrakk>  \<Longrightarrow> s \<ge> c"
+  by (meson binary_supD32 dual_order.trans is_supE1)
+
+lemma sup_ge3:
+  "\<lbrakk>is_sup X {a, b} s;a \<in> X; b \<in> X; c \<in> X; c \<ge>a; c \<ge> b\<rbrakk> \<Longrightarrow> c \<ge> s"
+  using is_supD42 ub_doubleI by blast
+
+lemma sup_ge4:
+  "\<lbrakk>is_sup X {x, z} sxz; is_sup X {y, z} syz; x \<in> X; y \<in> X; z \<in> X; x \<le> y\<rbrakk> \<Longrightarrow>sxz \<le> syz"
+  by (meson binary_supD32 sup_ge1 sup_ge3 is_supE1)
+
+lemma sup_ge5:
+  "\<lbrakk>is_sup X {x1, x2} sx; is_sup X {y1, y2} sy; x1 \<in> X; x2 \<in> X; y1 \<in> X; y2 \<in>X;x1 \<le> y1; x2 \<le> y2\<rbrakk> \<Longrightarrow>sx \<le> sy"
+  by (meson sup_ge1 sup_ge2 sup_ge3 is_supE1)
+
+lemma ge_sup_iff:
+  "\<lbrakk>is_sup X {a, b} s; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge> s \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
+  by (simp add: binary_supD4 is_supE1)
+
+lemma sup_assoc1:
+  "\<lbrakk>is_sup X {a, b} sab; is_sup X {sab, c} sab_c; is_sup X {b, c} sbc; is_sup X {a, sbc} sbc_a;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> sbc_a = sab_c"
+  by(rule order.antisym; meson binary_supD31 binary_supD32 ge_sup_iff is_supE1)+
+
+lemma sup_assoc2:
+  "\<lbrakk>is_sup X {b, c} sbc; is_sup X {a, sbc} sbc_a; is_sup X {a, c} sac; is_sup X {b, sac} sac_b;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> sac_b=sbc_a"
+  by(rule order.antisym; meson binary_supD31 binary_supD32 ge_sup_iff is_supE1)+
+
+lemma sup_idem2:
+  "\<lbrakk>a \<in> X; b \<in> X; is_sup X {a, b} s\<rbrakk> \<Longrightarrow> is_sup X {a, s} s"
+  by (simp add: binary_supI1 is_supD1121 is_supE1)
+
+lemma sup_idem3:
+  "\<lbrakk>a \<in> X; b \<in> X; is_sup X {a, b} s\<rbrakk> \<Longrightarrow> is_sup X {b, s} s"
+  by (simp add: binary_supI1 is_supD1121 is_supE1)
+
+lemma ge_sup1:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Sup X {a, b} = b"
+  by (simp add: binary_supI1 sup_equality)
+
+lemma ge_sup2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Sup X {a, b} = a"
+  by (simp add: binary_supI2 sup_equality)
 
 subsection Infima
 
@@ -1599,6 +1660,54 @@ lemma binf_idem1:
   "a\<in> X \<Longrightarrow>Inf X {a, a} = a"
   by (simp add:  inf_equality inf_singleton)
 
+lemma inf_le1:
+  "\<lbrakk>is_inf X {a, b} i;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> i \<le> c"
+  using is_infD1121 by fastforce
+
+lemma inf_le2:
+  "\<lbrakk>is_inf X {a, b} i;a \<in> X; b \<in> X; c \<in> X; b \<le> c\<rbrakk>  \<Longrightarrow>i \<le> c"
+  using is_infE2 lb_doubleE2 by fastforce
+
+lemma inf_le3:
+  "\<lbrakk>is_inf X {a, b} i;a \<in> X; b \<in> X; c \<in> X; c \<le>a; c \<le> b\<rbrakk>  \<Longrightarrow>c \<le>i"
+  by (simp add: is_infE4 lb_insert lb_singletonD)
+
+lemma inf_le4:
+  "\<lbrakk>is_inf X {x, z} ixz; is_inf X {y, z} iyz; x \<in> X; y \<in> X; z \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> ixz \<le> iyz"
+  by (meson binary_infD31 binary_infD32 inf_le3 dual_order.trans is_infE1)
+
+lemma inf_le5:
+  "\<lbrakk>is_inf X {x1, x2} ix; is_inf X {y1, y2} iy; x1 \<in> X; x2 \<in> X; y1 \<in> X; y2 \<in>X;x1 \<le> y1; x2 \<le> y2\<rbrakk> \<Longrightarrow>ix \<le> iy"
+  by (meson Posets16.inf_le1 binf_commute inf_le3 is_infE1)
+
+lemma le_inf_iff:
+  "\<lbrakk>is_inf X {a, b} i ;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le> i \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
+  by (simp add: binary_infD4 is_infE1)
+
+lemma inf_assoc1:
+  "\<lbrakk>is_inf X {a, b} iab; is_inf X {b, c} ibc; is_inf X {iab, c} iab_c; is_inf X {a, ibc} ibc_a;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow>  ibc_a=iab_c"
+  by(rule order.antisym;metis Orderings.order_eq_iff inf_iff2 is_infD42 is_infE6 lb_double_iff1)+
+
+lemma inf_assoc2:
+  "\<lbrakk>is_inf X {b, c} ibc;is_inf X {a, ibc} ibc_a;is_inf X {a, c} iac; is_inf X {b, iac} iac_b; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> iac_b=ibc_a"
+  by(rule order.antisym;metis Orderings.order_eq_iff inf_iff2 is_infD42 is_infE6 lb_double_iff1)+
+
+lemma inf_idem2:
+  "is_inf X {a, b} i \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> is_inf X {a, i} i"
+  by (meson binary_infD31 binary_infI1 is_infE1)
+
+lemma inf_idem3:
+  "is_inf X {a, b} i \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> is_inf X {b, i} i"
+  by (simp add: binary_infI1 is_infD1121 is_infE1)
+
+lemma le_inf1:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow>  Inf X {a, b} = a"
+  using inf_equality inf_insert3 inf_singleton by blast
+
+lemma le_inf2:
+  "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Inf X {a, b} = b"
+  by (metis binf_commute2 le_inf1)
+
 
 subsection Duality
 
@@ -1751,7 +1860,6 @@ lemma binf_assoc1:
 lemma binf_assoc2:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, Inf X {b, c}} = Inf X {b, Inf X {a, c}}"
   apply(rule order.antisym) by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)+
-
 
 lemma binf_idem2:
   "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, Inf X {a, b}} = Inf X {a, b}"
@@ -2175,6 +2283,30 @@ lemma cinfD2:
   "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
   by (simp add: is_cinf_semilattice_def)
 
+lemma cinfD4:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
+  using cinfD2 inf_equality by blast
+
+lemma cinfD50:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Inf X A) \<in> X"
+  by (meson cinfD4 is_infE1)
+
+lemma cinfD51:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Inf X A) lb A"
+  by (meson cinfD4 is_infE2)
+         
+lemma cinfD52:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Inf X A) \<in> lbd X A"
+  by (simp add: cinfD4 is_infD32)
+
+lemma cinfD61:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> l \<in> lbd X A \<Longrightarrow> l \<le> Inf X A"
+  by (meson cinfD4 is_infD5 lbdD2 lbdD3)
+
+lemma cinfD62:
+  "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> l \<in> X \<Longrightarrow> l lb A \<Longrightarrow>  l \<le> Inf X A"
+  by (simp add: cinfD61 lbdI2)
+
 lemma csupD2:
   "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
   by (simp add: is_csup_semilattice_def)
@@ -2182,6 +2314,18 @@ lemma csupD2:
 lemma clatD21:
   "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
   by (simp add: is_clattice_def)
+
+lemma clatD22:
+  "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
+  by (meson lbd_sub clatD21 inf_if_sup_lb)
+
+lemma clatD1:
+  "is_clattice X \<Longrightarrow> is_csup_semilattice X"
+  by (simp add: is_clattice_def is_csup_semilattice_def)
+
+lemma clatD2:
+  "is_clattice X \<Longrightarrow> is_cinf_semilattice X"
+  by (simp add: clatD22 is_cinf_semilattice_def is_clattice_def)
 
 lemma cinfD3:
   "is_cinf_semilattice X \<Longrightarrow> (\<exists>x. is_least X x)"
@@ -2191,6 +2335,34 @@ lemma csupD3:
   "is_csup_semilattice X \<Longrightarrow> (\<exists>x. is_greatest X x)"
   by (metis is_csup_semilattice_def order_refl sup_max_eq2)
 
+lemma csupD4:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
+  using csupD2 sup_equality by blast
+
+lemma clatD41:
+  "\<lbrakk>is_clattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
+  by (simp add: clatD21 sup_exI)
+
+lemma csupD50:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Sup X A) \<in> X"
+  by (meson csupD4 is_supE1)
+
+lemma csupD51:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Sup X A) ub A"
+  by (meson csupD4 is_supE2)
+         
+lemma csupD52:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Sup X A) \<in> ubd X A"
+  by (simp add: csupD4 is_supD32)
+
+lemma csupD61:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> b \<in> ubd X A \<Longrightarrow> Sup X A \<le> b"
+  by (meson csupD4 is_supE3)
+
+lemma csupD62:
+  "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> b \<in> X \<Longrightarrow> b ub A \<Longrightarrow> Sup X A \<le> b"
+  by (simp add: csupD61 ubdI2)
+
 lemma cinf_sup:
   "\<lbrakk>is_cinf_semilattice X; A \<subseteq> X; ubd X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup X A x)"
   by (meson ubd_sub cinfD2 sup_if_inf_ub)
@@ -2198,10 +2370,6 @@ lemma cinf_sup:
 lemma csup_inf:
   "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; lbd X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
   by (meson lbd_sub csupD2 inf_if_sup_lb)
-
-lemma clatD22:
-  "\<lbrakk>is_clattice X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
-  by (meson lbd_sub clatD21 inf_if_sup_lb)
 
 
 lemma csup_fsup:
@@ -2211,6 +2379,15 @@ lemma csup_fsup:
 lemma cinf_sinf:
   "is_cinf_semilattice X \<Longrightarrow> is_inf_semilattice X"
   by (simp add: is_cinf_semilattice_def is_inf_semilattice_def)
+
+lemma clatD31:
+  "\<lbrakk>is_clattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<in> X"
+  by (simp add: clatD1 csupD50)
+
+lemma clatD32:
+  "\<lbrakk>is_clattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> X"
+  by (simp add: clatD2 cinfD50)
+
 
 lemma pow_is_clattice1:
   "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (Pow X) A  (\<Inter>A)"
@@ -3501,17 +3678,24 @@ definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::o
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
 
 lemma galois_connD11:
-  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> x \<le>  g y \<Longrightarrow> y \<le> f x" by (simp add:galois_conn_def)
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> x \<le>  g y \<Longrightarrow> y \<le> f x"
+   by (simp add:galois_conn_def)
 
 lemma galois_connD21:
-  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> f x \<Longrightarrow> x \<le> g y" by (simp add:galois_conn_def)
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<le> f x \<Longrightarrow> x \<le> g y" 
+  by (simp add:galois_conn_def)
 
 lemma galois_connD12:
-  "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y \<in> X" by (simp add:galois_conn_def image_subset_iff)
+  "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> g y \<in> X" 
+  by (simp add:galois_conn_def image_subset_iff)
 
 lemma galois_connD22:
-  "galois_conn f X g Y \<Longrightarrow> x \<in> X  \<Longrightarrow> f x \<in> Y" by (simp add:galois_conn_def image_subset_iff)
+  "galois_conn f X g Y \<Longrightarrow> x \<in> X  \<Longrightarrow> f x \<in> Y" 
+  by (simp add:galois_conn_def image_subset_iff)
 
+lemma galois_connD3:
+  "galois_conn f X g Y \<Longrightarrow> A \<subseteq> X \<Longrightarrow> f`A \<subseteq> Y"
+  using galois_connD22 by blast
 
 lemma gc_cext1:
   "\<lbrakk>galois_conn f X g Y; x \<in> X\<rbrakk> \<Longrightarrow> x \<le> g (f x) "
@@ -3567,11 +3751,9 @@ lemma gc_idem1b:
   "galois_conn f X g Y \<Longrightarrow> is_idempotent X (g \<circ> f)"
   by (simp add: gc_idem1a is_idempotent_def)
 
-
 lemma gc_idem2a:
   "galois_conn f X g Y \<Longrightarrow> y \<in> Y \<Longrightarrow> f (g ( f (g y) ) ) = f (g y)"
   by (simp add: gc_triple2)
-
 
 lemma gc_idem2b:
   "galois_conn f X g Y \<Longrightarrow> is_idempotent Y (f \<circ> g)"
@@ -3600,7 +3782,6 @@ lemma gc_ext1:
 lemma gc_ext2:
   "galois_conn f X g Y \<Longrightarrow> is_extensive Y (f \<circ> g)"
   by (simp add: gcD)
-     
     
 lemma gc_sub1:
   "galois_conn f X g Y \<Longrightarrow>(\<lambda>x.  g (f x)) ` X \<subseteq> X"
@@ -3609,7 +3790,6 @@ lemma gc_sub1:
 lemma gc_sub2:
   "galois_conn f X g Y \<Longrightarrow>(\<lambda>y. f (g y)) ` Y \<subseteq> Y"
   by (simp add: galois_connD12 galois_connD22 image_subset_iff)       
-
 
 lemma gc_closure1:
   "galois_conn f X g Y \<Longrightarrow> is_closure X (g \<circ> f)"
@@ -3753,6 +3933,41 @@ proof-
     using B0 B1 B2 B3 B4 B5 by presburger
 qed
 
+subsubsection ThisIsAMess
+
+lemma gc_sup_lb:
+  "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_sup X A s\<rbrakk> \<Longrightarrow> f s lb f`A"
+  by (simp add: gc_anti1 is_supE1 is_supE7 lb_imageI subsetD)
+
+lemma gc_reverse1:
+  "\<lbrakk>galois_conn f X g Y;y \<in> Y; A \<subseteq> X; y lb f`A\<rbrakk> \<Longrightarrow> g y ub A"
+  by (simp add: galois_conn_def in_mono lbE ub_def)
+
+lemma gc_reverse2:
+  "\<lbrakk>galois_conn f X g Y;y \<in> Y; A \<subseteq> X; g y ub A\<rbrakk> \<Longrightarrow> y lb f`A"
+  by (simp add: galois_connD11 in_mono lb_imageI ubE)
+
+lemma gc_sup_inf02:
+  "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; y \<in> Y; is_inf Y (f`A) i; is_sup X A s;y \<le> i\<rbrakk> \<Longrightarrow> y \<le> f s"
+  by (simp add: galois_connD11 galois_connD12 gc_reverse1 is_infE6 is_supE1 is_supE4)
+
+lemma gc_sup_inf03:
+  "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; y \<in> Y; is_inf Y (f`A) i; is_sup X A s; y \<le> f s\<rbrakk> \<Longrightarrow> y \<le> i"
+  by (meson gc_sup_lb is_infD42 lb_iso1)
+
+lemma gc_sup_inf04:
+  "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_inf Y (f`A) i; is_sup X A s\<rbrakk> \<Longrightarrow> (\<forall>y \<in> Y. y \<le> i \<longleftrightarrow> y \<le> f s)"
+  by (meson gc_sup_inf02 gc_sup_inf03)
+
+lemma gc_sup_inf05:
+  "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_inf Y (f`A) i; is_sup X A s\<rbrakk> \<Longrightarrow>f s = i"
+  by(rule leq_iff_leq_eq, erule galois_connD22, erule is_supE1, erule is_infE1, simp add: gc_sup_inf04)
+
+lemma gc_sup_inf:
+  "\<lbrakk>is_clattice X; is_clattice Y; galois_conn f X g Y; A \<subseteq> X\<rbrakk> \<Longrightarrow> Inf Y (f`A) = f (Sup X A)"
+  using gc_sup_inf05[of f X g Y A "Inf Y (f`A)" "Sup X A"]  by (metis clatD21 clatD22 galois_connD3 inf_exI sup_equality)
+
+
 subsection SomeClosures
 
 definition sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
@@ -3878,7 +4093,6 @@ lemma sup_cl_inv:
 lemma sup_cl_inv2:
   "x \<in> sup_cl X A \<Longrightarrow> Sup X (sup_inv X A x)  \<in> sup_cl X A"
   using sup_cl_inv by force
-
 
 definition is_sup_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "is_sup_cl X A\<equiv> (\<forall>E x. E \<in> Pow A \<and> E \<noteq> {} \<and> is_sup X E x \<longrightarrow> x \<in> A)"
@@ -4688,7 +4902,6 @@ lemma primefilter_iff1:
 lemma prime_filter_iff2:
   "is_lattice X \<Longrightarrow>  (prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis primefilterD3 primefilterI2)
-
 
 
 
