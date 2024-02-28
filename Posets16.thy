@@ -5597,12 +5597,48 @@ proof-
         by (metis A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff insert_commute)
       have B9:"Sup X {y, t} \<in> h"
         using A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff by blast
-      have B10:"z \<ge> Sup X {Inf X {x1, y}, Inf X {x2, t}}"
+      have B10:"Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}} \<in> f"
+        using A1 B01 B6 B7 filter_finf_closed1 filters_on_iff lattD41 by blast
+      have B11:"Inf X {Sup X {y, x2}, Sup X {y, t}} = Sup X {y, Inf X {x2, t}}"
+        by (metis (no_types, lifting) A1 B4 B5 assms distr_latticeD1 filterD21 filters_on_iff)
+      have B12:"Inf X {Sup X {x1, Inf X {x2, t}}, Inf X {Sup X {y, x2}, Sup X {y, t}}} =
+                Inf X {Sup X {x1, Inf X {x2, t}},  Sup X {y, Inf X {x2, t}}}"
+        by (simp add: B11)
+      have B13:"... = Sup X {Inf X {x2, t}, Inf X {x1, y}}"
+        by (smt (verit, ccfv_threshold) A1 B01 B4 B5 assms distr_latticeD2 filterD21 filters_on_iff insert_commute lattD41 sinfD4)
+      have B14:"... = Sup X {Inf X {x1, y}, Inf X {x2, t}}"
+        by (simp add: insert_commute)
+      have B15:"Sup X {Inf X {x1, y}, Inf X {x2, t}} = Inf X {Sup X {x1, Inf X {x2, t}}, Inf X {Sup X {y, x2}, Sup X {y, t}}} "
+        using B11 B13 B14 by presburger
+      have B16:"... =  Inf X {Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}}, Sup X {y, t}}"
+        by (smt (verit, ccfv_threshold) A1 B01 B6 B7 B8 binf_assoc1 filterD21 filters_on_iff lattD41)
+      have B17:"z \<ge> Sup X {Inf X {x1, y}, Inf X {x2, t}}"
         by (metis A1 B01 B3 B4 B5 bsup_iff filterD21 filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup8 lattD41 lattD42 sinfD4)
-      have B11:"... = (Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}, Sup X {y, t}})"
+      have B18:"z \<ge>  Inf X {Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}}, Sup X {y, t}}"
+        using B11 B13 B14 B16 B17 by presburger
+      have B19:"Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}} \<in> f"
+        by (simp add: B10)
+      have B20:"Sup X {y, t} \<in> Inf ?F {g, h}"
+        by (metis A1 B01 B8 B9 IntI filters_on_iff filters_on_lattice_inf8b inf_equality)
+      have B21:"z \<in> binary_filter_sup X f ?igh"
+        by (metis A1 B01 B10 B18 B20 B3 filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup8)
+      have B22:" binary_filter_sup X f ?igh = Sup ?F {f, ?igh}"
+        by (metis A1 B01 B02 filters_on_iff filters_on_lattice_bsup8 lattD41 sinfD4)
       show "z \<in> Sup ?F {f, ?igh}"
+        using B21 B22 by blast
+    qed
+  qed
+  show ?thesis
+    by (simp add: B02 B1 distr_latticeI1)
+qed
+(*
+                   (y \<or> x2) \<and> (y \<or> t) = y \<or> (x2 \<and> t)
 
+(x1 \<or> (x2 \<and> t)) \<and> (y \<or> x2) \<and> (y \<or> t) = (x1 \<or> (x2 \<and> t)) \<and> (y \<or> (x2 \<and> t))
 
+= (x2 \<and> t) \<or> (x1 \<and> y)
+
+*)
 definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "prime X A \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. (Sup X {a, b}) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
 
