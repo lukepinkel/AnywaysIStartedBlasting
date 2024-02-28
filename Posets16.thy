@@ -2371,7 +2371,6 @@ lemma csup_inf:
   "\<lbrakk>is_csup_semilattice X; A \<subseteq> X; lbd X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf X A x)"
   by (meson lbd_sub csupD2 inf_if_sup_lb)
 
-
 lemma csup_fsup:
   "is_csup_semilattice X \<Longrightarrow> is_sup_semilattice X"
   by (simp add: is_csup_semilattice_def is_sup_semilattice_def)
@@ -2387,6 +2386,26 @@ lemma clatD31:
 lemma clatD32:
   "\<lbrakk>is_clattice X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf X A \<in> X"
   by (simp add: clatD2 cinfD50)
+
+lemma clat_lattice:
+  "is_clattice X \<Longrightarrow> is_lattice X"
+  by (simp add: cinf_sinf clatD1 clatD2 csup_fsup latt_iff)
+
+lemma sup_iso1b:
+  "\<lbrakk>is_csup_semilattice X; A \<noteq> {}; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> Sup X A \<le> Sup X B"
+  by (metis csupD4 dual_order.trans is_sup_iso1 ne_subset_ne)
+
+lemma sup_iso1:
+  "\<lbrakk>is_clattice X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> Sup X A \<le> Sup X B"
+  by (metis clatD21 dual_order.trans is_sup_iso1 sup_equality)
+
+lemma sup_iso2:
+  "\<lbrakk>is_clattice X; is_clattice Y;A \<subseteq> Y; Y \<subseteq> X; Y \<noteq> {}\<rbrakk> \<Longrightarrow> Sup X A \<le> Sup Y A"
+  by (metis clatD21 dual_order.trans in_mono is_supE2 is_supE4 sup_equality sup_iff2)
+
+lemma inf_anti1:
+  "\<lbrakk>is_clattice X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> Inf X B \<le> Inf X A"
+  by (metis clatD22 dual_order.trans inf_equality is_inf_ant1)
 
 
 lemma pow_is_clattice1:
@@ -3650,7 +3669,6 @@ lemma lorc_upcl3:
   "\<lbrakk>is_greatest X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow>  is_ord_cl X (\<Inter>a \<in> A. [a)\<^sub>X) (\<le>)"
   by(rule is_ord_cl_in2, auto simp add: lorc_mem_iff1, simp add: in_mono lorc_upclI)
   
-
 definition ord_cl_sets::"'a::order set \<Rightarrow> ('a::order \<Rightarrow> 'a::order \<Rightarrow> bool) \<Rightarrow> 'a::order set set" where
   "ord_cl_sets X ord \<equiv> {A. A \<subseteq> X \<and> is_ord_cl X A (ord)}"
 
@@ -3672,7 +3690,6 @@ lemma lorc_filter:
   apply(auto simp add:is_filter_def) using lorc_memI1 apply auto[1] 
   apply (simp add: lorc_mem_iff1) apply (metis is_dwdirI1 lorcD12 lorc_memI1)
   by (simp add: lorc_upclI)
-
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
@@ -3935,37 +3952,165 @@ qed
 
 subsubsection ThisIsAMess
 
-lemma gc_sup_lb:
+lemma gc_sup_lb1:
   "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_sup X A s\<rbrakk> \<Longrightarrow> f s lb f`A"
   by (simp add: gc_anti1 is_supE1 is_supE7 lb_imageI subsetD)
+
+lemma gc_sup_lb2:
+  "\<lbrakk>galois_conn f X g Y; B \<subseteq> Y; is_sup Y B s\<rbrakk> \<Longrightarrow> g s lb g`B"
+  by (simp add: gc_anti2 is_supE1 is_supE7 lb_imageI subsetD)
 
 lemma gc_reverse1:
   "\<lbrakk>galois_conn f X g Y;y \<in> Y; A \<subseteq> X; y lb f`A\<rbrakk> \<Longrightarrow> g y ub A"
   by (simp add: galois_conn_def in_mono lbE ub_def)
 
+lemma gc_reverse11:
+  "\<lbrakk>galois_conn f X g Y; x \<in> X; B \<subseteq> Y; x lb g`B\<rbrakk> \<Longrightarrow> f x ub B"
+  by (meson gcD gcI gc_reverse1)
+
 lemma gc_reverse2:
   "\<lbrakk>galois_conn f X g Y;y \<in> Y; A \<subseteq> X; g y ub A\<rbrakk> \<Longrightarrow> y lb f`A"
   by (simp add: galois_connD11 in_mono lb_imageI ubE)
 
-lemma gc_sup_inf02:
+lemma gc_reverse21:
+  "\<lbrakk>galois_conn f X g Y; x \<in> X; B \<subseteq> Y; f x ub B\<rbrakk> \<Longrightarrow> x lb g`B"
+  by (simp add: galois_connD21 in_mono lb_imageI ub_def)
+
+lemma gc_sup_inf11:
   "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; y \<in> Y; is_inf Y (f`A) i; is_sup X A s;y \<le> i\<rbrakk> \<Longrightarrow> y \<le> f s"
   by (simp add: galois_connD11 galois_connD12 gc_reverse1 is_infE6 is_supE1 is_supE4)
 
-lemma gc_sup_inf03:
+lemma gc_sup_inf12:
+  "\<lbrakk>galois_conn f X g Y; B \<subseteq> Y; x \<in> X; is_inf X (g`B) i; is_sup Y B s; x \<le> i\<rbrakk> \<Longrightarrow> x \<le> g s"
+  by (simp add: galois_connD21 galois_connD22 gc_reverse11 is_infE6 is_supE1 is_supE4)
+
+lemma gc_sup_inf21:
   "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; y \<in> Y; is_inf Y (f`A) i; is_sup X A s; y \<le> f s\<rbrakk> \<Longrightarrow> y \<le> i"
-  by (meson gc_sup_lb is_infD42 lb_iso1)
+  by (meson gc_sup_lb1 is_infD42 lb_iso1)
 
-lemma gc_sup_inf04:
+lemma gc_sup_inf22:
+  "\<lbrakk>galois_conn f X g Y; B \<subseteq> Y; x \<in> X; is_inf X (g`B) i; is_sup Y B s; x \<le> g s\<rbrakk> \<Longrightarrow> x \<le> i"
+  by (meson gc_sup_lb2 is_infE4 lb_iso1)
+
+lemma gc_sup_inf31:
   "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_inf Y (f`A) i; is_sup X A s\<rbrakk> \<Longrightarrow> (\<forall>y \<in> Y. y \<le> i \<longleftrightarrow> y \<le> f s)"
-  by (meson gc_sup_inf02 gc_sup_inf03)
+  by (meson gc_sup_inf11 gc_sup_inf21)
 
-lemma gc_sup_inf05:
+lemma gc_sup_inf32:
+  "\<lbrakk>galois_conn f X g Y; B \<subseteq> Y; is_inf X (g`B) i; is_sup Y B s\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> i \<longleftrightarrow> x \<le> g s)"
+  by (meson gc_sup_inf12 gc_sup_inf22)
+
+lemma gc_sup_inf41:
   "\<lbrakk>galois_conn f X g Y; A \<subseteq> X; is_inf Y (f`A) i; is_sup X A s\<rbrakk> \<Longrightarrow>f s = i"
-  by(rule leq_iff_leq_eq, erule galois_connD22, erule is_supE1, erule is_infE1, simp add: gc_sup_inf04)
+  by(rule leq_iff_leq_eq, erule galois_connD22, erule is_supE1, erule is_infE1, simp add: gc_sup_inf31)
+
+lemma gc_sup_inf42:
+  "\<lbrakk>galois_conn f X g Y; B \<subseteq> Y; is_inf X (g`B) i; is_sup Y B s\<rbrakk> \<Longrightarrow>g s = i"
+  by(rule leq_iff_leq_eq, erule galois_connD12, erule is_supE1, erule is_infE1, simp add: gc_sup_inf32)
 
 lemma gc_sup_inf:
   "\<lbrakk>is_clattice X; is_clattice Y; galois_conn f X g Y; A \<subseteq> X\<rbrakk> \<Longrightarrow> Inf Y (f`A) = f (Sup X A)"
-  using gc_sup_inf05[of f X g Y A "Inf Y (f`A)" "Sup X A"]  by (metis clatD21 clatD22 galois_connD3 inf_exI sup_equality)
+  using gc_sup_inf41[of f X g Y A "Inf Y (f`A)" "Sup X A"]  by (metis clatD21 clatD22 galois_connD3 inf_exI sup_equality)
+
+lemma gc_inf_sup:
+  "\<lbrakk>is_clattice X; is_clattice Y; galois_conn f X g Y; B \<subseteq> Y\<rbrakk> \<Longrightarrow> Inf X (g`B) = g (Sup Y B)"
+  using gc_sup_inf42[of f X g Y B "Inf X (g`B)" "Sup Y B"]
+  by (metis (no_types, opaque_lifting) clatD21 clatD22 dual_order.trans galois_conn_def image_mono inf_exI sup_equality)
+
+definition extrema_dual::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> 'b::order set  \<Rightarrow> bool" where
+  "extrema_dual f X Y \<equiv>(\<forall>A. A \<subseteq> X \<longrightarrow> f (Sup X A) = Inf Y (f`A))"
+
+definition dual_adj::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order)" where
+  "dual_adj f X Y \<equiv> (\<lambda>y. Sup X {x \<in> X. y \<le> f x})"
+
+lemma gc_extrema_dual:
+  "\<lbrakk>is_clattice X; is_clattice Y; galois_conn f X g Y; A \<subseteq> X\<rbrakk> \<Longrightarrow> extrema_dual f X Y"
+  by (simp add: extrema_dual_def gc_sup_inf)
+
+lemma gc_extrema_dual2:
+  "\<lbrakk>is_clattice X; is_clattice Y; galois_conn f X g Y; A \<subseteq> X\<rbrakk> \<Longrightarrow> extrema_dual g Y X"
+  by (simp add: extrema_dual_def gc_inf_sup)
+
+
+lemma extrema_dual_antitone1:
+  assumes A0:"extrema_dual f X Y" and A1:"f`X \<subseteq> Y" and A2:"x1 \<in> X \<and> x2 \<in> X" and A3:"x1 \<le> x2" and A4:"is_lattice X" "is_lattice Y"
+  shows "f x2 \<le> f x1"
+proof-
+  have B0:"f x2 = f (Sup X {x1, x2})" by (simp add: A2 A3 ge_sup1)
+  have B1:"...  = Inf Y (f`{x1, x2})" by (meson A0 A2 empty_subsetI extrema_dual_def insert_subsetI)
+  have B2:"...  = Inf Y {f x1, f x2}" by simp
+  have B3:"...  \<le> f x1"
+    by (metis A1 A2 B0 B1 B2 assms(6) imageI in_mono lattD41 le_binf2)
+  show ?thesis
+    using B0 B1 B2 B3 by presburger
+qed
+
+lemma extrema_dual_antitone1b:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_lattice X; is_lattice Y\<rbrakk> \<Longrightarrow> is_antitone X f"
+  by (simp add: extrema_dual_antitone1 is_antitone_def)
+
+lemma extrema_dual_antitone1c:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> is_antitone X f"
+  by (simp add: clat_lattice extrema_dual_antitone1b)
+
+lemma extrema_dual_adj_antitone2:
+  assumes A0:"extrema_dual f X Y" and A1:"f`X \<subseteq> Y" and A2:"y1 \<in> Y \<and> y2 \<in> Y" and A3:"y1 \<le> y2" and
+          A4:"is_clattice X" "is_clattice Y"
+  shows "(dual_adj f X Y) y2 \<le> (dual_adj f X Y) y1"
+proof-
+  have B0:"{x \<in> X. y2 \<le> f x} \<subseteq> {x \<in> X. y1 \<le> f x}"
+    using A3 by force
+  have B1:"(dual_adj f X Y) y2 = Sup X {x \<in> X. y2 \<le> f x}" by (simp add: dual_adj_def)
+  have B2:"...                 \<le> Sup X {x \<in> X. y1 \<le> f x}" by (simp add: B0 assms(5) sup_iso1)
+  have B3:"...                 = (dual_adj f X Y) y1"  by (simp add: dual_adj_def)
+  show ?thesis
+    by (simp add: B2 dual_adj_def)
+qed
+
+lemma extrema_dual_antitone2b:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> is_antitone Y (dual_adj f X Y)"
+  by (simp add: extrema_dual_adj_antitone2 is_antitone_def)
+
+lemma extrema_dual_cext1:
+  assumes A0:"extrema_dual f X Y" and A1:"f`X \<subseteq> Y" and A2:"x \<in> X" and A4:"is_clattice X" "is_clattice Y"
+  shows "x \<le> (dual_adj f X Y) (f x)"
+  apply(auto simp add:dual_adj_def)
+  by (metis (no_types, lifting) A2 assms(4) clatD21 dual_order.refl is_supD1121 mem_Collect_eq subsetI sup_equality)
+
+lemma extrema_dual_cext1b:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> is_extensive X ((dual_adj f X Y) \<circ> f)"
+  by (simp add: extensiveI1 extrema_dual_cext1)
+
+lemma im_le2:
+  "f`X \<subseteq> Y \<Longrightarrow> y lb f`{x \<in> X. y \<le> f x}"
+  by (metis (no_types, lifting) lb_imageI mem_Collect_eq)
+
+lemma im_le3:
+  "f`X \<subseteq> Y \<Longrightarrow> y \<in> Y \<Longrightarrow> y \<in> lbd Y (f`{x \<in> X. y \<le> f x})"
+  by (simp add: im_le2 lbd_mem_iff)
+
+lemma extrema_dual_cext2:
+  assumes A0:"extrema_dual f X Y" and A1:"f`X \<subseteq> Y" and A2:"y \<in> Y" and A4:"is_clattice X" "is_clattice Y"
+  shows "y \<le> f ((dual_adj f X Y) y)"
+proof-
+  let ?g="dual_adj f X Y"
+  have B0:"f (?g y) = f (Sup X {x \<in> X. y \<le> f x})"  by (simp add: dual_adj_def)
+  have B1:"...      = Inf Y (f`{x \<in> X. y \<le> f x})" by (metis (no_types, lifting) A0 extrema_dual_def mem_Collect_eq subsetI)
+  have B2:"...     \<ge> y " using im_le3[of f X Y y] by (metis (no_types, lifting) A1 A2 assms(5) binf_idem1 cinfD61 clatD2 image_Collect_subsetI image_subset_iff inf_anti1 insert_absorb insert_subsetI singletonI subset_insertI)
+  show ?thesis by (simp add: B1 B2 dual_adj_def)
+qed
+
+lemma extrema_dual_cext2b:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> is_extensive Y (f \<circ> (dual_adj f X Y))"
+  by (simp add: extensiveI1 extrema_dual_cext2)
+
+lemma adj_range: 
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> (dual_adj f X Y)`Y \<subseteq> X"
+  apply(auto simp add:dual_adj_def)  by (metis (full_types) Collect_subset clatD21 is_supE1 sup_equality)
+
+lemma extrema_dual_gc:
+  "\<lbrakk>extrema_dual f X Y; f`X \<subseteq> Y; is_clattice X; is_clattice Y\<rbrakk> \<Longrightarrow> galois_conn f X (dual_adj f X Y) Y"
+  by(rule gcI; simp add:extrema_dual_antitone1c extrema_dual_cext1b extrema_dual_antitone2b extrema_dual_cext2b adj_range)
 
 
 subsection SomeClosures
