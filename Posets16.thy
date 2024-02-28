@@ -5245,7 +5245,7 @@ definition compact_elements::"'a::order set \<Rightarrow> 'a::order set" where
   "compact_elements X \<equiv> {c. is_compact X c}"
 
 definition compactly_generated::"'a::order set \<Rightarrow> bool" where
-  "compactly_generated X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>C \<in> Pow_ne (compact_elements X). is_sup X C x))"
+  "compactly_generated X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>C \<in> Pow (compact_elements X). is_sup X C x))"
 
 
 lemma compcatI:
@@ -5259,6 +5259,14 @@ lemma compcatD:
 lemma compact_elements_mem_iff1:
   "x \<in> compact_elements X \<longleftrightarrow> is_compact X x"
   by (simp add: compact_elements_def)
+
+lemma compactly_generatedD1:
+  "compactly_generated X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>C \<in> Pow (compact_elements X). is_sup X C x)"
+  by(simp add:compactly_generated_def)
+
+lemma compactly_generatedI1:
+  "(\<And>x. x \<in> X \<Longrightarrow>  (\<exists>C \<in> Pow (compact_elements X). is_sup X C x)) \<Longrightarrow> compactly_generated X"
+  by(simp add:compactly_generated_def)
 
 (*
   in a csup semilattice an element is compact iff directed coverings contain an upper bound
@@ -5334,6 +5342,92 @@ proof-
   show ?thesis
     by (simp add: A1 P0 compcatI)
 qed
+
+
+lemma big_chungus:
+  assumes A0:"is_clr (Pow X) C" and 
+          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
+  shows "compactly_generated C \<and> (\<forall>x. x \<in> X \<longrightarrow> is_compact C ((cl_from_clr C) {x}))"
+proof-
+  let ?f="cl_from_clr C"
+  have B0:"is_clattice C"
+    using A0 clrD2 clrD7 pow_is_clattice subset_antisym by fastforce
+  have B1:"\<And>x. x \<in> X \<longrightarrow> is_compact C (?f {x})"
+  proof
+    fix x assume A3:"x \<in> X"
+    show "is_compact C (?f {x})"
+    apply(rule ccompact1)
+      apply (simp add: B0 clatD1)
+      apply (metis A0 A3 Pow_iff cl_from_clr_def clrD2 empty_subsetI in_mono insert_subset ub_single_least2)
+    proof-
+      fix A assume A4:"A \<in> Pow_ne C" show "cl_from_clr C {x} \<subseteq> Sup C A \<Longrightarrow> is_dir A (\<subseteq>) \<Longrightarrow> (\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
+      proof-
+        assume A5:"cl_from_clr C {x} \<subseteq> Sup C A" show "is_dir A (\<subseteq>) \<Longrightarrow> (\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
+        proof-
+          assume A6:"is_dir A (\<subseteq>)" 
+          have B2:"Sup C A = \<Union>A"
+            by (metis A2 A4 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+          have B2:"{x} \<subseteq> ?f {x}"
+            by (metis A0 A3 Pow_iff cl_from_clr_def clrD2b empty_subsetI insert_absorb insert_mono ub_single_least2)
+          have B3:"... \<subseteq> \<Union>A"
+            by (metis A2 A4 A5 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+          have B4:"{x} \<subseteq> \<Union>A"
+            using B2 B3 by blast
+          obtain a where B5:"a \<in> A \<and> x \<in> a"
+            using B4 by auto
+          have B6:"a \<in> ubd C {{x}}"
+            by (metis A4 B5 empty_subsetI in_mono insert_subset lorc_eq_upbd lorc_mem_iff1 pow_neD1)
+          have B7:"?f {x} \<subseteq> a"
+            by (metis (no_types, opaque_lifting) A0 A3 B5 cl_from_clr_def clrD2 empty_subsetI in_mono insert_not_empty insert_subset pow_neI pow_ne_iff1 ub_single_least2)
+          show "(\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
+            using B5 B7 by auto
+         qed
+      qed
+    qed
+  qed    
+  have B8:"\<And>E. E \<in> C \<longrightarrow>  (\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
+  proof
+    fix E assume A7:"E \<in> C" 
+    let ?A="{y. (\<exists>x \<in> E. y= ?f {x})}"
+    have B9:"\<forall>x. x \<in> E \<longrightarrow> {x} \<subseteq> ?f {x}"
+      by (metis A1 Inf_empty PowI Pow_UNIV cl_ext1 empty_subsetI moore_clI3 top_greatest)
+    have B10:"?f E = E"
+      by (simp add: A7 cl_from_clr_def ub_single_least2)
+    have B11:"\<And>x. x \<in> E \<longrightarrow> ?f {x} \<subseteq> ?f E"
+      by (metis A0 A1 Inf_empty Pow_UNIV Union_Pow_eq Union_upper cl_ext1 cl_range1 cl_range3 clrD2 empty_subsetI insert_subset order_antisym top_greatest)
+    have B11b:"E ub ?A"
+      using B10 B11 ub_def by force
+    have B11c:"E \<in> ubd C ?A"
+      by (simp add: A7 B11b ubd_mem_iff)
+    have B12:"E = (\<Union>x \<in> E. {x})"
+      by simp
+    have B13:"... \<subseteq> (\<Union>x \<in> E. ?f {x})"
+      using B9 by blast
+    have B14:"... = (\<Union>?A)"
+      by blast
+    have B15:"... = Sup UNIV ?A"
+      by (metis (no_types, lifting) Pow_UNIV UNIV_I sup_equality top_greatest uni_sup_fam)
+    have B16:"... \<subseteq> Sup C ?A"
+      by (metis (mono_tags, lifting) A0 A1 Inf_empty Pow_UNIV Union_Pow_eq Union_upper cl_ext2 cl_range1 clrD2 empty_subsetI is_extensive_def order_class.order_eq_iff top_greatest)
+    have B17:"... \<subseteq> E"
+      by (smt (verit, del_insts) A0 A1 B0 B11b Inf_empty Pow_UNIV UNIV_I Union_Pow_eq Union_upper cl_ext2 cl_range1 clatD21 clrD2 empty_subsetI is_extensive_def is_supD5 order_antisym sup_equality)
+    have B18:"\<forall>x. x \<in> ?A \<longrightarrow> x \<in> compact_elements C"
+      using A0 A7 B1 cl_ext1 cl_range1 compact_elements_mem_iff1 by fastforce
+    have B19:"?A \<in> Pow (compact_elements C)"
+      using B18 by blast
+    have B20:"E = Sup C ?A"
+      using B13 B15 B16 B17 by auto
+    have B21:"is_sup C ?A E"
+      by (metis (mono_tags, lifting) A7 B11b B12 B13 B14 Sup_le_iff is_supI7 subset_antisym ub_def)
+    show "\<exists>A \<in> Pow (compact_elements C). is_sup C A E"
+      using B19 B21 by blast
+  qed
+  show ?thesis
+    by (simp add: B1 B8 compactly_generatedI1)
+qed
+  
+  
 
 
 definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
