@@ -2189,6 +2189,10 @@ qed
 definition distributive_lattice::"'a::order set \<Rightarrow> bool" where
   "distributive_lattice X \<equiv> (is_lattice X) \<and> (\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}})"
 
+lemma distr_latticeI1:
+  "\<lbrakk>is_lattice X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Sup X {x, Inf X {y, z}} \<ge> Inf X {Sup X {x, y}, Sup X {x, z}})\<rbrakk> \<Longrightarrow> distributive_lattice X"
+  by (simp add: distrib_sup_le distributive_lattice_def order_class.order_eq_iff)
+
 lemma distr_latticeD1:
   "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}} "
   by (simp add: distributive_lattice_def insert_commute)
@@ -3337,6 +3341,8 @@ lemma filter_closure_of_empty2:
 definition filter_closure::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "filter_closure X A \<equiv> if A={} then {Greatest X} else {x \<in> X. \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x}"
 
+
+
 lemma filter_closure_iff:
   "A \<noteq> {} \<Longrightarrow> x \<in> filter_closure X A  \<longleftrightarrow> (x \<in> X \<and> ( \<exists>F \<subseteq> A. finite F \<and> F \<noteq> {} \<and> Inf X F \<le> x))"
   by (simp add: filter_closure_def)
@@ -3390,6 +3396,7 @@ lemma filter_cl1:
 lemma filter_cl_empty:
   "is_dir (filter_closure X {}) (\<ge>)"
   by (simp add: filter_closure_def is_dwdir_singleton)
+
 
 context
   fixes X::"'a::order set"
@@ -3575,6 +3582,139 @@ lemma filters_on_lattice_sup_semilattice2b:
 lemma filters_on_lattice_sup_semilattice3b:
   "is_lattice X \<Longrightarrow> EF \<subseteq> (filters_on X) \<Longrightarrow> finite EF \<Longrightarrow> EF \<noteq> {} \<Longrightarrow> (Sup (filters_on X) EF) \<in> filters_on X"
   by (meson bsup_finite2 filters_on_lattice_sup_semilattice2b is_supE1)
+
+
+
+definition binary_filter_sup::"'a::order set \<Rightarrow>'a::order set\<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "binary_filter_sup X A B = {x \<in> X. \<exists>a \<in> A. \<exists>b \<in> B. Inf X {a, b} \<le> x}"
+
+lemma filter_bsup_mem_iff:
+  "x \<in> binary_filter_sup X A B \<longleftrightarrow> (x \<in> X \<and> (\<exists>a \<in> A. \<exists>b \<in> B. Inf X {a, b} \<le> x))"
+  by (simp add:binary_filter_sup_def)
+
+lemma binary_filter_sup_obtains:
+  assumes A0:"a \<in>  (binary_filter_sup X F1 F2)"
+  obtains a1 a2 where "a1 \<in> F1 \<and> a2 \<in> F2 \<and> Inf X {a1, a2} \<le> a"
+  by (meson assms filter_bsup_mem_iff)
+
+lemma filters_on_lattice_bsup01:
+  assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and A3:"a \<in> F1"
+  shows "a \<in> binary_filter_sup X F1 F2"
+proof-
+  obtain y where A4:"y \<in> F2"
+    using A2 filterD1 by auto
+  have B0:"Inf X {a, y} \<le> a"
+    by (meson A0 A1 A2 A3 A4 binf_leI1 dual_order.refl filterD21 lattD41)
+  show "a \<in> binary_filter_sup X F1 F2"
+    by (meson A1 A3 A4 B0 filterD21 filter_bsup_mem_iff)
+qed
+
+lemma filters_on_lattice_bsup02:
+  assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and A3:"b \<in> F2"
+  shows "b \<in> binary_filter_sup X F1 F2"
+proof-
+  obtain x where A4:"x \<in> F1"
+    using A1 filterD1 by auto
+  have B0:"Inf X {x, b} \<le> b"
+    by (meson A0 A1 A2 A3 A4 binf_leI2 dual_order.refl filterD21 lattD41)
+  show "b \<in> binary_filter_sup X F1 F2"
+    by (meson A2 A3 A4 B0 filterD21 filter_bsup_mem_iff)
+qed
+
+lemma filters_on_lattice_bsup03:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<subseteq> (binary_filter_sup X F1 F2)"
+  by (simp add: filters_on_lattice_bsup01 subsetI)
+
+lemma filters_on_lattice_bsup04:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F2 \<subseteq> (binary_filter_sup X F1 F2)"
+  by (simp add: filters_on_lattice_bsup02 subsetI)
+
+lemma filters_on_lattice_bsup1b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow>  is_ord_cl X (binary_filter_sup X F1 F2) (\<le>)"
+  apply(auto simp add:binary_filter_sup_def is_ord_cl_def) using dual_order.trans by blast
+
+lemma filters_on_lattice_bsup2a:
+  assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and
+          A3: "a \<in>  (binary_filter_sup X F1 F2)" and  A4:"b \<in>  (binary_filter_sup X F1 F2)"
+  shows "(\<exists>c \<in> (binary_filter_sup X F1 F2).  a \<ge> c \<and>  b \<ge> c)"
+proof-
+  obtain a1 a2 where B0:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> Inf X {a1, a2} \<le> a"
+    using A3 binary_filter_sup_obtains by blast
+  obtain b1 b2 where B1:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> Inf X {b1, b2} \<le> b"
+    using A4 binary_filter_sup_obtains by blast
+  have B2:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<le> a"
+    by (smt (verit, ccfv_threshold) A0 A1 A2 B0 B1 binary_infD22 binary_infD31 binary_infD4 filterD21 lattD41 lb_iso1 lb_singletonD lb_singletonI sinfD3 sinfD4)
+  have B3:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<le> b"
+    by (smt (verit, del_insts) A0 A1 A2 B0 B1 binf_iff dual_order.eq_iff filterD21 latt_iff order_trans sinfD4)
+  obtain ab1 where P1A3:"ab1 \<in> F1 \<and> ab1 \<le> a1 \<and> ab1 \<le> b1"
+    by (meson A1 B0 B1 is_filter_def is_dwdirE1)
+  obtain ab2 where P1A4:"ab2 \<in> F2 \<and> ab2 \<le> a2 \<and> ab2 \<le> b2"
+    by (meson A2 B0 B1 is_filter_def is_dwdirE1)
+  have P1B1:"ab1 \<le> Inf X {a1, b1} \<and> ab2 \<le> Inf X {a2, b2}"
+    by (meson A0 A1 A2 B0 B1 P1A3 P1A4 binf_leI3 filterD21 lattD41)
+  have P1B2:"Inf X {a1, b1} \<in> F1 \<and> Inf X {a2, b2} \<in> F2"
+    using A0 A1 A2 B0 B1 filter_finf_closed1 lattD41 by blast
+  have P1B3:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<in> (binary_filter_sup X F1 F2)"
+    by (meson A0 A1 A2 P1B2 filterD21 filter_bsup_mem_iff lattD41 order_refl sinfD4)
+  show "(\<exists>c \<in> (binary_filter_sup X F1 F2).  a \<ge> c \<and>  b \<ge> c)"
+    using B2 B3 P1B3 by blast
+qed
+         
+lemma filters_on_lattice_bsup2b:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (binary_filter_sup X F1 F2) (\<ge>)"
+  by (simp add: filters_on_lattice_bsup2a is_dwdirI1)
+
+lemma filters_on_lattice_bsup3:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup X F1 F2) \<noteq> {}"
+  by (metis is_filter_def filters_on_lattice_bsup04 ne_subset_ne)
+
+lemma filters_on_lattice_bsup4:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup X F1 F2) \<in> filters_on X"
+  by (metis is_filter_def filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup1b filters_on_lattice_bsup2b filters_on_lattice_bsup3 subsetI)
+
+lemma filters_on_lattice_bsup5:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup X F1 F2) \<in> ubd (filters_on X) {F1, F2}"
+  by (simp add: filters_on_lattice_bsup03 filters_on_lattice_bsup04 filters_on_lattice_bsup4 ubd_mem_doubleI)
+
+lemma filters_on_lattice_bsup6:
+  assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and A3:"G \<in> (ubd (filters_on X) {F1, F2})"
+  shows "(binary_filter_sup X F1 F2) \<subseteq> G" (is "?L \<subseteq> ?R")
+proof
+  fix x assume A4:"x \<in> ?L"
+  obtain a1 a2  where B0:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> Inf X {a1, a2} \<le> x"
+    using A4 binary_filter_sup_obtains by blast
+  have B1:"a1 \<in> G \<and> a2 \<in> G"
+    by (meson A3 B0 subsetD ubd_mem_doubleE1 ubd_mem_doubleE2)
+  have B2:"Inf X {a1, a2} \<in> G"
+    using A0 A3 B1 filter_finf_closed1 filters_on_iff lattD41 ubdD2 by blast
+  have B3:"is_filter X G "
+    using A3 filters_on_iff ubdD2 by blast
+  show "x \<in> G"
+    by (meson A4 B0 B2 B3 filterD4 filter_bsup_mem_iff ord_cl_memI1)
+qed
+
+lemma filters_on_lattice_bsup7:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_sup (filters_on X) {F1, F2} (binary_filter_sup X F1 F2) "
+  by (simp add: filters_on_lattice_bsup5 filters_on_lattice_bsup6 is_supI5)
+
+lemma filters_on_lattice_bsup8:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> Sup (filters_on X) {F1, F2} = (binary_filter_sup X F1 F2)"
+  by (simp add: filters_on_lattice_bsup7 sup_equality)
+
+lemma filters_on_lattice_bsup0:
+  "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (filter_closure X (F1 \<union> F2)) = Sup (filters_on X) {F1, F2}"
+  using filters_on_lattice_sup_semilattice1b sup_equality by blast
+
+lemma filters_on_lattice_bsup1:
+  "\<lbrakk>is_lattice X;  is_filter X F1; is_filter X F2; z \<in> Sup (filters_on X) {F1, F2}\<rbrakk> \<Longrightarrow>(\<exists>Fx \<subseteq>(F1 \<union> F2). finite Fx \<and> Fx \<noteq> {} \<and> Inf X Fx \<le>z)"
+  by (metis filterD1 filter_closure_obtains filters_on_lattice_bsup0 sup_bot.eq_neutr_iff)
+
+lemma filters_on_lattice_bsup2:
+  assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and
+          A3:"z \<in> Sup (filters_on X) {F1, F2}"
+  shows "(\<exists>f1 \<in>F1. \<exists>f2 \<in> F2. Inf X {f1, f2} \<le>z)"
+  by (metis A0 A1 A2 A3 filter_bsup_mem_iff filters_on_lattice_bsup8)
+
 
 (*On a topped inf semilattice filters form a complete inf semilattice*)
 
@@ -5427,7 +5567,40 @@ proof-
     by (simp add: B1 B8 compactly_generatedI1)
 qed
   
-  
+lemma lattice_filters_distr:
+  assumes A0:"distributive_lattice X" 
+  shows "distributive_lattice (filters_on X)"
+proof-
+  let ?F="filters_on X"
+  have B01:"is_lattice X"  using assms distributive_lattice_def by blast
+  have B02:"is_lattice ?F" by (metis assms distributive_lattice_def filters_on_lattice_inf_semilattice1 filters_on_lattice_sup_semilattice2b latt_iff)
+  have B1:" \<And>x y z. x \<in> ?F \<and>  y \<in>?F \<and> z \<in> ?F \<longrightarrow> Inf ?F {Sup ?F {x, y}, Sup ?F {x, z}} \<subseteq> Sup ?F {x, Inf ?F {y, z}}"
+  proof
+    fix f g h assume A1:" f \<in> ?F \<and>  g \<in>?F \<and> h \<in> ?F"
+    let ?sfg="Sup ?F {f, g}" and ?sfh="Sup ?F {f, h}" and  ?igh="Inf ?F {g, h}"
+    show "Inf ?F {?sfg, ?sfh} \<subseteq> Sup ?F {f, ?igh}"
+    proof
+      fix z assume A2:"z \<in> (Inf ?F {?sfg, ?sfh})"
+      have B2:"Inf ?F {?sfg, ?sfh} =?sfg \<inter> ?sfh"
+        by (meson A1 B01 filters_on_iff filters_on_lattice_inf8b filters_on_lattice_sup_semilattice2b inf_equality ssupD4)
+      have B3:"z \<in> ?sfg \<and> z \<in> ?sfh"
+        using A2 B2 by blast
+      obtain x1 y where B4:"x1 \<in> f \<and> y \<in> g \<and> Inf X {x1, y} \<le> z"
+        using A1 B01 B3 filters_on_iff filters_on_lattice_bsup2 by blast
+      obtain x2 t where B5:"x2 \<in> f \<and> t \<in> h \<and> Inf X {x2, t} \<le> z"
+        using A1 B01 B3 filters_on_iff filters_on_lattice_bsup2 by blast
+      have B6:"Sup X {x1, Inf X {x2, t}} \<in> f"
+        by (metis (no_types, lifting) A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff insert_commute lattD41 sinfD4)
+      have B7:"Sup X {y, x2} \<in> f"
+        using A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff by blast
+      have B8:"Sup X {y, t} \<in> g"
+        by (metis A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff insert_commute)
+      have B9:"Sup X {y, t} \<in> h"
+        using A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff by blast
+      have B10:"z \<ge> Sup X {Inf X {x1, y}, Inf X {x2, t}}"
+        by (metis A1 B01 B3 B4 B5 bsup_iff filterD21 filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup8 lattD41 lattD42 sinfD4)
+      have B11:"... = (Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}, Sup X {y, t}})"
+      show "z \<in> Sup ?F {f, ?igh}"
 
 
 definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
