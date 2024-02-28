@@ -1381,6 +1381,10 @@ lemma ge_sup2:
   "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Sup X {a, b} = a"
   by (simp add: binary_supI2 sup_equality)
 
+lemma sup_upper_bounds:
+  "is_sup X A s \<Longrightarrow> ubd X {s} = ubd X A"
+  by(auto simp add:ubd_mem_iff; simp add: is_supD41 ub_singleton_simp;simp add: is_supE4 ub_singleton)
+
 subsection Infima
 
 definition is_inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
@@ -1707,6 +1711,10 @@ lemma le_inf1:
 lemma le_inf2:
   "a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> b \<le> a \<Longrightarrow> Inf X {a, b} = b"
   by (metis binf_commute2 le_inf1)
+
+lemma inf_lower_bounds:
+  "is_inf X A i \<Longrightarrow> lbd X {i} = lbd X A"
+  by(auto simp add:lbd_mem_iff; simp add: is_infD41 lb_singleton_simp;simp add: is_infE4 lb_singleton)
 
 
 subsection Duality
@@ -3873,6 +3881,41 @@ lemma up_cl_is_up_cl:
   "is_ord_cl X (up_cl X A) (\<le>)"
   by (simp add: is_ord_clI1 up_cl_memI3)
 
+lemma dwdir_upcl_is_dwdir:
+  assumes A0:"is_dir A (\<ge>)" and A1:"A \<subseteq> X"
+  shows "is_dir (up_cl X A) (\<ge>)"
+proof-
+  have B0:"\<And>a b.  a \<in> up_cl X A \<and> b \<in> up_cl X A \<longrightarrow> (\<exists>c\<in>up_cl X A. c \<le> a \<and> c \<le> b)"
+  proof
+    fix a b assume A2:"a \<in> up_cl X A \<and> b \<in> up_cl X A"
+    obtain a1 b1 where B1:"a1 \<in> A \<and> b1 \<in> A \<and> a1 \<le> a \<and> b1 \<le> b"  by (meson A2 up_cl_memD2)
+    obtain c where B2:"c \<in> A \<and> c \<le> a1 \<and> c \<le> b1" using A0 B1 is_dwdirE1 by blast
+    have B3:"c \<in> up_cl X A \<and> c \<le> a \<and> c \<le> b" by (metis A1 B1 B2 dual_order.trans up_cl_sub1)
+    show "\<exists>c\<in>up_cl X A. c \<le> a \<and> c \<le> b"
+      using B3 by auto
+  qed
+  show ?thesis
+    by (simp add: B0 is_dwdirI1)
+qed
+
+lemma upcl_dwdir_is_dwdir:
+  assumes A0:"is_dir (up_cl X A) (\<ge>)" and A1:"A \<subseteq> X"
+  shows "is_dir A (\<ge>)"
+proof-
+  have B0:" \<And>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>c\<in>A. c \<le> a \<and> c \<le> b)"
+  proof
+    fix a b assume A2:"a \<in> A \<and> b \<in> A"
+    have B1:"a \<in> up_cl X A \<and> b \<in> up_cl X A" by (simp add: A1 A2 up_cl_sub1)
+    obtain c where B2:"c \<in> up_cl X A \<and> c \<le> a \<and> c \<le> b"  using A0 B1 is_dwdirE1 by blast
+    obtain d where B3:"d \<in> A \<and> d \<le> c" using B2 up_cl_memD2 by blast
+    have B4:"d \<in> A \<and> d \<le> a \<and> d \<le> b" using B2 B3 order.trans by blast
+    show "\<exists>c\<in>A. c \<le> a \<and> c \<le> b" using B4 by auto
+  qed
+  show ?thesis
+    by (simp add: B0 is_dwdirI1)
+qed
+
+
 subsubsection DownClosure
 definition dw_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "dw_cl X A = {x \<in> X. \<exists>a \<in> A. x \<le> a}"
@@ -3952,6 +3995,42 @@ lemma dw_cl_memI3:
 lemma dw_cl_is_dw_cl:
   "is_ord_cl X (dw_cl X A) (\<ge>)"
   by (simp add: is_ord_clI1 dw_cl_memI3)
+
+
+lemma updir_dwcl_is_updir:
+  assumes A0:"is_dir A (\<le>)" and A1:"A \<subseteq> X"
+  shows "is_dir (dw_cl X A) (\<le>)"
+proof-
+  have B0:"\<And>a b.  a \<in> dw_cl X A \<and> b \<in> dw_cl X A \<longrightarrow> (\<exists>c\<in>dw_cl X A. c \<ge> a \<and> c \<ge> b)"
+  proof
+    fix a b assume A2:"a \<in> dw_cl X A \<and> b \<in> dw_cl X A"
+    obtain a1 b1 where B1:"a1 \<in> A \<and> b1 \<in> A \<and> a1 \<ge> a \<and> b1 \<ge> b"  by (meson A2 dw_cl_memD2)
+    obtain c where B2:"c \<in> A \<and> c \<ge> a1 \<and> c \<ge> b1" using A0 B1 is_updirE1 by blast
+    have B3:"c \<in> dw_cl X A \<and> c \<ge> a \<and> c \<ge> b" by (metis A1 B1 B2 dual_order.trans dw_cl_sub1)
+    show "\<exists>c\<in>dw_cl X A. c \<ge> a \<and> c \<ge> b"
+      using B3 by auto
+  qed
+  show ?thesis
+    by (simp add: B0 is_updirI1)
+qed
+
+lemma dwcl_updir_is_updir:
+  assumes A0:"is_dir (dw_cl X A) (\<le>)" and A1:"A \<subseteq> X"
+  shows "is_dir A (\<le>)"
+proof-
+  have B0:" \<And>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>c\<in>A. c \<ge> a \<and> c \<ge> b)"
+  proof
+    fix a b assume A2:"a \<in> A \<and> b \<in> A"
+    have B1:"a \<in> dw_cl X A \<and> b \<in> dw_cl X A" by (simp add: A1 A2 dw_cl_sub1)
+    obtain c where B2:"c \<in> dw_cl X A \<and> c \<ge> a \<and> c \<ge> b"  using A0 B1 is_updirE1 by blast
+    obtain d where B3:"d \<in> A \<and> d \<ge> c" using B2 dw_cl_memD2 by blast
+    have B4:"d \<in> A \<and> d \<ge> a \<and> d \<ge> b" using B2 B3 order.trans by blast
+    show "\<exists>c\<in>A. c \<ge> a \<and> c \<ge> b" using B4 by auto
+  qed
+  show ?thesis
+    by (simp add: B0 is_updirI1)
+qed
+
 
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
