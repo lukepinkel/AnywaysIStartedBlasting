@@ -2149,6 +2149,18 @@ lemma distrib_inf_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rb
 subsection DistributiveLattices
 
 
+(*
+x \<and> (y \<or> z) = (x \<and> y) \<or> (x \<and> z) 
+
+x \<or> (y \<and> z)=(x \<or> (x \<and> z)) \<or> (y \<and> z) 
+           = x \<or> (x \<and> z)  \<or> (y \<and> z)
+           = x \<or> (z \<and> (x \<or> y)) 
+           =(x \<and> (x \<or> y)) \<or> (z \<and> (x \<or> y))
+           =(x \<or> y) \<and> (x \<or> z)
+
+
+*)
+
 lemma distibD1:
   assumes A0:"is_lattice X" and 
           A1:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y}, Inf X {x, z}}" and
@@ -5632,6 +5644,11 @@ proof-
     by (simp add: B02 B1 distr_latticeI1)
 qed
 (*
+TODO:  the converse: first prove some lemmas about sublattices and inheritance then specify
+       using the principal embedding.  Or just use the latter straight off the bat.
+*)
+
+(*
                    (y \<or> x2) \<and> (y \<or> t) = y \<or> (x2 \<and> t)
 
 (x1 \<or> (x2 \<and> t)) \<and> (y \<or> x2) \<and> (y \<or> t) = (x1 \<or> (x2 \<and> t)) \<and> (y \<or> (x2 \<and> t))
@@ -5639,8 +5656,14 @@ qed
 = (x2 \<and> t) \<or> (x1 \<and> y)
 
 *)
+
+
+
 definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "prime X A \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. (Sup X {a, b}) \<in> A \<longrightarrow> (a \<in> A \<or> b \<in> A))"
+
+definition fin_sup_irr::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "fin_sup_irr X x \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. x = Sup X {a, b} \<longrightarrow> (x = a \<or> x = b))" 
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
