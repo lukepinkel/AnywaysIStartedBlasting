@@ -3591,18 +3591,23 @@ lemma filters_on_top_inf_lattice_clattice:
 
 *)
 
+
+
 definition lorc::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" ("(2[_')\<^sub>_)") where
   "[a)\<^sub>X \<equiv> {y \<in> X. a \<le> y} "
 
 lemma lorcI1:
   "y \<in> X \<Longrightarrow> a \<le> y \<Longrightarrow> y \<in> [a)\<^sub>X" 
   by (simp add:lorc_def)
+
 lemma lorcD1:
   "y \<in> [a)\<^sub>X \<Longrightarrow> y \<in> X \<and> a \<le> y"
    by (simp add:lorc_def)
+
 lemma lorcD11:
   "y \<in> [a)\<^sub>X \<Longrightarrow> y \<in> X "
    by (simp add:lorc_def)
+
 lemma lorcD12:
   "y \<in> [a)\<^sub>X \<Longrightarrow> a \<le> y" 
   by (simp add:lorc_def)
@@ -3623,6 +3628,10 @@ lemma lorc_mem_iff2:
 lemma lorc_eq_upbd:
   "([a)\<^sub>X) = (ubd X {a})"
   by(simp add: set_eq_iff ubd_mem_iff lorc_mem_iff2)
+
+lemma lorc_eq_upbd2:
+  "A \<noteq> {} \<Longrightarrow> (\<Inter>a \<in> A. [a)\<^sub>X) = ubd X A"
+  by(auto simp add:ubd_mem_iff2 lorc_mem_iff1)
 
 lemma lorc_memI1:
   "a \<in> X \<Longrightarrow> a \<in> [a)\<^sub>X "
@@ -3690,6 +3699,260 @@ lemma lorc_filter:
   apply(auto simp add:is_filter_def) using lorc_memI1 apply auto[1] 
   apply (simp add: lorc_mem_iff1) apply (metis is_dwdirI1 lorcD12 lorc_memI1)
   by (simp add: lorc_upclI)
+
+definition rolc::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" ("(2'(_]\<^sub>_)") where
+  "(a]\<^sub>X \<equiv> {y \<in> X. y \<le> a} "
+
+lemma rolcI1:
+  "y \<in> X \<Longrightarrow> y \<le> a \<Longrightarrow> y \<in> (a]\<^sub>X" 
+  by (simp add:rolc_def)
+
+lemma rolcD1:
+  "y \<in> (a]\<^sub>X \<Longrightarrow> y \<in> X \<and> y \<le> a"
+   by (simp add:rolc_def)
+
+lemma rolcD11:
+  "y \<in> (a]\<^sub>X \<Longrightarrow> y \<in> X "
+   by (simp add:rolc_def)
+
+lemma rolcD12:
+  "y \<in> (a]\<^sub>X \<Longrightarrow> y \<le> a" 
+  by (simp add:rolc_def)
+
+lemma rolcD2:"x \<in> X \<Longrightarrow> y \<in> (a]\<^sub>X \<Longrightarrow>  x \<le> y \<Longrightarrow> x \<in> (a]\<^sub>X"
+  by(drule rolcD12, erule rolcI1, simp)
+
+lemma rolcD3:
+  "(\<exists>b. x \<le> b \<and> b \<in> (a]\<^sub>X) \<Longrightarrow> x \<in> X \<Longrightarrow>  x \<in> (a]\<^sub>X"
+  using rolcD2 by blast
+
+lemma rolc_mem_iff1:
+  "y \<in> ((a]\<^sub>X) \<longleftrightarrow> (y \<in> X \<and> y \<le> a)"
+   by (simp add:rolc_def)
+
+lemma rolc_mem_iff2:
+  "y \<in> ((a]\<^sub>X) \<longleftrightarrow> (y \<in> X \<and> y lb {a})" 
+  by (simp add:rolc_def lb_def)
+
+lemma rolc_memI1:
+  "a \<in> X \<Longrightarrow> a \<in> (a]\<^sub>X "
+  by (simp add: rolcI1)
+
+lemma rolc_mem_point1:
+  "a \<in> X \<longleftrightarrow> a \<in> ((a]\<^sub>X)"
+  by (simp add: rolc_def)
+
+lemma rolc_subset1:
+  "((a]\<^sub>X) \<subseteq> X"
+  by (simp add: rolc_def)
+
+lemma rolc_dwclI:
+  "a \<in> X \<Longrightarrow> is_ord_cl X ((a]\<^sub>X) (\<ge>)"
+  by (simp add: is_ord_clI1 rolcD2)
+
+lemma rolc_eq_lbd:
+  "((a]\<^sub>X) = (lbd X {a})"
+  by(simp add: set_eq_iff lbd_mem_iff rolc_mem_iff2)
+
+lemma rolc_eq_lbd2:
+  "A \<noteq> {} \<Longrightarrow> (\<Inter>a \<in> A. (a]\<^sub>X) = lbd X A"
+  by(auto simp add:lbd_mem_iff2 rolc_mem_iff1)
+
+lemma rolc_top:
+  "is_least X m \<Longrightarrow> a \<in> X \<Longrightarrow> m \<in> (a]\<^sub>X"
+  by (simp add: leastD11 leastD2 rolcI1)
+
+lemma rolc_inf_latticeD1:
+  "\<lbrakk>is_inf_semilattice X; x \<in> X; y \<in> X\<rbrakk>\<Longrightarrow> Inf X {x, y} \<in> ((x]\<^sub>X)"
+  by (simp add: binf_leI1 rolcI1 sinfD4)
+
+lemma rolc_sup_latticeD1:
+  "\<lbrakk>is_greatest X top\<rbrakk> \<Longrightarrow> ((top]\<^sub>X) = X"
+  by(auto simp add: rolc_mem_iff1 greatest_iff)
+
+lemma rolc_iso:
+  "\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> ((a]\<^sub>X) \<subseteq> ((b]\<^sub>X)  \<longleftrightarrow> a \<le> b"
+  by(auto simp add:rolc_mem_iff1) 
+
+lemma rolc_dwclD:
+  "U \<subseteq> X \<Longrightarrow> is_ord_cl X U (\<ge>) \<Longrightarrow> is_greatest U x \<Longrightarrow> U = (x]\<^sub>X"
+  apply (auto simp add: greatestD2 in_mono rolcI1)
+  using greatestD11 ord_cl_memI1 rolcD11 rolcD12 by blast
+
+lemma rolc_dwcl1:
+  "\<lbrakk>is_least X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> m \<in> (\<Inter>a \<in> A. (a]\<^sub>X)"
+  by (simp add: least_iff rolcI1 subset_iff)
+
+lemma rolc_upcl3:
+  "\<lbrakk>is_least X m; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow>  is_ord_cl X (\<Inter>a \<in> A. (a]\<^sub>X) (\<ge>)"
+  by(rule is_ord_cl_in2, auto simp add:rolc_mem_iff1 in_mono rolc_dwclI)
+
+subsection UpDwClosure
+subsubsection UpClosure
+
+definition up_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "up_cl X A = {x \<in> X. \<exists>a \<in> A. a \<le> x}"
+
+lemma up_cl_mem_iff:
+  "x \<in> up_cl X A \<longleftrightarrow> (x \<in> X \<and> (\<exists>a \<in> A. a \<le> x))"
+  by (simp add: up_cl_def)
+
+lemma up_cl_memD1:
+  "x \<in> up_cl X A \<Longrightarrow> x \<in> X"
+  by (simp add: up_cl_def)
+
+lemma up_cl_memD2:
+  "x \<in> up_cl X A \<Longrightarrow> \<exists>a \<in> A. a \<le> x"
+  by (simp add: up_cl_def)
+
+lemma up_cl_memI1:
+  "x \<in> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<le> x \<Longrightarrow> x \<in> up_cl X A"
+   using up_cl_def by auto 
+
+lemma up_cl_memI2:
+  "x \<in> X \<Longrightarrow> (\<exists>a \<in> A. a \<le> x) \<Longrightarrow> x \<in> up_cl X A"
+  by (simp add: up_cl_mem_iff)
+
+lemma up_cl_sub1:
+  "A \<subseteq> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<in> up_cl X A"
+  by (simp add: subsetD up_cl_memI1)
+
+lemma up_cl_sub2:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq>  up_cl X A"
+  by (simp add: subsetI up_cl_sub1)
+
+lemma up_cl_sub3:
+  "up_cl X A \<subseteq> X"
+  by (simp add: subsetI up_cl_memD1)
+
+lemma up_cl_iso1:
+  "A \<subseteq> B \<Longrightarrow> up_cl X A \<subseteq> up_cl X B"
+  by (meson in_mono subsetI up_cl_memD1 up_cl_memD2 up_cl_memI1)
+
+lemma up_cl_idem1:
+  "x \<in> up_cl X (up_cl X A) \<Longrightarrow> x \<in> up_cl X A"
+  by (meson dual_order.trans up_cl_mem_iff)
+
+lemma up_cl_idem2:
+  " up_cl X (up_cl X A) \<subseteq> up_cl X A"
+  by (simp add: subsetI up_cl_idem1)
+
+lemma up_cl_idem3:
+  " up_cl X (up_cl X A) = up_cl X A"
+  by (simp add: subset_antisym up_cl_idem2 up_cl_sub2 up_cl_sub3)
+
+lemma up_cl_singleton:
+  "x \<in> up_cl X {a}  \<longleftrightarrow> (x \<in> X \<and> a \<le> x)"
+  by (simp add: up_cl_mem_iff)
+
+lemma up_cl_lorc:
+  "up_cl X {a} = [a)\<^sub>X"
+  by (simp add: lorc_mem_iff1 set_eq_iff up_cl_singleton)
+
+lemma up_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. up_cl X A)"
+  by (simp add: is_extensive_def up_cl_sub2)
+
+lemma up_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. up_cl X A)"
+  by (simp add: is_isotone_def up_cl_iso1)
+
+lemma up_cl_idem:
+  "is_idempotent (Pow X) (\<lambda>A. up_cl X A)"
+  by (simp add: is_idempotent_def up_cl_idem3)
+
+lemma up_cl_cl:
+  "is_closure (Pow X) (\<lambda>A. up_cl X A)"
+  by (simp add: image_subsetI is_closure_def up_cl_ext up_cl_idem up_cl_iso up_cl_sub3)
+
+lemma up_cl_memI3:
+  "\<And>a b. \<lbrakk>a \<in> (up_cl X A); b \<in> X; a \<le> b\<rbrakk> \<Longrightarrow> b \<in> (up_cl X A)"
+  using up_cl_idem3 up_cl_memI1 by blast
+
+lemma up_cl_is_up_cl:
+  "is_ord_cl X (up_cl X A) (\<le>)"
+  by (simp add: is_ord_clI1 up_cl_memI3)
+
+subsubsection DownClosure
+definition dw_cl::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
+  "dw_cl X A = {x \<in> X. \<exists>a \<in> A. x \<le> a}"
+
+lemma dw_cl_mem_iff:
+  "x \<in> dw_cl X A \<longleftrightarrow> (x \<in> X \<and> (\<exists>a \<in> A. x \<le> a))"
+  by (simp add: dw_cl_def)
+
+lemma dw_cl_memD1:
+  "x \<in> dw_cl X A \<Longrightarrow> x \<in> X"
+  by (simp add: dw_cl_def)
+
+lemma dw_cl_memD2:
+  "x \<in> dw_cl X A \<Longrightarrow> \<exists>a \<in> A. x \<le> a"
+  by (simp add: dw_cl_def)
+
+lemma dw_cl_memI1:
+  "x \<in> X \<Longrightarrow> a \<in> A \<Longrightarrow> x \<le> a \<Longrightarrow> x \<in> dw_cl X A"
+  using dw_cl_def by auto
+
+lemma dw_cl_memI2:
+  "x \<in> X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a) \<Longrightarrow> x \<in> dw_cl X A"
+  by (simp add: dw_cl_mem_iff)
+
+lemma dw_cl_sub1:
+  "A \<subseteq> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<in> dw_cl X A"
+  by (simp add: subsetD dw_cl_memI1)
+
+lemma dw_cl_sub2:
+  "A \<subseteq> X \<Longrightarrow> A \<subseteq> dw_cl X A"
+  by (simp add: subsetI dw_cl_sub1)
+
+lemma dw_cl_sub3:
+  "dw_cl X A \<subseteq> X"
+  by (simp add: subsetI dw_cl_memD1)
+
+lemma dw_cl_iso1:
+  "A \<subseteq> B \<Longrightarrow> dw_cl X A \<subseteq> dw_cl X B"
+  by (meson in_mono subsetI dw_cl_memD1 dw_cl_memD2 dw_cl_memI1)
+
+lemma dw_cl_idem1:
+  "x \<in> dw_cl X (dw_cl X A) \<Longrightarrow> x \<in> dw_cl X A"
+  by (meson order.trans dw_cl_mem_iff)
+
+lemma dw_cl_idem2:
+  "dw_cl X (dw_cl X A) \<subseteq> dw_cl X A"
+  by (simp add: subsetI dw_cl_idem1)
+
+lemma dw_cl_idem3:
+  "dw_cl X (dw_cl X A) = dw_cl X A"
+  by (simp add: subset_antisym dw_cl_idem2 dw_cl_sub2 dw_cl_sub3)
+
+lemma dw_cl_lorc:
+  "dw_cl X {a} = (a]\<^sub>X"
+  by (simp add: set_eq_iff rolc_mem_iff1 dw_cl_mem_iff)
+
+lemma dw_cl_ext:
+  "is_extensive (Pow X) (\<lambda>A. dw_cl X A)"
+  by (simp add: is_extensive_def dw_cl_sub2)
+
+lemma dw_cl_iso:
+  "is_isotone (Pow X) (\<lambda>A. dw_cl X A)"
+  by (simp add: is_isotone_def dw_cl_iso1)
+
+lemma dw_cl_idem:
+  "is_idempotent (Pow X) (\<lambda>A. dw_cl X A)"
+  by (simp add: is_idempotent_def dw_cl_idem3)
+
+lemma dw_cl_cl:
+  "is_closure (Pow X) (\<lambda>A. dw_cl X A)"
+  by (simp add: image_subsetI is_closure_def dw_cl_ext dw_cl_idem dw_cl_iso dw_cl_sub3)
+
+lemma dw_cl_memI3:
+  "\<And>a b. \<lbrakk>a \<in> (dw_cl X A); b \<in> X; a \<ge> b\<rbrakk> \<Longrightarrow> b \<in> (dw_cl X A)"
+  using dw_cl_idem3 dw_cl_memI1 by blast
+
+lemma dw_cl_is_dw_cl:
+  "is_ord_cl X (dw_cl X A) (\<ge>)"
+  by (simp add: is_ord_clI1 dw_cl_memI3)
+
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
