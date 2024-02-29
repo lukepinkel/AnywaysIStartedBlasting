@@ -1800,6 +1800,39 @@ lemma lattice_id9:
   using is_infD42 is_infE1 is_supD5 ubI by fastforce
 
 
+definition is_minimal::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "is_minimal A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> a \<le> x \<longrightarrow> a =x)"
+
+definition is_maximal::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "is_maximal A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> x \<le> a \<longrightarrow> a = x)"
+
+lemma maximalD1:
+  "is_maximal A x \<Longrightarrow> x \<in> A"
+  by(simp add:is_maximal_def)
+
+lemma maximalD2:
+  "is_maximal A x \<Longrightarrow> (\<forall>a. a \<in> A \<and> x \<le> a \<longrightarrow> a = x)"
+  by(simp add:is_maximal_def)
+
+lemma maximalD3:
+  "is_maximal A x \<Longrightarrow> a \<in> A \<Longrightarrow> x \<le> a \<Longrightarrow> a = x"
+  by(simp add:is_maximal_def)
+
+lemma maximalD4:
+  "is_maximal A x \<Longrightarrow> \<not>(\<exists>a \<in> A. a > x)"
+  by (simp add: maximalD3 order.strict_iff_not)
+
+lemma maximalI1:
+  "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; x \<le> a\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_maximal A x"
+  by(simp add:is_maximal_def)
+
+lemma maximalI2:
+  "\<lbrakk>x \<in> A; \<not>(\<exists>a \<in> A. a > x)\<rbrakk> \<Longrightarrow> is_maximal A x"
+  by (meson dual_order.order_iff_strict maximalI1)
+
+lemma maximalI3:
+  "is_greatest A x \<Longrightarrow> is_maximal A x"
+  by (simp add: greatest_iff leD maximalI2)
 
 subsection InfSemilattices
 
@@ -3045,6 +3078,15 @@ lemma is_dwdirI1:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. a \<ge> c \<and> b \<ge> c)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
   by (simp add: is_dir_def)
 
+lemma is_dwdirI2:
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>i. is_inf X {a, b} i)) \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
+  by (metis binary_infD31 binary_infD32 is_dwdirI1 is_infE1)
+
+lemma is_dwdirI3:
+  "\<lbrakk>is_inf_semilattice X; (\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (Inf X {a, b} \<in> X))\<rbrakk> \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
+  by (simp add: is_dwdirI2 is_inf_semilattice_def)
+
+
 lemma is_dwdir_empty:
   "is_dir {} (\<ge>)"
   by (simp add: is_dir_def)
@@ -3334,6 +3376,22 @@ lemma filter_inter_closed2:
   "\<lbrakk>is_inf_semilattice X;is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (\<And>E. \<lbrakk>E \<subseteq> (filters_on X); E \<noteq> {}\<rbrakk> \<Longrightarrow> (\<Inter>E) \<in> (filters_on X))"
   by (simp add: filter_inter_closed1 filters_on_iff subset_iff)
 
+lemma filter_memI:
+  "\<lbrakk>is_filter X F; x \<in> X\<rbrakk> \<Longrightarrow>y \<in> F \<Longrightarrow> y \<le> x \<Longrightarrow> x \<in> F"
+  using filterD4 is_ord_clE1 by blast
+
+lemma filter_bsup_memI1:
+  "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F"
+  by (meson bsup_geI1 filterD21 filter_memI order_refl ssupD4)
+
+lemma filter_bsup_memI2:
+  "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, x} \<in> F"
+  by (simp add: filter_bsup_memI1 insert_commute)
+
+lemma filter_ex_elem:
+  "\<lbrakk>is_filter X F\<rbrakk> \<Longrightarrow> \<exists>f. f \<in> F"
+  by (simp add: ex_in_conv filterD1)
+
 
 subsection FilterClosure
 
@@ -3466,7 +3524,7 @@ lemma filters_on_lattice_inf03:
 
 lemma filter_on_lattice_sup01:
   "\<lbrakk>is_lattice X; is_filter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
-  by (meson binary_supD32 filterD21 filterD4 is_ord_clE1 lattD32 lattD42 ssupD4)
+  by (simp add: filter_bsup_memI2 lattD42)
 
 lemma filter_on_lattice_top0:
   "is_lattice X \<Longrightarrow> is_filter X {x} \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> x"
@@ -5665,11 +5723,27 @@ definition prime::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool"
 definition fin_sup_irr::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
   "fin_sup_irr X x \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. x = Sup X {a, b} \<longrightarrow> (x = a \<or> x = b))" 
 
+definition fin_inf_irr::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where 
+  "fin_inf_irr X x \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. x = Inf X {a, b} \<longrightarrow> x = a \<or> x =b)"
+
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+
+abbreviation pfilters_on::"'a::order set \<Rightarrow> 'a::order set set" where
+  "pfilters_on X \<equiv> {F. pfilter X F}"
+
                     
+lemma maximal_pfilterD1:
+  "is_maximal (pfilters_on X) F \<Longrightarrow> H \<in>pfilters_on X \<Longrightarrow> F \<subseteq> H \<Longrightarrow> F=H  "
+  using maximalD2 by blast
+     
+lemma maximal_pfilterI1:
+  "\<lbrakk>F \<in> pfilters_on X; (\<And>H. \<lbrakk>H  \<in> pfilters_on X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F =H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters_on X) F "
+  using maximalI1[of F "pfilters_on X"]  by auto
 
-
+lemma maximal_pfilterI2:
+  "\<lbrakk>F \<in> pfilters_on X; (\<And>H. \<lbrakk>H  \<in> pfilters_on X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F \<supseteq> H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters_on X) F "
+  by (simp add: is_maximal_def)
 
 lemma primefilterD1:
   "\<lbrakk>prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
@@ -5683,6 +5757,56 @@ lemma primefilterD3:
   "\<lbrakk>is_lattice X; prime X F; pfilter X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
   apply(auto simp add:prime_def) apply (meson filterD2 filters_on_lattice_inf02 in_mono) using filterD21 by blast
 
+lemma notprimeobtain:
+  assumes A0:"is_lattice X" and A1:"pfilter X F" and A2:"\<not>(prime X F)"
+  obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
+  using A2 prime_def by blast
+
+(*
+need more robust intro and dest lemmas for filters and more gnerally ord closure and directedness
+ 
+*)
+
+lemma element_filter:
+  assumes A0:"is_lattice X" and A1:"is_filter X F" and A2:"a \<in> X"
+  defines "G \<equiv> {x \<in> X. \<exists>y \<in> F. Inf X {a, y} \<le> x}"
+  shows "is_filter X G"
+proof-
+  have B0:"G \<subseteq> X"
+    by (simp add: G_def)
+  have B1:"\<And>x1 x2. x1 \<in> G \<and> x2 \<in> G \<longrightarrow> Inf X {x1, x2} \<in> G"
+  proof
+    fix x1 x2 assume A3:"x1 \<in> G \<and> x2 \<in> G"
+    obtain y1 y2 where B2:"y1 \<in> F \<and> y2 \<in> F \<and> Inf X {a, y1} \<le> x1 \<and> Inf X {a, y2} \<le> x2"
+      using A3 G_def by blast
+    have B3:"Inf X {y1, y2} \<in> F"
+      by (simp add: A0 A1 B2 filter_finf_closed1 lattD41)
+    have B4:"Inf X {Inf X {y1, y2}, a} \<le> Inf X {x1, x2}"
+      by (smt (verit) A0 A1 A2 A3 B0 B2 binf_assoc1 binf_leI2 binf_leI3 filterD21 in_mono insert_commute lattD41 sinfD4)
+    have B5:"\<exists>y \<in> F. Inf X {a, y} \<le> Inf X {x1, x2}"
+      by (metis B3 B4 doubleton_eq_iff)
+    show "Inf X {x1, x2} \<in> G"
+      using A0 A3 B5 G_def lattD41 sinfD4 by auto
+  qed
+  have B6:"\<And>x g. g \<in> G \<and> x \<in> X \<and> g \<le> x \<longrightarrow> x \<in> G"
+    using G_def order.trans by auto
+  have B7:"G \<noteq> {}"
+    by (metis (no_types, lifting) A0 A1 A2 G_def empty_iff equals0I filterD1 filterD21 latt_iff mem_Collect_eq order_refl sinfD4)
+  have B8:"\<And>a b. a \<in> G \<and> b \<in> G \<longrightarrow> (\<exists>c\<in>G. c \<le> a \<and> c \<le> b)"
+  proof
+    fix a b assume A4:" a \<in> G \<and> b \<in>G"
+    have B9:"Inf X {a, b} \<in> G \<and> Inf X {a, b} \<le> a \<and> Inf X {a, b} \<le> b"
+      by (meson A0 A4 B0 B1 binf_leI1 binf_leI2 dual_order.refl in_mono lattD41) 
+    show "\<exists>c\<in>G. c \<le> a \<and> c \<le> b"
+      using B9 by auto
+  qed
+  have B10:"is_dir G (\<ge>)"
+    by (simp add: B8 is_dwdirI1)
+  have B11:"is_ord_cl X F (\<le>)"
+    by (simp add: A1 filterD4)
+  show ?thesis
+    by (simp add: B0 B10 B6 B7 filterI1 is_ord_clI1)
+qed  
 
 lemma primefilterI2:
   assumes A0:"is_lattice X" and A1:"pfilter X F" and 
