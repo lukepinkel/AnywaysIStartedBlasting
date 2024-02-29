@@ -1902,6 +1902,7 @@ lemma binf_assoc2:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, Inf X {b, c}} = Inf X {b, Inf X {a, c}}"
   apply(rule order.antisym) by (simp add: binf_leI1 binf_leI2 binf_leI3 sinfD4)+
 
+
 lemma binf_idem2:
   "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, Inf X {a, b}} = Inf X {a, b}"
   by (metis binf_assoc1 binf_idem1)
@@ -1969,6 +1970,72 @@ lemma inf_semilattice_finf_closed:
   "\<lbrakk>is_finf_closed X A; A \<subseteq> X; E \<subseteq> A; finite E; E \<noteq> {}; is_inf_semilattice X\<rbrakk> \<Longrightarrow> Inf X E \<in> A "
   by (metis finite_inf_closed2 is_finf_closed_def)
 
+lemma inf_semilattice_finf:
+  "\<lbrakk>is_inf_semilattice X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
+  by (simp add: binf_finite2 fpow_ne_iff2)
+
+
+lemma finfI:
+  "\<lbrakk>is_inf_semilattice X; (\<And>s E. is_inf X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Inf X F)"
+  using inf_semilattice_finf by blast
+
+lemma inf_semilattice_finf_props0:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, b, c}  \<in> X"
+  by(erule finfI,simp add:is_infE1, simp add: fpow_ne_iff2)
+
+lemma inf_assoc_lbd1:
+  "is_inf X {b, c} i \<Longrightarrow> x \<in> lbd X {a, i} \<Longrightarrow> x \<in> lbd X {a, b, c}"
+  by (meson is_infE5 lbdD2 lbd_mem_doubleE1 lbd_mem_doubleE2 lbd_mem_insert)
+
+lemma inf_assoc_lbd1b:
+  "is_inf X {a, b} i \<Longrightarrow> is_inf X {c, d} j \<Longrightarrow> x \<in> lbd X {i, j} \<Longrightarrow> x \<in> lbd X {a, b, c, d}"
+  by (meson is_infE5 lbdD2 lbd_mem_doubleE1 lbd_mem_doubleE2 lbd_mem_insert)
+
+lemma inf_assoc_lbd2:
+  "\<lbrakk>is_inf X {b, c} i\<rbrakk> \<Longrightarrow> lbd X {a, b, c} = lbd X {a, i} "
+  by (auto, simp add: is_infE4 lb_def lbd_mem_iff, simp add:inf_assoc_lbd1)
+
+lemma inf_assoc_lbd2b:
+  "is_inf X {a, b} i \<Longrightarrow> is_inf X {c, d} j \<Longrightarrow>  lbd X {i, j} =  lbd X {a, b, c, d}"
+  by (auto, simp add:inf_assoc_lbd1b, simp add: is_infE4 lb_double_iff1 lbd_mem_iff2)
+
+lemma inf_assoc_lbd3:
+  "\<lbrakk>is_inf X {b, c} i\<rbrakk> \<Longrightarrow> (\<forall>j. is_inf X {a, b, c} j  \<longleftrightarrow> is_inf X  {a, i} j) "
+  by (simp add: inf_assoc_lbd2 is_inf_def)
+
+lemma inf_assoc_lbd3a:
+  "\<lbrakk>is_inf X {b, c} i; is_inf X {a, b, c} j\<rbrakk> \<Longrightarrow> is_inf X  {a, i} j "
+  by (simp add: inf_assoc_lbd2 is_inf_def)
+
+lemma inf_assoc_lbd3b:
+  "\<lbrakk>is_inf X {b, c} i;is_inf X  {a, i} j\<rbrakk> \<Longrightarrow>  is_inf X {a, b, c} j"
+  by (simp add: inf_assoc_lbd2 is_inf_def)
+
+
+lemma inf_assoc_lbd4a:
+  "\<lbrakk>is_inf X {a, b} i; is_inf X {c, d} j; is_inf X {a, b, c, d} k\<rbrakk> \<Longrightarrow> is_inf X  {i, j} k "
+  by (meson Lower_eq_inf_eq inf_assoc_lbd2b)
+
+lemma inf_assoc_lbd4b:
+  "\<lbrakk>is_inf X {a, b} i; is_inf X {c, d} j; is_inf X  {i, j} k\<rbrakk> \<Longrightarrow>  is_inf X {a, b, c, d} k"
+  by (meson Lower_eq_inf_eq inf_assoc_lbd2b)
+
+lemma inf_semilattice_finf_props1:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> is_inf X {a, Inf X {b, c}} (Inf X {a, b, c})"
+  by (metis inf_assoc_lbd3b inf_equality sinfD3 sinfD4)
+
+lemma inf_semilattice_finf_props2:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, Inf X {b, c}} = Inf X {a, b, c}"
+  by (simp add: inf_equality inf_semilattice_finf_props1)
+
+lemma inf_semilattice_finf_props3:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X; d \<in> X\<rbrakk> \<Longrightarrow> is_inf X {Inf X {a, b}, Inf X {c, d}} (Inf X {a, b, c, d})"
+  by (meson binf_finite2 bot.extremum finite.emptyI finite_insert inf_assoc_lbd4a insert_not_empty insert_subsetI)
+
+lemma inf_semilattice_finf_props4:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X; d \<in> X\<rbrakk> \<Longrightarrow> Inf X {Inf X {a, b}, Inf X {c, d}} = Inf X {a, b, c, d}"
+  by (simp add: inf_equality inf_semilattice_finf_props3)
+    
 subsection SupSemilattices
 
 definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
@@ -2099,6 +2166,20 @@ qed
 lemma sup_semilattice_fsup_closed:
   "\<lbrakk>is_fsup_closed X A; A \<subseteq> X; E \<subseteq> A; finite E; E \<noteq> {}; is_sup_semilattice X\<rbrakk> \<Longrightarrow> Sup X E \<in> A "
   by (metis finite_sup_closed2 is_fsup_closed_def)
+
+
+lemma sup_semilattice_fsup:
+  "\<lbrakk>is_sup_semilattice X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
+  by (simp add: bsup_finite2 fpow_ne_iff2)
+
+lemma fsupI:
+  "\<lbrakk>is_sup_semilattice X; (\<And>s E. is_sup X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Sup X F)"
+  using sup_semilattice_fsup by blast
+
+lemma sup_semilattice_fsup_props0:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, b, c}  \<in> X"
+  by(erule fsupI,simp add:is_supE1, simp add: fpow_ne_iff2)
+
 
 subsection Lattices
 
@@ -3128,7 +3209,6 @@ lemma dwdir_finite:
   "is_dir (X::'a::order set) (\<ge>) \<longleftrightarrow> (\<forall>A. A \<subseteq> X \<and> finite A \<and> A \<noteq> {} \<longrightarrow>  (\<exists>c \<in> X. c lb A))"
   by (metis dwdir_finite2 dwdir_finite3)
 
-
 lemma csup_updir:
   "is_csup_semilattice X \<Longrightarrow> is_dir X (\<le>)"
   by (metis csupD3 is_updirI1 greatestD11 greatestD2)
@@ -3136,7 +3216,6 @@ lemma csup_updir:
 lemma sup_updir:
   "\<lbrakk>is_sup_semilattice X; is_greatest X m\<rbrakk> \<Longrightarrow> is_dir X (\<le>)"
   by (meson greatestD1 greatestD2 is_updirI1)
-
 
 lemma cinf_dwdir:
   "is_cinf_semilattice X \<Longrightarrow> is_dir X (\<ge>)"
