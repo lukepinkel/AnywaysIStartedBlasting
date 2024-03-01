@@ -110,7 +110,6 @@ lemma fpow_neD3:
   " A \<in> Fpow_ne X \<Longrightarrow> finite A "
   by (simp add: fpow_ne_iff2)
 
-
 lemma fpow_ne_iso0:
   "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" 
    by (drule fpow_neD1)+ simp
@@ -130,6 +129,269 @@ lemma fpow_ne_bot:
 lemma ne_subset_ne:
   "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
   by blast
+
+
+definition CartesianProduct::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where
+  "CartesianProduct I X = {f::('I \<Rightarrow> 'X). \<forall>i \<in> I. (f i) \<in> (X i)}"
+
+abbreviation Prod::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where
+  "Prod I X \<equiv> CartesianProduct I X"
+
+lemma prod_mem:
+  "f \<in> Prod I X \<longleftrightarrow> (\<forall>i \<in> I. (f i) \<in> (X i))"
+  by (simp add: CartesianProduct_def)
+
+
+lemma axiom_of_choice_lol:
+  fixes I::"'I set"
+  fixes X::"'I \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. X i \<noteq> {}"
+  shows "Prod I X \<noteq> {}"
+proof-
+  define f where "f=(\<lambda>i. SOME x. (x \<in> (X i)))"
+  have "f \<in> Prod I X"
+    by (metis A1 equals0I f_def prod_mem verit_sko_ex')
+  show ?thesis
+    using \<open>(f::'I \<Rightarrow> 'X) \<in> Prod (I::'I set) (X::'I \<Rightarrow> 'X set)\<close> by auto
+qed
+
+lemma projection_is_surjective:
+  fixes I::"'I set"
+  fixes X::"'I \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" and 
+          A1:"\<forall>i \<in> I. X i \<noteq> {}" 
+  shows "\<forall>i \<in> I. \<forall>x \<in> (X i). \<exists>f \<in> (Prod I X). (f i) = x"
+proof-
+  have B0:"Prod I X \<noteq> {}"
+    by (simp add: A0 A1 axiom_of_choice_lol)
+  have B1:"\<forall>i \<in> I. \<forall>x \<in> (X i). \<exists>f \<in> (Prod I X). (f i) = x"
+  proof
+    fix i assume A2:"i \<in> I"
+    show B2:"\<forall>x \<in> (X i). \<exists>f \<in> (Prod I X). (f i) = x"
+    proof
+      fix x assume A3:"x \<in> (X i)"
+      obtain f0 where B3:"f0 \<in> Prod I X"
+        using B0 by blast
+      define f where "f=(\<lambda>j. if j=i then x else (f0 j))"
+      have B4:"f \<in> Prod I X"
+        by (metis A3 B3 f_def prod_mem)
+      have B5:"f i = x"
+        by (simp add: f_def)
+      show "\<exists>f \<in> (Prod I X). (f i) = x"
+        using B4 B5 by blast
+      qed
+    qed
+  show ?thesis
+    using B1 by blast
+qed
+
+lemma comp_inverse:
+  "UNIV-(UNIV-X) = X"
+  by (simp add: Diff_Diff_Int)
+
+lemma union_of_intersections:
+  fixes I::"'I set"
+  fixes J::"'I \<Rightarrow> 'J set"
+  fixes X::"'I \<Rightarrow> 'J \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" 
+  shows "(\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) = (\<Inter>f\<in>(Prod I J). (\<Union>i \<in> I. (X i (f i))))"
+proof-
+  let ?S="\<Union>i \<in> I. J i"
+  let ?P="Prod I J"
+  have B0:"\<forall>f. f \<in> ?P \<longleftrightarrow> (\<forall>i \<in> I. (f i) \<in> (J i))"
+    by (simp add: prod_mem)
+  have B1:"\<forall>x. x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longleftrightarrow> (\<exists>i \<in>I. x \<in>  (\<Inter>j\<in>(J i). (X i j)))"
+    by blast
+  have B2:"\<forall>x. x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longleftrightarrow> (\<exists>i \<in> I. \<forall>j \<in> (J i). x \<in> (X i j))"
+    by simp
+  have B3:"\<forall>x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))). (\<exists>i \<in> I. \<forall>f \<in> ?P. x \<in> (X i (f i)))"
+  proof
+    fix x assume B3A0:"x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j)))"
+    obtain i where "i \<in>I \<and>  x \<in>  (\<Inter>j\<in>(J i). (X i j))"
+      using B3A0 by blast
+    have B30:"\<forall>f \<in> ?P. \<forall>i \<in> I. ((f i) \<in> (J i))"
+      by (simp add: prod_mem)  
+    show "(\<exists>i \<in> I. \<forall>f \<in> ?P. x \<in> (X i (f i) ))"
+      using B30 B3A0 by auto
+  qed
+  have B4:"\<forall>x. x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longrightarrow>  ( \<forall>f \<in> ?P. \<exists>i \<in> I.  x \<in> (X i (f i)))"
+    using B0 by blast
+  have B5:"\<forall>x. x \<in> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longrightarrow> (\<forall>f \<in> ?P. x \<in> (\<Union>i \<in> I. (X i (f i))))"
+    by (simp add: B4)
+  have B6:" (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<subseteq> (\<Inter>f\<in>?P. (\<Union>i \<in> I. (X i (f i))))"
+    using B5 by blast
+  have B7:"\<And>x. x \<notin> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longrightarrow> x \<notin> (\<Inter>f\<in>?P. (\<Union>i \<in> I. (X i (f i))))"
+  proof
+    fix x assume B7A0:"x \<notin> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j)))"
+    have B70:"\<forall>i \<in> I. x \<notin>(\<Inter>j\<in>(J i). (X i j))"
+      using B7A0 by blast
+    have B71:"\<forall>i \<in> I. {j. j\<in> (J i) \<and> (x \<notin> (X i j))} \<noteq> {}"
+      using B70 by fastforce
+    define K where "K=(\<lambda>(i::('I)).  {j. j\<in> (J i) \<and> (x \<notin> (X i j))})"
+    define f where "f=( \<lambda>(i::('I)). SOME j. j \<in> (K i))"
+    have B72:"f \<in> ?P"
+      by (metis (mono_tags, lifting) B0 B71 Collect_empty_eq K_def f_def mem_Collect_eq verit_sko_ex')
+    have B73:"\<forall>i \<in> I. x \<notin> (X i (f i))"
+      by (metis (mono_tags, lifting) B71 Collect_empty_eq K_def f_def mem_Collect_eq someI_ex)
+    have B74:"x \<notin>  (\<Union>i \<in> I. (X i (f i)))"
+      using B73 by blast
+    show "x \<notin> (\<Inter>f\<in>?P. (\<Union>i \<in> I. (X i (f i))))"
+      using B72 B74 by blast
+  qed
+  have B8:"\<forall>x. x \<notin> (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j))) \<longrightarrow> x \<notin> (\<Inter>f\<in>?P. (\<Union>i \<in> I. (X i (f i))))"
+    using B7 by blast
+  have B9:"(\<Inter>f\<in>?P. (\<Union>i \<in> I. (X i (f i)))) \<subseteq>  (\<Union>i\<in>I. (\<Inter>j\<in>(J i). (X i j)))"
+    using B8 by blast
+  with B6 B9 show ?thesis
+    by blast
+qed
+   
+
+
+lemma intersection_of_unions:
+  fixes I::"'I set"
+  fixes J::"'I \<Rightarrow> 'J set"
+  fixes X::"'I \<Rightarrow> 'J \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" 
+  shows "(\<Inter>i \<in> I. (\<Union>j \<in> (J i). (X i j))) = (\<Union>f\<in>(Prod I J). (\<Inter>i\<in> I. (X i (f i))))"
+proof-
+  define Z where "Z= (\<lambda>(i::('I)) (j::('J)). (UNIV-(X i j)))"
+  have B0:"(\<Union>i \<in> I. (\<Inter>j \<in> (J i). (Z i j))) = (\<Inter>f \<in> (Prod I J). (\<Union>i \<in> I. (Z i (f i))))"
+    by (simp add: assms union_of_intersections)
+  have B1:"UNIV-(\<Union>i \<in> I. (\<Inter>j \<in> (J i). (Z i j))) = UNIV-(\<Inter>f \<in> (Prod I J). (\<Union>i \<in> I. (Z i (f i))))"
+    using B0 by presburger
+  have B2:"(\<Inter>i \<in> I. (UNIV -  (\<Inter>j \<in> (J i). (Z i j)))) = (\<Union>f \<in> (Prod I J). UNIV-(\<Union>i \<in> I. (Z i (f i))))"
+    using B1 by force
+  have B3:"(\<Inter>i \<in> I. (\<Union>j \<in> (J i). (UNIV-(Z i j)))) =  (\<Union>f \<in> (Prod I J). (\<Inter>i \<in> I. UNIV-(Z i (f i))))"
+    using B1 by auto
+  have B4:"(\<Inter>i \<in> I. (\<Union>j \<in> (J i). UNIV-(UNIV-(X i j)))) = (\<Union>f\<in>(Prod I J). (\<Inter>i\<in> I. UNIV-(UNIV-(X i (f i)))))"
+    using B3 Z_def by blast
+  have B5:"(\<Inter>i \<in> I. (\<Union>j \<in> (J i). (X i j))) = (\<Union>f\<in>(Prod I J). (\<Inter>i\<in> I. (X i (f i))))"
+    proof -
+      have "\<forall>X. (UNIV::'X set) - (UNIV - X) = X"
+        by (simp add: comp_inverse)
+      then show ?thesis
+        using B4 by presburger
+    qed
+   with B5 show ?thesis
+     by simp
+qed
+
+lemma cartesian_product_union_intersection:
+  fixes I::"'I set"
+  fixes J::"'I \<Rightarrow> 'J set"
+  fixes X::"'I \<Rightarrow> 'J \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. J i \<noteq> {}"
+  shows "Prod I (\<lambda>i. (\<Union>j \<in> (J i). (X i j))) = (\<Union>f \<in> (Prod I J). (Prod I (\<lambda>i. (X i (f i)))))"
+proof-
+  define G where A2:"G=(\<lambda>i. (\<Union>j \<in> (J i). (X i j)))"
+  define F where A3:"F=(\<lambda>f i. (X i (f i)))"
+  let ?PIJ="Prod I J"
+  let ?L="Prod I G"
+  let ?R="(\<Union>f \<in>?PIJ. (Prod I (F f)))"
+  have LR:"?L \<subseteq> ?R"
+    proof-
+      have LR0:"\<And>g. g \<in> ?L \<longrightarrow> g \<in> ?R"
+        proof
+          fix g assume LR0A0:"g \<in> ?L"
+          have B0:"\<forall>i \<in> I. \<exists>j \<in> (J i). (g i) \<in> (X i j)"
+            by (metis A2 LR0A0 UN_iff prod_mem)
+          define H where A3:"H=(\<lambda>i. {j \<in> (J i). (g i) \<in> (X i j)})"
+          have B1:"\<forall>i \<in> I. (H i) \<noteq> {}"
+            using A3 B0 by auto
+          define f where A4:"f=(\<lambda>i. SOME j. j \<in> (H i))"
+          have B2:"\<forall>i \<in> I. (f i) \<in> (H i)"
+            using A4 B1 some_in_eq by blast
+          have B3:"f \<in> ?PIJ"
+            using A3 B2 prod_mem by fastforce
+          have B4:"g \<in> (Prod I (F f))"
+            using A3 B2 \<open>F::('I \<Rightarrow> 'J) \<Rightarrow> 'I \<Rightarrow> 'X set \<equiv> \<lambda>(f::'I \<Rightarrow> 'J) i::'I. (X::'I \<Rightarrow> 'J \<Rightarrow> 'X set) i (f i)\<close> prod_mem by fastforce
+          show "g \<in> ?R"
+            using B3 B4 by blast
+          qed
+       show ?thesis
+         using LR0 by blast
+      qed
+  have RL:"?R \<subseteq> ?L"
+   proof-
+      have RL0:"\<And>g. g \<in> ?R \<longrightarrow> g \<in> ?L"
+        proof
+          fix g assume A5:"g \<in> ?R"
+          obtain f where A6:"f \<in> ?PIJ \<and> (\<forall>i \<in> I. (g i) \<in> (X i ((f i))))"
+            using A3 A5 prod_mem by force
+          have B5:"\<forall>i \<in> I. (\<exists>j \<in> (J i). (f i) = j)"
+            by (meson A6 prod_mem)
+          have B6:"\<forall>i \<in> I. (\<exists>j \<in> (J i). (g i) \<in> (X i j))"
+            using A6 B5 by blast
+          show "g \<in> ?L"
+            by (simp add: A2 B6 prod_mem)
+          qed
+      show ?thesis
+        using RL0 by blast
+    qed
+  show ?thesis
+    using A2 A3 LR RL by fastforce
+qed      
+  
+
+lemma cartesian_product_intersection_union:
+  fixes I::"'I set"
+  fixes J::"'I \<Rightarrow> 'J set"
+  fixes X::"'I \<Rightarrow> 'J \<Rightarrow> 'X set"
+  assumes A0:"I \<noteq> {}" and A1:"\<forall>i \<in> I. J i \<noteq> {}"
+  shows "Prod I (\<lambda>i. (\<Inter>j \<in> (J i). (X i j))) = (\<Inter>f \<in> (Prod I J). (Prod I (\<lambda>i. (X i (f i)))))"
+proof-
+  define G where A2:"G=(\<lambda>i. (\<Inter>j \<in> (J i). (X i j)))"
+  define F where A3:"F=(\<lambda>f i. (X i (f i)))"
+  let ?PIJ="Prod I J"
+  let ?L="Prod I G"
+  let ?R="(\<Inter>f \<in>?PIJ. (Prod I (F f)))"
+  have B0:"\<forall>g. g \<in> ?L \<longleftrightarrow> (\<forall>i \<in> I. \<forall>j \<in> (J i). (g i) \<in> (X i j))"
+    by (simp add: \<open>G::'I \<Rightarrow> 'X set \<equiv> \<lambda>i::'I. \<Inter> ((X::'I \<Rightarrow> 'J \<Rightarrow> 'X set) i ` (J::'I \<Rightarrow> 'J set) i)\<close> prod_mem)
+  have B1:"\<forall>g. g \<in> ?R \<longleftrightarrow> (\<forall>f \<in> ?PIJ. \<forall>i \<in> I. (g i) \<in> (X i (f i)))"
+    by (simp add: A3 prod_mem)
+  have B2:"\<forall>f. f \<in> ?PIJ \<longleftrightarrow> (\<forall>i \<in> I. (f i) \<in> (J i))"
+    by (simp add: prod_mem)
+  have LR:"?L \<subseteq> ?R"
+    proof-
+      have LR0:"\<And>g. g \<in> ?L \<longrightarrow> g \<in> ?R"
+        proof
+          fix g assume LR0A0:"g \<in> ?L"
+          show "g \<in> ?R"
+            by (metis B0 B1 LR0A0 prod_mem)
+        qed
+      show ?thesis
+        using LR0 by blast
+   qed
+  have RL:"?R \<subseteq> ?L"
+   proof-
+      have RL0:"\<And>g. g \<in> ?R \<longrightarrow> g \<in> ?L"
+        proof
+          fix g assume A5:"g \<in> ?R"
+          have RL0B0:"\<forall>f. f \<in> ?PIJ \<longrightarrow> (\<forall>i\<in>I. (g i) \<in> (X i (f i)))"
+            by (meson A5 B1)
+          have RL0B1:"\<forall>f \<in> ?PIJ. (\<forall>i \<in> I. (f i) \<in> (J i))"
+            using B2 by fastforce
+          have RL0B2:"(\<forall>i \<in> I. \<forall>j \<in> (J i). (g i) \<in> (X i j))"
+          proof
+            fix k assume "k \<in> I"
+            show "\<forall>h \<in> (J k). (g k) \<in> (X k h)"
+            proof
+              fix h assume "h \<in> (J k)"
+              show "(g k) \<in> (X k h)"
+                by (metis A0 A1 RL0B0 \<open>(h::'J) \<in> (J::'I \<Rightarrow> 'J set) (k::'I)\<close> \<open>(k::'I) \<in> (I::'I set)\<close> projection_is_surjective)
+            qed
+          qed
+          show "g \<in> ?L"
+            using B0 RL0B2 by blast
+      qed
+      show ?thesis
+        using RL0 by blast
+  qed
+  show ?thesis
+    using A2 A3 LR RL by blast
+qed
+
 
 section Bounds
 subsection UpperBoundsPredicate
@@ -3301,6 +3563,10 @@ lemma is_dwdirI3:
   "\<lbrakk>is_inf_semilattice X; (\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (Inf X {a, b} \<in> X))\<rbrakk> \<Longrightarrow> is_dir (X::'a::order set) (\<ge>)"
   by (simp add: is_dwdirI2 is_inf_semilattice_def)
 
+lemma is_dwdirI4:
+  "\<lbrakk>is_inf_semilattice X; A \<subseteq> X; (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (Inf X {a, b} \<in> A))\<rbrakk> \<Longrightarrow> is_dir (A::'a::order set) (\<ge>)"
+  apply(auto simp add:is_dir_def subset_iff) by (metis binf_leI1 binf_leI2 dual_order.refl)
+
 
 lemma is_dwdir_empty:
   "is_dir {} (\<ge>)"
@@ -4042,7 +4308,47 @@ lemma filters_on_top_inf_lattice_clattice:
 
 *)
 
+lemma lattice_filter_memI:
+  "\<lbrakk>is_lattice X; is_filter X F; x \<in> F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F"
+  by (simp add: filter_bsup_memI1 lattD42)
 
+lemma lattice_filter_dunion1:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>)\<rbrakk> \<Longrightarrow> \<Union>D \<noteq> {} "
+  by (simp add: is_filter_def filters_on_iff subset_iff)
+
+lemma lattice_filter_dunion2:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>)\<rbrakk> \<Longrightarrow> is_ord_cl X (\<Union>D) (\<le>)"
+  by (metis Pow_iff filterD2 filterD4 filters_on_iff is_ord_cl_un subset_iff)
+
+lemma lattice_filter_dunion3:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>); x \<in> (\<Union>D); y \<in> (\<Union>D)\<rbrakk>
+   \<Longrightarrow> (\<exists>Dx \<in> D. \<exists>Dy \<in> D. \<exists>Dxy \<in> D. x \<in> Dx \<and> y \<in> Dy \<and> Dx \<inter> Dy \<subseteq> Dxy)" by blast
+
+lemma lattice_filter_dunion4:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>); x \<in> (\<Union>D); y \<in> (\<Union>D)\<rbrakk> \<Longrightarrow> (\<exists>Dxy \<in> D. x\<in> Dxy \<and> y \<in> Dxy)"
+  by (meson UnionE in_mono is_updirE1)
+
+lemma lattice_filter_dunion5:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>); x \<in> (\<Union>D); y \<in> (\<Union>D)\<rbrakk> \<Longrightarrow> (\<exists>Dxy \<in> D. Inf X {x, y} \<in> Dxy)"
+  using lattice_filter_dunion4[of X D x y]  by (metis filter_finf_closed1 filters_on_iff in_mono lattD41)
+
+lemma lattice_filter_dunion6:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>); x \<in> (\<Union>D); y \<in> (\<Union>D)\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in>  (\<Union>D)"
+  by (simp add: lattice_filter_dunion5)
+
+lemma lattice_filter_dunion7:
+  "\<lbrakk>D \<noteq> {}; D \<subseteq> filters_on X\<rbrakk> \<Longrightarrow> \<Union>D \<subseteq> X"
+  by(auto simp add:filters_on_def is_filter_def)
+
+lemma lattice_filter_dunion8:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>)\<rbrakk> \<Longrightarrow> is_dir (\<Union>D) (\<ge>)"
+  by(rule is_dwdirI4, erule lattD41, erule lattice_filter_dunion7, simp, erule lattice_filter_dunion6, simp+)
+
+
+lemma lattice_filter_dunion9:
+  "\<lbrakk>is_lattice X; D \<noteq> {}; D \<subseteq> filters_on X; is_dir D (\<le>)\<rbrakk> \<Longrightarrow> is_filter X (\<Union>D)" 
+  using  lattice_filter_dunion1[of X D] lattice_filter_dunion2[of X D] lattice_filter_dunion8[of X D]
+  by (simp add: filterI1 lattice_filter_dunion7)
 
 definition lorc::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" ("(2[_')\<^sub>_)") where
   "[a)\<^sub>X \<equiv> {y \<in> X. a \<le> y} "
@@ -5799,21 +6105,21 @@ qed
 
 lemma big_chungus0:
   assumes A0:"is_clr C (Pow X)" and 
-          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
-          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
+          A2:"(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
           A3:"x \<in> X" and 
           A4:"A \<in> Pow_ne C" and
           A5:"cl_from_clr C {x} \<subseteq> Sup C A" and 
-          A6:" is_dir A (\<subseteq>)"
+          A6:"is_dir A (\<subseteq>)"
   shows "\<exists>a \<in> A. cl_from_clr C {x} \<subseteq> a"
 proof-
   let ?f="cl_from_clr C"
   have B2:"Sup C A = \<Union>A"
-    by (metis A2 A4 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+    by (metis A0 A2 A4 A6 clrD2 pow_neD1 pow_ne_iff1 sup_equality uni_sup_fam)
   have B2:"{x} \<subseteq> ?f {x}"
     by (metis A0 A3 PowD PowI Pow_bottom cl_ext1 insert_subsetI)
   have B3:"... \<subseteq> \<Union>A"
-    by (metis A2 A4 A5 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+    by (metis A0 A2 A4 A5 A6 clrD2 pow_neD1 pow_ne_iff1 sup_equality uni_sup_fam)
   have B4:"{x} \<subseteq> \<Union>A"
     using B2 B3 by blast
   obtain a where B5:"a \<in> A \<and> x \<in> a"
@@ -5830,7 +6136,7 @@ qed
 
 lemma big_chungus1:
   assumes A0:"is_clr C (Pow X)" and 
-          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
           A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
           A3:"x \<in> X"
   shows "is_compact C (cl_from_clr C {x})"
@@ -5841,7 +6147,7 @@ lemma big_chungus1:
 
 lemma big_chungus2:
   assumes A0:"is_clr C (Pow X)" and 
-          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
           A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
           A3:"E \<in> C"
   shows "(\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
@@ -5899,7 +6205,7 @@ qed
 
 lemma big_chungus3:
   assumes A0:"is_clr C (Pow X)" and 
-          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
           A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
   shows "compactly_generated C \<and> (\<forall>x. x \<in> X \<longrightarrow> is_compact C ((cl_from_clr C) {x}))"
 proof-
@@ -5915,6 +6221,18 @@ proof-
   show ?thesis
     by (simp add: B1 B8 compactly_generatedI1)
 qed
+
+
+lemma big_chungus4:
+ "\<lbrakk>is_clr C (Pow X); (\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C);(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)\<rbrakk> \<Longrightarrow> compactly_generated C"
+  by (simp add: big_chungus3)
+
+lemma filters_on_lattice_compactgen:
+  "\<lbrakk>is_lattice X; is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> compactly_generated (filters_on X)" 
+  apply(rule_tac ?X="X" in big_chungus4)
+  apply (simp add: filter_is_clr lattD41)
+  apply (simp add: filter_inter_closed2 lattD41)
+  using lattice_filter_dunion9
   
 lemma lattice_filters_distr:
   assumes A0:"distributive_lattice X" 
