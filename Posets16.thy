@@ -6137,7 +6137,7 @@ qed
 lemma big_chungus1:
   assumes A0:"is_clr C (Pow X)" and 
           A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
-          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A2:"(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk>\<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
           A3:"x \<in> X"
   shows "is_compact C (cl_from_clr C {x})"
   apply(rule ccompact1) 
@@ -6148,7 +6148,7 @@ lemma big_chungus1:
 lemma big_chungus2:
   assumes A0:"is_clr C (Pow X)" and 
           A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
-          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A2:"(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
           A3:"E \<in> C"
   shows "(\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
 proof-
@@ -6206,7 +6206,7 @@ qed
 lemma big_chungus3:
   assumes A0:"is_clr C (Pow X)" and 
           A1:"(\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C)" and
-          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
+          A2:"(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
   shows "compactly_generated C \<and> (\<forall>x. x \<in> X \<longrightarrow> is_compact C ((cl_from_clr C) {x}))"
 proof-
   have P0:"C \<subseteq> Pow X"
@@ -6224,7 +6224,7 @@ qed
 
 
 lemma big_chungus4:
- "\<lbrakk>is_clr C (Pow X); (\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C);(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)\<rbrakk> \<Longrightarrow> compactly_generated C"
+ "\<lbrakk>is_clr C (Pow X); (\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C);(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)\<rbrakk> \<Longrightarrow> compactly_generated C"
   by (simp add: big_chungus3)
 
 lemma filters_on_lattice_compactgen:
@@ -6232,7 +6232,7 @@ lemma filters_on_lattice_compactgen:
   apply(rule_tac ?X="X" in big_chungus4)
   apply (simp add: filter_is_clr lattD41)
   apply (simp add: filter_inter_closed2 lattD41)
-  using lattice_filter_dunion9
+  by (simp add: filters_on_iff lattice_filter_dunion9)
   
 lemma lattice_filters_distr:
   assumes A0:"distributive_lattice X" 
