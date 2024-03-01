@@ -61,6 +61,15 @@ lemma pow_neD2:
   " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} "
   by(simp add:Pow_ne_def)
 
+lemma pow_ne_iso0:
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X" 
+   by (drule pow_neD1)+ simp
+
+lemma pow_ne_iso1:
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"
+  by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
+
+
 lemma pow_ne_bot:
   "{} \<notin> Pow_ne X"
   by(simp add:Pow_ne_def)
@@ -85,6 +94,10 @@ lemma fpow_neD0:
   "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X "
   by (simp add: fpow_ne_iff2)
 
+lemma fpow_neD0b:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow_ne X"
+  by (simp add: fpow_ne_iff2 pow_ne_iff1)
+
 lemma fpow_neD1:
   "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X "
   by (simp add: fpow_ne_iff2)
@@ -92,6 +105,23 @@ lemma fpow_neD1:
 lemma fpow_neD2:
   " A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} "
   by (simp add: fpow_ne_iff2)
+
+lemma fpow_neD3:
+  " A \<in> Fpow_ne X \<Longrightarrow> finite A "
+  by (simp add: fpow_ne_iff2)
+
+
+lemma fpow_ne_iso0:
+  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" 
+   by (drule fpow_neD1)+ simp
+
+lemma fpow_ne_iso1:
+  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"
+  by(rule fpow_neI,erule fpow_ne_iso0,simp,erule fpow_neD2, erule fpow_neD3)
+
+lemma fpow_ne_iso2:
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"
+  by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
 
 lemma fpow_ne_bot:
   "{} \<notin> Fpow_ne X"
@@ -1782,6 +1812,10 @@ lemma uni_inf_fam:
   "\<lbrakk>S \<subseteq> Pow X; A \<subseteq> S; \<Inter>A \<in> S\<rbrakk> \<Longrightarrow> is_inf S A (\<Inter>A) "
   by (meson is_infI9 lb_def le_Inf_iff)
 
+lemma union_sup_univ:
+  "\<Union>A = Sup UNIV A"
+  by (metis UNIV_I subset_Pow_Union sup_equality top_greatest uni_sup_fam)
+
 
 lemma lattice_id6:
   "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i\<rbrakk> \<Longrightarrow> s \<le> i \<Longrightarrow> (\<forall>a \<in> A. \<forall>b \<in> B. a \<le> b) "
@@ -1882,6 +1916,18 @@ lemma binf_finite2:
   "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_inf X A (Inf X A)"
   by (meson binf_finite sinfD3)
 
+lemma finf_leI1:
+  "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; a \<in> A\<rbrakk> \<Longrightarrow> Inf X A \<le> a"
+  using is_infD1121[of X A "Inf X A" a] binf_finite2[of X A] by blast
+
+lemma finf_lb:
+  "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf X A lb A"
+  using is_infD32[of X A "Inf X A"] binf_finite2[of X A] by (simp add: is_infE2)
+
+lemma finf_glb:
+   "\<lbrakk>is_inf_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; b \<in> lbd X A\<rbrakk> \<Longrightarrow> b \<le> Inf X A"
+  using is_infE3[of X A "Inf X A" b] binf_finite2[of X A] by fastforce  
+
 lemma binfI:
   "\<lbrakk>is_inf_semilattice X; (\<And>s. is_inf X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Inf X {a, b})"
   by (simp add: sinfD3)
@@ -1974,7 +2020,6 @@ lemma inf_semilattice_finf:
   "\<lbrakk>is_inf_semilattice X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_inf X A (Inf X A)"
   by (simp add: binf_finite2 fpow_ne_iff2)
 
-
 lemma finfI:
   "\<lbrakk>is_inf_semilattice X; (\<And>s E. is_inf X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Inf X F)"
   using inf_semilattice_finf by blast
@@ -2011,7 +2056,6 @@ lemma inf_assoc_lbd3b:
   "\<lbrakk>is_inf X {b, c} i;is_inf X  {a, i} j\<rbrakk> \<Longrightarrow>  is_inf X {a, b, c} j"
   by (simp add: inf_assoc_lbd2 is_inf_def)
 
-
 lemma inf_assoc_lbd4a:
   "\<lbrakk>is_inf X {a, b} i; is_inf X {c, d} j; is_inf X {a, b, c, d} k\<rbrakk> \<Longrightarrow> is_inf X  {i, j} k "
   by (meson Lower_eq_inf_eq inf_assoc_lbd2b)
@@ -2035,6 +2079,10 @@ lemma inf_semilattice_finf_props3:
 lemma inf_semilattice_finf_props4:
   "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X; d \<in> X\<rbrakk> \<Longrightarrow> Inf X {Inf X {a, b}, Inf X {c, d}} = Inf X {a, b, c, d}"
   by (simp add: inf_equality inf_semilattice_finf_props3)
+
+lemma inf_semilattice_finf_anti:
+  "\<lbrakk>is_inf_semilattice X; A \<in> Fpow_ne X; B \<in> Fpow_ne X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Inf X B \<le> Inf X A"
+  using is_inf_ant1[of A B X "Inf X A" "Inf X B"] inf_semilattice_finf by blast
     
 subsection SupSemilattices
 
@@ -2075,6 +2123,7 @@ lemma bsup_geI4:
 lemma bsup_geI5:
   "\<lbrakk>is_sup_semilattice X; x1 \<in> X; x2 \<in> X; y1 \<in> X; y2 \<in>X;x1 \<le> y1; x2 \<le> y2\<rbrakk> \<Longrightarrow> Sup X {x1, x2} \<le> Sup X {y1, y2}"
   by (simp add: bsup_geI1 bsup_geI2 bsup_geI3 ssupD4)
+
 
 lemma bsup_iff:
   "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<ge> Sup X {a, b} \<longleftrightarrow> c \<ge> a \<and> c \<ge> b)"
@@ -2123,6 +2172,28 @@ lemma ge_bsup2:
 lemma bsup_finite2:
   "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow>  is_sup X A (Sup X A)"
   by (simp add: bsup_finite ssupD3)
+
+
+lemma fsup_geI1:
+  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; a \<in> A\<rbrakk> \<Longrightarrow> a \<le> Sup X A"
+  using is_supD1121[of X A "Sup X A" a] bsup_finite2[of X A] by blast
+
+lemma fsup_ub:
+  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Sup X A ub A"
+  using is_supD32[of X A "Sup X A"] bsup_finite2[of X A] by (simp add: is_supE2)
+
+lemma fsup_lub:
+   "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; b \<in> ubd X A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
+  using is_supE3[of X A "Sup X A" b] bsup_finite2[of X A] by fastforce  
+
+lemma fsup_lub2:
+  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; b \<in> X; b ub A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
+  by (simp add: fsup_lub ubdI2)
+
+lemma fsup_lub3:
+  "\<lbrakk>is_sup_semilattice X;  A \<in> Fpow_ne X; b \<in> ubd X A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
+  by (simp add: fpow_ne_iff2 fsup_lub)
+
 
 lemma fsup_closedD1:
   "is_fsup_closed X A \<Longrightarrow> (\<And>a1 a2. a1 \<in> A\<Longrightarrow> a2 \<in> A \<Longrightarrow> Sup X {a1, a2} \<in> A)"
@@ -2180,7 +2251,62 @@ lemma sup_semilattice_fsup_props0:
   "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, b, c}  \<in> X"
   by(erule fsupI,simp add:is_supE1, simp add: fpow_ne_iff2)
 
+lemma sup_assoc_ubd1:
+  "is_sup X {b, c} s \<Longrightarrow> x \<in> ubd X {a, s} \<Longrightarrow> x \<in> ubd X {a, b, c}"
+  by (metis is_supE5 ubdD2 ubd_mem_doubleE1 ubd_mem_doubleE2 ubd_mem_insert)
 
+lemma sup_assoc_ubd1b:
+  "is_sup X {a, b} s \<Longrightarrow> is_sup X {c, d} t \<Longrightarrow> x \<in> ubd X {s, t} \<Longrightarrow> x \<in> ubd X {a, b, c, d}"
+  by (metis is_supE5 ubdD2 ubd_mem_double ubd_mem_insert)
+
+lemma sup_assoc_ubd2:
+  "is_sup X {b, c} s \<Longrightarrow> ubd X {a, b, c} = ubd X {a, s} "
+  by (auto, simp add: is_supE4 ub_def ubd_mem_iff, simp add:sup_assoc_ubd1)
+
+lemma sup_assoc_ubd2b:
+  "is_sup X {a, b} s \<Longrightarrow> is_sup X {c, d} t \<Longrightarrow>  ubd X {s, t} =  ubd X {a, b, c, d}"
+  by (auto, simp add:sup_assoc_ubd1b, simp add: is_supE4 ub_double_iff1 ubd_mem_iff2)
+
+lemma sup_assoc_ubd3:
+  "is_sup X {b, c} s \<Longrightarrow> (\<forall>t. is_sup X {a, b, c} t  \<longleftrightarrow> is_sup X  {a, s} t) "
+  by (simp add: sup_assoc_ubd2 is_sup_def)
+
+lemma sup_assoc_ubd3a:
+  "\<lbrakk>is_sup X {b, c} s; is_sup X {a, b, c} t\<rbrakk> \<Longrightarrow> is_sup X  {a, s} t"
+  by (simp add: sup_assoc_ubd2 is_sup_def)
+
+lemma sup_assoc_ubd3b:
+  "\<lbrakk>is_sup X {b, c} s;is_sup X  {a, s} t\<rbrakk> \<Longrightarrow>  is_sup X {a, b, c} t"
+  by (simp add: sup_assoc_ubd2 is_sup_def)
+
+lemma sup_assoc_ubd4a:
+  "\<lbrakk>is_sup X {a, b} s; is_sup X {c, d} t; is_sup X {a, b, c, d} r\<rbrakk> \<Longrightarrow> is_sup X  {s, t} r"
+  by (simp add: sup_iff2 ubd_mem_iff3)
+
+lemma sup_assoc_ubd4b:
+  "\<lbrakk>is_sup X {a, b} s; is_sup X {c, d} t; is_sup X  {s, t} r\<rbrakk> \<Longrightarrow>  is_sup X {a, b, c, d} r"
+  by (meson Upper_eq_sup_eq sup_assoc_ubd2b)
+
+lemma sup_semilattice_fsup_props1:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> is_sup X {a, Sup X {b, c}} (Sup X {a, b, c})"
+  by (metis ssupD3 ssupD4 sup_assoc_ubd3b sup_equality)
+
+lemma sup_semilattice_supf_props2:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup X {a, Sup X {b, c}} = Sup X {a, b, c}"
+  by (simp add: sup_equality sup_semilattice_fsup_props1)
+
+lemma sup_semilattice_fsup_props3:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X; d \<in> X\<rbrakk> \<Longrightarrow> is_sup X {Sup X {a, b}, Sup X {c, d}} (Sup X {a, b, c, d})"
+  by (metis (full_types) bsup_finite2 empty_not_insert empty_subsetI finite.emptyI finite.insertI insert_subsetI sup_assoc_ubd4a)
+
+lemma sup_semilattice_fsup_props4:
+  "\<lbrakk>is_sup_semilattice X; a \<in> X; b \<in> X; c \<in> X; d \<in> X\<rbrakk> \<Longrightarrow> Sup X {Sup X {a, b}, Sup X {c, d}} = Sup X {a, b, c, d}"
+  by (simp add: sup_equality sup_semilattice_fsup_props3)
+
+lemma sup_semilattice_fsup_iso:
+  "\<lbrakk>is_sup_semilattice X; A \<in> Fpow_ne X; B \<in> Fpow_ne X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Sup X A \<le> Sup X B"
+  using is_sup_iso1[of A B X "Sup X A" "Sup X B"] sup_semilattice_fsup by blast
+    
 subsection Lattices
 
 definition is_lattice::"'a::order set \<Rightarrow> bool" where
@@ -2563,6 +2689,9 @@ lemma pow_is_clattice:
    using  pow_is_clattice3 apply(auto simp add:is_clattice_def)
    by (metis Pow_not_empty ubd_empty pow_is_clattice1 subset_refl sup_if_inf_ub)
 
+lemma univ_is_clattice:
+  "is_clattice (UNIV :: 'a set set)"
+  by (metis Pow_UNIV pow_is_clattice)
 
 section Functions
 subsection Isotonicity
@@ -3141,6 +3270,11 @@ qed
 lemma updir_finite2:
   "\<lbrakk>is_dir (X::'a::order set) (\<le>); A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c ub A)"
   by (metis is_dir_def ubI updir_finite1)
+
+lemma updir_finite_obtain:
+  assumes "is_dir (X::'a::order set) (\<le>)" and "A \<in> Fpow_ne X"
+  obtains c where "c \<in> X \<and> c ub A"
+  using updir_finite2[of X A] fpow_ne_iff2[of A X] assms by blast
 
 lemma updir_finite3:
   "(\<And>A. \<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. c ub A)) \<Longrightarrow> is_dir (X::'a::order set) (\<le>)"
@@ -3737,6 +3871,9 @@ lemma filters_on_lattice_sup_semilattice3b:
 definition binary_filter_sup::"'a::order set \<Rightarrow>'a::order set\<Rightarrow> 'a::order set \<Rightarrow> 'a::order set" where
   "binary_filter_sup X A B = {x \<in> X. \<exists>a \<in> A. \<exists>b \<in> B. Inf X {a, b} \<le> x}"
 
+lemma filter_bsup_memD1:
+  "x \<in> binary_filter_sup X A B \<Longrightarrow> x \<in> X" by (simp add:binary_filter_sup_def)
+
 lemma filter_bsup_mem_iff:
   "x \<in> binary_filter_sup X A B \<longleftrightarrow> (x \<in> X \<and> (\<exists>a \<in> A. \<exists>b \<in> B. Inf X {a, b} \<le> x))"
   by (simp add:binary_filter_sup_def)
@@ -3782,6 +3919,21 @@ lemma filters_on_lattice_bsup1b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow>  is_ord_cl X (binary_filter_sup X F1 F2) (\<le>)"
   apply(auto simp add:binary_filter_sup_def is_ord_cl_def) using dual_order.trans by blast
 
+lemma tmp_inf_lemma:
+  assumes "is_lattice X"  "a \<in> X" "a1 \<in> X" "a2 \<in> X" "b1 \<in> X" "b2 \<in> X" "Inf X {a1, a2} \<le> a" 
+  shows " Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<le> a"
+proof-
+  have B0:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} = Inf X {a1, b1, a2, b2}"
+    by (simp add: assms(1) assms(3-6) inf_semilattice_finf_props4 lattD41)
+  have B1:"... \<le> Inf X {a1, a2}"
+    using inf_semilattice_finf_anti[of X "{a1, a2}" "{a1, b1, a2, b2}"]
+    by (simp add: assms(1) assms(3-6) fpow_ne_iff2 lattD41)
+  have B2:"... \<le> a" by (simp add: assms(7)) 
+  show ?thesis
+    using B0 B1 B2 by auto
+qed 
+  
+
 lemma filters_on_lattice_bsup2a:
   assumes A0:"is_lattice X" and A1:"is_filter X F1" and A2:"is_filter X F2" and
           A3: "a \<in>  (binary_filter_sup X F1 F2)" and  A4:"b \<in>  (binary_filter_sup X F1 F2)"
@@ -3791,10 +3943,12 @@ proof-
     using A3 binary_filter_sup_obtains by blast
   obtain b1 b2 where B1:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> Inf X {b1, b2} \<le> b"
     using A4 binary_filter_sup_obtains by blast
+  have B0b:"a \<in> X \<and> b \<in> X \<and> a1 \<in> X \<and> a2 \<in> X \<and> b1 \<in> X \<and> b2 \<in> X"
+    using A1 A2 A3 A4 B0 B1 filterD21 filter_bsup_memD1 by blast
   have B2:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<le> a"
-    by (smt (verit, ccfv_threshold) A0 A1 A2 B0 B1 binary_infD22 binary_infD31 binary_infD4 filterD21 lattD41 lb_iso1 lb_singletonD lb_singletonI sinfD3 sinfD4)
+    using tmp_inf_lemma[of X a a1 a2 b1 b2]  using A0 B0 B0b by fastforce
   have B3:"Inf X {Inf X {a1, b1}, Inf X {a2, b2}} \<le> b"
-    by (smt (verit, del_insts) A0 A1 A2 B0 B1 binf_iff dual_order.eq_iff filterD21 latt_iff order_trans sinfD4)
+    using tmp_inf_lemma[of X b b1 b2 a1 a2] by (simp add: A0 B0b B1 insert_commute)
   obtain ab1 where P1A3:"ab1 \<in> F1 \<and> ab1 \<le> a1 \<and> ab1 \<le> b1"
     by (meson A1 B0 B1 is_filter_def is_dwdirE1)
   obtain ab2 where P1A4:"ab2 \<in> F2 \<and> ab2 \<le> a2 \<and> ab2 \<le> b2"
@@ -5537,11 +5691,11 @@ definition compactly_generated::"'a::order set \<Rightarrow> bool" where
   "compactly_generated X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (\<exists>C \<in> Pow (compact_elements X). is_sup X C x))"
 
 
-lemma compcatI:
+lemma compactI:
   "\<lbrakk>c \<in> X; (\<And>A. \<lbrakk>A \<in> Pow_ne X; c \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0))\<rbrakk> \<Longrightarrow> is_compact X c"
   by(simp add:is_compact_def)
 
-lemma compcatD:
+lemma compactD:
   "\<lbrakk>is_compact X c; A \<in> Pow_ne X; c \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
   by(simp add:is_compact_def)
 
@@ -5557,9 +5711,20 @@ lemma compactly_generatedI1:
   "(\<And>x. x \<in> X \<Longrightarrow>  (\<exists>C \<in> Pow (compact_elements X). is_sup X C x)) \<Longrightarrow> compactly_generated X"
   by(simp add:compactly_generated_def)
 
+lemma compact_obtain:
+  assumes "is_compact X c" and "A \<in> Pow_ne X" and "c \<le> Sup X A"
+  obtains A0 where "A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0"
+  using assms compactD[of X c A] by blast
+
 (*
   in a csup semilattice an element is compact iff directed coverings contain an upper bound
 *)
+
+
+lemma compactD1:
+  "\<lbrakk>is_compact X c; A \<in> Pow_ne X; c \<le> Sup X A; is_dir A (\<le>)\<rbrakk> \<Longrightarrow> (\<exists>A0. \<exists>a. a \<in> A \<and> a ub A0 \<and> A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
+  by (meson compactD updir_finite_obtain)
+
 
 lemma ccompact0:
   assumes A0:"is_sup_semilattice X" and
@@ -5569,16 +5734,16 @@ lemma ccompact0:
           A4:"is_dir A (\<le>)"
   shows "\<exists>a \<in> A. c \<le> a"
 proof-
-  obtain A0 where A5:"A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0"
-    using A1 A2 A3 compcatD by blast  
-  obtain a where A6:"a \<in> A \<and> a ub A0"
-    by (metis A4 A5 fpow_ne_iff2 updir_finite2)
-  have B0:"Sup X A0 \<le> a"
-    by (metis A0 A2 A5 A6 bsup_finite2 dual_order.trans fpow_ne_iff2 is_supD42 pow_neD1 subsetD)
+  obtain A0 a where A5:"a \<in> A \<and> a ub A0 \<and> A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0"
+    using A1 A2 A3 A4 compactD1 by blast
+  have A7:"a \<in> ubd X A0"
+     using A2 A5 pow_neD1 ubdI2 by blast 
+  have B0:"Sup X A0 \<le> a" 
+    using fsup_lub3[of X A0 a] A0 A2 A5 A7 fpow_ne_iso2 by blast
   have B1:"c \<le> a"
     using A5 B0 by fastforce
   show ?thesis
-    using A6 B1 by blast
+    using A5 B1 by blast
 qed
 
 lemma ccompact1:
@@ -5611,7 +5776,7 @@ proof-
       using B6 by blast
   qed
   show ?thesis
-    by (simp add: A1 P0 compcatI)
+    by (simp add: A1 P0 compactI)
 qed
 
 lemma bot_compact:
@@ -5629,66 +5794,84 @@ proof-
         using B0 by auto
     qed
   show ?thesis
-    by (simp add: A1 P0 compcatI)
+    by (simp add: A1 P0 compactI)
 qed
 
-
-lemma big_chungus:
-  assumes A0:"is_clr (Pow X) C" and 
+lemma big_chungus0:
+  assumes A0:"is_clr C (Pow X)" and 
           A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
-          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
-  shows "compactly_generated C \<and> (\<forall>x. x \<in> X \<longrightarrow> is_compact C ((cl_from_clr C) {x}))"
+          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A3:"x \<in> X" and 
+          A4:"A \<in> Pow_ne C" and
+          A5:"cl_from_clr C {x} \<subseteq> Sup C A" and 
+          A6:" is_dir A (\<subseteq>)"
+  shows "\<exists>a \<in> A. cl_from_clr C {x} \<subseteq> a"
 proof-
   let ?f="cl_from_clr C"
+  have B2:"Sup C A = \<Union>A"
+    by (metis A2 A4 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+  have B2:"{x} \<subseteq> ?f {x}"
+    by (metis A0 A3 PowD PowI Pow_bottom cl_ext1 insert_subsetI)
+  have B3:"... \<subseteq> \<Union>A"
+    by (metis A2 A4 A5 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
+  have B4:"{x} \<subseteq> \<Union>A"
+    using B2 B3 by blast
+  obtain a where B5:"a \<in> A \<and> x \<in> a"
+    using B4 by auto
+  have B6:"a \<in> ubd C {{x}}"
+    using A4 B5 pow_neD1 ubd_singleton_iff by fastforce
+  have B7:"?f {x} \<subseteq> a"
+    by (metis A0 A3 B6 Pow_iff cl_lt_ub1 empty_subsetI insert_subset)
+  show "(\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
+   using B5 B7 by auto
+qed
+
+      
+
+lemma big_chungus1:
+  assumes A0:"is_clr C (Pow X)" and 
+          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A3:"x \<in> X"
+  shows "is_compact C (cl_from_clr C {x})"
+  apply(rule ccompact1) 
+   using A0 clatD1 clr_is_clattice pow_is_clattice apply blast
+  using A0 A3 cl_range1 apply fastforce
+  by (metis A0 A1 A2 A3 big_chungus0)
+
+lemma big_chungus2:
+  assumes A0:"is_clr C (Pow X)" and 
+          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)" and
+          A3:"E \<in> C"
+  shows "(\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
+proof-
+   let ?f="cl_from_clr C"
+   let ?A="{y. (\<exists>x \<in> E. y= ?f {x})}"
   have B0:"is_clattice C"
-    using A0 clrD2 clrD7 pow_is_clattice subset_antisym by fastforce
+    using A0 clr_is_clattice pow_is_clattice by blast
   have B1:"\<And>x. x \<in> X \<longrightarrow> is_compact C (?f {x})"
-  proof
-    fix x assume A3:"x \<in> X"
-    show "is_compact C (?f {x})"
-    apply(rule ccompact1)
-      apply (simp add: B0 clatD1)
-      apply (metis A0 A3 Pow_iff cl_from_clr_def clrD2 empty_subsetI in_mono insert_subset ub_single_least2)
-    proof-
-      fix A assume A4:"A \<in> Pow_ne C" show "cl_from_clr C {x} \<subseteq> Sup C A \<Longrightarrow> is_dir A (\<subseteq>) \<Longrightarrow> (\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
-      proof-
-        assume A5:"cl_from_clr C {x} \<subseteq> Sup C A" show "is_dir A (\<subseteq>) \<Longrightarrow> (\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
-        proof-
-          assume A6:"is_dir A (\<subseteq>)" 
-          have B2:"Sup C A = \<Union>A"
-            by (metis A2 A4 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
-          have B2:"{x} \<subseteq> ?f {x}"
-            by (metis A0 A3 Pow_iff cl_from_clr_def clrD2b empty_subsetI insert_absorb insert_mono ub_single_least2)
-          have B3:"... \<subseteq> \<Union>A"
-            by (metis A2 A4 A5 A6 pow_neD1 subset_Pow_Union sup_equality uni_sup_fam)
-          have B4:"{x} \<subseteq> \<Union>A"
-            using B2 B3 by blast
-          obtain a where B5:"a \<in> A \<and> x \<in> a"
-            using B4 by auto
-          have B6:"a \<in> ubd C {{x}}"
-            by (metis A4 B5 empty_subsetI in_mono insert_subset lorc_eq_upbd lorc_mem_iff1 pow_neD1)
-          have B7:"?f {x} \<subseteq> a"
-            by (metis (no_types, opaque_lifting) A0 A3 B5 cl_from_clr_def clrD2 empty_subsetI in_mono insert_not_empty insert_subset pow_neI pow_ne_iff1 ub_single_least2)
-          show "(\<exists>a\<in>A. cl_from_clr C {x} \<subseteq> a)"
-            using B5 B7 by auto
-         qed
-      qed
+    by (metis A0 A1 A2 big_chungus1)
+   have P1:"E \<in> Pow X"
+      using A0 A3 clrD2b by blast
+    have P2:"\<forall>x. x \<in> E \<longrightarrow> {x} \<in> Pow X"
+      using P1 by blast 
+    have P3:"?A \<subseteq> C"
+    proof 
+      fix y assume A9:"y \<in> ?A" 
+      obtain x where P30:"x \<in> E \<and> y = ?f {x}" using A9 by blast
+      show "y \<in> C" using A0 P2 P30 cl_range1 by fastforce
     qed
-  qed    
-  have B8:"\<And>E. E \<in> C \<longrightarrow>  (\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
-  proof
-    fix E assume A7:"E \<in> C" 
-    let ?A="{y. (\<exists>x \<in> E. y= ?f {x})}"
     have B9:"\<forall>x. x \<in> E \<longrightarrow> {x} \<subseteq> ?f {x}"
-      by (metis A1 Inf_empty PowI Pow_UNIV cl_ext1 empty_subsetI moore_clI3 top_greatest)
+      by (meson A0 P2 cl_ext1)
     have B10:"?f E = E"
-      by (simp add: A7 cl_from_clr_def ub_single_least2)
+      by (simp add: A3 cl_from_clr_def ub_single_least2)
     have B11:"\<And>x. x \<in> E \<longrightarrow> ?f {x} \<subseteq> ?f E"
-      by (metis A0 A1 Inf_empty Pow_UNIV Union_Pow_eq Union_upper cl_ext1 cl_range1 cl_range3 clrD2 empty_subsetI insert_subset order_antisym top_greatest)
+      by (metis A0 A3 B10 P2 cl_lt_ub2 empty_subsetI insert_subsetI)
     have B11b:"E ub ?A"
       using B10 B11 ub_def by force
     have B11c:"E \<in> ubd C ?A"
-      by (simp add: A7 B11b ubd_mem_iff)
+      by (simp add: A3 B11b ubd_mem_iff)
     have B12:"E = (\<Union>x \<in> E. {x})"
       by simp
     have B13:"... \<subseteq> (\<Union>x \<in> E. ?f {x})"
@@ -5696,22 +5879,39 @@ proof-
     have B14:"... = (\<Union>?A)"
       by blast
     have B15:"... = Sup UNIV ?A"
-      by (metis (no_types, lifting) Pow_UNIV UNIV_I sup_equality top_greatest uni_sup_fam)
+      by (meson union_sup_univ)
     have B16:"... \<subseteq> Sup C ?A"
-      by (metis (mono_tags, lifting) A0 A1 Inf_empty Pow_UNIV Union_Pow_eq Union_upper cl_ext2 cl_range1 clrD2 empty_subsetI is_extensive_def order_class.order_eq_iff top_greatest)
+      using sup_iso2[of UNIV C ?A] univ_is_clattice using A3 B0 P3 by blast
     have B17:"... \<subseteq> E"
-      by (smt (verit, del_insts) A0 A1 B0 B11b Inf_empty Pow_UNIV UNIV_I Union_Pow_eq Union_upper cl_ext2 cl_range1 clatD21 clrD2 empty_subsetI is_extensive_def is_supD5 order_antisym sup_equality)
+      by (metis (no_types, lifting) A3 B0 B11b P3 clatD21 is_supD5 sup_equality)
     have B18:"\<forall>x. x \<in> ?A \<longrightarrow> x \<in> compact_elements C"
-      using A0 A7 B1 cl_ext1 cl_range1 compact_elements_mem_iff1 by fastforce
+      using A0 A3 B1 PowD clrD2 compact_elements_mem_iff1 mem_Collect_eq by fastforce
     have B19:"?A \<in> Pow (compact_elements C)"
       using B18 by blast
     have B20:"E = Sup C ?A"
       using B13 B15 B16 B17 by auto
     have B21:"is_sup C ?A E"
-      by (metis (mono_tags, lifting) A7 B11b B12 B13 B14 Sup_le_iff is_supI7 subset_antisym ub_def)
+      by (metis (mono_tags, lifting) A3 B11b B12 B13 B14 Sup_le_iff is_supI7 subset_antisym ub_def)
     show "\<exists>A \<in> Pow (compact_elements C). is_sup C A E"
       using B19 B21 by blast
-  qed
+qed
+
+
+lemma big_chungus3:
+  assumes A0:"is_clr C (Pow X)" and 
+          A1:"(\<And>A. A \<subseteq> C \<Longrightarrow> \<Inter>A \<in> C)" and
+          A2:"(\<And>D. D \<subseteq> C \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)"
+  shows "compactly_generated C \<and> (\<forall>x. x \<in> X \<longrightarrow> is_compact C ((cl_from_clr C) {x}))"
+proof-
+  have P0:"C \<subseteq> Pow X"
+    by (simp add: A0 clrD2)
+  let ?f="cl_from_clr C"
+  have B0:"is_clattice C"
+    using A0 clr_is_clattice pow_is_clattice by blast
+  have B1:"\<And>x. x \<in> X \<longrightarrow> is_compact C (?f {x})"
+    by (metis A0 A1 A2 big_chungus1)
+  have B8:"\<And>E. E \<in> C \<longrightarrow>  (\<exists>A \<in> Pow (compact_elements C). is_sup C A E)"
+    by (metis A0 A1 A2 big_chungus2)
   show ?thesis
     by (simp add: B1 B8 compactly_generatedI1)
 qed
@@ -5738,8 +5938,10 @@ proof-
         using A1 B01 B3 filters_on_iff filters_on_lattice_bsup2 by blast
       obtain x2 t where B5:"x2 \<in> f \<and> t \<in> h \<and> Inf X {x2, t} \<le> z"
         using A1 B01 B3 filters_on_iff filters_on_lattice_bsup2 by blast
+      have B450:"x1 \<in> X \<and> y \<in> X \<and> x2 \<in> X \<and> t \<in> X"
+        using A1 B4 B5 filterD2 filters_on_iff by blast
       have B6:"Sup X {x1, Inf X {x2, t}} \<in> f"
-        by (metis (no_types, lifting) A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff insert_commute lattD41 sinfD4)
+        by (meson A1 B01 B4 B450 filter_bsup_memI1 filters_on_iff lattD41 lattD42 sinfD4)
       have B7:"Sup X {y, x2} \<in> f"
         using A1 B01 B4 B5 filterD21 filter_on_lattice_sup01 filters_on_iff by blast
       have B8:"Sup X {y, t} \<in> g"
@@ -5749,18 +5951,18 @@ proof-
       have B10:"Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}} \<in> f"
         using A1 B01 B6 B7 filter_finf_closed1 filters_on_iff lattD41 by blast
       have B11:"Inf X {Sup X {y, x2}, Sup X {y, t}} = Sup X {y, Inf X {x2, t}}"
-        by (metis (no_types, lifting) A1 B4 B5 assms distr_latticeD1 filterD21 filters_on_iff)
+        by (simp add: B450 assms distr_latticeD1)
       have B12:"Inf X {Sup X {x1, Inf X {x2, t}}, Inf X {Sup X {y, x2}, Sup X {y, t}}} =
                 Inf X {Sup X {x1, Inf X {x2, t}},  Sup X {y, Inf X {x2, t}}}"
         by (simp add: B11)
       have B13:"... = Sup X {Inf X {x2, t}, Inf X {x1, y}}"
-        by (smt (verit, ccfv_threshold) A1 B01 B4 B5 assms distr_latticeD2 filterD21 filters_on_iff insert_commute lattD41 sinfD4)
+        by (simp add: B01 B450 assms bsup_commute2 distr_latticeD2 lattD41 sinfD4)
       have B14:"... = Sup X {Inf X {x1, y}, Inf X {x2, t}}"
         by (simp add: insert_commute)
       have B15:"Sup X {Inf X {x1, y}, Inf X {x2, t}} = Inf X {Sup X {x1, Inf X {x2, t}}, Inf X {Sup X {y, x2}, Sup X {y, t}}} "
         using B11 B13 B14 by presburger
       have B16:"... =  Inf X {Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}}, Sup X {y, t}}"
-        by (smt (verit, ccfv_threshold) A1 B01 B6 B7 B8 binf_assoc1 filterD21 filters_on_iff lattD41)
+        by (simp add: B01 B450 binf_assoc1 lattD41 lattD42 sinfD4 ssupD4)
       have B17:"z \<ge> Sup X {Inf X {x1, y}, Inf X {x2, t}}"
         by (metis A1 B01 B3 B4 B5 bsup_iff filterD21 filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup8 lattD41 lattD42 sinfD4)
       have B18:"z \<ge>  Inf X {Inf X {Sup X {x1, Inf X {x2, t}}, Sup X {y, x2}}, Sup X {y, t}}"
