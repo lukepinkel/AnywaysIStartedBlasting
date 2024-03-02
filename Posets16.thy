@@ -6885,6 +6885,7 @@ lemma proper_principal_fin_irr:
 
 lemma fin_irr_filter_prime:
   "\<lbrakk>distributive_lattice X;pfilter X F;fin_inf_irr (filters_on X) F\<rbrakk> \<Longrightarrow> inf_prime X F"
+  by (meson distributive_lattice_def filterD4 inf_primeI1 is_ord_clE1 lattD41 rolcD1 rolc_inf_latticeD1)
 
  
 
