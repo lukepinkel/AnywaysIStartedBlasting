@@ -2135,6 +2135,10 @@ lemma maximalI3:
   "is_greatest A x \<Longrightarrow> is_maximal A x"
   by (simp add: greatest_iff leD maximalI2)
 
+lemma maximalD5:
+  "is_maximal A x \<Longrightarrow> y > x \<Longrightarrow> y \<notin> A"
+  using maximalD4 by blast
+
 subsection InfSemilattices
 
 definition is_inf_semilattice::"'a::order set \<Rightarrow> bool" where
@@ -6764,7 +6768,7 @@ lemma maximal_pfilterI2:
 
 lemma primefilterD1:
   "\<lbrakk>sup_prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
-  by (simp add: prime_def)
+  by (simp add: sup_prime_def)
 
 lemma primefilterD2:
   "\<lbrakk>is_lattice X; sup_prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> A \<or> b \<in> A)\<rbrakk> \<Longrightarrow> (Sup X {a, b}) \<in> A)"
@@ -6772,12 +6776,12 @@ lemma primefilterD2:
 
 lemma primefilterD3:
   "\<lbrakk>is_lattice X; sup_prime X F; pfilter X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
-  apply(auto simp add:prime_def) apply (meson filterD2 filters_on_lattice_inf02 in_mono) using filterD21 by blast
+  apply(auto simp add:sup_prime_def) apply (meson filterD2 filters_on_lattice_inf02 in_mono) using filterD21 by blast
 
 lemma notprimeobtain:
   assumes A0:"is_lattice X" and A1:"pfilter X F" and A2:"\<not>(sup_prime X F)"
   obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
-  using A2 prime_def by blast
+  using A2 sup_prime_def by blast
 
 (*
 need more robust intro and dest lemmas for filters and more generally  ord closure and directedness
@@ -6887,10 +6891,57 @@ lemma fin_irr_filter_prime:
   "\<lbrakk>distributive_lattice X;pfilter X F;fin_inf_irr (filters_on X) F\<rbrakk> \<Longrightarrow> inf_prime X F"
   by (meson distributive_lattice_def filterD4 inf_primeI1 is_ord_clE1 lattD41 rolcD1 rolc_inf_latticeD1)
 
+
+lemma distr_lattice_maximal_prime:
+  assumes A0:"distributive_lattice X" and A1:"is_maximal (pfilters_on X) F" 
+  shows "sup_prime X F"
+proof-
+  have B0:"pfilter X F"
+    using A1 maximalD1 by auto
+  have P:"\<And>a b. a \<in> X \<and> b \<in> X \<and> Sup X {a, b} \<in> F \<and>  a \<notin> F \<longrightarrow> b \<in> F"
+  proof
+    fix a b assume A2:"a \<in> X \<and> b \<in> X \<and> Sup X {a, b} \<in> F \<and> a \<notin> F"
+    let ?Fa="binary_filter_sup X F [a)\<^sub>X"
+    have B1:"a \<in> ?Fa - F"
+      by (metis A0 A2 B0 DiffI distributive_lattice_def filters_on_lattice_bsup02 lorc_filter lorc_memI1)
+    have B2:"F \<subset> ?Fa"
+      by (metis A0 A2 B0 B1 DiffD1 distributive_lattice_def filters_on_lattice_bsup03 lorc_filter order_neq_le_trans)
+    have B3:"?Fa \<notin> pfilters_on X"
+      using A1 B2 maximalD4 by auto
+    have B4:"?Fa \<in> filters_on X"
+      by (metis A0 A2 B0 distributive_lattice_def filters_on_lattice_bsup4 lorc_filter)
+    have B5:"?Fa = X"
+      using B3 B4 filters_on_def by blast
+    have B6:"b \<in> ?Fa"
+      by (simp add: A2 B5)
+    obtain f c where B7:"f \<in> F \<and> c \<in> ([a)\<^sub>X) \<and> b \<ge> Inf X {f, c}"
+      using B6 binary_filter_sup_obtains by blast
+    have B8:"b = Sup X {b, Inf X {f, c}}"
+      by (metis A0 A2 B0 B7 distributive_lattice_def filterD2 ge_sup2 lattD41 lorc_filter sinfD4 subset_iff)
+    have B9:"... = Inf X {Sup X {b, f}, Sup X {b, c}}"
+      by (meson A0 A2 B0 B7 distr_latticeD1 filterD21 lorcD11)
+    have B10:"Sup X {b, f} \<in> F \<and> Sup X {b, c} \<in> ([a)\<^sub>X) \<and> b = Inf X {Sup X {b, f}, Sup X {b, c}}"
+      by (metis A0 A2 B0 B7 B8 B9 distributive_lattice_def filter_on_lattice_sup01 lorc_filter)
+    let ?f="Sup X {b, f}" and ?c="Sup X {b, c}"
+    have B11:"?c \<ge> a"
+      using B10 lorcD12 by blast
+    have B12:"b = Sup X {b, Inf X {?f, ?c}}"
+      using A2 B10 bsup_idem1 by force
+    have B13:"... = Inf X {Sup X {b, ?f}, Sup X {b, ?c}}"
+      by (meson A0 A2 B0 B10 distr_latticeD1 filterD21 lorcD11)
+    have B14:"... \<ge> Inf X {?f, Sup X {b, a}}"
+      by (smt (verit, ccfv_threshold) A0 A2 B0 B10 B11 B7 binf_leI5 bsup_assoc1 distributive_lattice_def dual_order.refl filterD21 insert_commute latt_ge_iff1 latt_iff lorcD11)
+    have B15:"... \<in> F"
+      by (smt (verit, ccfv_SIG) A0 A2 B0 B10 B14 distributive_lattice_def filterD21 filter_finf_closed1 insert_commute latt_ge_iff1 latt_iff lattice_absorb1 lorcD11)
+    show "b \<in> F"
+      using B12 B13 B15 by presburger
+  qed
+  show ?thesis
+    by (meson P sup_primeI1)
+qed
+
+
  
 
-unused_thms  
-print_definitions
-print_term_bindings
 end
 
