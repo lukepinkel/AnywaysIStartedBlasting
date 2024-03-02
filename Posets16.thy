@@ -2386,6 +2386,12 @@ lemma inf_semilattice_finf_anti:
   "\<lbrakk>is_inf_semilattice X; A \<in> Fpow_ne X; B \<in> Fpow_ne X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Inf X B \<le> Inf X A"
   using is_inf_ant1[of A B X "Inf X A" "Inf X B"] inf_semilattice_finf by blast
     
+
+lemma inf_semilattice_finf_props5:
+  "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {Inf X {a, b}, Inf X {a, c}} = Inf X {a, Inf X {b, c}}"
+  by (simp add: binf_assoc1 binf_assoc2 binf_idem2 sinfD4)
+
+
 subsection SupSemilattices
 
 definition is_sup_semilattice::"'a::order set \<Rightarrow> bool" where
@@ -3756,6 +3762,10 @@ proof
   show "i \<in> A"
     using A2 A3 B0 B2 is_infE1 is_ord_clE1 by blast
 qed
+
+lemma up_cl_bot:
+  "\<lbrakk>is_least X bot; A \<subseteq>X; is_ord_cl X A (\<le>); bot \<in> A\<rbrakk> \<Longrightarrow> A=X"
+  using is_ord_clE1 leastD2 by blast
 
 subsection Filters
 subsection DefinitionAndBasicProps
@@ -6746,6 +6756,86 @@ lemma inf_primeI4:
   "\<lbrakk>distributive_lattice X; x \<in> X; fin_inf_irr X x\<rbrakk> \<Longrightarrow> inf_prime X ((x]\<^sub>X)"
   by (simp add: elem_inf_primeE1 elem_inf_primeI3)
 
+definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+
+lemma is_pfilterD1:
+  "is_pfilter X A \<Longrightarrow> is_filter X A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterD2:
+  "is_pfilter X A \<Longrightarrow>  X \<noteq> A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterD3:
+  "is_pfilter X A \<Longrightarrow>  A \<subseteq> X"
+  by (simp add: filterD2 is_pfilterD1)
+
+lemma is_pfilterD4:
+  "\<lbrakk>is_least X bot; is_pfilter X A\<rbrakk> \<Longrightarrow> bot \<notin> A"
+  by (metis filterD4 is_pfilterD3 is_pfilter_def up_cl_bot)
+
+lemma is_pfilterI1:
+  "\<lbrakk>is_filter X A; X \<noteq> A\<rbrakk> \<Longrightarrow> is_pfilter X A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterI2:
+  "\<lbrakk>is_least X bot; bot \<notin> A; is_filter X A\<rbrakk> \<Longrightarrow> is_pfilter X A"
+  using is_pfilterI1 leastD11 by blast
+
+
+definition pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
+  "pfilters X \<equiv> {F. is_pfilter X F}"
+
+lemma pfilters_memD0:
+  "F \<in> pfilters X \<Longrightarrow> is_pfilter X F"
+  by (simp add:pfilters_def)
+
+lemma pfilters_memD1:
+  "F \<in> pfilters X \<Longrightarrow> is_filter X F"
+  by (simp add:pfilters_def is_pfilterD1)
+
+lemma pfilters_memD2:
+  "F \<in> pfilters X \<Longrightarrow> F \<noteq> X"
+  using is_pfilterD2 pfilters_memD0 by blast
+
+lemma pfilters_memD3:
+  "F \<in> pfilters X \<Longrightarrow> F \<subseteq> X"
+  by (simp add:pfilters_def is_pfilterD3)
+
+lemma pfilters_memI:
+  "is_pfilter X F \<Longrightarrow> F \<in> pfilters X"
+  by (simp add: pfilters_def)
+
+lemma maximal_pfiltersD1:
+  "is_maximal (pfilters X) F \<Longrightarrow> H \<in>pfilters X \<Longrightarrow> F \<subseteq> H \<Longrightarrow> F=H  "
+  using maximalD2 by blast
+
+lemma maximal_pfiltersI1:
+  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F =H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
+  using maximalI1[of F "pfilters X"]  by auto
+
+lemma maximal_pfiltersI2:
+  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F \<supseteq> H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
+  by (simp add: is_maximal_def)
+
+lemma sup_prime_pfilterD1:
+  "\<lbrakk>sup_prime X A; is_pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
+  by (simp add: sup_prime_def)
+
+lemma sup_prime_pfilterD2:
+  "\<lbrakk>is_lattice X; sup_prime X A; is_pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> A \<or> b \<in> A)\<rbrakk> \<Longrightarrow> (Sup X {a, b}) \<in> A)"
+  using filter_on_lattice_sup01 is_pfilterD1 lattice_filter_memI by blast
+
+lemma sup_prime_pfilterD3:
+  "\<lbrakk>is_lattice X; sup_prime X F; is_pfilter X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
+  apply(auto simp add:sup_prime_def)  by (meson filterD21 filters_on_lattice_inf02 in_mono)
+
+lemma not_prime_obtain:
+  assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"\<not>(sup_prime X F)"
+  obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
+  using A2 sup_prime_def by blast
+
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
@@ -6802,12 +6892,18 @@ proof-
       using A3 G_def by blast
     have B3:"Inf X {y1, y2} \<in> F"
       by (simp add: A0 A1 B2 filter_finf_closed1 lattD41)
-    have B4:"Inf X {Inf X {y1, y2}, a} \<le> Inf X {x1, x2}"
-      by (smt (verit) A0 A1 A2 A3 B0 B2 binf_assoc1 binf_leI2 binf_leI3 filterD21 in_mono insert_commute lattD41 sinfD4)
-    have B5:"\<exists>y \<in> F. Inf X {a, y} \<le> Inf X {x1, x2}"
-      by (metis B3 B4 doubleton_eq_iff)
+    have B30:"Inf X {y1, y2} \<in> X \<and> a \<in> X \<and> x1 \<in> X \<and> x2 \<in> X \<and> y1 \<in> X \<and> y2 \<in> X"
+      using A1 A2 A3 B0 B2 B3 filterD21 by blast
+    have B4:"Inf X {x1, x2} \<ge> Inf X {Inf X {a, y1}, Inf X {a, y2}}"
+      by (simp add: A0 B2 B30 binf_leI5 lattD41 sinfD4)
+    have B5:" Inf X {Inf X {a, y1}, Inf X {a, y2}}  = Inf X {a, Inf X {y1, y2}}"
+      using inf_semilattice_finf_props5[of X a y1 y2] A0 B30 lattD41[of X] by fastforce
+    have B6:"Inf X {Inf X {y1, y2}, a} \<le> Inf X {x1, x2}"
+      by (metis B4 B5 insert_commute)
+    have B7:"\<exists>y \<in> F. Inf X {a, y} \<le> Inf X {x1, x2}"
+      using B3 B4 B5 by auto
     show "Inf X {x1, x2} \<in> G"
-      using A0 A3 B5 G_def lattD41 sinfD4 by auto
+      using A0 B3 B30 B4 B5 G_def lattD41 sinfD4 by auto
   qed
   have B6:"\<And>x g. g \<in> G \<and> x \<in> X \<and> g \<le> x \<longrightarrow> x \<in> G"
     using G_def order.trans by auto
@@ -6896,6 +6992,8 @@ lemma distr_lattice_maximal_prime:
   assumes A0:"distributive_lattice X" and A1:"is_maximal (pfilters_on X) F" 
   shows "sup_prime X F"
 proof-
+  have B00:"is_lattice X"
+    using A0 distributive_lattice_def by blast
   have B0:"pfilter X F"
     using A1 maximalD1 by auto
   have P:"\<And>a b. a \<in> X \<and> b \<in> X \<and> Sup X {a, b} \<in> F \<and>  a \<notin> F \<longrightarrow> b \<in> F"
@@ -6925,14 +7023,20 @@ proof-
     let ?f="Sup X {b, f}" and ?c="Sup X {b, c}"
     have B11:"?c \<ge> a"
       using B10 lorcD12 by blast
+    have B110:"b \<in> X \<and> ?f \<in> X \<and> ?c \<in> X \<and> c \<in> X \<and> a \<in> X"
+      using A2 B0 B10 B7 filterD21 lorcD11 by blast
+    have B111:"Sup X {b, ?f} \<ge> ?f"
+      by (meson A0 B110 bsup_geI2 distributive_lattice_def dual_order.refl lattD42)
+    have B112:"Sup X {b, ?c} \<ge> Sup X {b, a}"
+      by (simp add: B00 B11 B110 bsup_geI5 lattD42)
     have B12:"b = Sup X {b, Inf X {?f, ?c}}"
       using A2 B10 bsup_idem1 by force
     have B13:"... = Inf X {Sup X {b, ?f}, Sup X {b, ?c}}"
       by (meson A0 A2 B0 B10 distr_latticeD1 filterD21 lorcD11)
     have B14:"... \<ge> Inf X {?f, Sup X {b, a}}"
-      by (smt (verit, ccfv_threshold) A0 A2 B0 B10 B11 B7 binf_leI5 bsup_assoc1 distributive_lattice_def dual_order.refl filterD21 insert_commute latt_ge_iff1 latt_iff lorcD11)
+      by (simp add: B00 B110 B111 B112 binf_leI5 lattD41 lattD42 ssupD4)
     have B15:"... \<in> F"
-      by (smt (verit, ccfv_SIG) A0 A2 B0 B10 B14 distributive_lattice_def filterD21 filter_finf_closed1 insert_commute latt_ge_iff1 latt_iff lattice_absorb1 lorcD11)
+      by (metis (full_types) A2 B0 B00 B10 B110 B112 filter_finf_closed1 filter_memI insert_commute lattD41 lattice_absorb1)
     show "b \<in> F"
       using B12 B13 B15 by presburger
   qed
