@@ -6734,6 +6734,14 @@ lemma fin_inf_irrI2:
   "\<lbrakk>distributive_lattice X; x \<in> X; inf_prime X ((x]\<^sub>X)\<rbrakk> \<Longrightarrow> fin_inf_irr X x"
   by (simp add: distributive_lattice_def elem_inf_primeI2 fin_inf_irrE1 lattD41)
   
+lemma sup_primeI4:
+  "\<lbrakk>distributive_lattice X; x \<in> X; fin_sup_irr X x\<rbrakk> \<Longrightarrow> sup_prime X ([x)\<^sub>X)"
+  by (simp add: elem_sup_primeE1 elem_sup_primeI3)
+
+lemma inf_primeI4:
+  "\<lbrakk>distributive_lattice X; x \<in> X; fin_inf_irr X x\<rbrakk> \<Longrightarrow> inf_prime X ((x]\<^sub>X)"
+  by (simp add: elem_inf_primeE1 elem_inf_primeI3)
+
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
@@ -6833,17 +6841,17 @@ proof-
       using A3 B2 lorc_memI1 by blast
   qed
   show ?thesis
-    by (simp add: B0 prime_def)
+    by (simp add: B0 sup_prime_def)
 qed
 
 
 lemma primefilterI1:
   "\<lbrakk>is_lattice X;  pfilter X A; (\<forall>a b. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup X {a, b}) \<in> A)) \<rbrakk> \<Longrightarrow> sup_prime X A"
-  by (simp add: prime_def)
+  by (simp add: sup_prime_def)
 
 lemma primefilter_iff1:
   "is_lattice X \<Longrightarrow> ( sup_prime X A \<and> pfilter X A) \<longleftrightarrow> (pfilter X A \<and>  (\<forall>a \<in> X. \<forall>b \<in> X. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup X {a, b}) \<in> A)))"
-  by (metis prime_def primefilterD2)
+  by (metis sup_prime_def primefilterD2)
 
 lemma prime_filter_iff2:
   "is_lattice X \<Longrightarrow>  (sup_prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
@@ -6864,7 +6872,7 @@ lemma prime_filter_irr3:
 
 lemma proper_principal_prime:
   "\<lbrakk>pfilter X [a)\<^sub>X; (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; a \<le> Sup X {x, y}\<rbrakk> \<Longrightarrow> a \<le> x \<or> a \<le> y)\<rbrakk> \<Longrightarrow> sup_prime X [a)\<^sub>X"
-  by (metis lorcD12 lorcI1 prime_def)
+  by (metis lorcD12 lorcI1 sup_prime_def)
 
 lemma proper_principal_prime2:
   "\<lbrakk>is_lattice X; pfilter X [a)\<^sub>X; (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; a \<le> Sup X {x, y}\<rbrakk> \<Longrightarrow> a \<le> x \<or> a \<le> y)\<rbrakk> \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; a = Sup X {x, y}\<rbrakk> \<Longrightarrow> a =x \<or> a=y)"
@@ -6876,21 +6884,8 @@ lemma proper_principal_fin_irr:
 
 
 lemma fin_irr_filter_prime:
-  assumes A0:"distributive_lattice X" and A1:"pfilter X F" and A2:"fin_inf_irr (filters_on X) F"
-  shows "sup_prime X F"
-proof(rule ccontr)
-  assume A3:"\<not> (sup_prime X F)"
-  obtain a b where B0:"a \<in> X \<and> b \<in> X \<and> Sup X {a, b} \<in> F \<and> a \<notin> F \<and> b \<notin> F"
-    using A3 prime_def by blast
-  have B1:"a \<in> ([a)\<^sub>X) \<and> a \<notin> F \<and> b \<in> ([b)\<^sub>X) \<and> b \<notin> F"
-    by (simp add: B0 lorc_memI1)
-  have B2:"\<not> (([a)\<^sub>X) \<subseteq>F) \<and> \<not> (([b)\<^sub>X) \<subseteq>F) "
-    using B1 by blast
-  have B3:"([a)\<^sub>X) \<inter> ([b)\<^sub>X) = [Sup X {a, b})\<^sub>X"
-    by (meson A0 B0 distributive_lattice_def lorc_inter)
-  have B4:"... \<subseteq> F"
-    using A1 B0 filter_memI lorcD11 lorcD12 by blast
-  
+  "\<lbrakk>distributive_lattice X;pfilter X F;fin_inf_irr (filters_on X) F\<rbrakk> \<Longrightarrow> inf_prime X F"
+
  
 
 unused_thms  
