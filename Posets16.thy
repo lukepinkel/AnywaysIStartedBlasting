@@ -3,7 +3,7 @@ theory Posets16
 begin
 
 section Settings
-hide_const top
+hide_const top bot
 hide_const(open) List.list.Nil
 no_notation List.list.Nil ("[]")  
 no_notation Cons (infixr "#" 65) 
@@ -2100,6 +2100,24 @@ lemma lattice_id9:
   "\<lbrakk>A \<subseteq> X; B \<subseteq> X; is_sup X A s; is_inf X B i;(\<forall>a \<in> A. a lb B)\<rbrakk> \<Longrightarrow> s \<le> i"
   using is_infD42 is_infE1 is_supD5 ubI by fastforce
 
+lemma least_inf:
+  "is_least X bot \<Longrightarrow> x \<in> X \<Longrightarrow> Inf X {x, bot} = bot"
+  by (simp add: le_inf2 leastD1 leastD2)
+
+lemma least_sup:
+  "is_least X bot \<Longrightarrow> x \<in> X \<Longrightarrow> Sup X {x, bot} = x"
+  by (simp add: ge_sup2 leastD1 leastD2)
+
+lemma greatest_inf:
+  "is_greatest X top \<Longrightarrow> x \<in> X \<Longrightarrow> Inf X {x, top} = x"
+  by (simp add: greatestD1 greatestD2 le_inf1)
+
+lemma greatest_sup:
+  "is_greatest X top \<Longrightarrow> x \<in> X \<Longrightarrow> Sup X {x, top} = top"
+  by (simp add: ge_sup1 greatestD1 greatestD2)
+
+
+subsection MinimaMaxima
 
 definition is_minimal::"'a::order set \<Rightarrow> 'a::order \<Rightarrow> bool" where
   "is_minimal A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> a \<le> x \<longrightarrow> a =x)"
@@ -2386,10 +2404,10 @@ lemma inf_semilattice_finf_anti:
   "\<lbrakk>is_inf_semilattice X; A \<in> Fpow_ne X; B \<in> Fpow_ne X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Inf X B \<le> Inf X A"
   using is_inf_ant1[of A B X "Inf X A" "Inf X B"] inf_semilattice_finf by blast
     
-
 lemma inf_semilattice_finf_props5:
   "\<lbrakk>is_inf_semilattice X; a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf X {Inf X {a, b}, Inf X {a, c}} = Inf X {a, Inf X {b, c}}"
   by (simp add: binf_assoc1 binf_assoc2 binf_idem2 sinfD4)
+
 
 
 subsection SupSemilattices
@@ -2694,6 +2712,10 @@ lemma distrib_sup_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rb
 lemma distrib_inf_le: "\<lbrakk>is_lattice X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"
   by(auto simp add:bsup_geI1 lattD42 binary_infD4 bsup_geI2 bsup_iff latt_iff sinfD3 sinfD4 ssupD4 binf_leI1 binf_leI2 binf_leI3)
 
+lemma mod_sup_le:
+  "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X; x \<le> z\<rbrakk> \<Longrightarrow> Sup X {x, Inf X {y, z}} \<le> Inf X {Sup X {x, y}, z}"
+  by (metis distrib_sup_le ge_sup1)
+
 subsection DistributiveLattices
 
 
@@ -2752,6 +2774,10 @@ definition distributive_lattice::"'a::order set \<Rightarrow> bool" where
 lemma distr_latticeI1:
   "\<lbrakk>is_lattice X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Sup X {x, Inf X {y, z}} \<ge> Inf X {Sup X {x, y}, Sup X {x, z}})\<rbrakk> \<Longrightarrow> distributive_lattice X"
   by (simp add: distrib_sup_le distributive_lattice_def order_class.order_eq_iff)
+
+lemma distr_latticeI2:
+  "\<lbrakk>is_lattice X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Inf X {x, Sup X {y, z}} \<le> Sup X {Inf X {x, y}, Inf X {x, z}})\<rbrakk> \<Longrightarrow> distributive_lattice X"
+  by (simp add: Orderings.order_eq_iff Posets16.distrib_inf_le distibD1 distributive_lattice_def)
 
 lemma distr_latticeD1:
   "\<lbrakk>distributive_lattice X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}} "
@@ -2821,7 +2847,11 @@ qed
 lemma distrib_I3:
   "\<lbrakk>distributive_lattice X ;x \<in> X; y \<in>X; z \<in> X; Inf X {x, z} = Inf X {y, z}; Sup X {x, z}=Sup X {y, z}\<rbrakk> \<Longrightarrow> x=y"
   by (metis distributive_lattice_def doubleton_eq_iff lattice_absorb1)
+(*
+lemma finite_distr:
+  "\<lbrakk>distributive_lattice X; x \<in> X;  A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> Inf X {x, Sup X A} \<le> Sup X ((\<lambda>a. Inf X {x, a})`A)"
 
+*)
 (*lemma distrib_D3:
   assumes A0:"is_lattice X" and
           A1:"(\<And>x y z. \<lbrakk>x \<in> X; y \<in>X; z \<in> X; Inf X {x, z} = Inf X {y, z}; Sup X {x, z}=Sup X {y, z}\<rbrakk> \<Longrightarrow> x=y)"
@@ -2832,7 +2862,7 @@ proof-
     fix x y z assume A2:"x \<in> X \<and>  y \<in> X \<and> z \<in> X " 
     show "Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}"
 *)  
-  
+
 
 subsection CompleteLattices
 
@@ -3868,6 +3898,70 @@ lemma filter_inter_upcl:
 lemma filter_pow_memD:
   "EF \<in> Pow(filters_on X) \<Longrightarrow> (\<And>F. F \<in> EF \<Longrightarrow> is_filter X F)"
   using filters_on_iff by auto 
+
+
+definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "is_pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+
+definition pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
+  "pfilters X \<equiv> {F. is_pfilter X F}"
+
+lemma is_pfilterD1:
+  "is_pfilter X A \<Longrightarrow> is_filter X A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterD2:
+  "is_pfilter X A \<Longrightarrow>  X \<noteq> A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterD3:
+  "is_pfilter X A \<Longrightarrow>  A \<subseteq> X"
+  by (simp add: filterD2 is_pfilterD1)
+
+lemma is_pfilterD4:
+  "\<lbrakk>is_least X bot; is_pfilter X A\<rbrakk> \<Longrightarrow> bot \<notin> A"
+  by (metis filterD4 is_pfilterD3 is_pfilter_def up_cl_bot)
+
+lemma is_pfilterI1:
+  "\<lbrakk>is_filter X A; X \<noteq> A\<rbrakk> \<Longrightarrow> is_pfilter X A"
+  by(simp add:is_pfilter_def)
+
+lemma is_pfilterI2:
+  "\<lbrakk>is_least X bot; bot \<notin> A; is_filter X A\<rbrakk> \<Longrightarrow> is_pfilter X A"
+  using is_pfilterI1 leastD11 by blast
+
+lemma pfilters_memD0:
+  "F \<in> pfilters X \<Longrightarrow> is_pfilter X F"
+  by (simp add:pfilters_def)
+
+lemma pfilters_memD1:
+  "F \<in> pfilters X \<Longrightarrow> is_filter X F"
+  by (simp add:pfilters_def is_pfilterD1)
+
+lemma pfilters_memD2:
+  "F \<in> pfilters X \<Longrightarrow> F \<noteq> X"
+  using is_pfilterD2 pfilters_memD0 by blast
+
+lemma pfilters_memD3:
+  "F \<in> pfilters X \<Longrightarrow> F \<subseteq> X"
+  by (simp add:pfilters_def is_pfilterD3)
+
+lemma pfilters_memI:
+  "is_pfilter X F \<Longrightarrow> F \<in> pfilters X"
+  by (simp add: pfilters_def)
+
+lemma maximal_pfiltersD1:
+  "is_maximal (pfilters X) F \<Longrightarrow> H \<in>pfilters X \<Longrightarrow> F \<subseteq> H \<Longrightarrow> F=H  "
+  using maximalD2 by blast
+
+lemma maximal_pfiltersI1:
+  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F =H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
+  using maximalI1[of F "pfilters X"]  by auto
+
+lemma maximal_pfiltersI2:
+  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F \<supseteq> H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
+  by (simp add: is_maximal_def)
+
 subsection IntersectionOfFilters
 subsubsection Upclosed
 
@@ -4202,59 +4296,115 @@ lemma filters_on_lattice_inf01:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> z \<in> F1 \<inter> F2 \<Longrightarrow> \<exists>f1 f2. f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2}"
   by (metis IntE bsup_idem1 filterD21)
 
+lemma pfilters_on_lattice_inf01:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> z \<in> F1 \<inter> F2 \<Longrightarrow> \<exists>f1 f2. f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2}"
+  by (metis IntD2 bsup_idem1 inf.order_iff inf_commute is_pfilterD3)
+
 lemma filters_on_lattice_inf02:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2} \<Longrightarrow> z \<in> F1 \<inter> F2 "
   using filterD4[of "X" "F1"] is_ord_clE1[of "X" "F1" "f1" "z"] filterD4[of "X" "F2"] is_ord_clE1[of "X" "F2" "f2" "z"]
   by (metis Int_iff bsup_geI1 bsup_geI2 dual_order.refl filterD21 lattD42 ssupD4)
 
+lemma pfilters_on_lattice_inf02:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<and> f2 \<in> F2 \<and> z = Sup X {f1, f2} \<Longrightarrow> z \<in> F1 \<inter> F2 "
+  by (meson filters_on_lattice_inf02 is_pfilterD1)
+
 lemma filters_on_lattice_inf03:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<Longrightarrow> f2 \<in> F2  \<Longrightarrow> Sup X {f1, f2} \<in> F1 \<inter> F2 "
   using filters_on_lattice_inf02 by blast
+
+lemma pfilters_on_lattice_inf03:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<Longrightarrow> f2 \<in> F2  \<Longrightarrow> Sup X {f1, f2} \<in> F1 \<inter> F2 "
+  using pfilters_on_lattice_inf02 by blast
 
 lemma filter_on_lattice_sup01:
   "\<lbrakk>is_lattice X; is_filter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
   by (simp add: filter_bsup_memI2 lattD42)
 
+lemma pfilter_on_lattice_sup01:
+  "\<lbrakk>is_lattice X; is_pfilter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
+  by (simp add: filter_on_lattice_sup01 is_pfilterD1)
+
 lemma filter_on_lattice_top0:
   "is_lattice X \<Longrightarrow> is_filter X {x} \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> x"
   by (meson is_filter_def bsup_iff filter_on_lattice_sup01 insertI1 latt_iff subsetD ubD ub_singleton)
 
+lemma pfilter_on_lattice_top0:
+  "is_lattice X \<Longrightarrow> is_pfilter X {x} \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> x"
+  by (simp add: filter_on_lattice_top0 is_pfilterD1)
+
 lemma filter_on_lattice_top:
   "\<lbrakk>is_lattice X;  is_filter X {x}\<rbrakk> \<Longrightarrow>  is_greatest X x"
   by(rule greatestI1, rule ubdI, simp add: filter_on_lattice_top0, simp add:filterD21)
+
+lemma pfilter_on_lattice_top:
+  "\<lbrakk>is_lattice X;  is_pfilter X {x}\<rbrakk> \<Longrightarrow>  is_greatest X x"
+  by (simp add: filter_on_lattice_top is_pfilterD1)
 
 lemma filter_on_lattice_eq:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> (F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}"
   apply(auto simp add:set_eq_iff)  apply (metis bsup_idem1 filterD21) 
   using filters_on_lattice_inf03[of "X" "F1" "F2"]  by blast+
 
+lemma pfilter_on_lattice_eq:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> (F1 \<inter> F2) = {y. (\<exists>f1 \<in> F1. \<exists>f2 \<in> F2. y = Sup X {f1, f2})}"
+  by (simp add: filter_on_lattice_eq is_pfilterD1)
+
 lemma filters_on_lattice_inf2b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
   using filter_inter_dir3 lattD41 by blast
+
+lemma pfilters_on_lattice_inf2b:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
+  by (simp add: filters_on_lattice_inf2b is_pfilterD1)
 
 lemma filters_upcl:
   "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)"
   apply(auto simp add:is_ord_cl_def) using filterD4 is_ord_clE1 by blast+
 
+lemma pfilters_upcl:
+  "\<lbrakk>is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)"
+  by (simp add: filters_upcl is_pfilterD1)
+
 lemma filter_on_lattice_inf4b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
   by (metis empty_iff equals0I filterD1 filters_on_lattice_inf02)
+
+lemma pfilter_on_lattice_inf4b:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
+  by (simp add: filter_on_lattice_inf4b is_pfilterD1)
 
 lemma filters_on_lattice_inf5b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_filter X (F1 \<inter> F2)"
   by (meson filterD2 filterI1 filter_on_lattice_inf4b filters_on_lattice_inf2b filters_upcl inf.coboundedI2) 
 
+lemma pfilters_on_lattice_inf5b:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_pfilter X (F1 \<inter> F2)"
+  by (metis Int_left_absorb filters_on_lattice_inf5b inf.orderE is_pfilterD3 is_pfilter_def)
+
 lemma filters_on_lattice_inf6b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (lbd (filters_on X) {F1, F2})"
   by (simp add: lbd_mem_iff filters_on_iff filters_on_lattice_inf5b lb_double_iff1)
+
+lemma pfilters_on_lattice_inf6b:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in> (lbd (pfilters X) {F1, F2})"
+  by (simp add: lbd_mem_insert lbd_singleton_iff pfilters_memI pfilters_on_lattice_inf5b)
 
 lemma filters_on_lattice_inf7b:
   "\<lbrakk>is_filter X F1; is_filter X F2; G \<in> (lbd (filters_on X) {F1, F2})\<rbrakk>  \<Longrightarrow>  G \<subseteq>  (F1 \<inter> F2)"
   by (simp add: lbd_mem_iff lb_double_iff1)
 
+lemma pfilters_on_lattice_inf7b:
+  "\<lbrakk>is_pfilter X F1; is_pfilter X F2; G \<in> (lbd (pfilters X) {F1, F2})\<rbrakk>  \<Longrightarrow>  G \<subseteq>  (F1 \<inter> F2)"
+  by (simp add: lbd_mem_iff lb_double_iff1)
+
 lemma filters_on_lattice_inf8b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk>\<Longrightarrow> is_inf (filters_on X) {F1, F2} (F1 \<inter> F2)"
   by (meson filters_on_lattice_inf6b filters_on_lattice_inf7b is_infI5)
+
+lemma pfilters_on_lattice_inf8b:
+  "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk>\<Longrightarrow> is_inf (pfilters X) {F1, F2} (F1 \<inter> F2)"
+  by (meson is_infI5 pfilters_on_lattice_inf6b pfilters_on_lattice_inf7b)
 
 (*
   On a lattice filters form an inf semilattice
@@ -6756,69 +6906,6 @@ lemma inf_primeI4:
   "\<lbrakk>distributive_lattice X; x \<in> X; fin_inf_irr X x\<rbrakk> \<Longrightarrow> inf_prime X ((x]\<^sub>X)"
   by (simp add: elem_inf_primeE1 elem_inf_primeI3)
 
-definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
-
-lemma is_pfilterD1:
-  "is_pfilter X A \<Longrightarrow> is_filter X A"
-  by(simp add:is_pfilter_def)
-
-lemma is_pfilterD2:
-  "is_pfilter X A \<Longrightarrow>  X \<noteq> A"
-  by(simp add:is_pfilter_def)
-
-lemma is_pfilterD3:
-  "is_pfilter X A \<Longrightarrow>  A \<subseteq> X"
-  by (simp add: filterD2 is_pfilterD1)
-
-lemma is_pfilterD4:
-  "\<lbrakk>is_least X bot; is_pfilter X A\<rbrakk> \<Longrightarrow> bot \<notin> A"
-  by (metis filterD4 is_pfilterD3 is_pfilter_def up_cl_bot)
-
-lemma is_pfilterI1:
-  "\<lbrakk>is_filter X A; X \<noteq> A\<rbrakk> \<Longrightarrow> is_pfilter X A"
-  by(simp add:is_pfilter_def)
-
-lemma is_pfilterI2:
-  "\<lbrakk>is_least X bot; bot \<notin> A; is_filter X A\<rbrakk> \<Longrightarrow> is_pfilter X A"
-  using is_pfilterI1 leastD11 by blast
-
-
-definition pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
-  "pfilters X \<equiv> {F. is_pfilter X F}"
-
-lemma pfilters_memD0:
-  "F \<in> pfilters X \<Longrightarrow> is_pfilter X F"
-  by (simp add:pfilters_def)
-
-lemma pfilters_memD1:
-  "F \<in> pfilters X \<Longrightarrow> is_filter X F"
-  by (simp add:pfilters_def is_pfilterD1)
-
-lemma pfilters_memD2:
-  "F \<in> pfilters X \<Longrightarrow> F \<noteq> X"
-  using is_pfilterD2 pfilters_memD0 by blast
-
-lemma pfilters_memD3:
-  "F \<in> pfilters X \<Longrightarrow> F \<subseteq> X"
-  by (simp add:pfilters_def is_pfilterD3)
-
-lemma pfilters_memI:
-  "is_pfilter X F \<Longrightarrow> F \<in> pfilters X"
-  by (simp add: pfilters_def)
-
-lemma maximal_pfiltersD1:
-  "is_maximal (pfilters X) F \<Longrightarrow> H \<in>pfilters X \<Longrightarrow> F \<subseteq> H \<Longrightarrow> F=H  "
-  using maximalD2 by blast
-
-lemma maximal_pfiltersI1:
-  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F =H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
-  using maximalI1[of F "pfilters X"]  by auto
-
-lemma maximal_pfiltersI2:
-  "\<lbrakk>F \<in> pfilters X; (\<And>H. \<lbrakk>H  \<in> pfilters X; F \<subseteq> H\<rbrakk> \<Longrightarrow> F \<supseteq> H)\<rbrakk> \<Longrightarrow>  is_maximal (pfilters X) F "
-  by (simp add: is_maximal_def)
-
 lemma sup_prime_pfilterD1:
   "\<lbrakk>sup_prime X A; is_pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
   by (simp add: sup_prime_def)
@@ -6835,6 +6922,9 @@ lemma not_prime_obtain:
   assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"\<not>(sup_prime X F)"
   obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
   using A2 sup_prime_def by blast
+
+lemma distr_lattice_join_irr:
+  "\<lbrakk>distributive_lattice X; x \<in> X;fin_sup_irr X x; A \<in> Fpow_ne X; x \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
 
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
@@ -6957,7 +7047,6 @@ lemma prime_filter_iff2:
   "is_lattice X \<Longrightarrow>  (sup_prime X F \<and> pfilter X F)  \<longleftrightarrow>  (pfilter X F \<and> (\<forall>F1 F2. is_filter X F1 \<and> is_filter X F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis primefilterD3 primefilterI2)
 
-
 lemma prime_filter_fin_irr1:
   "\<lbrakk>is_lattice X; sup_prime X F; pfilter X F; G \<in> filters_on X; H \<in> filters_on X; G \<inter> H = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
   by (meson filters_on_iff inf.cobounded1 inf.cobounded2 primefilterD3 subset_antisym)
@@ -6986,7 +7075,11 @@ lemma proper_principal_fin_irr:
 lemma fin_irr_filter_prime:
   "\<lbrakk>distributive_lattice X;pfilter X F;fin_inf_irr (filters_on X) F\<rbrakk> \<Longrightarrow> inf_prime X F"
   by (meson distributive_lattice_def filterD4 inf_primeI1 is_ord_clE1 lattD41 rolcD1 rolc_inf_latticeD1)
-
+(*on lattice prime filters are finite inf irr
+  prime_filter_irr3 
+    \<lbrakk>is_lattice X; sup_prime X F; pfilter X F\<rbrakk> \<Longrightarrow> fin_inf_irr (filters_on X) F"
+  while if the lattice is distributive the conver
+*)
 
 lemma distr_lattice_maximal_prime:
   assumes A0:"distributive_lattice X" and A1:"is_maximal (pfilters_on X) F" 
