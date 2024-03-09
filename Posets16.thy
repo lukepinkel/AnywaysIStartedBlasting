@@ -1630,6 +1630,11 @@ lemma bsup_idem1:
   "a\<in> X \<Longrightarrow> Sup X {a, a} = a"
   by (simp add: sup_equality sup_singleton)
 
+
+lemma sup_singleton2:
+  "a \<in> X \<Longrightarrow> Sup X {a} = a"
+  using bsup_idem1 by auto
+
 lemma sup_ge1:
   "\<lbrakk>c \<in> X; a \<in> X;b \<in> X; a \<ge> c; is_sup X {a, b} s\<rbrakk>  \<Longrightarrow> s \<ge> c "
   by (meson binary_supD21 is_supE1)
@@ -1960,6 +1965,10 @@ lemma binf_commute2:
 lemma binf_idem1:
   "a\<in> X \<Longrightarrow>Inf X {a, a} = a"
   by (simp add:  inf_equality inf_singleton)
+
+lemma inf_singleton2:
+  "a \<in> X \<Longrightarrow> Inf X {a} = a"
+  using binf_idem1 by auto
 
 lemma inf_le1:
   "\<lbrakk>is_inf X {a, b} i;a \<in> X; b \<in> X; c \<in> X; a \<le> c\<rbrakk>  \<Longrightarrow> i \<le> c"
@@ -2827,6 +2836,7 @@ lemma lattice_id5:
   "\<lbrakk>is_lattice X; x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, z} ub {Inf X {x, y}, Inf X {y, z}, Inf X {x, z}}"
   using lattice_id3[of X x z y] by (simp add: insert_commute)
 
+lemma distr_latticeD5:"distributive_lattice X \<Longrightarrow> is_lattice X" by (simp add: distributive_lattice_def)
 
 lemma lattice_id10:
   assumes A0:"is_lattice X" and A1:" x \<in> X \<and> y \<in> X \<and> z \<in> X" 
@@ -2863,6 +2873,74 @@ proof-
     show "Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y}, Sup X {x, z}}"
 *)  
 
+
+
+(*
+lemma finite_distr:
+  assumes A0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> Inf X {b, Sup X {a1, a2}} = Sup X ((\<lambda>x. Inf X {b, x})`{a1, a2})" and
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X" and 
+          A4:"is_lattice X"
+  shows " Inf X {b, Sup X A} = Sup X ((\<lambda>x. Inf X {b, x})`A)"
+  using A1 A2 A3 
+proof (induct A rule: finite_ne_induct)
+  case (singleton x) then show ?case using A0 by fastforce
+next
+  case (insert x F)
+  have B0:"F \<subseteq> X"
+    using insert.prems by blast
+  obtain s i t where A5:"s = Sup X F" "i = Inf X {b, s}" "t = Sup X {x, s}" by simp
+  have B3:"t \<in> ubd X (insert x F)"
+    by (metis A4 A5(1) A5(3) bsup_finite2 insert.hyps(1) insert.hyps(2) insert.prems insertCI insert_commute insert_subset is_supD1121 is_supE1 lattD32 lattD42 sup_insert62 ubd_mem_insert)
+  have B4:"\<And>u. u \<in> ubd X (insert x F) \<longrightarrow> t \<le> u"
+    by (metis A4 A5(1) A5(3) bsup_finite2 insert.hyps(1) insert.hyps(2) insert.prems insert_commute insert_subset is_supE1 lattD32 lattD42 sup_insert7)
+  have B5:"is_sup X (insert x F) t"
+    by (simp add: B3 B4 is_supI5)
+  have B6:"Inf X {b, s} = Sup X ((\<lambda>a. Inf X {b, a}) ` F)"
+    using A5(1) B0 insert.hyps(4) by blast
+  have B7:"Sup X (insert x F) = Sup X {x, s}"
+    using A5(1) A5(3) B5 sup_equality by blast
+  have B8:"x \<in> X \<and> s \<in> X"
+    by (metis A4 A5(1) bsup_finite2 insert.hyps(1) insert.hyps(2) insert.prems insert_subset is_supE1 lattD42)
+  have B9:"Inf X {b, Sup X (insert x F)} = Inf X {b, Sup X {x,s}}"
+    by (simp add: B7)
+  have B10:"... = Sup X ((\<lambda>a. Inf X {b, a})`{x, s}) "
+    using A0 B8 by blast
+  have B11:"... = Sup X {Inf X {b, x}, Inf X {b, s}}" by simp
+  have B12:"Inf X {b, Sup X F} = Sup X ((\<lambda>a. Inf X {b, a}) ` F)"
+    using B0 insert.hyps(4) by blast
+  have B13:"Inf X {b, Sup X (insert x F)} = Sup X {Inf X {b, x},  Sup X ((\<lambda>a. Inf X {b, a}) ` F)}"
+    using B10 B11 B6 B7 by presburger
+  have B14:"Sup X ((\<lambda>a. Inf X {b, a}) ` (insert x F)) = Sup X ((\<lambda>a. Inf X {b, a}) `{x} \<union> ((\<lambda>a. Inf X {b, a}) `F)) "
+    by simp
+  have B15:"... = Sup X {Inf X {b, x},  Sup X ((\<lambda>a. Inf X {b, a}) ` F)}"
+  then show ?case
+qed
+*)
+(*
+lemma finite_distr:
+  fixes a::"'a::order" and
+        X::"'a::order set"
+  assumes A0:"a \<in> X" and
+          A1:"\<And>b1 b2. b1 \<in> X \<Longrightarrow> b2 \<in> X \<Longrightarrow> Inf X {a, Sup X {b1, b2}} = Sup X ((\<lambda>x. Inf X {a, x})`{b1, b2})" and
+          A2:"finite E" and
+          A3:"E \<noteq> {}" and
+          A4:"E \<subseteq> X" and 
+          A5:"is_lattice X" 
+  shows " Inf X {a, Sup X E} = Sup X ((\<lambda>x. Inf X {a, x})`E)"
+using A2 A3 A0 A1 A4
+proof (induct E rule: finite_ne_induct)
+  case (singleton x) then show ?case
+  apply(auto simp add:sup_singleton2)
+    by (simp add: A5 lattD41 sinfD4 sup_singleton2)
+next
+  case (insert x F)
+  
+  then show ?case
+    
+qed
+*)
 
 subsection CompleteLattices
 
@@ -6922,10 +7000,10 @@ lemma not_prime_obtain:
   assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"\<not>(sup_prime X F)"
   obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
   using A2 sup_prime_def by blast
-
+(*
 lemma distr_lattice_join_irr:
   "\<lbrakk>distributive_lattice X; x \<in> X;fin_sup_irr X x; A \<in> Fpow_ne X; x \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
-
+*)
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
@@ -7138,7 +7216,166 @@ proof-
 qed
 
 
- 
+
+lemma tmp0:"\<lbrakk>a1 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>{Inf X {b, a}|a. a \<in> {a1}} = {Inf X {b, a1}}" by auto
+lemma tmp1:"\<lbrakk>a1 \<in> X; a2 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>{Inf X {b, a}|a. a \<in> {a1, a2}} = {Inf X {b, a1}, Inf X {b, a2}}" by auto
+lemma tmp2:"\<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}; b \<in> X\<rbrakk> \<Longrightarrow>{Inf X {b, a}|a. a \<in>A} = (\<lambda>a. Inf X {b, a})`A" by auto
+
+
+lemma tmp3:"\<lbrakk>a1 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>{Sup X {b, a}|a. a \<in> {a1}} = {Sup X{b, a1}}" by auto
+lemma tmp4:"\<lbrakk>a1 \<in> X; a2 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>{Sup  X {b, a}|a. a \<in> {a1, a2}} = {Sup X {b, a1}, Sup X {b, a2}}" by auto
+lemma tmp5:"\<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}; b \<in> X\<rbrakk> \<Longrightarrow>{Sup X {b, a}|a. a \<in>A} = (\<lambda>a. Sup X {b, a})`A" by auto
+
+
+
+lemma distr_eq_tmp0:"\<lbrakk>is_lattice X; a1 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Inf X {b, (Sup X {a1})} = Sup X {Inf X {b, a}|a. a \<in> {a1}}" by (simp add: lattD41 sinfD4 sup_singleton2) 
+lemma distr_eq_tmp1:"\<lbrakk>distributive_lattice X; a1 \<in> X; a2 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Inf X {b, Sup X {a1, a2}} = Sup X {Inf X {b, a}|a. a \<in> {a1, a2}}" using distr_latticeD3 tmp1 by fastforce
+
+
+lemma distr_eq_tmp2:"\<lbrakk>is_lattice X; a1 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Sup X{b, (Inf X {a1})} = Inf X {Sup X {b, a}|a. a \<in> {a1}}"  by (simp add: inf_singleton2 lattD42 ssupD4)
+lemma distr_eq_tmp3:"\<lbrakk>distributive_lattice X; a1 \<in> X; a2 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Sup X {b, (Inf X {a1, a2})} = Inf X {Sup X {b, a}|a. a \<in> {a1, a2}}" using distr_latticeD1 tmp4 by fastforce
+
+
+lemma l_inf_closed:"\<lbrakk>is_lattice X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> X" by (simp add: lattD41 sinfD4)
+lemma l_finsup:"\<lbrakk>is_lattice X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup X A s"  using bsup_finite2 lattD42 by blast 
+
+lemma l_sup_closed:"\<lbrakk>is_lattice X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> X" by (simp add: lattD42 ssupD4)
+lemma l_fininf:"\<lbrakk>is_lattice X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf X A s"  using binf_finite2 lattD41 by blast 
+
+
+lemma sup_insert9: "\<lbrakk>is_sup Y A s1; is_sup Y {s1, x} s2\<rbrakk> \<Longrightarrow>  s2 \<in> (ubd Y (insert x A))" by (simp add: is_supD1121 sup_insert62 ubd_mem_insert)
+lemma inf_insert9: "\<lbrakk>is_inf Y A s1; is_inf Y {s1, x} s2\<rbrakk> \<Longrightarrow>  s2 \<in> (lbd Y (insert x A))" by (simp add: is_infD1121 inf_insert62 lbd_mem_insert)
+
+
+lemma sup_ubd: "\<lbrakk>is_sup Y F s; is_sup Y {x, s} t\<rbrakk> \<Longrightarrow> is_sup Y (insert x F) t"  by(rule is_supI1, simp add: insert_commute leastI3 sup_insert7 sup_insert9)
+lemma sup_ex:"\<lbrakk>is_lattice X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> is_sup X {x, y} (Sup X {x, y})" by (simp add: lattD32)
+
+lemma inf_lbd: "\<lbrakk>is_inf Y F s; is_inf Y {x, s} t\<rbrakk> \<Longrightarrow> is_inf Y (insert x F) t" by (rule is_infI1, simp add: insert_commute greatestI3 inf_insert7 inf_insert9)
+lemma inf_ex:"\<lbrakk>is_lattice X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> is_inf X {x, y} (Inf X {x, y})" by (simp add: lattD31)
+
+
+
+
+lemma fsup_insert:"\<lbrakk>is_lattice X; finite F; F \<subseteq> X; F \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, (Sup X F)} = Sup X (insert x F)"  by (metis l_finsup is_supE1 sup_equality sup_ex sup_ubd)
+lemma finf_insert:"\<lbrakk>is_lattice X; finite F; F \<subseteq> X; F \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, (Inf X F)} = Inf X (insert x F)"  by (metis l_fininf is_infE1 inf_equality inf_ex inf_lbd)
+
+
+
+
+lemma distr_finite2:
+  assumes A0:"b \<in> X" and
+          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Inf X {b, (Sup X {a1, a2})} = Sup X {Inf X {b, a}|a. a \<in> {a1, a2}}" and 
+          A2:"finite A" and
+          A3:"A \<noteq> {}" and
+          A4:"A \<subseteq> X" and
+          A5:"distributive_lattice X"
+  shows "Inf X {b, (Sup X A)} = Sup X {Inf X {b, a}|a. a \<in> A}"
+  using A2 A3 A4 A1 A0
+proof (induct A rule: finite_ne_induct)
+  case (singleton x) then show ?case using A5 by fastforce 
+next
+  case (insert x F)
+  obtain P0:"x \<in> X" and P1:"F \<subseteq> X" and P2:"finite F" and P3:"F \<noteq> {}"
+    using insert.hyps(1,2) insert.prems(1) by blast
+  have L:"is_lattice X"  by (simp add: A5 distr_latticeD5) 
+  let ?ba="{Inf X {b, a} |a::'a. a \<in> F}" and ?xba="{Inf X {b, a}|a. a \<in> (insert x F)}"
+  let ?s="Sup X F" and ?sba="Sup X ?ba" and ?sxba="Sup X ?xba"
+  have P4:"?ba \<subseteq> X" using L A0 P1 l_inf_closed by blast 
+  have P5:"?xba \<subseteq> X" using L A0 P0 P1 l_inf_closed by blast
+  have P6:"finite ?ba" using P2 by force
+  have P7:"finite ?xba"  by (simp add: insert.hyps(1))
+  have P8:"?xba = {Inf X {b, x}} \<union> ?ba" by (auto)
+  have P9:"Inf X {b, x} \<in> X" by (simp add: L A0 P0 l_inf_closed) 
+  have P10:"?ba \<noteq> {}"  using P3 by blast
+  have P11:"?xba \<noteq> {}" using P3 by blast
+  have P12:"?sba \<in> X" using L P10 P4 P6 bsup_finite2 is_supE1 latt_iff by blast 
+  have P13:"?sxba \<in> X" using L P11 P5 P7 bsup_finite2 is_supE1 latt_iff by blast 
+  have P14:"(Sup X {?sba, (Inf X {b, x})}) \<in> X" using  P12 P9  L l_sup_closed by blast 
+  have B0:"Inf X {b, ?s} = ?sba"  using A0 A1 insert.hyps(4) insert.prems(1) by blast
+  have B1:"Inf X {b, (Sup X {?s, x})} = Sup X {(Inf X {b, ?s}), (Inf X {b, x})}" by (meson A0 A5 L P0 P1 P2 P3 bsup_finite2 distr_latticeD3 is_supE1 lattD42)
+  have B2:"... = Sup X {(?sba), (Inf X {b, x})}"  using B0 by fastforce
+  have B3:"... = Sup X {Inf X {b, a}|a. a \<in> (insert x F)}" 
+  proof-
+    have B4:"?ba \<subseteq> ?xba" by blast
+    have B5:"is_sup X ?ba ?sba" by (simp add: P3 P4 P6 L l_finsup sup_exI)
+    have B6:"is_sup X {Inf X {b, x},?sba} (Sup X {(Inf X {b, x}), (?sba)} )" by (simp add: L P12 P9 lattD32) 
+    have B7:"is_sup X {Inf X {b, x},?sba} (Sup X {(?sba), (Inf X {b, x})})" by (metis B6 insert_commute) 
+    have B8:"is_sup X (insert (Inf X {b, x}) ?ba) (Sup X {(?sba), (Inf X {b, x})})"  using B5 B7 sup_ubd by blast 
+    have B9:"insert (Inf X {b, x}) ?ba =  {Inf X {b, a}|a. a \<in> (insert x F)}"  using B5 B7 sup_ubd by blast
+    show "(Sup X {(?sba), (Inf X {b, x})}) =  Sup X {Inf X {b, a}|a. a \<in> (insert x F)}"
+      using B8 B9 sup_equality by force
+  qed
+  have B10:"Inf X {b, (Sup X {?s, x})} = Sup X {Inf X {b, a}|a. a \<in> (insert x F)}" using B0 B1 B3 by presburger
+  have B11:"Inf X {b, (Sup X {?s, x})} = Inf X {b, (Sup X (insert x F))}"
+  proof-
+    have B12:"Sup X {Sup X F, x} = Sup X (insert x F)"
+      by (simp add: L P0 P1 P2 P3 fsup_insert insert_commute)
+    show " Inf X {b, Sup X {Sup X F, x}} = Inf X {b, Sup X (insert x F)}"
+      by (simp add: B12)
+  qed
+  have B13:"Inf X {b, (Sup X (insert x F))} =  Sup X {Inf X {b, a}|a. a \<in> (insert x F)}" using B10 B11 by presburger
+  then show ?case
+    by auto
+qed
+
+
+
+lemma distr_finite1:
+  assumes A0:"b \<in> X" and
+          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Sup X {b, (Inf X {a1, a2})} = Inf X {Sup X {b, a}|a. a \<in> {a1, a2}}" and 
+          A2:"finite A" and
+          A3:"A \<noteq> {}" and
+          A4:"A \<subseteq> X" and
+          A5:"distributive_lattice X"
+  shows "Sup X {b, (Inf X A)} = Inf X {Sup X {b, a}|a. a \<in> A}"
+  using A2 A3 A4 A1 A0
+proof (induct A rule: finite_ne_induct)
+  case (singleton x) then show ?case using A5 by fastforce 
+next
+  case (insert x F)
+  obtain P0:"x \<in> X" and P1:"F \<subseteq> X" and P2:"finite F" and P3:"F \<noteq> {}"
+    using insert.hyps(1,2) insert.prems(1) by blast
+  have L:"is_lattice X"  by (simp add: A5 distr_latticeD5) 
+  let ?ba="{Sup X {b, a} |a::'a. a \<in> F}" and ?xba="{Sup X {b, a}|a. a \<in> (insert x F)}"
+  let ?s="Inf X F" and ?sba="Inf X ?ba" and ?sxba="Inf X ?xba"
+  have P4:"?ba \<subseteq> X" using L A0 P1 l_sup_closed by blast 
+  have P5:"?xba \<subseteq> X" using L A0 P0 P1 l_sup_closed by blast
+  have P6:"finite ?ba" using P2 by force
+  have P7:"finite ?xba"  by (simp add: insert.hyps(1))
+  have P8:"?xba = {Sup X {b, x}} \<union> ?ba" by (auto)
+  have P9:"Inf X {b, x} \<in> X" by (simp add: L A0 P0 l_inf_closed) 
+  have P10:"?ba \<noteq> {}"  using P3 by blast
+  have P11:"?xba \<noteq> {}" using P3 by blast
+  have P12:"?sba \<in> X" using L P10 P4 P6 binf_finite2 is_infE1 latt_iff by blast 
+  have P13:"?sxba \<in> X" using L P11 P5 P7 binf_finite2 is_infE1 latt_iff by blast 
+  have P14:"(Inf X {?sba, (Sup X {b, x})}) \<in> X" by (simp add: A0 L P0 P12 l_inf_closed l_sup_closed)
+  have B0:"Sup X {b, ?s} = ?sba"  using A0 A1 insert.hyps(4) insert.prems(1) by blast
+  have B1:"Sup X {b, (Inf X {?s, x})} = Inf X {(Sup X {b, ?s}), (Sup X {b, x})}" by (meson A0 A5 L P0 P1 P2 P3 binf_finite2 distr_latticeD1 is_infE1 lattD41)
+  have B2:"... = Inf X {(?sba), (Sup X {b, x})}"  using B0 by fastforce
+  have B3:"... = Inf X {Sup X {b, a}|a. a \<in> (insert x F)}" 
+  proof-
+    have B4:"?ba \<subseteq> ?xba" by blast
+    have B5:"is_inf X ?ba ?sba" by (simp add: P3 P4 P6 L l_fininf inf_exI)
+    have B6:"is_inf X {Sup X {b, x},?sba} (Inf X {(Sup X {b, x}), (?sba)} )" by (simp add: A0 L P0 P12 l_sup_closed lattD31)
+    have B7:"is_inf X {Sup X {b, x},?sba} (Inf X {(?sba), (Sup X {b, x})})" by (metis B6 insert_commute) 
+    have B8:"is_inf X (insert (Sup X {b, x}) ?ba) (Inf X {(?sba), (Sup X {b, x})})"  using B5 B7 inf_lbd by blast 
+    have B9:"insert (Sup X {b, x}) ?ba =  {Sup X {b, a}|a. a \<in> (insert x F)}"  using B5 B7 inf_lbd by blast
+    show "(Inf X {(?sba), (Sup X {b, x})}) =  Inf X {Sup X {b, a}|a. a \<in> (insert x F)}"   using B8 B9 inf_equality by force
+  qed
+  have B10:"Sup X {b, (Inf X {?s, x})} = Inf X {Sup X {b, a}|a. a \<in> (insert x F)}" using B0 B1 B3 by presburger
+  have B11:"Sup X {b, (Inf X {?s, x})} = Sup X {b, (Inf X (insert x F))}"
+  proof-
+    have B12:"Inf X {Inf X F, x} = Inf X (insert x F)"by (simp add: L P0 P1 P2 P3 finf_insert insert_commute)
+    show "Sup X {b, Inf X {Inf X F, x}} = Sup X {b, Inf X (insert x F)}"   by (simp add: B12)
+  qed
+  have B13:"Sup X {b, (Inf X (insert x F))} =  Inf X {Sup X {b, a}|a. a \<in> (insert x F)}" using B10 B11 by presburger
+  then show ?case  by auto
+qed
+
+
+lemma fin_distr2:"\<lbrakk>distributive_lattice X ;finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Inf X {b, (Sup X  A)} = Sup X {Inf X {b, a}|a. a \<in> A}" using distr_finite2[of b X A]  by (simp add: distr_eq_tmp1)
+
+lemma fin_distr1:"\<lbrakk>distributive_lattice X; finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Sup X{ b, (Inf X  A)} = Inf X {Sup X {b, a}|a. a \<in> A}"  using distr_finite1[of b X A]  by (simp add: distr_eq_tmp3)
+
 
 end
-
