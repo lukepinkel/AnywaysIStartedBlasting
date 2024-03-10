@@ -7001,13 +7001,7 @@ lemma not_prime_obtain:
   assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"\<not>(sup_prime X F)"
   obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
   using A2 sup_prime_def by blast
-<<<<<<< HEAD
-=======
-(*
-lemma distr_lattice_join_irr:
-  "\<lbrakk>distributive_lattice X; x \<in> X;fin_sup_irr X x; A \<in> Fpow_ne X; x \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>a \<in> A. x \<le> a)"
-*)
->>>>>>> cc08d2a91ef1051f2f38bbaedd0f8f0c58130549
+
 
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
