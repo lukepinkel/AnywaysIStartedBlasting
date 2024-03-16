@@ -7596,7 +7596,7 @@ qed
 
 
 lemma finite_ind_fil10:
-  fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
   assumes A0:"is_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))"
   shows "{y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) \<le> y} \<subseteq> Sup (filters_on X) (f`I) " (is "?L \<subseteq> ?R")
 proof
@@ -7608,15 +7608,86 @@ qed
 
 
 lemma finite_ind_fil11:
-  fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
   assumes A0:"is_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))"
   shows "Sup (filters_on X) (f`I) = {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) \<le> y}  "
   apply(rule order.antisym) 
   using A0 A1 apply(rule finite_ind_fil9, simp)
   using A0 A1 by(rule finite_ind_fil10, simp)
 
+lemma finite_ind_fil11b:
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"is_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))" and
+          A2:"y \<in> Sup (filters_on X) (f`I)"
+  shows "\<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) \<le> y"
+  using finite_ind_fil11[of X top I f] assms by(auto)
+
+lemma finite_ind_fil12:
+  fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
+  assumes A0:"distributive_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))" and
+          A2:"y \<in> X" "(\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))"  "Inf X (x` I) \<le> y"
+  shows " \<exists>(x1::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf X (x1` I) =y "
+proof-
+  define x1 where "x1 = (\<lambda>i. Sup X {y, x i})"
+  have B00:"finite (x` I)" by (simp add: assms(4))
+  have B01:"x` I \<subseteq> X" using assms(5) assms(7) filterD21 by blast
+  have B02:"x` I \<noteq> {}"  by (simp add: assms(3))
+  have B03:"finite (x1 ` I)"  by (simp add: assms(4))
+  have B04:"(x1 ` I) \<subseteq> X"  by (metis B01 assms(1) assms(6) distr_latticeD5 image_subset_iff l_sup_closed x1_def)
+  have B05:"(x1 ` I) \<noteq> {}"  using assms(3) by force
+  have B0:"y = Sup X {y, Inf X (x` I)}" by (metis assms(6,8)  greatest_insert3 greatest_singleton sup_equality sup_maxE1) 
+  have B1:"... = Inf X {Sup X {y,a}|a.  a \<in> (x` I)}" using B00 B01 B02 assms(1,6) fin_distr1 by blast
+  have B2:"... = Inf X {Sup X {y, x i}|i. i \<in> I}" by (metis (no_types, opaque_lifting) image_iff)
+  have B3:"... = Inf X {x1 i|i. i \<in> I}"  using x1_def by auto
+  have B4:"... = Inf X (x1 ` I)"  by (simp add: Setcompr_eq_image)
+  have B5:"Inf X (x1 ` I) = y"  using B0 B1 B2 B3 B4 by presburger
+  have B6:"\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)"  by (simp add: assms(1) assms(5) assms(6) assms(7) distr_latticeD5 filter_on_lattice_sup01 x1_def)
+  show ?thesis
+    using B5 B6 by blast
+qed
 
 
+lemma finite_ind_fil13:
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"distributive_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))"
+  shows "Sup (filters_on X) (f`I) \<subseteq> {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) = y}" (is "?L \<subseteq> ?R")
+proof
+  fix y assume A2:"y \<in> ?L"
+  have B0:"is_lattice X" by (simp add: assms(1) distr_latticeD5)
+  have B1:"y \<in> X" by (metis (no_types, lifting) A2 B0 CollectD assms(2) assms(3) assms(4) assms(5) finite_ind_fil11)
+  obtain x where B2:"(\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) \<le> y"  by (metis A2 B0 assms(2) assms(3) assms(4) assms(5) finite_ind_fil11b) 
+  obtain x1 where B3:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf X (x1` I) =y" using finite_ind_fil12[of X top I f y x] A0 A1 A2  B1 B2 by presburger
+  show "y \<in> ?R"
+    using B1 B3 by blast
+qed
+
+
+lemma finite_ind_fil14:
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"distributive_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))"
+  shows "{y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) = y} \<subseteq> Sup (filters_on X) (f`I) " (is "?L \<subseteq> ?R")
+proof
+  fix y assume A2:"y \<in> ?L"
+  have B0:"is_lattice X" by (simp add: assms(1) distr_latticeD5)
+  have B1:"y \<in> X"  using A2 by blast
+  obtain x1 where B3:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf X (x1` I) =y" using A2 by blast
+  have B2:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf X (x1` I) \<le> y"  by (simp add: B3)
+  have B3:"y \<in> {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) \<le> y}"  using B1 B2 by blast
+  show "y \<in> ?R"   by (meson B0 B3 assms(2) assms(3) assms(4) assms(5) finite_ind_fil10 subset_iff)
+qed
+
+
+lemma finite_ind_fil15:
+  fixes f::"'b \<Rightarrow> 'a::order set" and I::"'b set"
+  assumes A0:"distributive_lattice X" "is_greatest X top" and A1:"I \<noteq> {}""finite I""(\<And>i. i \<in> I \<Longrightarrow> is_filter X (f i))"
+  shows "Sup (filters_on X) (f`I) = {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) = y}  "
+  using assms finite_ind_fil13[of X top I f] finite_ind_fil14[of X top I f] by fastforce
+
+(*
+lemma fin_distr2:"\<lbrakk>distributive_lattice X ;finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Inf X {b, (Sup X  A)} = Sup X {Inf X {b, a}|a. a \<in> A}" using distr_finite2[of b X A]  by (simp add: distr_eq_tmp1)
+
+lemma fin_distr1:"\<lbrakk>distributive_lattice X; finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Sup X{ b, (Inf X  A)} = Inf X {Sup X {b, a}|a. a \<in> A}"  using distr_finite1[of b X A]  by (simp add: distr_eq_tmp3)
+*)
 
 definition subsemilattice_inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "subsemilattice_inf X A\<equiv> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i))"
@@ -7864,18 +7935,6 @@ lemma prime_ideal_compl: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-
 lemma prime_filter_compl: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F) \<and> inf_prime X (X-F)" by (simp add: prime_filter_compl10 prime_filter_compl9)
 
 
-(*
-  using 
-    sup_prime_pfilterD4 sup_prime_pfilterI2 
-    prime_filter_compl prime_ideal_compl 
-  we have the characterization of sup prime proper filters on a lattice in terms of
-    \<forall>F1 F2 \<in> filters_on X. F1 \<inter> F2 \<subseteq> F \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F
-  and in terms of 
-    is_pideal (X-F)  \<and> inf_prime (X-F)
-*)
-
-
-
 
 lemma prime_filter_on_lattice:
   assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"sup_prime X F" and
@@ -7890,6 +7949,18 @@ proof-
   show ?thesis
     using B0 B2 by blast
 qed
+
+(*
+  using 
+    sup_prime_pfilterD4 sup_prime_pfilterI2 
+    prime_filter_compl prime_ideal_compl 
+  we have the characterization of sup prime proper filters on a lattice in terms of
+    \<forall>F1 F2 \<in> filters_on X. F1 \<inter> F2 \<subseteq> F \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F
+  and in terms of 
+    is_pideal (X-F)  \<and> inf_prime (X-F)
+*)
+
+
 
 
 
