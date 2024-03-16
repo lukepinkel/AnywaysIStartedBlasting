@@ -7788,17 +7788,12 @@ next
     by (metis A0 A4 A5 B0 B1 B2 B3 B4 B6 empty_is_image finite_imageI fsup_insert insert.hyps(4) insert.prems insert_subset)
 qed
 
-lemma homolattD4:"\<lbrakk>is_lattice X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow>f (Sup X F) = Sup Y (f`F)"  by (meson homolattD2 homolattD3)
+lemma homolattD4:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow>f (Sup X F) = Sup Y (f`F)"   by (meson homolattD2 homolattD3)
+
+lemma homolattD5:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Inf X F) = Inf Y (f`F)"by (simp add: homoinfsD3 homolattD1 lattD41)
 
 
-
-
-lemma homosupD3:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice X; is_sup_semilattice Y; homosup X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Sup X F) = Sup Y (f`F)"  by (meson homosupD1 homosupD2)
-
-
-lemma homosupD4:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice X; is_sup_semilattice Y; homosup X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y"
-  by(rule_tac ?X="Y" in ge_bsup1; auto; frule_tac ?a="x" and ?b="y" in bsup_ge1, simp_all)
-    (frule_tac ?Y="Y" and ?f="f" and ?x="x" and ?y="y" in homosupD1, simp_all)
+lemma homolattD6:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y" by (simp add: homoinfD4 homolattD1 latt_iff)
 
 lemma homoinfD4:"\<lbrakk>f`X \<subseteq> Y; is_inf_semilattice X; is_inf_semilattice Y; homoinf X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y"
   by(rule_tac ?X="Y" in le_binf1; auto; frule_tac ?a="x" and ?b="y" in binf_le1, simp_all)
