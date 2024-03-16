@@ -6997,6 +6997,33 @@ lemma sup_prime_pfilterD3:
   "\<lbrakk>is_lattice X; sup_prime X F; is_pfilter X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter X F1; is_filter X F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
   apply(auto simp add:sup_prime_def)  by (meson filterD21 filters_on_lattice_inf02 in_mono)
 
+lemma sup_prime_pfilterD4:
+  "\<lbrakk>is_lattice X; sup_prime X F; is_pfilter X F; is_filter X F1; is_filter X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F"
+  using sup_prime_pfilterD3 by blast
+
+lemma lorc_sup_filter_subset:
+  "\<lbrakk>is_lattice X; (\<And>F1 F2. \<lbrakk> is_filter X F1; is_filter X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F); is_filter X F\<rbrakk> \<Longrightarrow>(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (Sup X {a, b}) \<in> F\<rbrakk>\<Longrightarrow> (a \<in> F \<or> b \<in> F))"
+proof-
+  assume A0:"is_lattice X" "(\<And>F1 F2. \<lbrakk> is_filter X F1; is_filter X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)" "is_filter X F"
+  have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and> (Sup X {a, b}) \<in> F \<longrightarrow> (a \<in> F \<or> b \<in> F)" 
+  proof 
+    fix a b assume A1:"a \<in> X \<and> b \<in> X \<and> (Sup X {a, b}) \<in> F"
+    let ?F1="([a)\<^sub>X)" let ?F2="([b)\<^sub>X)"
+    have B1:"?F1 \<inter> ?F2 \<subseteq> F" using lorc_inter[of X a b] A0(1,3) A1 filter_memI is_pfilterD1 lorcD12 lorc_subset1 by blast
+    have B2:"is_filter X ?F1 \<and> is_filter X ?F2"  by (simp add: A1 lorc_filter)
+    have B3:"?F1 \<subseteq> F \<or> ?F2 \<subseteq> F"  by (simp add: A0(2) B1 B2)
+    show "a \<in> F \<or> b \<in> F"
+      by (meson A1 B3 in_mono lorc_memI1)
+  qed
+  show "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (Sup X {a, b}) \<in> F\<rbrakk>\<Longrightarrow> (a \<in> F \<or> b \<in> F))"
+    by (simp add: B0)
+qed
+
+lemma sup_prime_pfilterI2:
+  "\<lbrakk>is_lattice X; (\<And>F1 F2. \<lbrakk> is_filter X F1; is_filter X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F); is_pfilter X F\<rbrakk> \<Longrightarrow> sup_prime X F"
+  by (simp add: is_pfilterD1 lorc_sup_filter_subset sup_primeI1)
+
+
 lemma not_prime_obtain:
   assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"\<not>(sup_prime X F)"
   obtains x y where "x \<in> X \<and> y \<in> X \<and> Sup X {x, y} \<in> F \<and> x \<notin> F \<and> y \<notin> F"
@@ -7762,7 +7789,6 @@ definition homolatt::"'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('
 
 lemma homolattD0:"homolatt X Y f \<Longrightarrow> homosup X Y f" by (simp add: homolatt_def homosup_def)
 lemma homolattD1:"homolatt X Y f \<Longrightarrow> homoinf X Y f" by (simp add: homolatt_def homoinf_def)
-
 lemma homolattD2:"\<lbrakk>is_lattice X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (Sup X {x, y}) = Sup Y {f x, f y}" by (simp add:homolatt_def; metis lattD32 sup_equality)
 
 
@@ -7795,15 +7821,65 @@ lemma homolattD5:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homola
 
 lemma homolattD6:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y" by (simp add: homoinfD4 homolattD1 latt_iff)
 
-lemma homoinfD4:"\<lbrakk>f`X \<subseteq> Y; is_inf_semilattice X; is_inf_semilattice Y; homoinf X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y"
-  by(rule_tac ?X="Y" in le_binf1; auto; frule_tac ?a="x" and ?b="y" in binf_le1, simp_all)
-    (frule_tac ?Y="Y" and ?f="f" and ?x="x" and ?y="y" in homoinfsD1, simp_all)
+definition sup_distributive where
+  "sup_distributive X \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. \<forall>x \<in> X. x \<le> Sup X {a, b} \<longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1}))"
 
-lemma homosupD2:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> f (Sup X {a1, a2}) = Sup Y {f a1, f a2}" and
-  A1: "finite A" and  A2: "A \<noteq> {}" and  A3: "A \<subseteq> X" and
-  A4: "is_sup_semilattice X" and    A5: "is_sup_semilattice Y" and  A6: "f`X \<subseteq> Y" shows "f (Sup X A) = Sup Y (f`A)"
-  using A1 A2 A3
+definition inf_distributive where
+  "inf_distributive X \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. \<forall>x \<in> X.  Inf X {a, b} \<le> x \<longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1}))"
+
+lemma sup_distributiveI1:
+  "(\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; x \<le> Sup  X {a, b}\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1})) \<Longrightarrow> sup_distributive X"
+  by(simp add:sup_distributive_def)
+
+lemma sup_distributiveD1:
+  "sup_distributive X \<Longrightarrow> (\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; x \<le> Sup  X {a, b}\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1}))"
+  by(simp add:sup_distributive_def)
+
+lemma inf_distributiveI1:
+  "(\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X;  Inf X {a, b} \<le> x\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1})) \<Longrightarrow> inf_distributive X"
+  by(simp add:inf_distributive_def)
+
+lemma inf_distributiveD1:
+  "inf_distributive X \<Longrightarrow> (\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; Inf  X {a, b} \<le> x\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1}))"
+  by(simp add:inf_distributive_def)
+
+lemma lat_binf_leI1: "\<lbrakk>is_lattice X;x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} = z \<rbrakk> \<Longrightarrow>z \<le> x" using binf_leI1 lattD41 by blast
+lemma lat_binf_leI2: "\<lbrakk>is_lattice X;x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} = z \<rbrakk> \<Longrightarrow>z \<le> y" using binf_leI2 lattD41 by blast
+lemma lat_bsup_geI1: "\<lbrakk>is_lattice X;x \<in> X; y \<in> X; z \<in> X; Sup X {x, y} = z\<rbrakk>  \<Longrightarrow> x \<le> z" using bsup_geI1 lattD42 by blast
+lemma lat_bsup_geI2: "\<lbrakk>is_lattice X;x \<in> X; y \<in> X; z \<in> X; Sup X {x, y} = z\<rbrakk>  \<Longrightarrow> y \<le> z" using bsup_geI2 lattD42 by blast
+
+lemma sup_distributiveD2:
+  "\<lbrakk>sup_distributive X; is_lattice X\<rbrakk> \<Longrightarrow> distributive_lattice X"
+  apply(rule distr_latticeI2)
+proof-
+  fix x y z assume P:"sup_distributive X" "is_lattice X" "x \<in> X" "y \<in> X" "z \<in> X"
+  have B1:"Inf X {x, Sup X {y, z}} \<le> Sup X {y, z}"  by (simp add: P(2-5) binf_leI2 l_sup_closed lattD41)
+  obtain y1 z1 where dist:"y1 \<in> X \<and> z1 \<in> X \<and> y1 \<le> y \<and> z1 \<le> z \<and> (Inf X {x, Sup X {y, z}}) = Sup X {y1, z1}"  by (metis B1 P(1) P(2) P(3) P(4) P(5) l_inf_closed l_sup_closed sup_distributiveD1)
+  have B2:"Sup X {y1, z1} \<le> x"by (metis P(2-5) dist l_sup_closed lat_binf_leI1) 
+  have B3:"y1 \<le> x \<and> z1 \<le> x"  using B2 P(2) P(3) bsup_iff dist lattD42 by blast
+  have B4:"y1 = Inf X {x, y1} \<and> z1 = Inf X {x, z1}" by (simp add: B3 P(3) dist le_inf2)
+  have B40:"Inf X {x, y1} \<le> Inf X {x, y}" using lattD41[of X] binf_leI4[of X y1 y x] by (simp add: P(2-4) dist insert_commute)
+  have B41:"Inf X {x, z1} \<le> Inf X {x, z}" using lattD41[of X] binf_leI4[of X z1 z x] by (simp add: P(1-5) dist insert_commute)
+  have B5:"Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y1}, Inf X {x, z1}}"  using B4 dist by presburger
+  have B6:"... \<le> Sup X {Inf X {x, y}, Inf X {x, z}}" by (simp add: B40 B41 P(2) P(3) P(4) P(5) bsup_geI5 dist l_inf_closed lattD42)  
+  show "Inf X {x, Sup X {y, z}} \<le> Sup X {Inf X {x, y}, Inf X {x, z}}"  by (simp add: B5 B6)
+qed
+
+lemma inf_distributiveD2:
+  "\<lbrakk>inf_distributive X; is_lattice X\<rbrakk> \<Longrightarrow> distributive_lattice X"
+apply(rule distr_latticeI1)
+proof-
+  fix x y z assume P:"inf_distributive X" "is_lattice X" "x \<in> X" "y \<in> X" "z \<in> X"
+  have B0:" Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"  by (simp add: P(2-5) distrib_inf_le) 
+  have B1:" Inf X {y, z} \<le> Sup X {x, Inf X {y, z}}" by (simp add: P(2-5) bsup_geI2 l_inf_closed lattD42)
+  obtain y1 z1 where dist:"y1 \<in> X \<and> z1 \<in> X \<and> y \<le> y1 \<and> z \<le> z1 \<and>  (Sup X {x, Inf X {y, z}}) = Inf X {y1, z1}" by (metis B1 P(1,2-5) inf_distributiveD1 l_inf_closed l_sup_closed) 
+  have B2:"x \<le> Inf X {y1, z1}" by (metis P(2-5)  dist l_inf_closed lat_bsup_geI1)
+  have B3:"x \<le> y1 \<and> x \<le> z1"  using B2 P(2-3) binf_iff dist lattD41 by blast 
+  have B4:"y1 = Sup X {x, y1} \<and> z1 = Sup X {x, z1}" by (simp add: B3 P(3) dist ge_sup1)
+  have B5:"Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y1}, Sup X {x, z1}}"  using B4 dist by presburger
+  have B6:"... \<ge> Inf X {Sup X {x, y}, Sup X {x, z}}" by (metis B3 B4 P(2-5) binf_leI5 bsup_geI3 dist lattD41 lattD42 ssupD4) 
+  show "Inf X {Sup X {x, y}, Sup X {x, z}} \<le> Sup X {x, Inf X {y, z}}" by (simp add: B5 B6) 
+qed
 
 
 end
