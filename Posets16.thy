@@ -7683,6 +7683,8 @@ lemma finite_ind_fil15:
   shows "Sup (filters_on X) (f`I) = {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a::order). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf X (x` I) = y}  "
   using assms finite_ind_fil13[of X top I f] finite_ind_fil14[of X top I f] by fastforce
 
+
+
 (*
 lemma fin_distr2:"\<lbrakk>distributive_lattice X ;finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Inf X {b, (Sup X  A)} = Sup X {Inf X {b, a}|a. a \<in> A}" using distr_finite2[of b X A]  by (simp add: distr_eq_tmp1)
 
@@ -7961,6 +7963,47 @@ qed
 *)
 
 
+lemma top_lattice_inf:"\<lbrakk> x \<in> X; y \<in> X; is_greatest X top; is_inf X {x, y} top\<rbrakk> \<Longrightarrow> x =top \<and> y=top"by (simp add: binary_infD31 binary_infD32 greatestD2 is_infE1 order_class.order_eq_iff)
+lemma bot_lattice_sup:"\<lbrakk> x \<in> X; y \<in> X; is_least X bot; is_sup X {x, y} bot\<rbrakk> \<Longrightarrow> x =bot \<and> y=bot" by (simp add: binary_supD31 binary_supD32 is_supE1 leastD2 order_antisym) 
+
+locale bounded_lattice=
+  fixes X::"'a::order set" and
+        top bot::"'a::order"
+  assumes bot:"is_least X bot" and
+          top:"is_greatest X top"
+begin
+
+definition complements::"'a::order \<Rightarrow> 'a::order \<Rightarrow> bool" where
+  "complements a a' \<equiv> is_inf X {a, a'} bot \<and> is_sup X {a, a'} top"
+
+lemma complements_idemp: "complements a a' \<Longrightarrow> complements a' a" by (simp add: complements_def insert_commute)
+lemma complements_top_bot: "complements top bot" by (meson binary_infI1 binary_supI2 bot complements_def greatestD11 leastD11 leastD2 top)
+lemma complements_bot_top: "complements bot top" by (simp add: complements_idemp complements_top_bot) 
+
+end
+
+
+
+locale bounded_distributive_lattice=bounded_lattice+
+  assumes "distributive_lattice X"
+begin
+lemma complements_unique1:
+  "\<lbrakk>a \<in> X; a' \<in> X;a'' \<in> X; complements a a'; complements a a''\<rbrakk> \<Longrightarrow> a'=a''"
+proof-
+  assume A0:"a \<in> X""a' \<in> X""a'' \<in> X"" complements a a'" " complements a a''"
+  have B0:"a'' = Inf X {a'', top}"  by (simp add: A0(3) greatest_inf top) 
+  also have B1:"... = Inf X {a'', Sup X {a, a'}}" using A0(4) complements_def sup_equality by blast
+  also have B2:"... = Sup X {Inf X {a'', a}, Inf X {a'', a'}}"  using A0(1-3)  bounded_distributive_lattice.axioms(2) bounded_distributive_lattice_axioms bounded_distributive_lattice_axioms_def distr_latticeD3 by blast
+  also have B3:"... = Sup X {bot, Inf X {a'', a'}}"  by (metis A0(1,3,5) binf_commute2 complements_def inf_equality)
+  also have B4:"... = Sup X {Inf X {a, a'}, Inf X {a'', a'}}" using A0(4) complements_def inf_equality by blast
+  also have B5:"... = Inf X {Sup X {a, a''}, a'}"  by (metis A0(1) A0(2) A0(3) bounded_distributive_lattice.axioms(2) bounded_distributive_lattice_axioms bounded_distributive_lattice_axioms_def distr_latticeD4)
+  also have B6:"... = Inf X {top, a'}"  using A0(5) complements_def sup_equality by blast
+  also have B7:"... = a'" by (simp add: A0(2) binf_commute2 greatestD11 greatest_inf top) 
+  then show ?thesis
+    by (simp add: calculation)
+qed
+
+end                    
 
 
 
