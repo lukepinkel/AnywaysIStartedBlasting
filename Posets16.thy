@@ -7845,7 +7845,6 @@ lemma pideal_compl4: "\<lbrakk>is_lattice X;  F \<subseteq> X;is_pideal X (X-F)\
 lemma prime_filter_compl5: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> (X-F)" by (metis Diff_iff is_pfilterD1 l_sup_closed primefilterD1)
 lemma prime_ideal_compl5:  "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F); x \<in> F; y \<in> F\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F" by (smt (verit, ccfv_threshold) DiffD2 DiffI inf_prime_def l_inf_closed subset_eq)
 
-
 lemma prime_filter_compl6: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_dir (X-F) (\<le>)" by (meson Diff_subset is_updirI4 lattD42 prime_filter_compl5)
 lemma prime_ideal_compl6: "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_dir F (\<ge>)"  by (metis is_dwdirI4 lattD41 prime_ideal_compl5)
 
@@ -7864,6 +7863,33 @@ lemma prime_filter_compl10: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X
 lemma prime_ideal_compl: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter X F \<and>sup_prime X F" by (simp add: prime_ideal_compl10 prime_ideal_compl9)
 lemma prime_filter_compl: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F) \<and> inf_prime X (X-F)" by (simp add: prime_filter_compl10 prime_filter_compl9)
 
+
+(*
+  using 
+    sup_prime_pfilterD4 sup_prime_pfilterI2 
+    prime_filter_compl prime_ideal_compl 
+  we have the characterization of sup prime proper filters on a lattice in terms of
+    \<forall>F1 F2 \<in> filters_on X. F1 \<inter> F2 \<subseteq> F \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F
+  and in terms of 
+    is_pideal (X-F)  \<and> inf_prime (X-F)
+*)
+
+
+
+
+lemma prime_filter_on_lattice:
+  assumes A0:"is_lattice X" and A1:"is_pfilter X F" and A2:"sup_prime X F" and
+          A3:"a \<in> filters_on X" and
+          A4:"b \<in> filters_on X" and
+          A5:"F=Inf (filters_on X) {a, b}"
+  shows "F = a \<or> F =b"
+proof-
+  have B0:"F=a \<inter> b" by (simp add: A0 assms(4) assms(5) assms(6) filters_lattice_inf_op)
+  have B1:"a \<subseteq> F \<or> b \<subseteq> F" using B0 A0 A1 A2 A3 A4 B0 sup_prime_pfilterD4[of X F a b]  by (simp add:filters_on_iff)
+  have B2:"\<not>(a \<subseteq> F) \<longrightarrow> b = F" using B0 B1 by blast
+  show ?thesis
+    using B0 B2 by blast
+qed
 
 
 
