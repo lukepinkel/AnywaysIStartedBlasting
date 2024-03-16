@@ -3736,9 +3736,8 @@ subsection OrderClosure
 definition is_ord_cl::"'a set \<Rightarrow> 'a set \<Rightarrow>('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> bool" where
   "is_ord_cl X A ord \<equiv> (\<forall>a b. a \<in> A \<and> b \<in> X \<and> ord a b \<longrightarrow> b \<in> A )"
 
-lemma is_ord_clE1:
-  "is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A "
-  by (simp add:is_ord_cl_def)
+lemma is_ord_clE1:"is_ord_cl (X::'a::order set) A (\<le>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> A " by (simp add:is_ord_cl_def)
+lemma is_ord_clE2:"is_ord_cl (X::'a::order set) A (\<ge>)  \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> X \<Longrightarrow> a \<ge> b \<Longrightarrow> b \<in> A " by (simp add:is_ord_cl_def)
 
 lemma is_ord_clI1:
   "(\<And>a b. \<lbrakk>a \<in> A; b \<in> X; ord a b\<rbrakk> \<Longrightarrow> b \<in> A ) \<Longrightarrow> is_ord_cl  (X::'a::order set) A ord"
@@ -3811,6 +3810,23 @@ proof
     using A2 A3 B0 B2 is_infE1 is_ord_clE1 by blast
 qed
 
+
+lemma ord_cl_updir_inf:
+  assumes A0:"A \<subseteq> X" and A1:"is_dir A (\<le>)" and A2:"is_ord_cl X A (\<ge>)"
+  shows "\<And>a b. (a \<in> A \<and> b \<in> A \<and>  is_sup X {a, b} s) \<longrightarrow> (s \<in> A)"
+proof
+  fix a b assume A3:" (a \<in> A \<and> b \<in> A \<and> is_sup X {a, b} s)"
+  obtain c where B0:"c \<in> A \<and> a \<le> c \<and> b \<le> c"
+    using A1 A3 is_updirE1 by blast
+  have B1:"c ub {a, b}"
+    by (simp add: B0 ub_def)
+  have B2:"c \<ge> s"
+    using A0 A3 B0 B1 is_supE4 by blast
+  show "s \<in> A"
+    using A2 A3 B0 B2 is_supE1 is_ord_clE2 by blast
+qed
+
+
 lemma up_cl_bot:
   "\<lbrakk>is_least X bot; A \<subseteq>X; is_ord_cl X A (\<le>); bot \<in> A\<rbrakk> \<Longrightarrow> A=X"
   using is_ord_clE1 leastD2 by blast
@@ -3827,14 +3843,21 @@ lemma filterI2:"\<lbrakk>is_inf_semilattice X; F \<noteq> {}; F \<subseteq> X; i
 lemma idealI2: "\<lbrakk>is_sup_semilattice X; I \<noteq> {}; I \<subseteq> X; is_fsup_closed X I; is_ord_cl X I (\<ge>)\<rbrakk> \<Longrightarrow> is_ideal X I" by (simp add: idealI1 is_updirI5)
 
 lemma filterD1: "is_filter X F \<Longrightarrow> F \<noteq> {}" by (simp add: is_filter_def)
+lemma idealD1: "is_ideal X F \<Longrightarrow> F \<noteq> {}" by (simp add: is_ideal_def)
+
 
 lemma filterD2:"is_filter X F \<Longrightarrow> F \<subseteq> X"by (simp add: is_filter_def)
+lemma idealD2:"is_ideal X F \<Longrightarrow> F \<subseteq> X"by (simp add: is_ideal_def)
+
 
 lemma filterD21:"is_filter X F \<Longrightarrow> x \<in> F \<Longrightarrow> x \<in> X"using filterD2 by blast
+lemma idealD21:"is_ideal X F \<Longrightarrow> x \<in> F \<Longrightarrow> x \<in> X"using idealD2 by blast
 
 lemma filterD3: "is_filter X F \<Longrightarrow> (is_dir F (\<ge>))"by (simp add: is_filter_def)
+lemma idealD3: "is_ideal X F \<Longrightarrow> (is_dir F (\<le>))"by (simp add: is_ideal_def)
 
 lemma filterD4:"is_filter X F \<Longrightarrow> (is_ord_cl X F (\<le>))"by (simp add: is_filter_def)
+lemma idealD4:"is_ideal X F \<Longrightarrow> (is_ord_cl X F (\<ge>))"by (simp add: is_ideal_def)
 
 subsection TopElements
 
@@ -3848,13 +3871,11 @@ lemma filter_greatestD2:
 
 subsection FiniteInfClosure
 
-lemma filter_finf_closed:
-  "\<lbrakk>is_filter X F; a \<in> F;  b \<in> F;  is_inf X {a, b} i\<rbrakk>\<Longrightarrow> i \<in> F"
-  by (meson is_filter_def ord_cl_dwdir_inf)
+lemma filter_finf_closed: "\<lbrakk>is_filter X F; a \<in> F;  b \<in> F;  is_inf X {a, b} i\<rbrakk>\<Longrightarrow> i \<in> F"by (meson is_filter_def ord_cl_dwdir_inf)
+lemma ideal_fsup_closed:  "\<lbrakk>is_ideal  X F; a \<in> F;  b \<in> F;  is_sup X {a, b} s\<rbrakk>\<Longrightarrow> s \<in> F"by (meson is_ideal_def ord_cl_updir_inf) 
 
-lemma filter_finf_closed1:
-  "\<lbrakk>is_inf_semilattice X; is_filter X F; a \<in> F; b \<in> F\<rbrakk> \<Longrightarrow> Inf X {a, b} \<in> F"
-  by (meson filterD21 filter_finf_closed sinfD3)
+lemma filter_finf_closed1:"\<lbrakk>is_inf_semilattice X; is_filter X F; a \<in> F; b \<in> F\<rbrakk> \<Longrightarrow> Inf X {a, b} \<in> F"by (meson filterD21 filter_finf_closed sinfD3)
+lemma ideal_fsup_closed1: "\<lbrakk>is_sup_semilattice X; is_ideal  X F; a \<in> F; b \<in> F\<rbrakk> \<Longrightarrow> Sup X {a, b} \<in> F" by (meson idealD21 ideal_fsup_closed ssupD3)
 
 lemma filter_finf_closed3:
   "\<lbrakk>is_inf_semilattice X; is_filter X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf X A \<in> F"
@@ -3906,15 +3927,14 @@ lemma filter_pow_memD:
   using filters_on_iff by auto 
 
 
-definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+definition is_pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where "is_pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
+definition is_pideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where "is_pideal X A \<equiv> (is_ideal X A) \<and> X \<noteq> A"
 
 definition pfilters::"'a::order set \<Rightarrow> 'a::order set set" where
   "pfilters X \<equiv> {F. is_pfilter X F}"
 
-lemma is_pfilterD1:
-  "is_pfilter X A \<Longrightarrow> is_filter X A"
-  by(simp add:is_pfilter_def)
+lemma is_pfilterD1: "is_pfilter X A \<Longrightarrow> is_filter X A" by(simp add:is_pfilter_def)
+lemma is_pidealD1: "is_pideal X A \<Longrightarrow> is_ideal X A" by(simp add:is_pideal_def)
 
 lemma is_pfilterD2:
   "is_pfilter X A \<Longrightarrow>  X \<noteq> A"
@@ -4038,21 +4058,17 @@ lemma filter_inter_closed2:
 
 subsection FilterMembership
 
-lemma filter_memI:
-  "\<lbrakk>is_filter X F; x \<in> X\<rbrakk> \<Longrightarrow>y \<in> F \<Longrightarrow> y \<le> x \<Longrightarrow> x \<in> F"
-  using filterD4 is_ord_clE1 by blast
+lemma filter_memI: "\<lbrakk>is_filter X F; x \<in> X\<rbrakk> \<Longrightarrow>y \<in> F \<Longrightarrow> y \<le> x \<Longrightarrow> x \<in> F"using filterD4 is_ord_clE1 by blast
+lemma ideal_memI: "\<lbrakk>is_ideal X F; x \<in> X\<rbrakk> \<Longrightarrow>y \<in> F \<Longrightarrow> x \<le> y \<Longrightarrow> y \<in> F"using idealD4 is_ord_clE1 by blast
 
-lemma filter_bsup_memI1:
-  "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F"
-  by (meson bsup_geI1 filterD21 filter_memI order_refl ssupD4)
+lemma filter_bsup_memI1: "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F" by (meson bsup_geI1 filterD21 filter_memI order_refl ssupD4)
+lemma ideal_binf_memI1: "\<lbrakk>is_inf_semilattice X; x \<in> F; is_ideal X F; y \<in> X\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F" by (metis (no_types, lifting) binary_infD31 idealD21 idealD4 ord_cl_memI1 sinfD3 sinfD4) 
 
-lemma filter_bsup_memI2:
-  "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, x} \<in> F"
-  by (simp add: filter_bsup_memI1 insert_commute)
 
-lemma filter_ex_elem:
-  "\<lbrakk>is_filter X F\<rbrakk> \<Longrightarrow> \<exists>f. f \<in> F"
-  by (simp add: ex_in_conv filterD1)
+lemma filter_bsup_memI2: "\<lbrakk>is_sup_semilattice X; x \<in> F; is_filter X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup X {y, x} \<in> F" by (simp add: filter_bsup_memI1 insert_commute)
+lemma ideal_binf_memI2: "\<lbrakk>is_inf_semilattice X; x \<in> F; is_ideal X F; y \<in> X\<rbrakk> \<Longrightarrow> Inf X {y, x} \<in> F" by (simp add: ideal_binf_memI1 insert_commute)
+
+lemma filter_ex_elem: "\<lbrakk>is_filter X F\<rbrakk> \<Longrightarrow> \<exists>f. f \<in> F" by (simp add: ex_in_conv filterD1)
 
 
 subsection FilterClosure
@@ -4323,13 +4339,13 @@ lemma pfilters_on_lattice_inf03:
   "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> f1 \<in> F1 \<Longrightarrow> f2 \<in> F2  \<Longrightarrow> Sup X {f1, f2} \<in> F1 \<inter> F2 "
   using pfilters_on_lattice_inf02 by blast
 
-lemma filter_on_lattice_sup01:
-  "\<lbrakk>is_lattice X; is_filter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
-  by (simp add: filter_bsup_memI2 lattD42)
+lemma filter_on_lattice_sup01: "\<lbrakk>is_lattice X; is_filter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F"  by (simp add: filter_bsup_memI2 lattD42)
+lemma ideal_on_lattice_inf01: "\<lbrakk>is_lattice X; is_ideal X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F"  by (simp add: ideal_binf_memI2 lattD41)
 
-lemma pfilter_on_lattice_sup01:
-  "\<lbrakk>is_lattice X; is_pfilter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "
-  by (simp add: filter_on_lattice_sup01 is_pfilterD1)
+
+lemma pfilter_on_lattice_sup01: "\<lbrakk>is_lattice X; is_pfilter X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> F "by (simp add: filter_on_lattice_sup01 is_pfilterD1)
+lemma pideal_on_lattice_inf01: "\<lbrakk>is_lattice X; is_pideal X F; x \<in> X; y \<in> F\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F "by (simp add: ideal_on_lattice_inf01 is_pidealD1)
+
 
 lemma filter_on_lattice_top0:
   "is_lattice X \<Longrightarrow> is_filter X {x} \<Longrightarrow> a \<in> X \<Longrightarrow> a \<le> x"
@@ -4364,13 +4380,11 @@ lemma pfilters_on_lattice_inf2b:
   "\<lbrakk>is_lattice X; is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_dir (F1 \<inter> F2) (\<ge>)"
   by (simp add: filters_on_lattice_inf2b is_pfilterD1)
 
-lemma filters_upcl:
-  "\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)"
-  apply(auto simp add:is_ord_cl_def) using filterD4 is_ord_clE1 by blast+
+lemma filters_upcl:"\<lbrakk>is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)" apply(auto simp add:is_ord_cl_def) using filterD4 is_ord_clE1 by blast+
+lemma ideals_dwcl:"\<lbrakk>is_ideal X F1; is_ideal X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<ge>)" apply(auto simp add:is_ord_cl_def) using idealD4 ord_cl_memI1 by blast+
 
-lemma pfilters_upcl:
-  "\<lbrakk>is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)"
-  by (simp add: filters_upcl is_pfilterD1)
+lemma pfilters_upcl:"\<lbrakk>is_pfilter X F1; is_pfilter X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<le>)" by (simp add: filters_upcl is_pfilterD1)
+lemma pideals_dwcl:"\<lbrakk>is_pideal X F1; is_pideal X F2\<rbrakk> \<Longrightarrow> is_ord_cl X (F1 \<inter> F2) (\<ge>)" by (simp add: ideals_dwcl is_pidealD1)
 
 lemma filter_on_lattice_inf4b:
   "\<lbrakk>is_lattice X; is_filter X F1; is_filter X F2\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<noteq> {}"
@@ -6960,6 +6974,10 @@ lemma not_prime_obtain:
 abbreviation pfilter::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
   "pfilter X A \<equiv> (is_filter X A) \<and> X \<noteq> A"
 
+abbreviation pideal::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
+  "pideal X A \<equiv> (is_ideal X A) \<and> X \<noteq> A"
+
+
 abbreviation pfilters_on::"'a::order set \<Rightarrow> 'a::order set set" where
   "pfilters_on X \<equiv> {F. pfilter X F}"
 
@@ -6978,6 +6996,10 @@ lemma maximal_pfilterI2:
 lemma primefilterD1:
   "\<lbrakk>sup_prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
   by (simp add: sup_prime_def)
+
+lemma primeidealD1:
+  "\<lbrakk>inf_prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Inf X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
+  by (simp add: inf_prime_def)
 
 lemma primefilterD2:
   "\<lbrakk>is_lattice X; sup_prime X A; pfilter X A\<rbrakk> \<Longrightarrow> (\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> A \<or> b \<in> A)\<rbrakk> \<Longrightarrow> (Sup X {a, b}) \<in> A)"
@@ -7809,14 +7831,34 @@ proof-
 qed
 
 lemma filter_compl1: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}" using is_pfilterD2 is_pfilterD3 by(blast)
+lemma ideal_compl1: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow> (F \<noteq> X)" by (metis Diff_eq_empty_iff is_ideal_def is_pideal_def)
+
 lemma filter_compl2: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)" using is_pfilterD3 pfilter_on_lattice_inf4b by fastforce
+lemma ideal_compl2: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow>F \<noteq> {}"using is_pideal_def by fastforce
+
 lemma pfilter_compl3: "\<lbrakk>is_lattice X; is_pfilter X F; x \<in> (X-F); y \<in> X; y \<le> x\<rbrakk> \<Longrightarrow>y \<in> (X-F)" by (metis DiffD1 DiffD2 DiffI lattice_absorb1 le_inf2 pfilter_on_lattice_sup01)
+lemma pideal_compl3: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); x \<in> F; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow>y \<in> F"  by (smt (verit) Diff_iff binf_commute2 in_mono le_inf2 pideal_on_lattice_inf01)
+
 lemma pfilter_compl4: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (\<ge>)" using is_ord_cl_comp1 pfilters_upcl by fastforce 
+lemma pideal_compl4: "\<lbrakk>is_lattice X;  F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow> is_ord_cl X F (\<le>)"  by (metis is_ord_clI1 pideal_compl3)
+
 lemma prime_filter_compl5: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> (X-F)" by (metis Diff_iff is_pfilterD1 l_sup_closed primefilterD1)
+lemma prime_ideal_compl5:  "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F); x \<in> F; y \<in> F\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F" by (smt (verit, ccfv_threshold) DiffD2 DiffI inf_prime_def l_inf_closed subset_eq)
+
+
 lemma prime_filter_compl6: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_dir (X-F) (\<le>)" by (meson Diff_subset is_updirI4 lattD42 prime_filter_compl5)
+lemma prime_ideal_compl7: "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_dir F (\<ge>)"  by (metis is_dwdirI4 lattD41 prime_ideal_compl5)
+
 lemma prime_filter_compl7: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> X; y \<in> X; Inf X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
+lemma prime_ideal_compl7: "\<lbrakk>is_lattice X;  F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F); x \<in> X; y \<in> X; Sup X {x, y} \<in> F\<rbrakk> \<Longrightarrow> (x \<in> F) \<or> (y \<in> F)" 
+
 lemma prime_filter_compl8: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_ideal X (X-F)"  by (meson Diff_subset Posets16.is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
+
 lemma prime_filter_compl9: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> inf_prime X (X-F)" by (meson inf_primeI1 prime_filter_compl7)
+
+lemma prime_ideal_coml1: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter X F" 
+  apply(rule is_pfilterI1)
+
 
 
 
