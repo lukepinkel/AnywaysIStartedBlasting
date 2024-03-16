@@ -7847,17 +7847,22 @@ lemma prime_ideal_compl5:  "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X 
 
 
 lemma prime_filter_compl6: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_dir (X-F) (\<le>)" by (meson Diff_subset is_updirI4 lattD42 prime_filter_compl5)
-lemma prime_ideal_compl7: "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_dir F (\<ge>)"  by (metis is_dwdirI4 lattD41 prime_ideal_compl5)
+lemma prime_ideal_compl6: "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_dir F (\<ge>)"  by (metis is_dwdirI4 lattD41 prime_ideal_compl5)
 
 lemma prime_filter_compl7: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> X; y \<in> X; Inf X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
-lemma prime_ideal_compl7: "\<lbrakk>is_lattice X;  F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F); x \<in> X; y \<in> X; Sup X {x, y} \<in> F\<rbrakk> \<Longrightarrow> (x \<in> F) \<or> (y \<in> F)" 
+lemma prime_ideal_compl7: "\<lbrakk>is_lattice X;  F \<subseteq> X; is_pideal X (X-F) ; inf_prime X (X-F); x \<in> X; y \<in> X; Sup X {x, y} \<in> F\<rbrakk> \<Longrightarrow> (x \<in> F) \<or> (y \<in> F)" by (smt (verit) DiffE DiffI ideal_fsup_closed is_pidealD1 lattD32) 
 
 lemma prime_filter_compl8: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_ideal X (X-F)"  by (meson Diff_subset Posets16.is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
+lemma prime_ideal_compl8: "\<lbrakk>is_lattice X;  F \<subseteq> X; is_pideal X (X-F);inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_filter X F" by (metis Diff_empty filterI1 is_pideal_def pideal_compl4 prime_ideal_compl6) 
 
 lemma prime_filter_compl9: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> inf_prime X (X-F)" by (meson inf_primeI1 prime_filter_compl7)
+lemma prime_ideal_compl9: "\<lbrakk>is_lattice X; F \<subseteq> X; is_pideal X (X-F);inf_prime X (X-F)\<rbrakk> \<Longrightarrow> sup_prime X F" by (meson sup_primeI1 prime_ideal_compl7)
 
-lemma prime_ideal_coml1: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter X F" 
-  apply(rule is_pfilterI1)
+lemma prime_ideal_compl10: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter X F"by (simp add: is_ideal_def is_pfilterI1 is_pideal_def prime_ideal_compl8) 
+lemma prime_filter_compl10: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F)" by (metis filter_compl2 is_pideal_def prime_filter_compl8)
+
+lemma prime_ideal_compl: "\<lbrakk>is_lattice X; F \<subseteq> X;is_pideal X (X-F); inf_prime X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter X F \<and>sup_prime X F" by (simp add: prime_ideal_compl10 prime_ideal_compl9)
+lemma prime_filter_compl: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F) \<and> inf_prime X (X-F)" by (simp add: prime_filter_compl10 prime_filter_compl9)
 
 
 
