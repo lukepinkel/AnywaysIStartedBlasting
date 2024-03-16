@@ -14,153 +14,82 @@ declare [[show_consts,show_sorts,show_types, show_results]]
 
 section Misc
 
-lemma image_p:
-  "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))" 
-  by blast
+lemma image_p: "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))"  by blast
 
-lemma un_to_ind_un:
-  "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Union>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Union>i \<in> I. f i))"
-  by simp
+lemma un_to_ind_un: "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Union>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Union>i \<in> I. f i))"  by simp
 
-lemma int_to_ind_int:
-  "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Inter>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Inter>i \<in> I. f i))"
-  by simp
+lemma int_to_ind_int:"(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Inter>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Inter>i \<in> I. f i))" by simp
 
-lemma leq_iff_leq_eq:
-  "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> a \<longleftrightarrow> x \<le> b) \<Longrightarrow> a =b"
-  by (simp add: order_class.order_eq_iff)
+lemma leq_iff_leq_eq: "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> a \<longleftrightarrow> x \<le> b) \<Longrightarrow> a =b" by (simp add: order_class.order_eq_iff)
 
-lemma geq_iff_geq_eq:
-  "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<ge> a \<longleftrightarrow> x \<ge> b) \<Longrightarrow> a =b"
-  by (simp add: order_class.order_eq_iff)
+lemma geq_iff_geq_eq:"\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<ge> a \<longleftrightarrow> x \<ge> b) \<Longrightarrow> a =b" by (simp add: order_class.order_eq_iff)
 
-definition Pow_ne::"'a set \<Rightarrow> 'a set set" where
-  "Pow_ne X = Pow X - {{}}"
+definition Pow_ne::"'a set \<Rightarrow> 'a set set" where"Pow_ne X = Pow X - {{}}"
 
-definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where
-  "Fpow_ne X = Fpow X - {{}}"
+definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where "Fpow_ne X = Fpow X - {{}}"
 
-lemma pow_ne_iff1:
-  "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"
-  by (simp add: Pow_ne_def)
+lemma pow_ne_iff1: "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"by (simp add: Pow_ne_def)
 
-lemma pow_ne_iff2:
-  "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}"
-  by (simp add: Pow_ne_def)
+lemma pow_ne_iff2: "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}" by (simp add: Pow_ne_def)
 
-lemma pow_neI:
-  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X"
-  by(simp add:Pow_ne_def)
+lemma pow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X" by(simp add:Pow_ne_def)
 
-lemma pow_neD1:
-  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X "
-  by(simp add:Pow_ne_def)
+lemma pow_neD1: "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X " by(simp add:Pow_ne_def)
 
-lemma pow_neD2:
-  " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} "
-  by(simp add:Pow_ne_def)
+lemma pow_neD2: " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} " by(simp add:Pow_ne_def)
 
-lemma pow_ne_iso0:
-  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X" 
-   by (drule pow_neD1)+ simp
+lemma pow_ne_iso0: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X"   by (drule pow_neD1)+ simp
 
-lemma pow_ne_iso1:
-  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"
-  by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
+lemma pow_ne_iso1:"A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
 
-lemma pow_ne_bot:
-  "{} \<notin> Pow_ne X"
-  by(simp add:Pow_ne_def)
+lemma pow_ne_bot:"{} \<notin> Pow_ne X"by(simp add:Pow_ne_def)
                
-lemma pow_ne_top:
-  "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X"
-  by(simp add:Pow_ne_def)
+lemma pow_ne_top: "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X" by(simp add:Pow_ne_def)
 
-lemma fpow_ne_iff1:
-  "A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"
-  by (simp add: Fpow_ne_def)
+lemma fpow_ne_iff1:"A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"by (simp add: Fpow_ne_def)
 
-lemma fpow_ne_iff2:
-  "A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}"
-  by (simp add: Fpow_Pow_finite fpow_ne_iff1)
+lemma fpow_ne_iff2:"A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}" by (simp add: Fpow_Pow_finite fpow_ne_iff1)
 
 
-lemma fpow_neI:
-  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X"
-  by (simp add: Fpow_def fpow_ne_iff1)
+lemma fpow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X" by (simp add: Fpow_def fpow_ne_iff1)
 
-lemma fpow_neD0:
-  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X "
-  by (simp add: fpow_ne_iff2)
+lemma fpow_neD0:"A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X " by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD0b:
-  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow_ne X"
-  by (simp add: fpow_ne_iff2 pow_ne_iff1)
+lemma fpow_neD0b:"A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow_ne X" by (simp add: fpow_ne_iff2 pow_ne_iff1)
 
-lemma fpow_neD1:
-  "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X "
-  by (simp add: fpow_ne_iff2)
+lemma fpow_neD1: "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X " by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD2:
-  " A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} "
-  by (simp add: fpow_ne_iff2)
+lemma fpow_neD2:"A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} " by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD3:
-  " A \<in> Fpow_ne X \<Longrightarrow> finite A "
-  by (simp add: fpow_ne_iff2)
+lemma fpow_neD3:"A \<in> Fpow_ne X \<Longrightarrow> finite A "by (simp add: fpow_ne_iff2)
 
-lemma fpow_ne_iso0:
-  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" 
-   by (drule fpow_neD1)+ simp
+lemma fpow_ne_iso0:"A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" by (drule fpow_neD1)+ simp
 
-lemma fpow_ne_iso1:
-  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"
-  by(rule fpow_neI,erule fpow_ne_iso0,simp,erule fpow_neD2, erule fpow_neD3)
+lemma fpow_ne_iso1:"A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"by(rule fpow_neI,erule fpow_ne_iso0,simp,erule fpow_neD2, erule fpow_neD3)
 
-lemma fpow_ne_iso2:
-  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"
-  by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
+lemma fpow_ne_iso2: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
 
-lemma fpow_ne_bot:
-  "{} \<notin> Fpow_ne X"
-  by (simp add: fpow_ne_iff1)
+lemma fpow_ne_bot:"{} \<notin> Fpow_ne X"by (simp add: fpow_ne_iff1)
 
-lemma ne_subset_ne:
-  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
-  by blast
+lemma ne_subset_ne:"A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"by blast
 
-definition CartesianProduct::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where
-  "CartesianProduct I X = {f::('I \<Rightarrow> 'X). \<forall>i \<in> I. (f i) \<in> (X i)}"
+definition CartesianProduct::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where "CartesianProduct I X = {f::('I \<Rightarrow> 'X). \<forall>i \<in> I. (f i) \<in> (X i)}"
 
-abbreviation Prod::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where
-  "Prod I X \<equiv> CartesianProduct I X"
+abbreviation Prod::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where "Prod I X \<equiv> CartesianProduct I X"
 
-lemma prod_mem:
-  "f \<in> Prod I X \<longleftrightarrow> (\<forall>i \<in> I. (f i) \<in> (X i))"
-  by (simp add: CartesianProduct_def)
+lemma prod_mem: "f \<in> Prod I X \<longleftrightarrow> (\<forall>i \<in> I. (f i) \<in> (X i))"by (simp add: CartesianProduct_def)
 
-lemma prod_memI:
-  "(\<And>i. i \<in> I \<Longrightarrow> (f i) \<in> (X i)) \<Longrightarrow> f \<in> Prod I X" 
-  by(simp add:CartesianProduct_def)
+lemma prod_memI:"(\<And>i. i \<in> I \<Longrightarrow> (f i) \<in> (X i)) \<Longrightarrow> f \<in> Prod I X" by(simp add:CartesianProduct_def)
 
-lemma prod_memD:
-  "f \<in> Prod I X \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> (f i ) \<in> (X i))"
-  by(simp add:CartesianProduct_def)
+lemma prod_memD:"f \<in> Prod I X \<Longrightarrow> (\<And>i. i \<in> I \<Longrightarrow> (f i ) \<in> (X i))"by(simp add:CartesianProduct_def)
 
-lemma prod_memE:
-  "f \<in> Prod I X \<Longrightarrow> i \<in> I\<Longrightarrow> (f i ) \<in> (X i)"
-  by(simp add:CartesianProduct_def)
+lemma prod_memE:"f \<in> Prod I X \<Longrightarrow> i \<in> I\<Longrightarrow> (f i ) \<in> (X i)" by(simp add:CartesianProduct_def)
 
-definition choice::"'I set \<Rightarrow>('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X)" where
-  "choice I X \<equiv> (\<lambda>i. SOME x. x \<in> X i)"
+definition choice::"'I set \<Rightarrow>('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X)" where"choice I X \<equiv> (\<lambda>i. SOME x. x \<in> X i)"
 
-lemma choice_ne1:
-  "\<lbrakk>I \<noteq> {}; (\<And>i. i \<in> I \<Longrightarrow> X i \<noteq> {})\<rbrakk> \<Longrightarrow> choice I X \<in> Prod I X"
-  by (simp add: choice_def prod_memI some_in_eq)
+lemma choice_ne1:"\<lbrakk>I \<noteq> {}; (\<And>i. i \<in> I \<Longrightarrow> X i \<noteq> {})\<rbrakk> \<Longrightarrow> choice I X \<in> Prod I X"by (simp add: choice_def prod_memI some_in_eq)
 
-lemma axiom_of_choice_lol:
-  "\<lbrakk>I \<noteq> {}; (\<And>i. i \<in> I \<Longrightarrow> X i \<noteq> {})\<rbrakk> \<Longrightarrow> Prod I X \<noteq> {}"
-  by (metis choice_ne1 empty_iff)
+lemma axiom_of_choice_lol: "\<lbrakk>I \<noteq> {}; (\<And>i. i \<in> I \<Longrightarrow> X i \<noteq> {})\<rbrakk> \<Longrightarrow> Prod I X \<noteq> {}" by (metis choice_ne1 empty_iff)
 
 lemma axiom_of_choice_obtain:
   assumes A0:"I \<noteq> {}" "(\<And>i. i \<in> I \<Longrightarrow> X i \<noteq> {})"
@@ -3722,9 +3651,19 @@ lemma is_dwdirI4:
   "\<lbrakk>is_inf_semilattice X; A \<subseteq> X; (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (Inf X {a, b} \<in> A))\<rbrakk> \<Longrightarrow> is_dir (A::'a::order set) (\<ge>)"
   apply(auto simp add:is_dir_def subset_iff) by (metis binf_leI1 binf_leI2 dual_order.refl)
 
+lemma is_updirI4:
+  "\<lbrakk>is_sup_semilattice X; A \<subseteq> X; (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (Sup X {a, b} \<in> A))\<rbrakk> \<Longrightarrow> is_dir (A::'a::order set) (\<le>)"
+  apply(auto simp add:is_dir_def subset_iff) by (metis bsup_geI1 bsup_geI2 dual_order.refl)
+
+
 lemma is_dwdirI5:
   "\<lbrakk>is_inf_semilattice X; A \<subseteq> X; is_finf_closed X A\<rbrakk> \<Longrightarrow> is_dir (A) (\<ge>)"
   by (simp add: is_dwdirI4 is_finf_closed_def)
+
+lemma is_updirI5:
+  "\<lbrakk>is_sup_semilattice X; A \<subseteq> X; is_fsup_closed X A\<rbrakk> \<Longrightarrow> is_dir (A) (\<le>)"
+  by (simp add: is_updirI4 is_fsup_closed_def)
+
 
 lemma is_dwdir_empty:
   "is_dir {} (\<ge>)"
@@ -3878,36 +3817,24 @@ lemma up_cl_bot:
 
 subsection Filters
 subsection DefinitionAndBasicProps
-definition is_filter::"'a::order set\<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "is_filter X F \<equiv> F \<noteq> {} \<and> F \<subseteq> X \<and> (is_dir F (\<ge>)) \<and> is_ord_cl X F (\<le>)"
+definition is_filter::"'a::order set\<Rightarrow> 'a::order set \<Rightarrow> bool" where "is_filter X F \<equiv> F \<noteq> {} \<and> F \<subseteq> X \<and> (is_dir F (\<ge>)) \<and> is_ord_cl X F (\<le>)"
+definition is_ideal ::"'a::order set\<Rightarrow> 'a::order set \<Rightarrow> bool" where "is_ideal  X I \<equiv> I \<noteq> {} \<and> I \<subseteq> X \<and> (is_dir I (\<le>)) \<and> is_ord_cl X I (\<ge>)"
 
-lemma filterI1:
-  "\<lbrakk> F \<noteq> {}; F \<subseteq> X; (is_dir F (\<ge>));  (is_ord_cl X F (\<le>))\<rbrakk> \<Longrightarrow> is_filter X F"
-  by (simp add: is_filter_def)
+lemma filterI1: "\<lbrakk> F \<noteq> {}; F \<subseteq> X; (is_dir F (\<ge>));  (is_ord_cl X F (\<le>))\<rbrakk> \<Longrightarrow> is_filter X F" by (simp add: is_filter_def)
+lemma idealI1 : "\<lbrakk> I \<noteq> {}; I \<subseteq> X; (is_dir I (\<le>));  (is_ord_cl X I (\<ge>))\<rbrakk> \<Longrightarrow> is_ideal X I" by (simp add: is_ideal_def)
 
-lemma filterI2:
-  "\<lbrakk>is_inf_semilattice X; F \<noteq> {}; F \<subseteq> X; is_finf_closed X F; is_ord_cl X F (\<le>)\<rbrakk> \<Longrightarrow> is_filter X F"
-  by (simp add: filterI1 is_dwdirI5)
+lemma filterI2:"\<lbrakk>is_inf_semilattice X; F \<noteq> {}; F \<subseteq> X; is_finf_closed X F; is_ord_cl X F (\<le>)\<rbrakk> \<Longrightarrow> is_filter X F" by (simp add: filterI1 is_dwdirI5)
+lemma idealI2: "\<lbrakk>is_sup_semilattice X; I \<noteq> {}; I \<subseteq> X; is_fsup_closed X I; is_ord_cl X I (\<ge>)\<rbrakk> \<Longrightarrow> is_ideal X I" by (simp add: idealI1 is_updirI5)
 
-lemma filterD1:
-  "is_filter X F \<Longrightarrow> F \<noteq> {}"
-  by (simp add: is_filter_def)
+lemma filterD1: "is_filter X F \<Longrightarrow> F \<noteq> {}" by (simp add: is_filter_def)
 
-lemma filterD2:
-  "is_filter X F \<Longrightarrow> F \<subseteq> X"
-  by (simp add: is_filter_def)
+lemma filterD2:"is_filter X F \<Longrightarrow> F \<subseteq> X"by (simp add: is_filter_def)
 
-lemma filterD21:
-  "is_filter X F \<Longrightarrow> x \<in> F \<Longrightarrow> x \<in> X"
-  using filterD2 by blast
+lemma filterD21:"is_filter X F \<Longrightarrow> x \<in> F \<Longrightarrow> x \<in> X"using filterD2 by blast
 
-lemma filterD3:
-  "is_filter X F \<Longrightarrow> (is_dir F (\<ge>))"
-  by (simp add: is_filter_def)
+lemma filterD3: "is_filter X F \<Longrightarrow> (is_dir F (\<ge>))"by (simp add: is_filter_def)
 
-lemma filterD4:
-  "is_filter X F \<Longrightarrow> (is_ord_cl X F (\<le>))"
-  by (simp add: is_filter_def)
+lemma filterD4:"is_filter X F \<Longrightarrow> (is_ord_cl X F (\<le>))"by (simp add: is_filter_def)
 
 subsection TopElements
 
@@ -7880,6 +7807,17 @@ proof-
   have B6:"... \<ge> Inf X {Sup X {x, y}, Sup X {x, z}}" by (metis B3 B4 P(2-5) binf_leI5 bsup_geI3 dist lattD41 lattD42 ssupD4) 
   show "Inf X {Sup X {x, y}, Sup X {x, z}} \<le> Sup X {x, Inf X {y, z}}" by (simp add: B5 B6) 
 qed
+
+lemma filter_compl1: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}" using is_pfilterD2 is_pfilterD3 by(blast)
+lemma filter_compl2: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)" using is_pfilterD3 pfilter_on_lattice_inf4b by fastforce
+lemma pfilter_compl3: "\<lbrakk>is_lattice X; is_pfilter X F; x \<in> (X-F); y \<in> X; y \<le> x\<rbrakk> \<Longrightarrow>y \<in> (X-F)" by (metis DiffD1 DiffD2 DiffI lattice_absorb1 le_inf2 pfilter_on_lattice_sup01)
+lemma pfilter_compl4: "\<lbrakk>is_lattice X; is_pfilter X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (\<ge>)" using is_ord_cl_comp1 pfilters_upcl by fastforce 
+lemma prime_filter_compl5: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup X {x, y} \<in> (X-F)" by (metis Diff_iff is_pfilterD1 l_sup_closed primefilterD1)
+lemma prime_filter_compl6: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_dir (X-F) (\<le>)" by (meson Diff_subset is_updirI4 lattD42 prime_filter_compl5)
+lemma prime_filter_compl7: "\<lbrakk>is_lattice X; is_pfilter X F; sup_prime X F; x \<in> X; y \<in> X; Inf X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
+lemma prime_filter_compl8: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> is_ideal X (X-F)"  by (meson Diff_subset Posets16.is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
+lemma prime_filter_compl9: "\<lbrakk>is_lattice X; is_pfilter X F;  sup_prime X F\<rbrakk> \<Longrightarrow> inf_prime X (X-F)" by (meson inf_primeI1 prime_filter_compl7)
+
 
 
 end
