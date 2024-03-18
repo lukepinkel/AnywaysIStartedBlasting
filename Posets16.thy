@@ -7966,7 +7966,8 @@ qed
 lemma top_lattice_inf:"\<lbrakk> x \<in> X; y \<in> X; is_greatest X top; is_inf X {x, y} top\<rbrakk> \<Longrightarrow> x =top \<and> y=top"by (simp add: binary_infD31 binary_infD32 greatestD2 is_infE1 order_class.order_eq_iff)
 lemma bot_lattice_sup:"\<lbrakk> x \<in> X; y \<in> X; is_least X bot; is_sup X {x, y} bot\<rbrakk> \<Longrightarrow> x =bot \<and> y=bot" by (simp add: binary_supD31 binary_supD32 is_supE1 leastD2 order_antisym) 
 
-locale bounded_lattice=
+
+locale bounded_poset=
   fixes X::"'a::order set" and
         top bot::"'a::order"
   assumes bot:"is_least X bot" and
@@ -7982,10 +7983,8 @@ lemma complements_bot_top: "complements bot top" by (simp add: complements_idemp
 
 end
 
-
-
-locale bounded_distributive_lattice=bounded_lattice+
-  assumes "distributive_lattice X"
+locale blattice=bounded_poset+
+  assumes dist:"distributive_lattice X"
 begin
 lemma complements_unique1:
   "\<lbrakk>a \<in> X; a' \<in> X;a'' \<in> X; complements a a'; complements a a''\<rbrakk> \<Longrightarrow> a'=a''"
@@ -7993,17 +7992,193 @@ proof-
   assume A0:"a \<in> X""a' \<in> X""a'' \<in> X"" complements a a'" " complements a a''"
   have B0:"a'' = Inf X {a'', top}"  by (simp add: A0(3) greatest_inf top) 
   also have B1:"... = Inf X {a'', Sup X {a, a'}}" using A0(4) complements_def sup_equality by blast
-  also have B2:"... = Sup X {Inf X {a'', a}, Inf X {a'', a'}}"  using A0(1-3)  bounded_distributive_lattice.axioms(2) bounded_distributive_lattice_axioms bounded_distributive_lattice_axioms_def distr_latticeD3 by blast
+  also have B2:"... = Sup X {Inf X {a'', a}, Inf X {a'', a'}}" by (simp add: A0(1) A0(2) A0(3) dist distr_latticeD3)
   also have B3:"... = Sup X {bot, Inf X {a'', a'}}"  by (metis A0(1,3,5) binf_commute2 complements_def inf_equality)
   also have B4:"... = Sup X {Inf X {a, a'}, Inf X {a'', a'}}" using A0(4) complements_def inf_equality by blast
-  also have B5:"... = Inf X {Sup X {a, a''}, a'}"  by (metis A0(1) A0(2) A0(3) bounded_distributive_lattice.axioms(2) bounded_distributive_lattice_axioms bounded_distributive_lattice_axioms_def distr_latticeD4)
+  also have B5:"... = Inf X {Sup X {a, a''}, a'}"  by (metis A0(1) A0(2) A0(3) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD4)
   also have B6:"... = Inf X {top, a'}"  using A0(5) complements_def sup_equality by blast
   also have B7:"... = a'" by (simp add: A0(2) binf_commute2 greatestD11 greatest_inf top) 
   then show ?thesis
     by (simp add: calculation)
 qed
 
+lemma comp_eq1:"\<lbrakk>a \<in> X; a' \<in> X; complements a a'\<rbrakk> \<Longrightarrow> Sup X {a, a'} = top"  using complements_def sup_equality by blast
+lemma comp_eq2:"\<lbrakk>a \<in> X; a' \<in> X; complements a a'\<rbrakk> \<Longrightarrow> Inf X {a, a'} = bot"  using complements_def inf_equality by blast
+
+lemma complI1:"\<lbrakk>a \<in> X; x \<in> X; Inf X {a, x} = bot; Sup X {a, x} = top\<rbrakk> \<Longrightarrow> complements a x" using complements_def dist distr_latticeD5 inf_ex sup_ex by blast
+
+
+
+lemma demorgs1:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> Inf X {Inf X {x, y}, Sup X {x', y'}} = bot "
+proof-
+  fix x y x' y' assume A0:"x \<in> X" "y \<in> X" "x' \<in> X" "y' \<in> X" "complements x x'" "complements y y'"
+  have B0:"Inf X {Inf X {x, y}, Sup X {x', y'}} = Sup X {Inf X {Inf X {x, y}, x'}, Inf X {Inf X {x, y}, y'}}"  by (meson A0(1-4) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD3 distributive_lattice_def l_inf_closed)
+  also have "... = Sup X {Inf X {y, Inf X {x, x'}}, Inf X {x, Inf X {y, y'}}}"  by (metis A0(1-4) binf_assoc1 binf_commute2 blattice.axioms(2) blattice_axioms blattice_axioms_def distributive_lattice_def lattD41)
+  also have "... =  Sup X {Inf X {y,bot}, Inf X {x,bot}}" by (metis A0(5) A0(6) complements_def inf_equality)
+  also have "... = Sup X {bot, bot}" by (simp add: A0(1) A0(2) bot least_inf)
+  also have "... = bot" using bot leastD11 sup_singleton2 by auto
+  finally show "Inf X {Inf X {x, y}, Sup X {x', y'}} = bot" by simp
+qed
+
+
+lemma demorgs2:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Sup X {x', y'}} = top"
+proof-
+  fix x y x' y' assume A0:"x \<in> X" "y \<in> X" "x' \<in> X" "y' \<in> X" "complements x x'" "complements y y'"
+  have B1:"Sup X {x, Sup X {x', y'}}=Sup X {Sup X {x, x'}, y'}" by (metis A0(1,3,4)  blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_assoc1 distr_latticeD5 lattD42)
+  have B2:"Sup X {y, Sup X {x', y'}} = Sup X {x', Sup X {y, y'}}"   by (metis A0(2-4) blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_assoc2 distributive_lattice_def lattD42)
+  have B0:"Sup X {Inf X {x, y}, Sup X {x', y'}} = Inf X {Sup X {x, Sup X {x', y'}}, Sup X {y, Sup X {x', y'}}}" by (meson A0(1-4) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD2 distributive_lattice_def l_sup_closed)
+  also have "...                                = Inf X {Sup X {Sup X {x, x'}, y'}, Sup X {x', Sup X {y, y'}}}"  by (simp add: B1 B2) 
+  also have "... = Inf X {Sup X {x, top}, Sup X {y, top}}"  by (metis A0(1-6) comp_eq1 ge_sup2 greatestD11 greatestD2 greatest_sup top)
+  also have "... = Inf X {top, top}"  by (simp add: A0(1) A0(2) greatest_sup top)
+  also have "... = top" by (simp add: greatestD11 inf_singleton2 top)
+  finally show "Sup X {Inf X {x, y}, Sup X {x', y'}} = top"
+    by simp
+qed
+
+lemma demorgs3:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> complements (Inf X {x, y}) (Sup X {x', y'})" by (meson blattice.axioms(2) blattice_axioms blattice_axioms_def complI1 demorgs1 demorgs2 distributive_lattice_def l_inf_closed lattD42 ssupD4)
+lemma demorgs4:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> complements (Sup X {x, y}) (Inf X {x', y'})" by (metis complements_idemp demorgs3)
+
+
 end                    
+
+locale complemented_distr_lattice=blattice+
+  assumes comp:"x \<in> X \<Longrightarrow> (\<exists>x' \<in> X. complements x x')"
+begin
+definition compl where "compl a \<equiv> (THE a'. a' \<in> X \<and> complements a a' )"
+lemma compl_unique2:"x \<in> X \<Longrightarrow> \<exists>!x' \<in> X. complements x x'"using blattice.complements_unique1 blattice_axioms comp by blast
+lemma compl_unique3:"x \<in> X \<Longrightarrow> compl x \<in> X \<and> complements x (compl x) "
+proof-
+  assume A0:"x \<in> X"  obtain x' where B0:"x' \<in> X \<and> complements x x'" using A0 comp by blast
+  have B1:"compl x = x'" using A0 B0 compl_def compl_unique2 by fastforce
+  show "compl x \<in> X \<and> complements x (compl x)"by (simp add: B0 B1)
+qed
+
+lemma compl_closed[intro]:"x \<in> X \<Longrightarrow> compl x \<in> X" by (simp add: compl_unique3)
+lemma compl_unique4:"\<lbrakk>a \<in> X; x \<in> X; y \<in> X; Sup X {a, x} = top; Sup X {a, y} = top; Inf X {a, x} = bot; Inf X {a, y} = bot\<rbrakk> \<Longrightarrow> x=y" using complI1 complements_unique1 by presburger
+lemma compl_unique5:"\<lbrakk>x \<in> X; y \<in> X; Sup X {x, y}= top; Inf X {x, y} = bot\<rbrakk> \<Longrightarrow> compl x = y" using complI1 compl_unique3 complements_unique1 by presburger
+lemma compl_idem:"x \<in> X \<Longrightarrow> compl (compl x) = x" using compl_unique3 complements_idemp complements_unique1 by blast
+lemma disj_cancel_right:"x \<in> X \<Longrightarrow> Sup X {x, compl x} = top" by (simp add: comp_eq1 compl_unique3)
+lemma conj_cancel_right:"x \<in> X \<Longrightarrow> Inf X {x, compl x} = bot"  using comp_eq2 compl_unique3 by presburger
+lemma de_morgans_cinf:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compl (Inf X {x, y}) = Sup X {compl x, compl y}"
+proof-
+  fix x y assume A0:"x \<in> X" "y \<in> X"
+  obtain B0:"compl x \<in> X \<and> complements x (compl x)" and B1:"compl y \<in> X \<and> complements y (compl y)"   by (simp add: A0(1) A0(2) compl_unique3)
+  have B1:" complements (Inf X {x, y}) (Sup X {compl x,compl y})"  using demorgs3[of x y "compl x" "compl y"]   using A0(1) A0(2) B0 B1 by fastforce
+  show "compl (Inf X {x, y}) = Sup X {compl x, compl y}"
+    by (metis A0(1-2) B1 blattice.axioms(2) blattice.complements_unique1 blattice_axioms blattice_axioms_def compl_unique3 distr_latticeD5 l_inf_closed l_sup_closed)
+qed 
+
+lemma de_morgans_csup:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compl (Sup X {x, y}) = Inf X {compl x, compl y}"
+proof-
+  fix x y assume A0:"x \<in> X" "y \<in> X"
+  obtain B0:"compl x \<in> X \<and> complements x (compl x)" and B1:"compl y \<in> X \<and> complements y (compl y)"   by (simp add: A0(1) A0(2) compl_unique3)
+  have B1:" complements (Sup X {x, y}) (Inf X {compl x,compl y})"  using demorgs4[of x y "compl x" "compl y"]   using A0(1) A0(2) B0 B1 by fastforce
+  show "compl (Sup X {x, y}) = Inf X {compl x, compl y}"
+    by (metis A0(1-2) B1 blattice.axioms(2) blattice.complements_unique1 blattice_axioms blattice_axioms_def compl_unique3 distr_latticeD5 l_inf_closed l_sup_closed)
+qed 
+
+lemma compl_inf_le:"\<lbrakk>x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> Inf X {x, compl y} = bot"
+proof-
+  fix x y assume A0:"x \<in> X" "y \<in> X ""x \<le> y"
+  have B0:"compl y \<in> X"  by (simp add: A0(2) compl_unique3)
+  have B1:"Inf X {x, compl y} \<le> Inf X {y, compl y}"   using A0(1-3) B0 binf_leI4 blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 by blast 
+  also have "... = bot" by (simp add: A0(2) conj_cancel_right)
+  then show "Inf X {x, compl y} = bot"  by (metis A0(1-3) B0 binf_assoc1 binf_commute2 bot blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 le_inf2 least_inf)
+qed
+
+
+lemma compl_inf_ge:"\<lbrakk>x \<in> X; y \<in> X; Inf X {x, compl y} = bot\<rbrakk> \<Longrightarrow>  x \<le> y"
+proof-
+  fix x y assume A0:"x \<in> X" "y \<in> X ""Inf X {x, compl y} = bot"
+  have B0:"compl y \<in> X"  by (simp add: A0(2) compl_unique3)
+  have B1:"Inf X {x, y} = Sup X {Inf X {x, y}, Inf X {x, compl y}}"   by (metis A0(1) A0(2) A0(3) bot blattice.axioms(2) blattice_axioms blattice_axioms_def distributive_lattice_def l_inf_closed least_sup)
+  also have B2:"...     = Inf X {x, Sup X {y, compl y}}"  by (metis A0(1) A0(2) B0 blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD3)
+  also have B3:"...     = x"  by (simp add: A0(1) A0(2) disj_cancel_right greatest_inf top)
+  then show "x \<le> y"
+    by (metis A0(1) A0(2) blattice.axioms(2) blattice_axioms blattice_axioms_def calculation distributive_lattice_def lat_binf_leI2)
+qed
+
+lemma compl_sup_le1:"\<lbrakk>x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> Sup X {compl x, y} = top" by (metis compl_closed compl_idem compl_inf_le conj_cancel_right de_morgans_cinf disj_cancel_right)
+lemma compl_sup_le2:"\<lbrakk>x \<in> X; y \<in> X;  Sup X {compl x, y} = top \<rbrakk> \<Longrightarrow> x \<le> y"  by (metis compl_closed compl_idem compl_inf_ge conj_cancel_right de_morgans_csup disj_cancel_right)
+
+lemma inf_le_comp1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} \<le> z\<rbrakk> \<Longrightarrow> x \<le> Sup X {compl y, z}"
+proof-
+  fix x y z assume P:"x \<in> X" "y \<in> X " "z \<in> X" "Inf X {x, y} \<le> z"
+  have B0:"compl y \<in> X"  by (simp add: P(2) compl_unique3)
+  have B1:"Sup X {compl y, Inf X {x, y}} \<le> Sup X {compl y, z}"  by (meson B0 P blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_geI5 compl_inf_ge conj_cancel_right distributive_lattice_def l_inf_closed latt_iff)
+  have B2:"Inf X {Sup X {compl y ,x}, Sup X {compl y, y}} \<le> Sup X {compl y, z}"  by (metis B0 B1 P(1) P(2) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD1)
+  have B3:"Inf X {Sup X {compl y, x}, top} \<le> Sup X {compl y, z}"  using B0 B2 P(2) compl_idem disj_cancel_right by force
+  have B4:"Sup X {compl y, x} \<le> Sup X {compl y, z}"   by (metis B0 B1 P(1) P(2) blattice.axioms(2) blattice_axioms blattice_axioms_def compl_idem disj_cancel_right distributive_lattice_def greatest_inf l_sup_closed top)
+  then show "x \<le> Sup X {compl y, z}" by (metis B0 P(1) P(3) blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_iff distributive_lattice_def l_sup_closed latt_iff)
+qed
+
+
+lemma inf_le_comp2:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X;  x \<le> Sup X {compl y, z}\<rbrakk> \<Longrightarrow> Inf X {x, y} \<le> z"
+proof-
+  fix x y z assume P:"x \<in> X" "y \<in> X " "z \<in> X" "x \<le> Sup X {compl y, z}"
+  have B0:"Inf X {x, y} \<le> Inf X {Sup X {compl y, z}, y}" by (metis P(1-4) binf_leI4 blattice.axioms(2) blattice_axioms blattice_axioms_def compl_closed distributive_lattice_def l_sup_closed latt_iff)
+  have B1:"Inf X {x, y} \<le> Sup X {Inf X {y, compl y}, Inf X {z, y}}" by (metis (full_types) B0 P(2) P(3) blattice.axioms(2) blattice_axioms blattice_axioms_def compl_closed distr_latticeD3 insert_commute)
+  have B2:"Inf X {x, y} \<le> Sup X {bot, Inf X {z, y}}"  using B1 P(2) conj_cancel_right by fastforce
+  have B3:"Inf X {x, y} \<le> Inf X {z, y}" by (metis B2 P(2) P(3) bot blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 insert_commute lattD41 least_sup sinfD4)
+  then show "Inf X {x, y} \<le> z"  by (meson P(1) P(2) P(3) binf_iff blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 sinfD4)
+qed
+
+lemma inf_comp_sup1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> x \<le> Sup X {compl y, z} \<longleftrightarrow>  Inf X {x, y} \<le> z" by (meson inf_le_comp1 inf_le_comp2)
+lemma inf_comp_sup2:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> x \<le> Sup X {y, z} \<longleftrightarrow>  Inf X {x, compl y} \<le> z" by (metis compl_closed compl_idem inf_comp_sup1) 
+
+lemma compl_anti1:"\<lbrakk>x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> compl y \<le> compl x"
+proof-
+  fix x y assume A0:"x \<in> X" "y \<in> X" "x \<le> y"
+  have B0:"Sup X {x, y} = y"  by (simp add: A0(1) A0(2) A0(3) ge_sup1)
+  have B1:"compl (Sup X {x, y}) = compl y" by (simp add: B0)
+  have B2:"Inf X {compl x, compl y} = compl y" using A0(1-2) B1 de_morgans_csup by force
+  show "compl y \<le> compl x" by (meson A0(1) A0(2) B2 blattice.axioms(2) blattice_axioms blattice_axioms_def compl_unique3 distributive_lattice_def latt_le_iff2)
+qed
+
+lemma compl_anti2:"\<lbrakk>x \<in> X; y \<in> X; compl x \<le> y\<rbrakk> \<Longrightarrow> compl y \<le> x"by (metis compl_anti1 compl_idem compl_unique3)
+lemma compl_anti3:"\<lbrakk>x \<in> X; y \<in> X;  y \<le> compl x\<rbrakk> \<Longrightarrow> x \<le> compl y" by (metis compl_anti1 compl_idem compl_unique3)
+
+lemma meet_bot_iff:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (Inf X {x, y} = bot) \<longleftrightarrow> (x \<le> compl y)"by (metis compl_closed compl_idem compl_inf_ge compl_inf_le)
+lemma join_top_iff:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (Sup X {x, y} = top) \<longleftrightarrow> (compl x \<le> y)" by (metis compl_closed compl_idem compl_sup_le1 compl_sup_le2)
+
+lemma proper_filter_boolD1:"\<lbrakk>is_pfilter X F; x \<in> F\<rbrakk> \<Longrightarrow> compl x \<notin> F" by (metis bot conj_cancel_right dist distr_latticeD5 filter_finf_closed1 in_mono is_pfilterD1 is_pfilterD3 is_pfilterD4 lattD41)
+
+lemma proper_filter_boolI1:"\<lbrakk>is_filter X F; (\<And>x. x \<in> F \<Longrightarrow> compl x \<notin> F) \<rbrakk> \<Longrightarrow> is_pfilter X F"   using compl_closed filter_ex_elem is_pfilterI1 by blast
+lemma proper_filter_boolD2:"\<lbrakk>is_pfilter X F; x \<in> X\<rbrakk> \<Longrightarrow> \<not> (x \<in> F \<and> compl x \<in> F)"  using proper_filter_boolD1 by auto
+lemma proper_filter_boolI2:"\<lbrakk>is_filter X F; (\<And>x. x \<in> X \<Longrightarrow> \<not> (x \<in> F \<and> compl x \<in> F)) \<rbrakk> \<Longrightarrow> is_pfilter X F" using bot compl_unique3 is_pfilterI1 leastD11 by blast
+
+lemma trivial_upsetI1:"bot \<in> F \<Longrightarrow> is_ord_cl X F (\<le>) \<Longrightarrow> X \<subseteq> F" using bot is_ord_clE1 leastD2 by blast
+lemma trivial_filterI1:"bot \<in> F \<Longrightarrow> is_filter X F \<Longrightarrow> X = F" by (simp add: filterD2 filterD4 subset_antisym trivial_upsetI1) 
+lemma trivial_filterI2:"\<lbrakk>x \<in> F; compl x \<in> F; is_filter X F\<rbrakk> \<Longrightarrow> X=F" using is_pfilterI1 proper_filter_boolD1 by blast
+
+lemma pmb_filters1:"\<lbrakk>is_pfilter X F; sup_prime X F; x \<in> X\<rbrakk> \<Longrightarrow> (x \<in> F \<or> compl x \<in> F) \<and> \<not>(x \<in> F \<and> compl x \<in> F)"by (metis compl_unique3 disj_cancel_right filter_greatestD2 is_pfilterD1 proper_filter_boolD1 sup_primeD1 top)
+
+
+lemma pmb_filters2:
+  assumes A0:"is_pfilter X F" and A1:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> F \<or> compl x \<in> F) \<and> \<not>(x \<in> F \<and> compl x \<in> F)"
+  shows "is_maximal (pfilters_on X) F"
+proof-
+  have B0:"F \<in> pfilters_on X"    using A0 is_pfilter_def by blast
+  have B1:"\<And>G. \<lbrakk>G \<in> filters_on X;  F \<subset> G \<rbrakk> \<Longrightarrow> G = X"
+  proof-
+    fix G assume A2:"G \<in> filters_on X" and A3:"F \<subset> G"
+    obtain z where B10: "z \<in> G - F"  using A3 by auto
+    have B11:"z \<notin> F" using B10 by blast 
+    have B12:"compl z \<in> F"  by (meson A1 A2 B10 Diff_iff filterD21 filters_on_iff)
+    have B13:"compl z \<in> G \<and> z \<in> G"  using A3 B10 B12 by blast
+    have B14:"is_filter X G"   using A2 filters_on_iff by auto
+    show "G=X"  using B13 B14 trivial_filterI2 by blast 
+  qed
+  have B2:"\<And>G. \<lbrakk>G \<in> pfilters_on X;  F \<subseteq> G \<rbrakk> \<Longrightarrow> G = F" using B1 filters_on_def by blast
+  show ?thesis
+    by (metis (no_types, lifting) B0 B2 is_maximal_def)
+qed
+
+(*that maximal proper filters are prime holds in the context of distributive lattices e.g. by distr_lattice_maximal_prime
+*)
+
+end
+
 
 
 
