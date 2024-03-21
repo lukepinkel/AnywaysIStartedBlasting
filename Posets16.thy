@@ -6447,6 +6447,11 @@ lemma compactD:
   "\<lbrakk>is_compact X c; A \<in> Pow_ne X; c \<le> Sup X A\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
   by(simp add:is_compact_def)
 
+lemma compact_element_memD1:"x \<in> compact_elements X  \<Longrightarrow> is_compact X x" by (simp add: compact_elements_def)
+lemma compactD2:"is_compact X x \<Longrightarrow> x \<in> X" by (simp add: is_compact_def)
+lemma compact_element_memD2:"x \<in> compact_elements X  \<Longrightarrow> x \<in> X" using compactD2 compact_element_memD1 by blast 
+lemma compact_elements_sub:"compact_elements X \<subseteq> X"  by (simp add: compact_element_memD2 subsetI) 
+
 lemma compact_elements_mem_iff1:
   "x \<in> compact_elements X \<longleftrightarrow> is_compact X x"
   by (simp add: compact_elements_def)
@@ -8179,7 +8184,236 @@ qed
 
 end
 
+definition meet_reducible::"'a::order set \<Rightarrow> 'a \<Rightarrow> bool" where "meet_reducible X x \<equiv> (\<exists>A \<in> Pow_ne X. x \<notin> A \<and> is_inf X A x)"
+abbreviation meet_irr where "meet_irr X x \<equiv> \<not>(meet_reducible X x)"
+lemma mredI1:"\<lbrakk>A \<in> Pow_ne X; x \<notin> A; is_inf X A x\<rbrakk> \<Longrightarrow> meet_reducible X x" using meet_reducible_def by blast 
+lemma mredI2:"\<exists>A \<in> Pow_ne X. x \<notin> A \<and> is_inf X A x \<Longrightarrow> meet_reducible X x" by (simp add: meet_reducible_def)
+lemma mredD1:"meet_reducible X x \<Longrightarrow> (\<exists>A \<in> Pow_ne X. x \<notin> A \<and> is_inf X A x)"  by (simp add: meet_reducible_def) 
+lemma mredD2:"meet_reducible X x \<Longrightarrow> \<not>(is_greatest X x)"
+proof-
+  assume A0:"meet_reducible X x"
+  obtain A where B0:"A \<in> Pow_ne X" "x \<notin> A" "is_inf X A x"  using A0 mredD1 by blast
+  have B1:"A \<subseteq> X"  by (simp add: B0(1) pow_neD1)
+  obtain a where  B2:"a \<in> A"  using B0(1) pow_ne_iff2 by fastforce
+  have B3:"x < a"  using B0(2) B0(3) B2 is_infD1121 order_less_le by blast
+  show "\<not>(is_greatest X x)"  by (meson B1 B2 B3 in_mono maximalD4 maximalI3)
+qed
+lemma mredD3:"\<lbrakk>m \<in> X; is_clattice X;  \<not>(is_greatest X m)\<rbrakk> \<Longrightarrow> {x \<in> X. m < x} \<noteq> {}"  by (metis Collect_empty_eq antisym_conv2 clatD1 csupD3 greatest_iff)
+lemma mredD4:
+  assumes A0:"is_clattice X" and A1:"m \<in> X" and A2:"\<not>(is_greatest X m)" and A3:"\<not>(m < Inf X {x \<in> X. m < x})"
+  shows "meet_reducible X m"
+proof-
+  let ?A="{x \<in> X. m < x}"
+  obtain B0:"?A \<subseteq> X" and B1:"?A \<noteq> {}" using A0 A1 A2 mredD3 by auto
+  have B2:"m \<le> Inf X ?A"  by (metis (no_types, lifting) A0 A1 B0 B1 CollectD cinfD62 clatD2 lb_def order.strict_implies_order)
+  have B3:"m = Inf X ?A"  using A3 B2 order_less_le by blast
+  have B4:"?A \<in> Pow_ne X"  using B1 pow_ne_iff2 by blast
+  have B5:"m \<notin> ?A"   by simp
+  have B6:"is_inf X ?A m"  by (metis A0 B0 B1 B3 cinfD4 clatD2)
+  show "meet_reducible X m"  using B4 B6 mredI1 by blast
+qed
+lemma mredD5:"\<lbrakk>is_clattice X; m \<in> X; \<not>(is_greatest X m); meet_irr X m\<rbrakk> \<Longrightarrow> m < Inf X {x \<in> X. m < x}" using mredD4 by blast
+lemma mredD6:
+  assumes A0:"is_clattice X" and A1:"m \<in> X" and A2:"\<not>(is_greatest X m)" and A3:"meet_reducible X m"
+  shows "\<not> ( m < Inf X {x \<in> X. m < x})"
+proof-
+  let ?A="{x \<in> X. m < x}"
+  obtain A where B0:"A \<in> Pow_ne X" "m \<notin> A" "is_inf X A m"  using A3 meet_reducible_def by blast 
+  obtain B1:"\<And>x. x \<in> A \<Longrightarrow> m < x"  using B0(2) B0(3) is_infD1121 order_less_le by blast
+  obtain B2:"A \<subseteq> ?A"  using B0(1) \<open>\<And>thesis::bool. ((\<And>x::'a::order. x \<in> (A::'a::order set) \<Longrightarrow> (m::'a::order) < x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto
+  have B3:"?A \<subseteq> X" "?A \<noteq> {}"  apply simp  using A0 A1 A2 mredD3 by blast
+  have B4:"m \<le> Inf X ?A"   by (metis (no_types, lifting) A0 A1 B3(1) B3(2) CollectD cinfD62 clatD2 lb_def order.strict_implies_order)
+  have B5:"... \<le> Inf X A"  by (simp add: A0 B2 inf_anti1)
+  have B6:"... = m "    by (simp add: B0(3) inf_equality)
+  show "\<not> ( m < Inf X {x \<in> X. m < x})"  using B5 B6 leD by blast
+qed
+lemma mredD7:"\<lbrakk>is_clattice X; m \<in> X; \<not>(is_greatest X m); m < Inf X {x \<in> X. m < x} \<rbrakk> \<Longrightarrow>meet_irr X m " using mredD6 by auto
 
+lemma mred_iff1:"\<lbrakk>is_clattice X; m \<in> X; \<not>(is_greatest X m)\<rbrakk> \<Longrightarrow>  m < Inf X {x \<in> X. m < x} \<longleftrightarrow> meet_irr X m " using mredD5 mredD7 by blast
+lemma mredD8:"\<lbrakk>m \<in> X; is_clattice X;  (is_greatest X m)\<rbrakk> \<Longrightarrow> meet_irr X m"   using mredD2 by blast 
+
+lemma mirredD1:"\<lbrakk>A \<in> Pow_ne X; is_inf X A x; meet_irr X x\<rbrakk> \<Longrightarrow>x \<in> A " using mredI1 by blast 
+lemma mirredI1:"(\<And>A.  \<lbrakk>A \<in> Pow_ne X; is_inf X A x\<rbrakk> \<Longrightarrow> x \<in> A) \<Longrightarrow>  meet_irr X x "   using mredD1 by blast
+lemma mirredD2:" meet_irr X x \<Longrightarrow>(\<And>A.  \<lbrakk>A \<in> Pow_ne X; is_inf X A x\<rbrakk> \<Longrightarrow> x \<in> A)" using mredI1 by blast 
+
+
+lemma compact_dense:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"x \<in> X"
+  shows "x = Sup X {k \<in> compact_elements X. k \<le> x}"
+proof-
+  let ?K=" compact_elements X"
+  let ?Kd="{k \<in> ?K. k \<le> x}"
+  obtain Kx where A3:"Kx \<in> Pow ?K" "is_sup X Kx x" by (meson A1 A2 compactly_generatedD1)
+  have B0:"?K \<subseteq> X"   by (simp add: compact_elements_sub)
+  have B1:"?Kd \<subseteq> X" using B0 by blast
+  have B2:"Kx \<subseteq> ?Kd" using A3(1) A3(2) is_supD1121 by fastforce
+  have B3:"Sup X ?Kd \<le> Sup X Kx"   by (metis (no_types, lifting) A0 A2 A3(2) B1 B2 clatD1 csupD62 dual_order.trans empty_iff mem_Collect_eq subsetI sup_equality sup_iso1 ub_def)
+  have B4:"... = x"  by (simp add: A3(2) sup_equality)
+  have B6:"x \<le> Sup X ?Kd"   using A0 B1 B2 B4 sup_iso1 by blast
+  show ?thesis using B3 B4 B6 by auto
+qed
+
+lemma compactly_generated_meets:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"x \<in> X" and A3:"y \<in> X" and 
+          A4:"\<not>(y \<le> x)"
+  shows "\<exists>k \<in> compact_elements X. k \<le> y \<and> \<not>(k \<le> x)"
+proof-
+  let ?K="compact_elements X"
+  let ?Kx="{k \<in> ?K. k \<le> x}" 
+  let ?Ky="{k \<in> ?K. k \<le> y}"
+  obtain B0:"x=Sup X ?Kx" and B1:"y=Sup X ?Ky"   by (simp add: A0 A1 A2 A3 compact_dense)
+  have B2:"?Ky - ?Kx \<noteq> {}"  by (metis (no_types, lifting) A0 A4 \<open>\<And>thesis::bool. (\<lbrakk>(x::'a::order) = Sup (X::'a::order set) {k::'a::order \<in> compact_elements X. k \<le> x}; (y::'a::order) = Sup X {k::'a::order \<in> compact_elements X. k \<le> y}\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> compactD2 compact_element_memD1 diff_shunt_var mem_Collect_eq subsetI sup_iso1)
+  obtain kxy where B3:"kxy \<in> ?Ky - ?Kx"  using B2 by blast
+  have B4:"kxy \<le> y \<and> \<not>(kxy \<le> x) \<and> kxy \<in> ?K"  using B3 by blast
+  show ?thesis  using B4 by blast
+qed
+
+lemma meet_reduction1:"\<lbrakk>is_clattice X; m \<in> X; meet_reducible X m\<rbrakk> \<Longrightarrow> m \<in> lbd X {x \<in> X. m < x}" using lbd_mem_iff2 by fastforce
+
+lemma meet_reduction2:"\<lbrakk>is_clattice X; m \<in> X; meet_reducible X m\<rbrakk> \<Longrightarrow>  m=Inf X {x \<in> X. m < x}"
+proof-
+  let ?A="{x \<in> X. m < x}"
+  assume A0:"is_clattice X" "m \<in> X" "meet_reducible X m"
+  obtain A where B0:"A \<in> Pow_ne X" "m \<notin> A" "is_inf X A m"  using A0(3) mredD1 by blast
+  obtain B1:"\<And>x. x \<in> A \<Longrightarrow> m < x"  using B0(2) B0(3) is_infD1121 order_less_le by blast
+  obtain B2:"A \<subseteq> ?A"  using B0(1) \<open>\<And>thesis::bool. ((\<And>x::'a::order. x \<in> (A::'a::order set) \<Longrightarrow> (m::'a::order) < x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto
+  have B3:"?A \<subseteq> X"  by simp
+  have B4:"?A \<noteq> {}"  using B0(1) B2 pow_ne_iff2 by fastforce 
+  have B5:"m \<le> Inf X ?A" by (metis (no_types, lifting) A0(1) A0(2) B3 B4 CollectD cinfD62 clatD2 lb_def order.strict_implies_order)
+  have B6:"... \<le> Inf X A"  by (simp add: A0 B2 inf_anti1)
+  have B7:"... = m "  by (simp add: B0(3) inf_equality)
+  show "m=Inf X {x \<in> X. m < x}"
+    using B5 B6 B7 by auto
+qed
+
+lemma mirred_temp1:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
+          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)" and 
+          A9:"D \<subseteq>  {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}" and A10:"is_dir D (\<le>)" and A11:"D \<noteq> {}"
+  shows "Sup X D \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
+proof-
+  let ?Q="{q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
+  have B0:"?Q \<subseteq> X" by simp
+  obtain j where B1:"is_sup X D j"   by (meson A0 A9 B0 clatD21 dual_order.trans)
+  have B2:"j \<in> X"    using B1 is_supE1 by blast
+  have B3:"\<forall>d. d \<in> D \<longrightarrow> a \<le> d"   using A9 by blast
+  have B4:"a \<in> lbd X D"   by (simp add: A2 B3 lbdI)
+  have B5:"a \<le> j"   by (meson A11 B1 B3 bot.extremum_uniqueI dual_order.trans is_supE2 subset_emptyI ub_def)
+  have B6:"\<not> (k \<le> j)"
+  proof(rule ccontr)
+    assume P0:"\<not>(\<not> (k \<le> j))" obtain P1:"k \<le> j"  using P0 by auto
+    have B7:"k \<le> Sup X D"   using B1 P1 sup_equality by blast
+    have B8:"D \<in> Pow_ne X" by (meson A11 A9 B0 pow_neI subset_trans)
+    have B9:"is_sup_semilattice X"    by (simp add: A0 clatD1 csup_fsup)
+    obtain d where B10:"d \<in> D \<and> k \<le> d" using ccompact0   using A10 A5 B7 B8 B9 by blast
+    show False   using A9 B10 by blast
+  qed
+  have B11:"j \<in> ?Q"   by (simp add: B2 B5 B6)
+  show "Sup X D \<in> ?Q"
+    using B1 B11 sup_equality by blast
+qed
+
+
+
+
+lemma mirred_temp2b:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
+          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)"
+  shows "\<exists>m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}. \<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m"
+proof(rule predicate_Zorn)
+  show "partial_order_on {q \<in> X. a \<le> q \<and> \<not> k \<le> q} (relation_of (\<le>) {q \<in> X. a \<le> q \<and> \<not> k \<le> q})"
+    by (smt (verit, del_insts) dual_order.antisym order_trans partial_order_on_relation_ofI verit_comp_simplify1(2))
+  show "\<And>C. C \<in> Chains (relation_of (\<le>) {q \<in> X. a \<le> q \<and> \<not> k \<le> q}) \<Longrightarrow> \<exists>u\<in>{q \<in> X. a \<le> q \<and> \<not> k \<le> q}. \<forall>q\<in>C. q \<le> u"
+proof-
+    let ?Q="{q \<in> X. a \<le> q \<and> \<not> k \<le> q}"
+    fix C assume A8:"C \<in> Chains (relation_of (\<le>) ?Q)"
+    have B0:"C \<subseteq> X"   using A8 Chains_relation_of by blast
+    have B1:"\<forall>c. c \<in> C \<longrightarrow> a \<le> c"   using A8 Chains_relation_of by force
+    have B2:"\<forall>c. c \<in> C \<longrightarrow> \<not> (k \<le> c)"   using A8 Chains_relation_of by blast
+    show "\<exists>u\<in>{q \<in> X. a \<le> q \<and> \<not> k \<le> q}. \<forall>q\<in>C. q \<le> u"
+      proof(cases "C = {}")
+        case True
+        then show ?thesis  using A2 A7 by blast
+      next
+        case False
+        have B3:"C \<noteq> {}"   by (simp add: False)
+        have B4:"\<And>x y. x \<in> C \<and> y \<in> C \<longrightarrow> (\<exists>z \<in> C. x \<le> z \<and> y \<le> z)"
+        proof
+          fix x y assume A10:"x \<in> C \<and>  y \<in> C"
+          have B1:"(x, y) \<in> relation_of (\<le>) ?Q \<or> (y, x) \<in> relation_of (\<le>) ?Q" using Chains_def[of " relation_of (\<le>) ?Q"] A8 A10 by auto
+          have B2:"x \<le> y \<or> y \<le> x" using B1  relation_of_def[of "(\<le>)" "?Q"] by blast
+          show "(\<exists>z \<in> C. x \<le> z \<and> y \<le> z)"  using A10 B2 by blast
+        qed
+        have B5:"is_dir C (\<le>)" by (simp add: B4 is_updirI1)
+        have B6:"C \<subseteq> ?Q"    using A8 Chains_relation_of by blast
+        have B7:"Sup X C \<in> ?Q" using A0 A1 A2 A3 A4 A5 A6 A7 B3 B5 B6  mirred_temp1[of X a b k C] by blast
+        have B8:"\<forall>c  \<in> C. c \<le> Sup X C"     by (meson A0 B0 False clatD1 csupD51 ubE) 
+        then show ?thesis    using B7 by blast 
+    qed
+  qed
+qed
+
+lemma mirred_temp2c:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
+          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)" and
+          A8:"m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)} \<and> ( \<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m)"
+  shows "\<not>(meet_reducible X m)"
+proof(rule ccontr)
+  let ?Q="{q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
+  assume P:"\<not>\<not>(meet_reducible X m)"
+  obtain P1:"meet_reducible X m"
+    using P by auto
+  have B0:"\<And>x. x \<in> X \<and> x > m \<longrightarrow> k \<le> x"
+  proof
+    fix x assume A9: "x \<in> X \<and> x > m"
+    have B01:"x \<notin> ?Q" using A8 A9 nless_le by blast 
+    have B02:"a \<le> x"  using A8 A9 by force
+    show "k \<le> x" using A9 B01 B02 by blast
+  qed
+  have B1:"m=Inf X {x \<in> X. m < x}"  using A0 A8 P meet_reduction2 by blast
+  have B2:"k \<in> lbd X {x \<in> X. m < x}"  by (metis (mono_tags, lifting) A5 B0 CollectD compactD2 lbdI)
+  have B3:"k \<le> m"    by (metis A0 B1 B2 Collect_subset P cinfD61 clatD2 clatD22 inf_equality is_inf_def lbd_empty mredD2)
+  show False
+    using A8 B3 by blast
+qed
+
+
+lemma mirred_temp2d:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
+          A4:"\<not>(b \<le> a)"
+  obtains m where "m \<in> X" "meet_irr X m" "a \<le> m" "\<not> (b \<le> m)"
+proof-
+  obtain k where B0:"k \<in> compact_elements X" and  B1:"k \<le> b" and B2: "\<not> (k \<le> a)"  using A0 A1 A2 A3 A4 compactly_generated_meets by blast
+  have B0b:"is_compact X k"   using B0 compact_elements_mem_iff1 by blast
+  obtain m where B3:"m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)} \<and> (\<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m)"   using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of X a b k] by blast
+  have B4:"\<not>(meet_reducible X m)" using mirred_temp2c[of X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3  by blast 
+  show ?thesis
+    using B1 B3 B4 that by force
+qed
+
+
+lemma mirred_temp3:
+  assumes A0:"is_clattice X" and A1:"compactly_generated X" and A2:"a \<in> X"
+  shows "a = Inf X {m \<in> X. meet_irr X m \<and> a \<le> m}"
+proof-
+  let ?M="{m \<in> X. meet_irr X m \<and> a \<le> m}" 
+  obtain top where top:"is_greatest X top" using A0 clatD1 csupD3 by blast
+  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}"   by (metis (no_types, lifting) A2 empty_iff greatestD11 greatestD2 mem_Collect_eq mredD2 subsetI top)
+  obtain b where idef:"is_inf X ?M b"  using A0 B0 clatD22 by blast
+  have B4:"a \<le> b"  using A2 idef is_infE4 lb_def by blast
+  have B5: "\<not> (a < b)"
+  proof(rule ccontr)
+    assume B5dneg:"\<not> \<not> (a < b)" obtain B5neg:"a < b"  using B5dneg by auto
+    obtain m where B50:"m \<in> X" and B51:"meet_irr X m" and  B52:"a \<le> m" and B53:"\<not> (b \<le> m)" by (meson A0 A1 A2 B5neg idef is_infE1 leD mirred_temp2d)
+    have B54:"m \<in> ?M"   by (simp add: B50 B51 B52)
+    have B55:"b \<le> m"  using B54 idef is_infD1121 by blast
+    show False
+      using B53 B55 by auto
+  qed
+  have "a = b"  using B4 B5 nless_le by blast
+  show ?thesis
+    using \<open>(a::'a::order) = (b::'a::order)\<close> idef inf_equality by fastforce
+qed
 
 
 end
