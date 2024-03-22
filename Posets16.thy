@@ -6452,9 +6452,7 @@ lemma compactD2:"is_compact X x \<Longrightarrow> x \<in> X" by (simp add: is_co
 lemma compact_element_memD2:"x \<in> compact_elements X  \<Longrightarrow> x \<in> X" using compactD2 compact_element_memD1 by blast 
 lemma compact_elements_sub:"compact_elements X \<subseteq> X"  by (simp add: compact_element_memD2 subsetI) 
 
-lemma compact_elements_mem_iff1:
-  "x \<in> compact_elements X \<longleftrightarrow> is_compact X x"
-  by (simp add: compact_elements_def)
+lemma compact_elements_mem_iff1: "x \<in> compact_elements X \<longleftrightarrow> is_compact X x" by (simp add: compact_elements_def)
 
 lemma compactly_generatedD1:
   "compactly_generated X \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>C \<in> Pow (compact_elements X). is_sup X C x)"
@@ -6463,6 +6461,101 @@ lemma compactly_generatedD1:
 lemma compactly_generatedI1:
   "(\<And>x. x \<in> X \<Longrightarrow>  (\<exists>C \<in> Pow (compact_elements X). is_sup X C x)) \<Longrightarrow> compactly_generated X"
   by(simp add:compactly_generated_def)
+
+
+definition join_dense::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where "join_dense X D \<equiv> (\<forall>x \<in> X. \<exists>Dx \<in> Pow D. is_sup X Dx x)"
+definition meet_dense::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where "meet_dense X D \<equiv> (\<forall>x \<in> X. \<exists>Dx \<in> Pow D. is_inf X Dx x)"
+
+lemma join_denseD1:"\<lbrakk>join_dense X D; x \<in> X\<rbrakk> \<Longrightarrow> (\<exists>Dx \<in> Pow D. is_sup X Dx x)" by (simp add:join_dense_def)
+lemma meet_denseD1:"\<lbrakk>meet_dense X D; x \<in> X\<rbrakk> \<Longrightarrow> (\<exists>Dx \<in> Pow D. is_inf X Dx x)" by (simp add:meet_dense_def)
+
+lemma cjoin_dense_iff:"\<lbrakk>D \<subseteq> X; is_clattice X\<rbrakk> \<Longrightarrow> (join_dense X D \<longleftrightarrow> (\<forall>x \<in> X. \<exists>Dx \<in> Pow D. x = Sup X Dx))"  apply(auto) using join_denseD1 sup_equality apply blast  by (metis (no_types, opaque_lifting) Pow_iff clatD21 dual_order.trans join_dense_def sup_equality)
+lemma cmeet_dense_iff:"\<lbrakk>D \<subseteq> X; is_clattice X\<rbrakk> \<Longrightarrow> (meet_dense X D \<longleftrightarrow> (\<forall>x \<in> X. \<exists>Dx \<in> Pow D. x = Inf X Dx))"  apply(auto) using meet_denseD1 inf_equality apply blast  by (metis (no_types, opaque_lifting) Pow_iff clatD22 dual_order.trans meet_dense_def inf_equality)
+
+lemma join_denseD2:"\<lbrakk>join_dense X D; D \<subseteq> X\<rbrakk> \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x = Sup X (x]\<^sub>D)"
+proof-
+  assume P:"join_dense X D" "D \<subseteq> X" 
+  show "(\<And>x. x \<in> X \<Longrightarrow> x = Sup X (x]\<^sub>D)"
+  proof- 
+    fix x assume P1:"x \<in> X" 
+    obtain Dx where "Dx \<in> Pow D" "is_sup X Dx x" by (meson P(1) P1 join_denseD1)
+    have B0:"\<forall>d. d \<in> Dx \<longrightarrow> d \<le> x"     using \<open>is_sup (X::'a::order set) (Dx::'a::order set) (x::'a::order)\<close> is_supD1121 by blast
+    have B1:"Dx \<subseteq> X"  using P(2) \<open>(Dx::'a::order set) \<in> Pow (D::'a::order set)\<close> by blast
+    have B2:"Dx \<subseteq> (x]\<^sub>D"    by (meson B0 PowD \<open>(Dx::'a::order set) \<in> Pow (D::'a::order set)\<close> rolcI1 subset_eq)
+      have B3:"is_sup X ((x]\<^sub>D) x" 
+      proof(rule is_supI5)
+        show "\<And>a. a \<in> ubd X (x]\<^sub>D \<Longrightarrow> x \<le> a" using B2 \<open>is_sup (X::'a::order set) (Dx::'a::order set) (x::'a::order)\<close> is_supE3 ubd_ant1b by blast
+        show " x \<in> ubd X (x]\<^sub>D"   by (meson P1 rolcD12 ubd_mem_iff3)
+      qed
+    show "x= Sup X (x]\<^sub>D" using B3 sup_equality by force
+  qed
+qed
+
+lemma join_denseI2:"\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_sup X ((x]\<^sub>D) x) \<rbrakk> \<Longrightarrow> join_dense X D" by (meson Pow_iff join_dense_def rolc_subset1)
+
+lemma meet_denseD2:"\<lbrakk>meet_dense X D; D \<subseteq> X\<rbrakk> \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x = Inf X [x)\<^sub>D)"
+proof-
+  assume P:"meet_dense X D" "D \<subseteq> X" 
+  show "(\<And>x. x \<in> X \<Longrightarrow> x = Inf X [x)\<^sub>D)"
+  proof- 
+    fix x assume P1:"x \<in> X" 
+    obtain Dx where "Dx \<in> Pow D" "is_inf X Dx x" by (meson P(1) P1 meet_denseD1)
+    have B0:"\<forall>d. d \<in> Dx \<longrightarrow> x \<le> d"     using \<open>is_inf (X::'a::order set) (Dx::'a::order set) (x::'a::order)\<close> is_infD1121 by blast
+    have B1:"Dx \<subseteq> X"  using P(2) \<open>(Dx::'a::order set) \<in> Pow (D::'a::order set)\<close> by blast
+    have B2:"Dx \<subseteq> [x)\<^sub>D"    by (meson B0 PowD \<open>(Dx::'a::order set) \<in> Pow (D::'a::order set)\<close> lorcI1 subset_eq)
+      have B3:"is_inf X ([x)\<^sub>D) x" 
+      proof(rule is_infI5)
+        show "\<And>a. a \<in> lbd X [x)\<^sub>D \<Longrightarrow> a \<le> x" using B2 \<open>is_inf (X::'a::order set) (Dx::'a::order set) (x::'a::order)\<close> is_infE3 lbd_ant1b by blast
+        show " x \<in> lbd X [x)\<^sub>D"   by (meson P1 lorcD12 lbd_mem_iff3)
+      qed
+    show "x= Inf X [x)\<^sub>D" using B3 inf_equality by force
+  qed
+qed
+
+lemma meet_denseI2:"\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_inf X ([x)\<^sub>D) x) \<rbrakk> \<Longrightarrow> meet_dense X D" by (meson Pow_iff meet_dense_def lorc_subset1)
+lemma join_denseD4:"\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_sup X ((x]\<^sub>D) x)\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; b < a\<rbrakk>  \<Longrightarrow>(\<exists>x \<in> D. x \<le> a \<and> \<not> (x \<le> b)))" by (metis is_sup_iso1 less_le_not_le rolc_mem_iff1 subsetI)
+lemma meet_denseD4:"\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_inf X ([x)\<^sub>D) x)\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; a < b\<rbrakk>  \<Longrightarrow>(\<exists>x \<in> D. a \<le> x \<and> \<not> (b \<le> x)))" by (metis is_inf_ant1 less_le_not_le lorc_mem_iff1 subsetI)
+
+lemma join_denseD5:"\<lbrakk>D \<subseteq> X; is_clattice X;  (\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; b < a\<rbrakk>  \<Longrightarrow>(\<exists>x \<in> D. x \<le> a \<and> \<not> (x \<le> b)))\<rbrakk> \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> is_sup X ((x]\<^sub>D) x)"
+proof-
+  assume A0:"D \<subseteq> X" "is_clattice X"  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; b <a \<rbrakk>\<Longrightarrow>(\<exists>x \<in> D. x \<le> a \<and> \<not> (x \<le> b)))"
+  show "(\<And>x. x \<in> X \<Longrightarrow> is_sup X ((x]\<^sub>D) x)"
+  proof-
+    fix a assume A1:"a \<in> X"
+    obtain b where B0:"is_sup X ((a]\<^sub>D) b"   by (meson A0 clatD21 order_trans rolc_subset1)
+    have B1:"b \<le> a"  by (meson A1 B0 is_supD42 rolc_mem_iff1 ub_def)
+    have "b=a"
+    proof(rule ccontr)
+      assume con1:"\<not> (b=a)" obtain con2:"b < a"     by (simp add: B1 con1 order_less_le)
+      obtain x where  B2:"x \<in> D \<and> x \<le> a \<and> \<not>(x \<le> b)"   using A0(3) A1 B0 con2 is_supE1 by blast
+      have B3:"x \<in> (a]\<^sub>D"   using B2 rolcI1 by blast
+      show False
+        using B0 B2 B3 is_supD1121 by blast
+    qed
+    show "is_sup X ((a]\<^sub>D) a"
+      using B0 \<open>(b::'a::order) = (a::'a::order)\<close> by blast
+  qed
+qed
+lemma meet_denseD5:"\<lbrakk>D \<subseteq> X; is_clattice X;  (\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; a < b\<rbrakk>  \<Longrightarrow>(\<exists>x \<in> D. a \<le> x \<and> \<not> (b \<le> x)))\<rbrakk> \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> is_inf X ([x)\<^sub>D) x)"
+proof-
+  assume A0:"D \<subseteq> X" "is_clattice X"  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X ; a < b \<rbrakk>\<Longrightarrow>(\<exists>x \<in> D. a \<le> x \<and> \<not> (b \<le> x)))"
+  show "(\<And>x. x \<in> X \<Longrightarrow> is_inf X ([x)\<^sub>D) x)"
+  proof-
+    fix a assume A1:"a \<in> X"
+    obtain b where B0:"is_inf X ([a)\<^sub>D) b"   by (meson A0 clatD22 order_trans lorc_subset1)
+    have B1:"a \<le> b"  by (meson A1 B0 is_infD42 lorc_mem_iff1 lb_def)
+    have "b=a"
+    proof(rule ccontr)
+      assume con1:"\<not> (b=a)" obtain con2:"a < b"  using B1 con1 by auto 
+      obtain x where  B2:"x \<in> D \<and> a \<le> x \<and> \<not>(b \<le> x)"   using A0(3) A1 B0 con2 is_infE1 by blast
+      have B3:"x \<in> [a)\<^sub>D"   using B2 lorcI1 by blast
+      show False using B0 B2 B3 is_infD1121 by blast
+    qed
+    show "is_inf X ([a)\<^sub>D) a"using B0 \<open>(b::'a::order) = (a::'a::order)\<close> by blast
+  qed
+qed
+
+lemma compactly_generated_iff:"compactly_generated X \<longleftrightarrow> join_dense X (compact_elements X)" by(auto simp add:compactly_generated_def join_dense_def)
 
 lemma compact_obtain:
   assumes "is_compact X c" and "A \<in> Pow_ne X" and "c \<le> Sup X A"
@@ -8414,6 +8507,7 @@ proof-
   show ?thesis
     using \<open>(a::'a::order) = (b::'a::order)\<close> idef inf_equality by fastforce
 qed
+
 
 
 end
