@@ -8272,7 +8272,7 @@ proof-
     by (metis (no_types, lifting) B0 B2 is_maximal_def)
 qed
 
-lemma pmb_filters3:"\<lbrakk>is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_maximal (pfilters_on X) F"  by (simp add: pmb_filters1 pmb_filters2)
+lemma pmb_filters3:"\<lbrakk>is_pfilter X F; sup_prime X F\<rbrakk> \<Longrightarrow> is_maximal (pfilters_on X) F" by (simp add: pmb_filters1 pmb_filters2)
 
 
 (*that maximal proper filters are prime holds in the context of distributive lattices e.g. by distr_lattice_maximal_prime
@@ -8543,7 +8543,12 @@ qed
 
 lemma prime_filter_irr3_converse:
   "\<lbrakk>distributive_lattice X; fin_inf_irr (filters_on X) F; pfilter X F\<rbrakk> \<Longrightarrow> sup_prime X F"  by (simp add: is_pfilterI1 sup_prime_pfilterI3)
+(*
+lemma prime_filter_irr3:
+  "\<lbrakk>is_lattice X; sup_prime X F; pfilter X F\<rbrakk> \<Longrightarrow> fin_inf_irr (filters_on X) F"
+  by (metis fin_inf_irr_def prime_filter_fin_irr2)
 
+*)
 
 lemma pfilters_metofprimes2:
   assumes A0:"distributive_lattice X" and A1:"is_greatest X top" and A2:"F \<in> pfilters X"
