@@ -8577,4 +8577,64 @@ proof-
   then show ?thesis  using B3 that by blast
 qed
 
+
+lemma pfilter_sets:
+  assumes A0:"F \<subseteq> Pow X" and 
+          A1:"F \<noteq> {}" and
+          A2:"F \<noteq> Pow X" and
+          A3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
+          A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)" 
+  shows "is_pfilter (Pow X) F "
+  apply(rule is_pfilterI1)
+  apply(rule filterI1, simp add:A1, simp add:A0)
+  proof-
+  show "is_dir F (\<lambda>(x::'a set) y::'a set. y \<subseteq> x)"
+    apply(rule is_dwdirI1)
+    proof-
+        fix A B assume "A \<in> F" "B \<in> F"
+        then obtain "A \<inter> B \<in> F \<and> A \<inter> B \<subseteq> A \<and>  A \<inter> B \<subseteq> B" using A3[of A B] by simp
+        then show "\<exists>c\<in>F. c \<subseteq> A \<and> c \<subseteq> B" by blast
+    qed
+  show "is_ord_cl (Pow X) F (\<subseteq>)"   using A4 is_ord_clI1 by blast
+  show "Pow X \<noteq> F"   using A2 by auto
+qed
+
+lemma sets_pfilter:
+  assumes "is_pfilter (Pow X) F"
+  shows A1:"F \<noteq> {}" and
+        A2:"F \<noteq> Pow X" and
+        A3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
+        A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)"
+  using assms filterD1 is_pfilterD1 apply auto[1]
+  using assms is_pfilter_def apply blast 
+  proof-
+    show "\<And>(A::'a set) B::'a set. A \<in> F \<Longrightarrow> B \<in> F \<Longrightarrow> A \<inter> B \<in> F"
+  proof-
+      have B0:"is_dir F (\<lambda>x y. x \<supseteq> y)"  using assms filterD3 is_pfilter_def by blast
+      fix A B assume "A \<in> F" "B \<in> F"
+      then have B1:"\<exists>C \<in> F. C \<subseteq> A \<and> C \<subseteq> B"  using B0 is_dwdirE1[of F A B] by blast
+      then obtain C where "C \<in> F" "C \<subseteq> A" "C \<subseteq> B" by blast
+      then have B2:"C \<in> F \<and> C \<subseteq> A \<inter> B" by blast
+      also have B3:"A \<inter> B \<in> Pow X"
+        by (meson Pow_iff \<open>(A::'a::type set) \<in> (F::'a::type set set)\<close> assms in_mono inf.coboundedI1 is_pfilterD3)
+      then show "A \<inter> B \<in> F"    using assms calculation filter_memI is_pfilterD1 by blast
+    qed
+    show "\<And>(A::'a set) B::'a set. A \<in> F \<Longrightarrow> B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> B \<in> F"
+      using assms filter_memI is_pfilterD1 by blast
+qed
+ 
+lemma pfilter_sets_comp:
+  assumes A0:"pfilter (Pow X) F" and A1:"(X-A) \<in> F"
+  shows "A \<notin> F"
+proof(rule ccontr)
+  assume "\<not>(A \<notin> F)"
+  then have  "A \<in> F" by simp
+  then have "(X-A) \<inter> A \<in> F"  using A0 A3 is_pfilterI1 local.A1 by blast
+  then have "{} \<in> F"  by (simp add: Int_commute)
+  then have "F=Pow X" by (meson A0 empty_subsetI equalityI filter_memI is_pfilterD3 is_pfilterI1 subsetI)
+  then show False using A0 by auto
+qed
+    
+lemma pfilters_sets_comp2: "pfilter (Pow X) F \<Longrightarrow> A \<in> F \<Longrightarrow> (X-A) \<notin> F"using pfilter_sets_comp by blast
+
 end
