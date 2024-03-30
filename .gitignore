@@ -39,7 +39,6 @@ Fold.thy
 Fold2.thy
 OrderRel.thy
 OrdRel2.thy
-Posets17.thy
 Ord.thy
 Ord2.thy
 Ord3.thy
@@ -47,4 +46,4 @@ OrdRel4.thy
 OrdRel5.thy
 Ord5.thy
 Ord4.thy
-Ord4.thy
+
