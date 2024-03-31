@@ -4982,57 +4982,57 @@ lemma elem_sup_primeI2:
 lemma elem_inf_primeI2:
   "\<lbrakk>x \<in> X; inf_prime R X (lorc (converse R) X x);refl R X; trans R X; antisym R X; is_inf_semilattice R X\<rbrakk> \<Longrightarrow> elem_inf_prime R X x"
   by (simp add: elem_sup_primeI2 is_sup_semilattice_def refl_def)
-(*
+
 lemma fin_sup_irrD1:
-  "\<lbrakk>fin_sup_irr X x; a \<in> X; b \<in> X; x=Sup R X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
+  "\<lbrakk>fin_sup_irr R X x; a \<in> X; b \<in> X; x=Sup R X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
   by (simp add:fin_sup_irr_def)
 
 lemma fin_inf_irrD1:
-  "\<lbrakk>fin_inf_irr X x; a \<in> X; b \<in> X; x=Inf X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
-  by (simp add:fin_inf_irr_def)
+  "\<lbrakk>fin_inf_irr R X x; a \<in> X; b \<in> X; x=Inf R X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
+  by (simp add:fin_sup_irr_def Sup_def)
 
 lemma fin_sup_irrI1:
-  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; x = Sup R X {a, b}\<rbrakk> \<Longrightarrow> x =a \<or> x =b) \<Longrightarrow> fin_sup_irr X x"
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; x = Sup R X {a, b}\<rbrakk> \<Longrightarrow> x =a \<or> x =b) \<Longrightarrow> fin_sup_irr R X x"
   by (simp add: fin_sup_irr_def)
 
 lemma fin_inf_irrI1:
-  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; x = Inf X {a, b}\<rbrakk> \<Longrightarrow> x =a \<or> x =b) \<Longrightarrow> fin_inf_irr X x"
-  by (simp add: fin_inf_irr_def)
+  "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; x = Inf R X {a, b}\<rbrakk> \<Longrightarrow> x =a \<or> x =b) \<Longrightarrow> fin_inf_irr R X x"
+  by (simp add: fin_sup_irr_def Sup_def)
 
 lemma fin_sup_irrE1:
-  "\<lbrakk>distributive_lattice R X; x \<in> X; elem_sup_prime X x\<rbrakk> \<Longrightarrow> fin_sup_irr X x"
-  by (simp add: bsup_iff distributive_lattice_def elem_sup_primeD1 fin_sup_irr_def lattD42 order_class.order_eq_iff)
+  "\<lbrakk>antisym R X; trans R X; refl R X; distributive_lattice R X; x \<in> X; elem_sup_prime R X x\<rbrakk> \<Longrightarrow> fin_sup_irr R X x"
+  by (metis antisym_onD binary_supD31 binary_supD32 distributive_lattice_def elem_sup_prime_def fin_sup_irr_def lattD42 reflD1 ssupD3)
+
 
 lemma fin_inf_irrE1:
-  "\<lbrakk>distributive_lattice R X; x \<in> X; elem_inf_prime X x\<rbrakk> \<Longrightarrow> fin_inf_irr X x"
-  by (simp add: binf_iff distributive_lattice_def elem_inf_primeD1 fin_inf_irr_def lattD41 order_class.order_eq_iff)
-(*(\<forall>a \<in> X. \<forall>b \<in> X. (x,Sup R X {a, b})\<in>R \<longrightarrow> ((x,a)\<in>R \<or> (x, b)\<in>R))*)
-(*(\<forall>a \<in> X. \<forall>b \<in> X. x = Sup R X {a, b} \<longrightarrow> (x = a \<or> x = b)*)
+  "\<lbrakk>antisym R X; trans R X; refl R X;distributive_lattice R X; x \<in> X; elem_inf_prime R X x\<rbrakk> \<Longrightarrow> fin_inf_irr R X x"
+  by (smt (verit, del_insts) bsup_ge1 bsup_ge2 distr_latticeD5 elem_inf_primeD1 fin_inf_irrI1 lattD42 lattice_absorb12 lattice_absorb13 refl_def)
 
-(*
-  (x,a)\<in>R \<or> b \<longleftrightarrow> x \<and> (a \<or> b) = x \<longleftrightarrow> (x \<and> a) \<or> (x \<and> b) = x \<longleftrightarrow> (x \<and> a) = a \<or> (x \<and> b) = x \<longleftrightarrow> (x,a)\<in>R \<or> (x, b)\<in>R
-*)
 
 lemma elem_sup_primeI3:
-  assumes A0:"distributive_lattice R X" and A1:"x \<in> X" and A2: "fin_sup_irr X x"
-  shows "elem_sup_prime X x"
+  assumes A0:"distributive_lattice R X" and A1:"x \<in> X" and A2: "fin_sup_irr R X x" and A3:"antisym R X" and
+          A4:"trans R X" and A5:"refl R X"
+  shows "elem_sup_prime R X x"
 proof-
-  have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and> (x,Sup R X {a, b})\<in>R \<longrightarrow> ((x,a)\<in>R \<or> (x, b)\<in>R)"
-  proof
-    fix a b assume P:"a \<in> X \<and>b \<in> X \<and> (x,Sup R X {a, b})\<in>R"
-    have B1:"x = Inf X {x, Sup R X {a, b}}"
-      using A0 A1 P distributive_lattice_def lattD42 le_inf1 ssupD4 by fastforce
-    have B2:"... = Sup X {Inf X {x, a}, Inf X {x, b}}"
-      by (simp add: A0 A1 P distr_latticeD3)
-    have B3:"x = Inf X {x, a} \<or> x = Inf X {x, b}"
-      by (metis A0 A1 A2 B1 B2 P distributive_lattice_def fin_sup_irr_def lattD41 sinfD4)
-    show "x \<le>a \<or> (x, b)\<in>R"
-      by (metis A0 A1 B3 P distributive_lattice_def latt_le_iff1)
+  have B0:"\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (x,Sup R X {a, b})\<in>R\<rbrakk> \<Longrightarrow> ((x,a)\<in>R \<or> (x, b)\<in>R)"
+  proof-
+    fix a b assume P0:"a \<in> X" and P1:"b \<in> X" and P2:"(x,Sup R X {a,b})\<in>R"
+    have B1:"x = Inf R X {x, Sup R X {a, b}}"
+      using A0 A1 P0 P1 P2 distributive_lattice_def 
+      by (metis A3 A5 antisym_on_converse binary_supI2 converseI is_supE1 lattD31 lattD32 reflD1 sup_equality)
+    have B2:"... = Sup R X {Inf R X {x, a}, Inf R X {x, b}}"
+      by (simp add: A0 A1 A3 A4 A5 P0 P1 distr_latticeD3)
+    have B3:"x = Inf R X {x, a} \<or> x = Inf R X {x, b}"
+      by (metis A0 A1 A2 A3 B1 B2 P0 P1 distr_latticeD5 fin_sup_irr_def is_supE1 lattD31)
+    show "(x,a)\<in>R \<or> (x, b)\<in>R"
+      by (metis A0 A1 A3 B3 P0 P1 binary_supD32 converse.simps distributive_lattice_def lattD31)
   qed
   show ?thesis
     by (simp add: B0 elem_sup_primeI1)
 qed
   
+(*
+
   
 lemma elem_inf_primeI3:
   assumes A0:"distributive_lattice R X" and A1:"x \<in> X" and A2: "fin_inf_irr X x"
