@@ -8635,6 +8635,14 @@ proof(rule ccontr)
   then show False using A0 by auto
 qed
     
-lemma pfilters_sets_comp2: "pfilter (Pow X) F \<Longrightarrow> A \<in> F \<Longrightarrow> (X-A) \<notin> F"using pfilter_sets_comp by blast
+lemma pfilters_sets_comp2:
+   "pfilter (Pow X) F \<Longrightarrow> A \<in> F \<Longrightarrow> (X-A) \<notin> F"
+  using pfilter_sets_comp by blast
+
+lemma pfilters_sets_comp3:
+   "\<lbrakk>pfilter (Pow X) F; A \<subseteq> X; \<exists>U \<in> F. U \<inter> (X-A) = {}\<rbrakk> \<Longrightarrow> A \<in> F"
+  by (metis Diff_eq_empty_iff Int_Diff PowD PowI filterD21 filter_memI inf.orderE)
+
+
 
 end
