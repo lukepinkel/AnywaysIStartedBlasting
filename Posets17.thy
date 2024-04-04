@@ -1518,6 +1518,10 @@ lemma sup_equality:
   "\<lbrakk>is_sup R X A m; antisym_on X R\<rbrakk> \<Longrightarrow> Sup R X A = m"
   by (simp add: Sup_def is_sup_unique the_equality) 
 
+lemma inf_equality:
+  "\<lbrakk>is_inf R X A m; antisym_on X R\<rbrakk> \<Longrightarrow> Inf R X A = m"
+  by (simp add: Upper_eq_sup_eq3 the_equality)
+
 lemma sup_exI:
   "\<lbrakk>antisym_on X R; A \<subseteq> X; (\<exists>s. is_sup R X A s); (\<And>s. is_sup R X A s \<Longrightarrow> P s)\<rbrakk> \<Longrightarrow> P (Sup R X A)"
   using sup_equality  by metis
@@ -6280,712 +6284,391 @@ proof-
   show "meet_reducible R X m"  using B4 B6 mredI1 by fastforce 
 qed
 
+lemma filter_compl1:
+  "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}"
+  using is_pfilterD3 is_pfilter_def by fastforce
 
-(*
+lemma filter_compl2: 
+  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)"
+  by (metis Diff_disjoint inf.idem inf.orderE is_pfilterD3 pfilter_on_lattice_inf4b)
+lemma pfilter_compl3: 
+  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; x \<in> (X-F); y \<in> X; (y, x)\<in>R\<rbrakk> \<Longrightarrow>y \<in> (X-F)"
+  by (metis Diff_iff filter_memI is_pfilter_def)
 
+lemma pfilter_compl4:
+   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (dual R)"
+  by (simp add: filterD4 is_ord_cl_comp1 is_pfilter_def)
 
-
-definition subsemilattice_inf::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "subsemilattice_inf X A\<equiv> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i))"
-
-definition subsemilattice_sup::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "subsemilattice_sup X A\<equiv> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_sup R X {a, b} i))"
-
-
-definition sublattice::"'a::order set \<Rightarrow> 'a::order set \<Rightarrow> bool" where
-  "sublattice R X A\<equiv> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>s \<in> A. is_sup R X {a, b} s) \<and> (\<exists>i \<in> A. is_inf X {a, b} i))"
-
-
-lemma subsemilattice_infD:"subsemilattice_inf X A \<Longrightarrow>  (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i))" by (simp add:subsemilattice_inf_def)
-lemma subsemilattice_infD1:"subsemilattice_inf X A \<Longrightarrow>  (A \<subseteq> X)" by (simp add:subsemilattice_inf_def)
-lemma subsemilattice_infD2:"subsemilattice_inf X A \<Longrightarrow>  (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i))" by (simp add:subsemilattice_inf_def)
-lemma subsemilattice_infI1:"\<lbrakk>(A \<subseteq> X); (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i)) \<rbrakk> \<Longrightarrow> subsemilattice_inf X A " by (simp add:subsemilattice_inf_def)
-
-lemma subsemilattice_supD:"subsemilattice_sup X A \<Longrightarrow> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_sup R X {a, b} i))" by (simp add:subsemilattice_sup_def)
-lemma subsemilattice_supD1:"subsemilattice_sup X A \<Longrightarrow> (A \<subseteq> X)" by (simp add:subsemilattice_sup_def)
-lemma subsemilattice_supD2:"subsemilattice_sup X A \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (\<exists>i \<in> A. is_sup R X {a, b} i))" by (simp add:subsemilattice_sup_def)
-lemma subsemilattice_supI1:"\<lbrakk>(A \<subseteq> X); (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>i \<in> A. is_sup R X {a, b} i)) \<rbrakk> \<Longrightarrow> subsemilattice_sup X A " by (simp add:subsemilattice_sup_def)
+lemma prime_filter_compl5:
+   "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> (X-F)"
+   by (metis Diff_iff  l_sup_closed primefilterD1)
+lemma prime_filter_compl6:
+   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F\<rbrakk> \<Longrightarrow> is_dir (X-F) R"
+  by (meson Diff_subset is_dirI4 lattD42 prime_filter_compl5)
 
 
-lemma sublatticeD:"sublattice R X A \<Longrightarrow> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>s \<in> A. is_sup R X {a, b} s) \<and> (\<exists>i \<in> A. is_inf X {a, b} i))" by (simp add:sublattice_def)
-lemma sublatticeD1:"sublattice R X A \<Longrightarrow> (A \<subseteq> X)" by (simp add:sublattice_def)
-lemma sublatticeD2:"sublattice R X A \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (\<exists>s \<in> A. is_sup R X {a, b} s))" by (simp add:sublattice_def)
-lemma sublatticeD3:"sublattice R X A \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (\<exists>i \<in> A. is_inf X {a, b} i))" by (simp add:sublattice_def)
+lemma prime_filter_compl7: 
+  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  
+  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
 
-lemma sublatticeI1:"\<lbrakk>(A \<subseteq> X); (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>s \<in> A. is_sup R X {a, b} s)\<and> (\<exists>i \<in> A. is_inf X {a, b} i)) \<rbrakk> \<Longrightarrow> sublattice R X A " by (simp add:sublattice_def)
+lemma prime_filter_compl8: 
+  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> is_ideal R X (X-F)" 
+   by (meson Diff_subset is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
 
-lemma sublatticeD4:"sublattice R X A \<Longrightarrow> subsemilattice_sup X A"  by (simp add: sublattice_def subsemilattice_supI1)
-lemma sublatticeD5:"sublattice R X A \<Longrightarrow> subsemilattice_inf X A"  by (simp add: sublattice_def subsemilattice_infI1)
-
-lemma sublatticeI2:"\<lbrakk> subsemilattice_sup X A; subsemilattice_inf X A  \<rbrakk> \<Longrightarrow> sublattice R X A "   by (simp add: sublattice_def subsemilattice_infD1 subsemilattice_infD2 subsemilattice_supD2) 
-
-
-definition homoinf::"'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where
- "homoinf X Y f \<equiv> (\<forall>x y i. is_inf X {x, y} i \<longrightarrow>  is_inf Y {f x , f y} (f i))"
-
-
-lemma homoinfsD1:"\<lbrakk>is_inf_semilattice R X; is_inf_semilattice Y; homoinf X Y f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (Inf X {x, y}) = Inf Y {f x, f y}" by(simp add:homoinf_def) (metis inf_equality sinfD3)
-
-lemma homoinfsD2:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow>  f (Inf X {a1, a2}) = Inf Y {f a1, f a2}" and 
-          A1:"finite A" and
-          A2:"A \<noteq> {}" and
-          A3:"A \<subseteq> X" and
-          A4:"is_inf_semilattice R X" and 
-          A5:"is_inf_semilattice Y" and 
-          A6:"f`X \<subseteq> Y"
-  shows "f (Inf X A) = Inf Y (f`A)"
-  using A1 A2 A3 
-proof (induct A rule: finite_ne_induct)
-  case (singleton x) then show ?case using A0 singleton by fastforce
-next
-  case (insert x F)
-  have B0:"f`(insert x F) = (insert (f x) (f`F))" by auto
-  obtain B1:"f x \<in> Y" and B2:"f`F \<subseteq> Y"    by (meson A6 dual_order.trans image_eqI image_mono insert.prems insert_subset)
-  obtain B3:"finite F" and B4:"F \<noteq> {}"    using insert.hyps(1) insert.hyps(2) by blast
-  have B7:"Inf X (insert x F) = Inf X {x, Inf X F}"   using A4 B3 B4 insert.prems sfinf_insert by fastforce
-  let ?a1="x"  let ?a2="Inf X F" let  ?i="Inf X {?a1, ?a2}"
-  have B6:"?a1 \<in> X \<and> ?a2 \<in> X"  by (meson A4 B3 B4 binf_finite2 insert.prems insert_subset is_infE1)
-  have B7:"is_inf X {?a1, ?a2} ?i" by (simp add: A4 B6 sinfD3)
-  have B8:"is_inf Y {f ?a1, f ?a2} (f?i)"  by (metis A0 A5 A6 B6 image_subset_iff sinfD3)
-  then show ?case
-    by (metis A0 A4 A5 B0 B1 B2 B3 B4 B6 empty_is_image finite_imageI insert.hyps(4) insert.prems insert_subset sfinf_insert)
-qed
-
-lemma homoinfsD3:"\<lbrakk>f`X \<subseteq> Y;is_inf_semilattice R X; is_inf_semilattice Y; homoinf X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Inf X F) = Inf Y (f`F)"by (meson homoinfsD1 homoinfsD2)
-
-
-definition homosup::"'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where 
-   "homosup X Y f \<equiv> (\<forall>x y s. is_sup R X {x, y} s \<longrightarrow> is_sup Y {f x, f y} (f s))"
-
-lemma homosupD1:"\<lbrakk>is_sup_semilattice R X; is_sup_semilattice Y; homosup X Y f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (Sup R X {x, y}) = Sup Y {f x, f y}" by (simp add:homosup_def) (metis sup_equality ssupD3)
-
-lemma homosupD2:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> f (Sup X {a1, a2}) = Sup Y {f a1, f a2}" and
-  A1: "finite A" and  A2: "A \<noteq> {}" and  A3: "A \<subseteq> X" and
-  A4: "is_sup_semilattice R X" and    A5: "is_sup_semilattice Y" and  A6: "f`X \<subseteq> Y" shows "f (Sup X A) = Sup Y (f`A)"
-  using A1 A2 A3
-proof (induct A rule: finite_ne_induct)
-  case (singleton x) then show ?case using A0 singleton by fastforce
-next
-  case (insert x F)
-  have B0:"f`(insert x F) = (insert (f x) (f`F))" by auto
-  obtain B1: "f x \<in> Y" and B2: "f`F \<subseteq> Y" by (meson A6 dual_order.trans image_eqI image_mono insert.prems insert_subset)
-  obtain B3: "finite F" and B4: "F \<noteq> {}" using insert.hyps(1) insert.hyps(2) by blast
-  have B7: "Sup X (insert x F) = Sup X {x, Sup X F}"  by (metis A4 B3 B4 insert.prems insert_subset sfsup_insert)
-  let ?a1 = "x" let ?a2 = "Sup X F" let ?s = "Sup X {?a1, ?a2}"
-  have B6: "?a1 \<in> X \<and> ?a2 \<in> X" by (meson A4 B3 B4 bsup_finite2 insert.prems insert_subset is_supE1)
-  have B7: "is_sup R X {?a1, ?a2} ?s" by (simp add: A4 B6 ssupD3)
-  have B8: "is_sup Y {f ?a1, f ?a2} (f ?s)" by (metis A0 A5 A6 B6 image_subset_iff ssupD3)
-  then show ?case
-    by (metis A4 A5 B0 B1 B2 B3 B4 finite_imageI image_is_empty insert.hyps(4) insert.prems insert_subset sfsup_insert sup_equality)
-qed
-
-lemma homosupD3:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice R X; is_sup_semilattice Y; homosup X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Sup X F) = Sup Y (f`F)"  by (meson homosupD1 homosupD2)
-
-
-lemma homosupD4:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice R X; is_sup_semilattice Y; homosup X Y f; x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> f x \<le> f y"
-  by(rule_tac ?X="Y" in ge_bsup1; auto; frule_tac ?a="x" and ?b="y" in bsup_ge1, simp_all)
-    (frule_tac ?Y="Y" and ?f="f" and ?x="x" and ?y="y" in homosupD1, simp_all)
-
-lemma homoinfD4:"\<lbrakk>f`X \<subseteq> Y; is_inf_semilattice R X; is_inf_semilattice Y; homoinf X Y f; x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> f x \<le> f y"
-  by(rule_tac ?X="Y" in le_binf1; auto; frule_tac ?a="x" and ?b="y" in binf_le1, simp_all)
-    (frule_tac ?Y="Y" and ?f="f" and ?x="x" and ?y="y" in homoinfsD1, simp_all)
-
-lemma subsemilattice_homomorphism1:"\<lbrakk>f`X \<subseteq> Y; is_inf_semilattice R X; is_inf_semilattice Y; homoinf X Y f\<rbrakk> \<Longrightarrow> subsemilattice_inf Y (f`X)"
-   by(rule subsemilattice_infI1;auto) (metis homoinf_def is_infE1 sinfD2)
-
-lemma subsemilattice_homomorphism2:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice R X; is_sup_semilattice Y; homosup X Y f\<rbrakk> \<Longrightarrow> subsemilattice_sup Y (f`X)"
-   by(rule subsemilattice_supI1;auto) (metis homosup_def is_supE1 ssupD2)
-
-
-definition homolatt::"'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('a::order \<Rightarrow> 'b::order) \<Rightarrow> bool" where 
-   "homolatt X Y f \<equiv> (\<forall>x y s. is_sup R X {x, y} s \<longrightarrow> is_sup Y {f x, f y} (f s)) \<and> (\<forall>x y i. is_inf X {x, y} i \<longrightarrow>  is_inf Y {f x , f y} (f i))"
-
-
-lemma homolattD0:"homolatt X Y f \<Longrightarrow> homosup X Y f" by (simp add: homolatt_def homosup_def)
-lemma homolattD1:"homolatt X Y f \<Longrightarrow> homoinf X Y f" by (simp add: homolatt_def homoinf_def)
-lemma homolattD2:"\<lbrakk>is_lattice R X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (Sup R X {x, y}) = Sup Y {f x, f y}" by (simp add:homolatt_def; metis lattD32 sup_equality)
-
-
-lemma homolattD3:
-  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> f (Sup X {a1, a2}) = Sup Y {f a1, f a2}" and
-  A1: "finite A" and  A2: "A \<noteq> {}" and  A3: "A \<subseteq> X" and
-  A4: "is_lattice R X" and    A5: "is_lattice Y" and  A6: "f`X \<subseteq> Y" shows "f (Sup X A) = Sup Y (f`A)"
-  using A1 A2 A3
-proof (induct A rule: finite_ne_induct)
-  case (singleton x) then show ?case using A0 singleton by fastforce
-next
-  case (insert x F)
-  have P0:"is_sup_semilattice R X"  by (simp add: A4 lattD42)
-  have B0:"f`(insert x F) = (insert (f x) (f`F))" by auto
-  obtain B1: "f x \<in> Y" and B2: "f`F \<subseteq> Y" by (meson A6 dual_order.trans image_eqI image_mono insert.prems insert_subset)
-  obtain B3: "finite F" and B4: "F \<noteq> {}" using insert.hyps(1) insert.hyps(2) by blast
-  have B7: "Sup X (insert x F) = Sup X {x, Sup X F}"   using B3 B4 P0 insert.prems sfsup_insert by fastforce 
-  let ?a1 = "x" let ?a2 = "Sup X F" let ?s = "Sup X {?a1, ?a2}"
-  have B6: "?a1 \<in> X \<and> ?a2 \<in> X" by (meson B3 B4 P0 bsup_finite2 insert.prems insert_subset is_supE1) 
-  have B7: "is_sup R X {?a1, ?a2} ?s" by (simp add: A4 B6 lattD32)
-  have B8: "is_sup Y {f ?a1, f ?a2} (f ?s)" by (metis A0 A5 A6 B6 image_subset_iff lattD32) 
-  then show ?case
-    by (metis A0 A4 A5 B0 B1 B2 B3 B4 B6 empty_is_image finite_imageI fsup_insert insert.hyps(4) insert.prems insert_subset)
-qed
-
-lemma homolattD4:"\<lbrakk>f`X \<subseteq> Y; is_lattice R X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow>f (Sup X F) = Sup Y (f`F)"   by (meson homolattD2 homolattD3)
-
-lemma homolattD5:"\<lbrakk>f`X \<subseteq> Y; is_lattice R X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Inf X F) = Inf Y (f`F)"by (simp add: homoinfsD3 homolattD1 lattD41)
-
-
-lemma homolattD6:"\<lbrakk>f`X \<subseteq> Y; is_lattice R X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> f x \<le> f y" by (simp add: homoinfD4 homolattD1 latt_iff)
-
-definition sup_distributive where
-  "sup_distributive X \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. \<forall>x \<in> X. (x,Sup R X {a, b})\<in>R \<longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1}))"
-
-definition inf_distributive where
-  "inf_distributive X \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. \<forall>x \<in> X.  Inf X {a, b} \<le> x \<longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1}))"
-
-lemma sup_distributiveI1:
-  "(\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; x \<le> Sup  X {a, b}\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1})) \<Longrightarrow> sup_distributive X"
-  by(simp add:sup_distributive_def)
-
-lemma sup_distributiveD1:
-  "sup_distributive X \<Longrightarrow> (\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; x \<le> Sup  X {a, b}\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1}))"
-  by(simp add:sup_distributive_def)
-
-lemma inf_distributiveI1:
-  "(\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X;  Inf X {a, b} \<le> x\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1})) \<Longrightarrow> inf_distributive X"
-  by(simp add:inf_distributive_def)
-
-lemma inf_distributiveD1:
-  "inf_distributive X \<Longrightarrow> (\<And>a b x. \<lbrakk>a \<in> X; b \<in> X; x \<in> X; Inf  X {a, b} \<le> x\<rbrakk> \<Longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a \<le> a1 \<and> b \<le> b1 \<and> x = Inf X {a1, b1}))"
-  by(simp add:inf_distributive_def)
-
-lemma lat_binf_leI1: "\<lbrakk>is_lattice R X;x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} = z \<rbrakk> \<Longrightarrow>z \<le> x" using binf_leI1 lattD41 by blast
-lemma lat_binf_leI2: "\<lbrakk>is_lattice R X;x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} = z \<rbrakk> \<Longrightarrow>z \<le> y" using binf_leI2 lattD41 by blast
-lemma lat_bsup_geI1: "\<lbrakk>is_lattice R X;x \<in> X; y \<in> X; z \<in> X; Sup R X {x, y} = z\<rbrakk>  \<Longrightarrow> x \<le> z" using bsup_geI1 lattD42 by blast
-lemma lat_bsup_geI2: "\<lbrakk>is_lattice R X;x \<in> X; y \<in> X; z \<in> X; Sup R X {x, y} = z\<rbrakk>  \<Longrightarrow> y \<le> z" using bsup_geI2 lattD42 by blast
-
-lemma sup_distributiveD2:
-  "\<lbrakk>sup_distributive X; is_lattice R X\<rbrakk> \<Longrightarrow> distributive_lattice R X"
-  apply(rule distr_latticeI2)
-proof-
-  fix x y z assume P:"sup_distributive X" "is_lattice R X" "x \<in> X" "y \<in> X" "z \<in> X"
-  have B1:"Inf X {x, Sup X {y, z}} \<le> Sup X {y, z}"  by (simp add: P(2-5) binf_leI2 l_sup_closed lattD41)
-  obtain y1 z1 where dist:"y1 \<in> X \<and> z1 \<in> X \<and> y1 \<le> y \<and> z1 \<le> z \<and> (Inf X {x, Sup X {y, z}}) = Sup X {y1, z1}"  by (metis B1 P(1) P(2) P(3) P(4) P(5) l_inf_closed l_sup_closed sup_distributiveD1)
-  have B2:"Sup X {y1, z1} \<le> x"by (metis P(2-5) dist l_sup_closed lat_binf_leI1) 
-  have B3:"y1 \<le> x \<and> z1 \<le> x"  using B2 P(2) P(3) bsup_iff dist lattD42 by blast
-  have B4:"y1 = Inf X {x, y1} \<and> z1 = Inf X {x, z1}" by (simp add: B3 P(3) dist le_inf2)
-  have B40:"Inf X {x, y1} \<le> Inf X {x, y}" using lattD41[of X] binf_leI4[of X y1 y x] by (simp add: P(2-4) dist insert_commute)
-  have B41:"Inf X {x, z1} \<le> Inf X {x, z}" using lattD41[of X] binf_leI4[of X z1 z x] by (simp add: P(1-5) dist insert_commute)
-  have B5:"Inf X {x, Sup X {y, z}} = Sup X {Inf X {x, y1}, Inf X {x, z1}}"  using B4 dist by presburger
-  have B6:"... \<le> Sup X {Inf X {x, y}, Inf X {x, z}}" by (simp add: B40 B41 P(2) P(3) P(4) P(5) bsup_geI5 dist l_inf_closed lattD42)  
-  show "Inf X {x, Sup X {y, z}} \<le> Sup X {Inf X {x, y}, Inf X {x, z}}"  by (simp add: B5 B6)
-qed
-
-lemma inf_distributiveD2:
-  "\<lbrakk>inf_distributive X; is_lattice R X\<rbrakk> \<Longrightarrow> distributive_lattice R X"
-apply(rule distr_latticeI1)
-proof-
-  fix x y z assume P:"inf_distributive X" "is_lattice R X" "x \<in> X" "y \<in> X" "z \<in> X"
-  have B0:" Sup X {Inf X {x, y}, Inf X {x, z}} \<le> Inf X {x, Sup X {y, z}}"  by (simp add: P(2-5) distrib_inf_le) 
-  have B1:" Inf X {y, z} \<le> Sup X {x, Inf X {y, z}}" by (simp add: P(2-5) bsup_geI2 l_inf_closed lattD42)
-  obtain y1 z1 where dist:"y1 \<in> X \<and> z1 \<in> X \<and> y \<le> y1 \<and> z \<le> z1 \<and>  (Sup X {x, Inf X {y, z}}) = Inf X {y1, z1}" by (metis B1 P(1,2-5) inf_distributiveD1 l_inf_closed l_sup_closed) 
-  have B2:"x \<le> Inf X {y1, z1}" by (metis P(2-5)  dist l_inf_closed lat_bsup_geI1)
-  have B3:"(x, y)\<in>R1 \<and> x \<le> z1"  using B2 P(2-3) binf_iff dist lattD41 by blast 
-  have B4:"y1 = Sup X {x, y1} \<and> z1 = Sup X {x, z1}" by (simp add: B3 P(3) dist ge_sup1)
-  have B5:"Sup X {x, Inf X {y, z}} = Inf X {Sup X {x, y1}, Sup X {x, z1}}"  using B4 dist by presburger
-  have B6:"... \<ge> Inf X {Sup R X {x, y}, Sup X {x, z}}" by (metis B3 B4 P(2-5) binf_leI5 bsup_geI3 dist lattD41 lattD42 ssupD4) 
-  show "Inf X {Sup R X {x, y}, Sup X {x, z}} \<le> Sup X {x, Inf X {y, z}}" by (simp add: B5 B6) 
-qed
-
-lemma filter_compl1: "\<lbrakk>is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}" using is_pfilterD2 is_pfilterD3 by(blast)
-lemma ideal_compl1: "\<lbrakk>is_lattice R X; F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow> (F \<noteq> X)" by (metis Diff_eq_empty_iff is_ideal_def is_pideal_def)
-
-lemma filter_compl2: "\<lbrakk>is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)" using is_pfilterD3 pfilter_on_lattice_inf4b by fastforce
-lemma ideal_compl2: "\<lbrakk>is_lattice R X; F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow>F \<noteq> {}"using is_pideal_def by fastforce
-
-lemma pfilter_compl3: "\<lbrakk>is_lattice R X; is_pfilter R X F; x \<in> (X-F); y \<in> X; (y, x)\<in>R\<rbrakk> \<Longrightarrow>y \<in> (X-F)" by (metis DiffD1 DiffD2 DiffI lattice_absorb1 le_inf2 pfilter_on_lattice_sup01)
-lemma pideal_compl3: "\<lbrakk>is_lattice R X; F \<subseteq> X;is_pideal X (X-F); x \<in> F; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow>y \<in> F"  by (smt (verit) Diff_iff binf_commute2 in_mono le_inf2 pideal_on_lattice_inf01)
-
-lemma pfilter_compl4: "\<lbrakk>is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (\<ge>)" using is_ord_cl_comp1 pfilters_upcl by fastforce 
-lemma pideal_compl4: "\<lbrakk>is_lattice R X;  F \<subseteq> X;is_pideal X (X-F)\<rbrakk> \<Longrightarrow> is_ord_cl X F (\<le>)"  by (metis is_ord_clI1 pideal_compl3)
-
-lemma prime_filter_compl5: "\<lbrakk>is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> (X-F)" by (metis Diff_iff is_pfilterD1 l_sup_closed primefilterD1)
-lemma prime_ideal_compl5:  "\<lbrakk>is_lattice R X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime R X (X-F); x \<in> F; y \<in> F\<rbrakk> \<Longrightarrow> Inf X {x, y} \<in> F" by (smt (verit, ccfv_threshold) DiffD2 DiffI inf_prime_def l_inf_closed subset_eq)
-
-lemma prime_filter_compl6: "\<lbrakk>is_lattice R X; is_pfilter R X F; sup_prime R X F\<rbrakk> \<Longrightarrow> is_dir (X-F) (\<le>)" by (meson Diff_subset is_updirI4 lattD42 prime_filter_compl5)
-lemma prime_ideal_compl6: "\<lbrakk>is_lattice R X; F \<subseteq> X; is_pideal X (X-F) ; inf_prime R X (X-F)\<rbrakk> \<Longrightarrow> is_dir F (\<ge>)"  by (metis is_dwdirI4 lattD41 prime_ideal_compl5)
-
-lemma prime_filter_compl7: "\<lbrakk>is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
-lemma prime_ideal_compl7: "\<lbrakk>is_lattice R X;  F \<subseteq> X; is_pideal X (X-F) ; inf_prime R X (X-F); x \<in> X; y \<in> X; Sup R X {x, y} \<in> F\<rbrakk> \<Longrightarrow> (x \<in> F) \<or> (y \<in> F)" by (smt (verit) DiffE DiffI ideal_fsup_closed is_pidealD1 lattD32) 
-
-lemma prime_filter_compl8: "\<lbrakk>is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> is_ideal X (X-F)"  by (meson Diff_subset Posets16.is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
-lemma prime_ideal_compl8: "\<lbrakk>is_lattice R X;  F \<subseteq> X; is_pideal X (X-F);inf_prime R X (X-F)\<rbrakk> \<Longrightarrow> is_filter R X  F" by (metis Diff_empty filterI1 is_pideal_def pideal_compl4 prime_ideal_compl6) 
-
-lemma prime_filter_compl9: "\<lbrakk>is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> inf_prime R X (X-F)" by (meson inf_primeI1 prime_filter_compl7)
-lemma prime_ideal_compl9: "\<lbrakk>is_lattice R X; F \<subseteq> X; is_pideal X (X-F);inf_prime R X (X-F)\<rbrakk> \<Longrightarrow> sup_prime R X F" by (meson sup_primeI1 prime_ideal_compl7)
-
-lemma prime_ideal_compl10: "\<lbrakk>is_lattice R X; F \<subseteq> X;is_pideal X (X-F); inf_prime R X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter R X F"by (simp add: is_ideal_def is_pfilterI1 is_pideal_def prime_ideal_compl8) 
-lemma prime_filter_compl10: "\<lbrakk>is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F)" by (metis filter_compl2 is_pideal_def prime_filter_compl8)
-
-lemma prime_ideal_compl: "\<lbrakk>is_lattice R X; F \<subseteq> X;is_pideal X (X-F); inf_prime R X (X-F)\<rbrakk> \<Longrightarrow> is_pfilter R X F \<and>sup_prime R X F" by (simp add: prime_ideal_compl10 prime_ideal_compl9)
-lemma prime_filter_compl: "\<lbrakk>is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> is_pideal X (X-F) \<and> inf_prime R X (X-F)" by (simp add: prime_filter_compl10 prime_filter_compl9)
-
-
+lemma prime_filter_compl9:"\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> inf_prime R X (X-F)" 
+  by (meson inf_primeI1 prime_filter_compl7)
 
 lemma prime_filter_on_lattice:
-  assumes A0:"is_lattice R X" and A1:"is_pfilter R X F" and A2:"sup_prime R X F" and
-          A3:"a \<in> filters_on R X" and
-          A4:"b \<in> filters_on R X" and
-          A5:"F=Inf (filters_on R X) {a, b}"
+  assumes A0:"is_lattice R X" and 
+          A1:"antisym R X" and
+          A2:"trans R X" and 
+          A3:"refl R X" and
+          A4:"is_pfilter R X F" and 
+          A5:"sup_prime R X F" and
+          A6:"a \<in> filters_on R X" and
+          A7:"b \<in> filters_on R X" and
+          A8:"F=Inf (pwr X) (filters_on R X) {a, b}"
   shows "F = a \<or> F =b"
 proof-
-  have B0:"F=a \<inter> b" by (simp add: A0 assms(4) assms(5) assms(6) filters_lattice_inf_op)
-  have B1:"a \<subseteq> F \<or> b \<subseteq> F" using B0 A0 A1 A2 A3 A4 B0 sup_prime_pfilterD4[of X F a b]  by (simp add:filters_on_iff)
+  have B0:"F=a \<inter> b"  by (metis A0 A1 A2 A3 A6 A7 A8 Sup_def antisym_on_converse filters_is_clr1 filters_lattice_inf powrel6 sup_equality) 
+  have B1:"a \<subseteq> F \<or> b \<subseteq> F" using B0 A0 A1 A2 A3 A4 B0 A5 A6 A7 sup_prime_pfilterD4[of R X F a b] filters_on_iff by auto
   have B2:"\<not>(a \<subseteq> F) \<longrightarrow> b = F" using B0 B1 by blast
   show ?thesis
     using B0 B2 by blast
 qed
 
-(*
-  using 
-    sup_prime_pfilterD4 sup_prime_pfilterI2 
-    prime_filter_compl prime_ideal_compl 
-  we have the characterization of sup prime proper filters on a lattice in terms of
-    \<forall>F1 F2 \<in> filters_on R X. F1 \<inter> F2 \<subseteq> F \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F
-  and in terms of 
-    is_pideal (X-F)  \<and> inf_prime (X-F)
-*)
-
-
-lemma top_lattice_inf:"\<lbrakk> x \<in> X; y \<in> X; is_greatest X top; is_inf X {x, y} top\<rbrakk> \<Longrightarrow> x =top \<and> y=top"by (simp add: binary_infD31 binary_infD32 greatestD2 is_infE1 order_class.order_eq_iff)
-lemma bot_lattice_sup:"\<lbrakk> x \<in> X; y \<in> X; is_least X bot; is_sup R X {x, y} bot\<rbrakk> \<Longrightarrow> x =bot \<and> y=bot" by (simp add: binary_supD31 binary_supD32 is_supE1 leastD2 order_antisym) 
-
-
-locale bounded_poset=
-  fixes X::"'a::order set" and
-        top bot::"'a::order"
-  assumes bot:"is_least X bot" and
-          top:"is_greatest X top"
-begin
-
-definition complements::"'a::order \<Rightarrow> 'a::order \<Rightarrow> bool" where
-  "complements a a' \<equiv> is_inf X {a, a'} bot \<and> is_sup R X {a, a'} top"
-
-lemma complements_idemp: "complements a a' \<Longrightarrow> complements a' a" by (simp add: complements_def insert_commute)
-lemma complements_top_bot: "complements top bot" by (meson binary_infI1 binary_supI2 bot complements_def greatestD11 leastD11 leastD2 top)
-lemma complements_bot_top: "complements bot top" by (simp add: complements_idemp complements_top_bot) 
-
-end
-
-locale blattice=bounded_poset+
-  assumes dist:"distributive_lattice R X"
-begin
-lemma complements_unique1:
-  "\<lbrakk>a \<in> X; a' \<in> X;a'' \<in> X; complements a a'; complements a a''\<rbrakk> \<Longrightarrow> a'=a''"
-proof-
-  assume A0:"a \<in> X""a' \<in> X""a'' \<in> X"" complements a a'" " complements a a''"
-  have B0:"a'' = Inf X {a'', top}"  by (simp add: A0(3) greatest_inf top) 
-  also have B1:"... = Inf X {a'', Sup X {a, a'}}" using A0(4) complements_def sup_equality by blast
-  also have B2:"... = Sup X {Inf X {a'', a}, Inf X {a'', a'}}" by (simp add: A0(1) A0(2) A0(3) dist distr_latticeD3)
-  also have B3:"... = Sup X {bot, Inf X {a'', a'}}"  by (metis A0(1,3,5) binf_commute2 complements_def inf_equality)
-  also have B4:"... = Sup X {Inf X {a, a'}, Inf X {a'', a'}}" using A0(4) complements_def inf_equality by blast
-  also have B5:"... = Inf X {Sup X {a, a''}, a'}"  by (metis A0(1) A0(2) A0(3) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD4)
-  also have B6:"... = Inf X {top, a'}"  using A0(5) complements_def sup_equality by blast
-  also have B7:"... = a'" by (simp add: A0(2) binf_commute2 greatestD11 greatest_inf top) 
-  then show ?thesis
-    by (simp add: calculation)
-qed
-
-lemma comp_eq1:"\<lbrakk>a \<in> X; a' \<in> X; complements a a'\<rbrakk> \<Longrightarrow> Sup X {a, a'} = top"  using complements_def sup_equality by blast
-lemma comp_eq2:"\<lbrakk>a \<in> X; a' \<in> X; complements a a'\<rbrakk> \<Longrightarrow> Inf X {a, a'} = bot"  using complements_def inf_equality by blast
-
-lemma complI1:"\<lbrakk>a \<in> X; x \<in> X; Inf X {a, x} = bot; Sup X {a, x} = top\<rbrakk> \<Longrightarrow> complements a x" using complements_def dist distr_latticeD5 inf_ex sup_ex by blast
-
-
-
-lemma demorgs1:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> Inf X {Inf X {x, y}, Sup X {x', y'}} = bot "
-proof-
-  fix x y x' y' assume A0:"x \<in> X" "y \<in> X" "x' \<in> X" "y' \<in> X" "complements x x'" "complements y y'"
-  have B0:"Inf X {Inf X {x, y}, Sup X {x', y'}} = Sup X {Inf X {Inf X {x, y}, x'}, Inf X {Inf X {x, y}, y'}}"  by (meson A0(1-4) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD3 distributive_lattice_def l_inf_closed)
-  also have "... = Sup X {Inf X {y, Inf X {x, x'}}, Inf X {x, Inf X {y, y'}}}"  by (metis A0(1-4) binf_assoc1 binf_commute2 blattice.axioms(2) blattice_axioms blattice_axioms_def distributive_lattice_def lattD41)
-  also have "... =  Sup X {Inf X {y,bot}, Inf X {x,bot}}" by (metis A0(5) A0(6) complements_def inf_equality)
-  also have "... = Sup X {bot, bot}" by (simp add: A0(1) A0(2) bot least_inf)
-  also have "... = bot" using bot leastD11 sup_singleton2 by auto
-  finally show "Inf X {Inf X {x, y}, Sup X {x', y'}} = bot" by simp
-qed
-
-
-lemma demorgs2:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> Sup X {Inf X {x, y}, Sup X {x', y'}} = top"
-proof-
-  fix x y x' y' assume A0:"x \<in> X" "y \<in> X" "x' \<in> X" "y' \<in> X" "complements x x'" "complements y y'"
-  have B1:"Sup X {x, Sup X {x', y'}}=Sup X {Sup X {x, x'}, y'}" by (metis A0(1,3,4)  blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_assoc1 distr_latticeD5 lattD42)
-  have B2:"Sup X {y, Sup X {x', y'}} = Sup X {x', Sup X {y, y'}}"   by (metis A0(2-4) blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_assoc2 distributive_lattice_def lattD42)
-  have B0:"Sup X {Inf X {x, y}, Sup X {x', y'}} = Inf X {Sup X {x, Sup X {x', y'}}, Sup X {y, Sup X {x', y'}}}" by (meson A0(1-4) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD2 distributive_lattice_def l_sup_closed)
-  also have "...                                = Inf X {Sup X {Sup X {x, x'}, y'}, Sup X {x', Sup X {y, y'}}}"  by (simp add: B1 B2) 
-  also have "... = Inf X {Sup X {x, top}, Sup X {y, top}}"  by (metis A0(1-6) comp_eq1 ge_sup2 greatestD11 greatestD2 greatest_sup top)
-  also have "... = Inf X {top, top}"  by (simp add: A0(1) A0(2) greatest_sup top)
-  also have "... = top" by (simp add: greatestD11 inf_singleton2 top)
-  finally show "Sup X {Inf X {x, y}, Sup X {x', y'}} = top"
-    by simp
-qed
-
-lemma demorgs3:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> complements (Inf X {x, y}) (Sup X {x', y'})" by (meson blattice.axioms(2) blattice_axioms blattice_axioms_def complI1 demorgs1 demorgs2 distributive_lattice_def l_inf_closed lattD42 ssupD4)
-lemma demorgs4:"\<lbrakk>x \<in> X; y \<in> X; x' \<in> X; y' \<in> X; complements x x'; complements y y'\<rbrakk> \<Longrightarrow> complements (Sup R X {x, y}) (Inf X {x', y'})" by (metis complements_idemp demorgs3)
-
-
-end                    
-
-locale complemented_distr_lattice=blattice+
-  assumes comp:"x \<in> X \<Longrightarrow> (\<exists>x' \<in> X. complements x x')"
-begin
-definition compl where "compl a \<equiv> (THE a'. a' \<in> X \<and> complements a a' )"
-lemma compl_unique2:"x \<in> X \<Longrightarrow> \<exists>!x' \<in> X. complements x x'"using blattice.complements_unique1 blattice_axioms comp by blast
-lemma compl_unique3:"x \<in> X \<Longrightarrow> compl x \<in> X \<and> complements x (compl x) "
-proof-
-  assume A0:"x \<in> X"  obtain x' where B0:"x' \<in> X \<and> complements x x'" using A0 comp by blast
-  have B1:"compl x = x'" using A0 B0 compl_def compl_unique2 by fastforce
-  show "compl x \<in> X \<and> complements x (compl x)"by (simp add: B0 B1)
-qed
-
-lemma compl_closed[intro]:"x \<in> X \<Longrightarrow> compl x \<in> X" by (simp add: compl_unique3)
-lemma compl_unique4:"\<lbrakk>a \<in> X; x \<in> X; y \<in> X; Sup X {a, x} = top; Sup X {a, y} = top; Inf X {a, x} = bot; Inf X {a, y} = bot\<rbrakk> \<Longrightarrow> x=y" using complI1 complements_unique1 by presburger
-lemma compl_unique5:"\<lbrakk>x \<in> X; y \<in> X; Sup R X {x, y}= top; Inf X {x, y} = bot\<rbrakk> \<Longrightarrow> compl x = y" using complI1 compl_unique3 complements_unique1 by presburger
-lemma compl_idem:"x \<in> X \<Longrightarrow> compl (compl x) = x" using compl_unique3 complements_idemp complements_unique1 by blast
-lemma disj_cancel_right:"x \<in> X \<Longrightarrow> Sup X {x, compl x} = top" by (simp add: comp_eq1 compl_unique3)
-lemma conj_cancel_right:"x \<in> X \<Longrightarrow> Inf X {x, compl x} = bot"  using comp_eq2 compl_unique3 by presburger
-lemma de_morgans_cinf:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compl (Inf X {x, y}) = Sup X {compl x, compl y}"
-proof-
-  fix x y assume A0:"x \<in> X" "y \<in> X"
-  obtain B0:"compl x \<in> X \<and> complements x (compl x)" and B1:"compl y \<in> X \<and> complements y (compl y)"   by (simp add: A0(1) A0(2) compl_unique3)
-  have B1:" complements (Inf X {x, y}) (Sup X {compl x,compl y})"  using demorgs3[of x y "compl x" "compl y"]   using A0(1) A0(2) B0 B1 by fastforce
-  show "compl (Inf X {x, y}) = Sup X {compl x, compl y}"
-    by (metis A0(1-2) B1 blattice.axioms(2) blattice.complements_unique1 blattice_axioms blattice_axioms_def compl_unique3 distr_latticeD5 l_inf_closed l_sup_closed)
-qed 
-
-lemma de_morgans_csup:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compl (Sup R X {x, y}) = Inf X {compl x, compl y}"
-proof-
-  fix x y assume A0:"x \<in> X" "y \<in> X"
-  obtain B0:"compl x \<in> X \<and> complements x (compl x)" and B1:"compl y \<in> X \<and> complements y (compl y)"   by (simp add: A0(1) A0(2) compl_unique3)
-  have B1:" complements (Sup R X {x, y}) (Inf X {compl x,compl y})"  using demorgs4[of x y "compl x" "compl y"]   using A0(1) A0(2) B0 B1 by fastforce
-  show "compl (Sup R X {x, y}) = Inf X {compl x, compl y}"
-    by (metis A0(1-2) B1 blattice.axioms(2) blattice.complements_unique1 blattice_axioms blattice_axioms_def compl_unique3 distr_latticeD5 l_inf_closed l_sup_closed)
-qed 
-
-lemma compl_inf_le:"\<lbrakk>x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> Inf X {x, compl y} = bot"
-proof-
-  fix x y assume A0:"x \<in> X" "y \<in> X ""(x, y)\<in>R"
-  have B0:"compl y \<in> X"  by (simp add: A0(2) compl_unique3)
-  have B1:"Inf X {x, compl y} \<le> Inf X {y, compl y}"   using A0(1-3) B0 binf_leI4 blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 by blast 
-  also have "... = bot" by (simp add: A0(2) conj_cancel_right)
-  then show "Inf X {x, compl y} = bot"  by (metis A0(1-3) B0 binf_assoc1 binf_commute2 bot blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 le_inf2 least_inf)
-qed
-
-
-lemma compl_inf_ge:"\<lbrakk>x \<in> X; y \<in> X; Inf X {x, compl y} = bot\<rbrakk> \<Longrightarrow>  (x, y)\<in>R"
-proof-
-  fix x y assume A0:"x \<in> X" "y \<in> X ""Inf X {x, compl y} = bot"
-  have B0:"compl y \<in> X"  by (simp add: A0(2) compl_unique3)
-  have B1:"Inf X {x, y} = Sup X {Inf X {x, y}, Inf X {x, compl y}}"   by (metis A0(1) A0(2) A0(3) bot blattice.axioms(2) blattice_axioms blattice_axioms_def distributive_lattice_def l_inf_closed least_sup)
-  also have B2:"...     = Inf X {x, Sup X {y, compl y}}"  by (metis A0(1) A0(2) B0 blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD3)
-  also have B3:"...     = x"  by (simp add: A0(1) A0(2) disj_cancel_right greatest_inf top)
-  then show "(x, y)\<in>R"
-    by (metis A0(1) A0(2) blattice.axioms(2) blattice_axioms blattice_axioms_def calculation distributive_lattice_def lat_binf_leI2)
-qed
-
-lemma compl_sup_le1:"\<lbrakk>x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> Sup X {compl x, y} = top" by (metis compl_closed compl_idem compl_inf_le conj_cancel_right de_morgans_cinf disj_cancel_right)
-lemma compl_sup_le2:"\<lbrakk>x \<in> X; y \<in> X;  Sup X {compl x, y} = top \<rbrakk> \<Longrightarrow> (x, y)\<in>R"  by (metis compl_closed compl_idem compl_inf_ge conj_cancel_right de_morgans_csup disj_cancel_right)
-
-lemma inf_le_comp1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X; Inf X {x, y} \<le> z\<rbrakk> \<Longrightarrow> x \<le> Sup X {compl y, z}"
-proof-
-  fix x y z assume P:"x \<in> X" "y \<in> X " "z \<in> X" "Inf X {x, y} \<le> z"
-  have B0:"compl y \<in> X"  by (simp add: P(2) compl_unique3)
-  have B1:"Sup X {compl y, Inf X {x, y}} \<le> Sup X {compl y, z}"  by (meson B0 P blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_geI5 compl_inf_ge conj_cancel_right distributive_lattice_def l_inf_closed latt_iff)
-  have B2:"Inf X {Sup X {compl y ,x}, Sup X {compl y, y}} \<le> Sup X {compl y, z}"  by (metis B0 B1 P(1) P(2) blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD1)
-  have B3:"Inf X {Sup X {compl y, x}, top} \<le> Sup X {compl y, z}"  using B0 B2 P(2) compl_idem disj_cancel_right by force
-  have B4:"Sup X {compl y, x} \<le> Sup X {compl y, z}"   by (metis B0 B1 P(1) P(2) blattice.axioms(2) blattice_axioms blattice_axioms_def compl_idem disj_cancel_right distributive_lattice_def greatest_inf l_sup_closed top)
-  then show "x \<le> Sup X {compl y, z}" by (metis B0 P(1) P(3) blattice.axioms(2) blattice_axioms blattice_axioms_def bsup_iff distributive_lattice_def l_sup_closed latt_iff)
-qed
-
-
-lemma inf_le_comp2:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X;  x \<le> Sup X {compl y, z}\<rbrakk> \<Longrightarrow> Inf X {x, y} \<le> z"
-proof-
-  fix x y z assume P:"x \<in> X" "y \<in> X " "z \<in> X" "x \<le> Sup X {compl y, z}"
-  have B0:"Inf X {x, y} \<le> Inf X {Sup X {compl y, z}, y}" by (metis P(1-4) binf_leI4 blattice.axioms(2) blattice_axioms blattice_axioms_def compl_closed distributive_lattice_def l_sup_closed latt_iff)
-  have B1:"Inf X {x, y} \<le> Sup X {Inf X {y, compl y}, Inf X {z, y}}" by (metis (full_types) B0 P(2) P(3) blattice.axioms(2) blattice_axioms blattice_axioms_def compl_closed distr_latticeD3 insert_commute)
-  have B2:"Inf X {x, y} \<le> Sup X {bot, Inf X {z, y}}"  using B1 P(2) conj_cancel_right by fastforce
-  have B3:"Inf X {x, y} \<le> Inf X {z, y}" by (metis B2 P(2) P(3) bot blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 insert_commute lattD41 least_sup sinfD4)
-  then show "Inf X {x, y} \<le> z"  by (meson P(1) P(2) P(3) binf_iff blattice.axioms(2) blattice_axioms blattice_axioms_def distr_latticeD5 lattD41 sinfD4)
-qed
-
-lemma inf_comp_sup1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> x \<le> Sup X {compl y, z} \<longleftrightarrow>  Inf X {x, y} \<le> z" by (meson inf_le_comp1 inf_le_comp2)
-lemma inf_comp_sup2:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> x \<le> Sup X {y, z} \<longleftrightarrow>  Inf X {x, compl y} \<le> z" by (metis compl_closed compl_idem inf_comp_sup1) 
-
-lemma compl_anti1:"\<lbrakk>x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> compl y \<le> compl x"
-proof-
-  fix x y assume A0:"x \<in> X" "y \<in> X" "(x, y)\<in>R"
-  have B0:"Sup R X {x, y} = y"  by (simp add: A0(1) A0(2) A0(3) ge_sup1)
-  have B1:"compl (Sup R X {x, y}) = compl y" by (simp add: B0)
-  have B2:"Inf X {compl x, compl y} = compl y" using A0(1-2) B1 de_morgans_csup by force
-  show "compl y \<le> compl x" by (meson A0(1) A0(2) B2 blattice.axioms(2) blattice_axioms blattice_axioms_def compl_unique3 distributive_lattice_def latt_le_iff2)
-qed
-
-lemma compl_anti2:"\<lbrakk>x \<in> X; y \<in> X; compl (x, y)\<in>R\<rbrakk> \<Longrightarrow> compl (y, x)\<in>R"by (metis compl_anti1 compl_idem compl_unique3)
-lemma compl_anti3:"\<lbrakk>x \<in> X; y \<in> X;  y \<le> compl x\<rbrakk> \<Longrightarrow> x \<le> compl y" by (metis compl_anti1 compl_idem compl_unique3)
-
-lemma meet_bot_iff:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (Inf X {x, y} = bot) \<longleftrightarrow> (x \<le> compl y)"by (metis compl_closed compl_idem compl_inf_ge compl_inf_le)
-lemma join_top_iff:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (Sup R X {x, y} = top) \<longleftrightarrow> (compl (x, y)\<in>R)" by (metis compl_closed compl_idem compl_sup_le1 compl_sup_le2)
-
-lemma proper_filter_boolD1:"\<lbrakk>is_pfilter R X F; x \<in> F\<rbrakk> \<Longrightarrow> compl x \<notin> F" by (metis bot conj_cancel_right dist distr_latticeD5 filter_finf_closed1 in_mono is_pfilterD1 is_pfilterD3 is_pfilterD4 lattD41)
-
-lemma proper_filter_boolI1:"\<lbrakk>is_filter R X  F; (\<And>x. x \<in> F \<Longrightarrow> compl x \<notin> F) \<rbrakk> \<Longrightarrow> is_pfilter R X F"   using compl_closed filter_ex_elem is_pfilterI1 by blast
-lemma proper_filter_boolD2:"\<lbrakk>is_pfilter R X F; x \<in> X\<rbrakk> \<Longrightarrow> \<not> (x \<in> F \<and> compl x \<in> F)"  using proper_filter_boolD1 by auto
-lemma proper_filter_boolI2:"\<lbrakk>is_filter R X  F; (\<And>x. x \<in> X \<Longrightarrow> \<not> (x \<in> F \<and> compl x \<in> F)) \<rbrakk> \<Longrightarrow> is_pfilter R X F" using bot compl_unique3 is_pfilterI1 leastD11 by blast
-
-lemma trivial_upsetI1:"bot \<in> F \<Longrightarrow> is_ord_cl X F (\<le>) \<Longrightarrow> X \<subseteq> F" using bot is_ord_clE1 leastD2 by blast
-lemma trivial_filterI1:"bot \<in> F \<Longrightarrow> is_filter R X  F \<Longrightarrow> X = F" by (simp add: filterD2 filterD4 subset_antisym trivial_upsetI1) 
-lemma trivial_filterI2:"\<lbrakk>x \<in> F; compl x \<in> F; is_filter R X  F\<rbrakk> \<Longrightarrow> X=F" using is_pfilterI1 proper_filter_boolD1 by blast
-
-lemma pmb_filters1:"\<lbrakk>is_pfilter R X F; sup_prime R X F; x \<in> X\<rbrakk> \<Longrightarrow> (x \<in> F \<or> compl x \<in> F) \<and> \<not>(x \<in> F \<and> compl x \<in> F)"by (metis compl_unique3 disj_cancel_right filter_greatestD2 is_pfilterD1 proper_filter_boolD1 sup_primeD1 top)
-
-
-lemma pmb_filters2:
-  assumes A0:"is_pfilter R X F" and A1:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> F \<or> compl x \<in> F) \<and> \<not>(x \<in> F \<and> compl x \<in> F)"
-  shows "is_maximal (pfilters_on R X) F"
-proof-
-  have B0:"F \<in> pfilters_on R X"    using A0 is_pfilter_def by blast
-  have B1:"\<And>G. \<lbrakk>G \<in> filters_on R X;  F \<subset> G \<rbrakk> \<Longrightarrow> G = X"
-  proof-
-    fix G assume A2:"G \<in> filters_on R X" and A3:"F \<subset> G"
-    obtain z where B10: "z \<in> G - F"  using A3 by auto
-    have B11:"z \<notin> F" using B10 by blast 
-    have B12:"compl z \<in> F"  by (meson A1 A2 B10 Diff_iff filterD21 filters_on_iff)
-    have B13:"compl z \<in> G \<and> z \<in> G"  using A3 B10 B12 by blast
-    have B14:"is_filter R X  G"   using A2 filters_on_iff by auto
-    show "G=X"  using B13 B14 trivial_filterI2 by blast 
-  qed
-  have B2:"\<And>G. \<lbrakk>G \<in> pfilters_on R X;  F \<subseteq> G \<rbrakk> \<Longrightarrow> G = F" using B1 filters_on_def by blast
-  show ?thesis
-    by (metis (no_types, lifting) B0 B2 is_maximal_def)
-qed
-
-lemma pmb_filters3:"\<lbrakk>is_pfilter R X F; sup_prime R X F\<rbrakk> \<Longrightarrow> is_maximal (pfilters_on R X) F" by (simp add: pmb_filters1 pmb_filters2)
-
-
-(*that maximal proper filters are prime holds in the context of distributive lattices e.g. by distr_lattice_maximal_prime
-*)
-
-end
-
-definition meet_reducible::"'a::order set \<Rightarrow> 'a \<Rightarrow> bool" where "meet_reducible X x \<equiv> (\<exists>A \<in> Pow_ne X. x \<notin> A \<and> is_inf X A x)"
-abbreviation meet_irr where "meet_irr X x \<equiv> \<not>(meet_reducible X x)"
-
 lemma compact_dense:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"x \<in> X"
-  shows "x = Sup X {k \<in> compact_elements X. k \<le> x}"
+  assumes A0:"is_clattice R X" and 
+          A1:"compactly_generated R X" and
+          A2:"x \<in> X" and 
+          A3:"antisym R X" and
+          A4:"trans R X" and
+          A5:"refl R X"
+  shows "x = Sup R X {k \<in> compact_elements R X. (k, x)\<in>R}"
 proof-
-  let ?K=" compact_elements X"
-  let ?Kd="{k \<in> ?K. k \<le> x}"
-  obtain Kx where A3:"Kx \<in> Pow ?K" "is_sup R X Kx x" by (meson A1 A2 compactly_generatedD1)
+  let ?K=" compact_elements R X"
+  let ?Kd="{k \<in> ?K. (k, x)\<in>R}"
+  obtain Kx where A6:"Kx \<in> Pow ?K" and A7:"is_sup R X Kx x" by (meson A1 A2 compactly_generatedD1)
   have B0:"?K \<subseteq> X"   by (simp add: compact_elements_sub)
   have B1:"?Kd \<subseteq> X" using B0 by blast
-  have B2:"Kx \<subseteq> ?Kd" using A3(1) A3(2) is_supD1121 by fastforce
-  have B3:"Sup X ?Kd \<le> Sup X Kx"   by (metis (no_types, lifting) A0 A2 A3(2) B1 B2 clatD1 csupD62 dual_order.trans empty_iff mem_Collect_eq subsetI sup_equality sup_iso1 ub_def)
-  have B4:"... = x"  by (simp add: A3(2) sup_equality)
-  have B6:"x \<le> Sup X ?Kd"   using A0 B1 B2 B4 sup_iso1 by blast
-  show ?thesis using B3 B4 B6 by auto
+  have B2:"Kx \<subseteq> ?Kd" using A6 A7 is_supD1121 by fastforce
+  have B3:"(Sup R X ?Kd, Sup R X Kx)\<in>R"   by (metis (no_types, lifting) A0 A2 A3 A7 A4 B1 clatD21 is_supE4 mem_Collect_eq sup_equality ubdI ubd_mem_iff) 
+  have B4:" Sup R X Kx = x"   by (simp add: A3 A7 sup_equality) 
+  have B6:"(x, Sup R X ?Kd)\<in>R"   using A0 A3 A4 B1 B2 B4 sup_iso1 by blast 
+  show ?thesis using B3 B4 B6 by (metis (no_types, lifting) A0 A2 A3 A4 B1 B2 antisym_onD bot.extremum_uniqueI clatD31)
 qed
 
 lemma compactly_generated_meets:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"x \<in> X" and A3:"y \<in> X" and 
-          A4:"\<not>((y, x)\<in>R)"
-  shows "\<exists>k \<in> compact_elements X. k \<le> y \<and> \<not>(k \<le> x)"
+  assumes A0:"is_clattice R X" and 
+          A1:"compactly_generated R X" and
+          A2:"x \<in> X" and
+          A3:"y \<in> X" and 
+          A4:"\<not>((y, x)\<in>R)" and
+          A5:"antisym R X" and
+          A6:"trans R X" and
+          A7:"refl R X"
+  shows "\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
   by (meson A1 A2 A3 A4 PowD compactly_generatedD1 is_supD1121 is_supE4 subset_iff ub_def)
 
-lemma meet_reduction1:"\<lbrakk>is_clattice R X; m \<in> X; meet_reducible X m\<rbrakk> \<Longrightarrow> m \<in> lbd R X {x \<in> X. m < x}" using lbd_mem_iff2 by fastforce
+lemma meet_reduction1:
+  assumes A0:"is_clattice R X" and
+          A1:"antisym R X" and
+          A2:"trans R X" and
+          A3:"refl R X" and
+          A4:"m \<in> X" and
+          A5:"meet_reducible R X m"
+  shows " m \<in> lbd R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
+   using A4 ubd_mem_iff2 by fastforce 
 
-lemma meet_reduction2:"\<lbrakk>is_clattice R X; m \<in> X; meet_reducible X m\<rbrakk> \<Longrightarrow>  m=Inf X {x \<in> X. m < x}"
+
+lemma meet_reduction2:
+  assumes A0:"is_clattice R X" and
+          A1:"antisym R X" and
+          A2:"trans R X" and
+          A3:"refl R X" and
+          A4:"m \<in> X" and
+          A5:"meet_reducible R X m"
+  shows " m = Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
 proof-
-  let ?A="{x \<in> X. m < x}"
-  assume A0:"is_clattice R X" "m \<in> X" "meet_reducible X m"
-  obtain A where B0:"A \<in> Pow_ne X" "m \<notin> A" "is_inf X A m"  using A0(3) mredD1 by blast
-  obtain B1:"\<And>x. x \<in> A \<Longrightarrow> m < x"  using B0(2) B0(3) is_infD1121 order_less_le by blast
-  obtain B2:"A \<subseteq> ?A"  using B0(1) \<open>\<And>thesis::bool. ((\<And>x::'a::order. x \<in> (A::'a::order set) \<Longrightarrow> (m::'a::order) < x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto
+  let ?A="{x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
+  obtain A where B0:"A \<in> Pow_ne X" and B1:"m \<notin> A" and  B2:"is_inf R X A m"
+    by (metis A5 meet_reducible_def) 
+  obtain B3:"\<And>x. x \<in> A \<Longrightarrow> (m, x)\<in>R \<and> m \<noteq> x"
+  proof
+    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  using A6 B1 B2 is_supD1121 by fastforce
+  qed
+  obtain B2:"A \<subseteq> ?A"  using B0 \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto 
   have B3:"?A \<subseteq> X"  by simp
-  have B4:"?A \<noteq> {}"  using B0(1) B2 pow_ne_iff2 by fastforce 
-  have B5:"m \<le> Inf X ?A" by (metis (no_types, lifting) A0(1) A0(2) B3 B4 CollectD cinfD62 clatD2 lb_def order.strict_implies_order)
-  have B6:"... \<le> Inf X A"  by (simp add: A0 B2 inf_anti1)
-  have B7:"... = m "  by (simp add: B0(3) inf_equality)
-  show "m=Inf X {x \<in> X. m < x}"
-    using B5 B6 B7 by auto
+  have B4:"?A \<noteq> {}"   by (metis B0 B2 bot.extremum_uniqueI pow_ne_iff2) 
+  have B5:"(m, Inf R X ?A)\<in>R"   by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD62 clatD2 converseI mem_Collect_eq ubI)
+  have B6:"(Inf R X ?A,Inf R X A)\<in>R"   by (simp add: A0 A1 A2 B2 inf_anti1) 
+  have B7:"(Inf R X ?A, m)\<in>R"
+    by (smt (verit) A0 A1 A2 Sup_def \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> antisym_on_converse converse_iff inf_anti1 is_supD1121 mem_Collect_eq pow_neD1 subset_iff sup_equality)
+  show "m=Inf R X ?A"
+    by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 B5 B7 antisym_onD clatD32)
 qed
 
-lemma mirred_temp1:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
-          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)" and 
-          A9:"D \<subseteq>  {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}" and A10:"is_dir D (\<le>)" and A11:"D \<noteq> {}"
-  shows "Sup X D \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
+lemma meet_reduction3:
+  assumes A0:"is_clattice R X" and
+          A1:"antisym R X" and
+          A2:"trans R X" and
+          A3:"refl R X" and
+          A4:"m \<in> X" and
+          A5:"meet_reducible R X m"
+  shows "is_inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} m"
 proof-
-  let ?Q="{q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
+  let ?A="{x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
+  obtain A where B0:"A \<in> Pow_ne X" and B1:"m \<notin> A" and  B2:"is_inf R X A m"
+    by (metis A5 meet_reducible_def) 
+  obtain B3:"\<And>x. x \<in> A \<Longrightarrow> (m, x)\<in>R \<and> m \<noteq> x"
+  proof
+    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  using A6 B1 B2 is_supD1121 by fastforce
+  qed
+  obtain B2:"A \<subseteq> ?A"  using B0 \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto 
+  have B3:"?A \<subseteq> X"  by simp
+  have B4:"?A \<noteq> {}"   by (metis B0 B2 bot.extremum_uniqueI pow_ne_iff2) 
+  have B5:"(m, Inf R X ?A)\<in>R"   by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD62 clatD2 converseI mem_Collect_eq ubI)
+  have B6:"(Inf R X ?A,Inf R X A)\<in>R"   by (simp add: A0 A1 A2 B2 inf_anti1) 
+  have B7:"(Inf R X ?A, m)\<in>R"
+    by (smt (verit) A0 A1 A2 Sup_def \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> antisym_on_converse converse_iff inf_anti1 is_supD1121 mem_Collect_eq pow_neD1 subset_iff sup_equality)
+  show "is_inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} m"
+    by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 B5 B7 antisym_onD cinfD4 clatD2 clatD32)
+qed
+
+
+lemma mirred_temp1:
+  assumes A0:"is_clattice R X" and 
+          A1:"compactly_generated R X" and 
+          A2:"a \<in> X" and
+          A3:"b \<in> X" and 
+          A4:"\<not>((b,a)\<in>R)" and
+          A5:"is_compact R X k" and
+          A6:"(k,b)\<in>R" and
+          A8:"\<not>((k,a)\<in>R)" and 
+          A9:"D \<subseteq>  {q \<in> X. (a,q)\<in>R \<and> \<not> ((k, q)\<in>R)}" and
+          A10:"is_dir D R" and
+          A11:"D \<noteq> {}"  and         
+          A12:"antisym R X" and
+          A13:"trans R X" and
+          A14:"refl R X" 
+  shows "Sup R X D \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
+proof-
+  let ?Q="{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
   have B0:"?Q \<subseteq> X" by simp
-  obtain j where B1:"is_sup R X D j"   by (meson A0 A9 B0 clatD21 dual_order.trans)
-  have B2:"j \<in> X"    using B1 is_supE1 by blast
-  have B3:"\<forall>d. d \<in> D \<longrightarrow> a \<le> d"   using A9 by blast
-  have B4:"a \<in> lbd R X D"   by (simp add: A2 B3 lbdI)
-  have B5:"a \<le> j"   by (meson A11 B1 B3 bot.extremum_uniqueI dual_order.trans is_supE2 subset_emptyI ub_def)
-  have B6:"\<not> (k \<le> j)"
+  obtain j where B1:"is_sup R X D j" by (meson A0 A12 A13 A9 B0 clatD21 dual_order.trans)
+  have B2:"j \<in> X" using B1 is_supE1 by fastforce 
+  have B3:"\<forall>d. d \<in> D \<longrightarrow> (a,d)\<in>R"   using A9 by blast
+  have B4:"a \<in> lbd R X D"  by (simp add: A2 B3 ubdI)
+  have B5:"(a, j)\<in>R"  by (smt (verit, ccfv_threshold) A11 A13 A2 A9 B1 B2 is_supE2 mem_Collect_eq ne_subset_ne subset_iff trans_on_def ub_def)
+  have B6:"\<not> ((k,j)\<in>R)"
   proof(rule ccontr)
-    assume P0:"\<not>(\<not> (k \<le> j))" obtain P1:"k \<le> j"  using P0 by auto
-    have B7:"k \<le> Sup X D"   using B1 P1 sup_equality by blast
+    assume P0:"\<not>(\<not> ((k,j)\<in>R))" obtain P1:"(k,j)\<in>R"  using P0 by auto
+    have B7:"(k,Sup R X D)\<in>R"   using B1 P1 sup_equality A12 by fastforce
     have B8:"D \<in> Pow_ne X" by (meson A11 A9 B0 pow_neI subset_trans)
     have B9:"is_sup_semilattice R X"    by (simp add: A0 clatD1 csup_fsup)
-    obtain d where B10:"d \<in> D \<and> k \<le> d" using ccompact0   using A10 A5 B7 B8 B9 by blast
+    obtain d where B10:"d \<in> D \<and> (k,d)\<in>R" using ccompact0   using A10 A5 B7 B8 B9    by (metis A12 A13 A14)
     show False   using A9 B10 by blast
   qed
   have B11:"j \<in> ?Q"   by (simp add: B2 B5 B6)
-  show "Sup X D \<in> ?Q"
-    using B1 B11 sup_equality by blast
+  show "Sup R X D \<in> ?Q"using B1 B11 sup_equality using A12 by fastforce
 qed
 
-
-
-
 lemma mirred_temp2b:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
-          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)"
-  shows "\<exists>m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}. \<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m"
+  assumes A0:"is_clattice R X" and 
+          A1:"compactly_generated R X" and
+          A2:"a \<in> X" and
+          A3:"b \<in> X" and 
+          A4:"\<not>((b,a)\<in>R)" and 
+          A5:"is_compact R X k" and
+          A6:"(k,b)\<in>R" and
+          A7:"\<not>((k,a)\<in>R)" and
+          A8:"antisym R X" and
+          A9:"trans R X" and
+          A10:"refl R X" 
+  shows "\<exists>m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}. \<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m"
 proof(rule predicate_Zorn)
-  show "partial_order_on {q \<in> X. a \<le> q \<and> \<not> k \<le> q} (relation_of (\<le>) {q \<in> X. a \<le> q \<and> \<not> k \<le> q})"
-    by (smt (verit, del_insts) dual_order.antisym order_trans partial_order_on_relation_ofI verit_comp_simplify1(2))
-  show "\<And>C. C \<in> Chains (relation_of (\<le>) {q \<in> X. a \<le> q \<and> \<not> k \<le> q}) \<Longrightarrow> \<exists>u\<in>{q \<in> X. a \<le> q \<and> \<not> k \<le> q}. \<forall>q\<in>C. q \<le> u"
+  show "partial_order_on {q \<in> X.(a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} (relation_of (\<lambda>x y. (x, y) \<in> R) {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)})"
+    by (smt (verit, best) A10 A8 A9 antisym_onD mem_Collect_eq partial_order_on_relation_ofI reflD2 trans_onD)
+  show "\<And>C. C \<in> Chains (relation_of ((\<lambda>x y. (x, y) \<in> R))  {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}) \<Longrightarrow> \<exists>u\<in>{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}. \<forall>q\<in>C. (q, u)\<in>R"
 proof-
-    let ?Q="{q \<in> X. a \<le> q \<and> \<not> k \<le> q}"
-    fix C assume A8:"C \<in> Chains (relation_of (\<le>) ?Q)"
+    let ?Q="{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
+    fix C assume A8:"C \<in> Chains (relation_of (\<lambda>x y. (x, y) \<in> R) ?Q)"
     have B0:"C \<subseteq> X"   using A8 Chains_relation_of by blast
     have B1:"\<forall>c. c \<in> C \<longrightarrow> (a, c)\<in>R"   using A8 Chains_relation_of by force
-    have B2:"\<forall>c. c \<in> C \<longrightarrow> \<not> (k \<le> c)"   using A8 Chains_relation_of by blast
-    show "\<exists>u\<in>{q \<in> X. a \<le> q \<and> \<not> k \<le> q}. \<forall>q\<in>C. q \<le> u"
+    have B2:"\<forall>c. c \<in> C \<longrightarrow> \<not> (k, c)\<in>R"   using A8 Chains_relation_of by blast
+    show "\<exists>u\<in> ?Q. \<forall>q\<in>C. (q, u)\<in>R"
       proof(cases "C = {}")
         case True
-        then show ?thesis  using A2 A7 by blast
+        then show ?thesis  using A2 A7   using A10 reflE1 by force
       next
         case False
         have B3:"C \<noteq> {}"   by (simp add: False)
-        have B4:"\<And>x y. x \<in> C \<and> y \<in> C \<longrightarrow> (\<exists>z \<in> C. x \<le> z \<and> y \<le> z)"
+        have B4:"\<And>x y. x \<in> C \<and> y \<in> C \<longrightarrow> (\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"
         proof
           fix x y assume A10:"x \<in> C \<and>  y \<in> C"
-          have B1:"(x, y) \<in> relation_of (\<le>) ?Q \<or> (y, x) \<in> relation_of (\<le>) ?Q" using Chains_def[of " relation_of (\<le>) ?Q"] A8 A10 by auto
-          have B2:"(x, y)\<in>R \<or> (y, x)\<in>R" using B1  relation_of_def[of "(\<le>)" "?Q"] by blast
-          show "(\<exists>z \<in> C. x \<le> z \<and> y \<le> z)"  using A10 B2 by blast
+          have B1:"(x, y) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q \<or> (y, x) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q" using Chains_def[of " relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q"] A8 A10 by auto
+          have B2:"(x, y)\<in>R \<or> (y, x)\<in>R" using B1  relation_of_def[of "((\<lambda>x y. (x, y) \<in> R))" "?Q"] by blast
+          show "(\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"  using A10 B2    by (meson B0 assms(11) reflE1 subset_iff) 
         qed
-        have B5:"is_dir C (\<le>)" by (simp add: B4 is_updirI1)
+        have B5:"is_dir C R" by (simp add: B4 is_dirI1)
         have B6:"C \<subseteq> ?Q"    using A8 Chains_relation_of by blast
-        have B7:"Sup X C \<in> ?Q" using A0 A1 A2 A3 A4 A5 A6 A7 B3 B5 B6  mirred_temp1[of X a b k C] by blast
-        have B8:"\<forall>c  \<in> C. c \<le> Sup X C"     by (meson A0 B0 False clatD1 csupD51 ubE) 
+        have B7:"Sup R X C \<in> ?Q" using A0 A1 A2 A3 A4 A5 A6 A7 B3 B5 B6  mirred_temp1[of R X a b k C]     using A10 A9 assms(9) by fastforce 
+        have B8:"\<forall>c  \<in> C. (c, Sup R X C)\<in>R"
+          by (meson A0 A9 B0 False assms(9) clatD41 is_supD1121)  
         then show ?thesis    using B7 by blast 
     qed
   qed
 qed
 
 lemma mirred_temp2c:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
-          A4:"\<not>(b \<le> a)" and A5:"is_compact X k" and A6:"k \<le> b" and A7:"\<not>(k \<le> a)" and
-          A8:"m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)} \<and> ( \<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m)"
-  shows "\<not>(meet_reducible X m)"
+  assumes A0:"is_clattice R X" and
+          A1:"compactly_generated R X" and
+          A2:"a \<in> X" and
+          A3:"b \<in> X" and 
+          A4:"\<not>((b,a)\<in>R)" and
+          A5:"is_compact R X k" and
+          A6:"(k,b)\<in>R" and
+          A7:"\<not>((k,a)\<in>R)" and
+          A8:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> ( \<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" and
+          A9:"antisym R X" and
+          A10:"trans R X" and
+          A11:"refl R X" 
+  shows "\<not>(meet_reducible R X m)"
 proof(rule ccontr)
-  let ?Q="{q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}"
-  assume P:"\<not>\<not>(meet_reducible X m)"
-  obtain P1:"meet_reducible X m"
-    using P by auto
-  have B0:"\<And>x. x \<in> X \<and> x > m \<longrightarrow> k \<le> x"
+  let ?Q="{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
+  assume P:"\<not>\<not>(meet_reducible R X m)"
+  obtain P1:"meet_reducible R X m"  using P by auto
+  have B0:"\<And>x. x \<in> X \<and> (m, x)\<in>R \<and> (m \<noteq> x) \<longrightarrow> (k,x)\<in>R"
   proof
-    fix x assume A9: "x \<in> X \<and> x > m"
+    fix x assume A9: "x \<in> X \<and> (m, x)\<in>R \<and> (m \<noteq> x)"
     have B01:"x \<notin> ?Q" using A8 A9 nless_le by blast 
-    have B02:"(a, x) \<in> R"  using A8 A9 by force
-    show "k \<le> x" using A9 B01 B02 by blast
+    have B02:"(a, x) \<in> R"  using A8 A9  by (metis (mono_tags, lifting) A10 A2 mem_Collect_eq trans_onD) 
+    show "(k,x)\<in>R" using A9 B01 B02 by blast
   qed
-  have B1:"m=Inf X {x \<in> X. m < x}"  using A0 A8 P meet_reduction2 by blast
-  have B2:"k \<in> lbd R X {x \<in> X. m < x}"  by (metis (mono_tags, lifting) A5 B0 CollectD compactD2 lbdI)
-  have B3:"k \<le> m"    by (metis A0 B1 B2 Collect_subset P cinfD61 clatD2 clatD22 inf_equality is_inf_def lbd_empty mredD2)
-  show False
-    using A8 B3 by blast
+  have B1:"m=Inf R X {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)}"  using A0 A8 P meet_reduction2  A10 A11 A9 by fastforce 
+  have B2:"k \<in> lbd R X {x \<in> X.(m,x)\<in>R \<and> (m \<noteq> x)}"   by (metis (mono_tags, lifting) A5 B0 compactD2 converseI mem_Collect_eq ubdI) 
+  obtain B20:"m \<in> X"   using A8 by blast 
+  obtain B21:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"  by (simp add: A0 A10 A11 A9 B20 P1 meet_reduction3)
+  have B3:"(k, m)\<in>R"  using B2 B21 is_supE3 by fastforce 
+  show False  using A8 B3 by blast
 qed
-
 
 lemma mirred_temp2d:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"a \<in> X" and A3:"b \<in> X" and 
-          A4:"\<not>(b \<le> a)"
-  obtains m where "m \<in> X" "meet_irr X m" "(a, m)\<in>R" "\<not> (b \<le> m)"
+  assumes A0:"is_clattice R X" and 
+          A1:"compactly_generated R X" and
+          A2:"a \<in> X" and
+          A3:"b \<in> X" and 
+          A4:"\<not>((b,a)\<in>R)"and
+          A5:"antisym R X" and
+          A6:"trans R X" and
+          A7:"refl R X" 
+  obtains m where "m \<in> X" "meet_irr R X m" "(a, m)\<in>R" "\<not> ((b, m)\<in>R)"
 proof-
-  obtain k where B0:"k \<in> compact_elements X" and  B1:"k \<le> b" and B2: "\<not> (k \<le> a)"  using A0 A1 A2 A3 A4 compactly_generated_meets by blast
-  have B0b:"is_compact X k"   using B0 compact_elements_mem_iff1 by blast
-  obtain m where B3:"m \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)} \<and> (\<forall>q \<in> {q \<in> X. a \<le> q \<and> \<not> (k \<le> q)}.  m \<le> q \<longrightarrow> q = m)"   using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of X a b k] by blast
-  have B4:"\<not>(meet_reducible X m)" using mirred_temp2c[of X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3  by blast 
-  show ?thesis
-    using B1 B3 B4 that by force
+  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)"  using A0 A1 A2 A3 A4 compactly_generated_meets by (metis A5 A6 A7)
+  have B0b:"is_compact R X k" using B0 compact_elements_mem_iff1   by fastforce
+  obtain m where B3:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> (\<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of R X a b k]  A5 A6 A7 by blast
+  have B4:"\<not>(meet_reducible R X m)" using mirred_temp2c[of R X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3 A5 A6 A7 by blast
+  show ?thesis  using B1 B3 B4   by (metis (mono_tags, lifting) A3 A6 B0b compactD2 mem_Collect_eq that trans_onD) 
 qed
 
-
 lemma mirred_temp3:
-  assumes A0:"is_clattice R X" and A1:"compactly_generated X" and A2:"a \<in> X"
-  shows "a = Inf X {m \<in> X. meet_irr X m \<and> (a, m)\<in>R}"
+  assumes A0:"is_clattice R X" and
+          A1:"compactly_generated R X" and 
+          A2:"a \<in> X" and
+          A3:"antisym R X" and
+          A4:"trans R X" and
+          A5:"refl R X" 
+  shows "a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
 proof-
-  let ?M="{m \<in> X. meet_irr X m \<and> (a, m)\<in>R}" 
-  obtain top where top:"is_greatest X top" using A0 clatD1 csupD3 by blast
-  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}"   by (metis (no_types, lifting) A2 empty_iff greatestD11 greatestD2 mem_Collect_eq mredD2 subsetI top)
-  obtain b where idef:"is_inf X ?M b"  using A0 B0 clatD22 by blast
-  have B4:"(a, b)\<in>R"  using A2 idef is_infE4 lb_def by blast
-  have B5: "\<not> (a < b)"
+  let ?M="{m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}" 
+  obtain top where top:"is_greatest R X top" using A0 clatD1 csupD3 by blast
+  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}" by (metis (no_types, lifting) A2 A3 empty_iff greatestD11 greatestD14 mem_Collect_eq mredD2 subsetI top) 
+  obtain b where idef:"is_inf R X ?M b"  using A0 B0 clatD22  A3 A4 by blast 
+  have B4:"(a, b)\<in>R"  using A2 idef is_supE4 ub_def   by (metis (no_types, lifting) converseD converseI mem_Collect_eq) 
+  have B5: "\<not>((a,b)\<in>R \<and> a \<noteq> b)"
   proof(rule ccontr)
-    assume B5dneg:"\<not> \<not> (a < b)" obtain B5neg:"a < b"  using B5dneg by auto
-    obtain m where B50:"m \<in> X" and B51:"meet_irr X m" and  B52:"(a, m)\<in>R" and B53:"\<not> (b \<le> m)" by (meson A0 A1 A2 B5neg idef is_infE1 leD mirred_temp2d)
+    assume B5dneg:"\<not> \<not> ((a,b)\<in>R \<and> a \<noteq> b)" obtain B5neg:"(a,b)\<in>R \<and> a \<noteq> b"  using B5dneg by auto
+    obtain m where B50:"m \<in> X" and B51:"meet_irr R X m" and  B52:"(a, m)\<in>R" and B53:"\<not> ((b, m)\<in>R)"   by (meson A0 A1 A2 A3 A4 A5 B5neg antisym_onD idef is_supE1 mirred_temp2d) 
     have B54:"m \<in> ?M"   by (simp add: B50 B51 B52)
-    have B55:"b \<le> m"  using B54 idef is_infD1121 by blast
+    have B55:"(b, m)\<in>R"   using B54 idef is_supD1121 by fastforce 
     show False
       using B53 B55 by auto
   qed
   have "a = b"  using B4 B5 nless_le by blast
-  show ?thesis
-    using \<open>(a::'a::order) = (b::'a::order)\<close> idef inf_equality by fastforce
+  show ?thesis  using A3 B4 B5 idef inf_equality by fastforce
 qed
 
+lemma lattice_equality_sup:
+  assumes A0:"is_lattice R X" and A1:" antisym R X"  and A2:"trans R X" and A3:"refl R X" and A4:"F \<subseteq>X" and A5:"finite F" and A6:"F \<noteq> {}" and A7:"Sup R X F = s"
+  shows "is_sup R X F s"
+  using A0 A1 A2 A4 A5 A6 A7 bsup_finite2 lattD4 by blast
+
+lemma lattice_equality_inf:
+  assumes A0:"is_lattice R X" and A1:" antisym R X"  and A2:"trans R X" and A3:"refl R X" and A4:"F \<subseteq>X" and A5:"finite F" and A6:"F \<noteq> {}" and A7:"Inf R X F = i"
+  shows "is_inf R X F i"
+  by (metis A0 A1 A2 A3 A4 A5 A6 A7 inf_equality l_fininf)
+
 lemma meet_irr_imp_fmeet_irr:
-  "\<lbrakk>m \<in> X; is_lattice R X;  meet_irr X m\<rbrakk> \<Longrightarrow> fin_inf_irr X m"
+  "\<lbrakk>m \<in> X; is_lattice R X; antisym R X; trans R X; refl R X; meet_irr R X m\<rbrakk> \<Longrightarrow> fin_inf_irr R X m"
 proof-
-  assume A0:"m \<in> X" "is_lattice R X" "meet_irr X m"
-  have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and>  m = Inf X {a, b} \<longrightarrow> m = a \<or> m = b"
+  assume A0:"m \<in> X" and A1:"is_lattice R X" and A2:"antisym R X" and A3:"trans R X" and A4:"refl R X" and A5:"meet_irr R X m"
+  have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and>  m = Inf R X {a, b} \<longrightarrow> m = a \<or> m = b"
   proof
-    fix a b assume A1:" a \<in> X \<and> b \<in> X \<and>  m = Inf X {a, b} "
-    have B1:" {a, b} \<in> Pow_ne X"   by (simp add: A1 pow_ne_iff2)
-    have B2:"is_inf X {a, b} m" by (simp add: A0(2) A1 lattD31)
-    have B3:"m \<in> {a, b}"   using A0(3) B1 B2 mredI1 by blast
+    fix a b assume A6:" a \<in> X \<and> b \<in> X \<and>  m = Inf R X {a, b} "
+    have B1:" {a, b} \<in> Pow_ne X"   by (simp add: A6 pow_ne_iff2)
+    have B10:"{a, b} \<subseteq> X"  using B1 pow_neD1 by blast
+    have B11:"finite {a, b}" by simp
+    have B12:"{a,b} \<noteq> {}" by auto
+    have B2:"is_inf R X {a, b} m" using lattice_equality_inf[of R X "{a,b}" m]   by (simp add: A1 A2 A3 A4 A6)
+    have B3:"m \<in> {a, b}"    by (metis A5 B1 B2 mredI1) 
     show "m = a \<or> m = b"  using B3 by fastforce
   qed
-  show "fin_inf_irr X m"
-    using B0 fin_inf_irr_def by blast  
+  show "fin_inf_irr R X m"
+    by (meson B0 fin_inf_irrI1)
 qed
 
 lemma pfilters_metofprimes:
-  assumes A0:"distributive_lattice R X" and A1:"is_greatest X top" and A2:"F \<in> pfilters X"
-  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (filters_on R X) Fm " and "F = Inf (filters_on R X) M"
+  assumes A0:"distributive_lattice R X" and 
+          A1:"is_greatest R X top" and
+          A2:"F \<in> pfilters_on R X" and
+          A3:"antisym R X" and
+          A4:"trans R X" and
+          A5:"refl R X" 
+  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " and "F = Inf (pwr X) (filters_on R X) M"
 proof-
-  let ?FX="(filters_on R X)"
-  have B0:"compactly_generated ?FX"   using A0 A1 distr_latticeD5 filters_on_lattice_compactgen lattD1 by auto
-  have B1:"is_clattice ?FX"  using A0 A1 distr_latticeD5 lattice_filters_complete by auto
+  let ?FX="(filters_on R X)" let ?RX="pwr X"
+  have B0:"compactly_generated ?RX ?FX"  using A0 A1 A3 A4 A5  distr_latticeD5 filters_on_lattice_compactgen lattD1 by metis
+  have B1:"is_clattice ?RX ?FX"  using A0 A1 A3 A4 A5  distr_latticeD5 lattice_filters_complete by metis
   have B2:"F \<in> ?FX" by (simp add: A2 filters_on_iff pfilters_memD1)
-  have B3:"F = Inf ?FX {Fm \<in> ?FX. meet_irr ?FX Fm \<and> F \<le> Fm}"   by (simp add: B0 B1 B2 mirred_temp3)
-  have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?FX Fm \<and> F \<le> Fm} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?FX Fm "  by fastforce
+  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (meson filters_is_clr1 powrel3 powrel6 powrel7 refl_def refl_onD subset_iff)
+  have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  by fastforce
   then show ?thesis  using B3 that by blast
 qed
 
-
-
 lemma sup_prime_pfilterI3:
-  assumes A0:"distributive_lattice R X" and A1:"fin_inf_irr (filters_on R X) F" and A2:"is_pfilter R X F"
+  assumes A0:"distributive_lattice R X" and 
+          A1:"antisym R X" and 
+          A2:"trans R X" and 
+          A3:"refl R X" and
+          A4:"fin_inf_irr (pwr X) (filters_on R X) F" and 
+          A5:"is_pfilter R X F"
   shows "sup_prime R X F"
 proof-
-  have B1:"(\<And>F1 F2. \<lbrakk> is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"  by (metis A0 A1 A2 distributive_lattice_def elem_inf_primeI3 elem_inf_prime_def filters_lattice_inf_op filters_on_iff is_pfilter_def lattice_filters_distr)
+  have B1:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"  by (metis A0 A1 A2 distributive_lattice_def elem_inf_primeI3 elem_inf_prime_def filters_lattice_inf_op filters_on_iff is_pfilter_def lattice_filters_distr)
   show ?thesis by (simp add: A0 A2 B1 distr_latticeD5 sup_prime_pfilterI2)
 qed
+
+(*
+
+
+
+
+
+
+
+
+
+
 
 lemma prime_filter_irr3_converse:
   "\<lbrakk>distributive_lattice R X; fin_inf_irr (filters_on R X) F; is_pfilter R X F\<rbrakk> \<Longrightarrow> sup_prime R X F"  by (simp add: is_pfilterI1 sup_prime_pfilterI3)
