@@ -8643,6 +8643,18 @@ lemma pfilters_sets_comp3:
    "\<lbrakk>pfilter (Pow X) F; A \<subseteq> X; \<exists>U \<in> F. U \<inter> (X-A) = {}\<rbrakk> \<Longrightarrow> A \<in> F"
   by (metis Diff_eq_empty_iff Int_Diff PowD PowI filterD21 filter_memI inf.orderE)
 
+abbreviation convergence0 where
+  "convergence0 R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on X \<and> x \<in> X}" 
+
+abbreviation convergence1 where
+  "convergence1 R X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (lorc {x} (Pow X), x) \<in> R)"
+
+abbreviation convergence2 where
+  "convergence2 R X \<equiv> (\<forall>x \<in> X. \<forall>F \<in> pfilters_on X. \<forall>G \<in> pfilters_on X. (F, x) \<in> R \<and> F \<subseteq> G \<longrightarrow> (G, x)\<in>R)"
+
+abbreviation convergence3 where
+  "convergence3 R X \<equiv> (\<forall>x \<in> X. (\<Inter>{F. (F, x) \<in> R}, x) \<in> R)"
+
 
 
 end
