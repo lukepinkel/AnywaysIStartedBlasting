@@ -8644,17 +8644,52 @@ lemma pfilters_sets_comp3:
   by (metis Diff_eq_empty_iff Int_Diff PowD PowI filterD21 filter_memI inf.orderE)
 
 abbreviation convergence0 where
-  "convergence0 R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on X \<and> x \<in> X}" 
+  "convergence0 R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on (Pow X) \<and> x \<in> X}" 
 
 abbreviation convergence1 where
   "convergence1 R X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (lorc {x} (Pow X), x) \<in> R)"
 
 abbreviation convergence2 where
-  "convergence2 R X \<equiv> (\<forall>x \<in> X. \<forall>F \<in> pfilters_on X. \<forall>G \<in> pfilters_on X. (F, x) \<in> R \<and> F \<subseteq> G \<longrightarrow> (G, x)\<in>R)"
+  "convergence2 R X \<equiv> (\<forall>x \<in> X. \<forall>F \<in> pfilters_on (Pow X). \<forall>G \<in> pfilters_on (Pow X). (F, x) \<in> R \<and> F \<subseteq> G \<longrightarrow> (G, x)\<in>R)"
 
 abbreviation convergence3 where
   "convergence3 R X \<equiv> (\<forall>x \<in> X. (\<Inter>{F. (F, x) \<in> R}, x) \<in> R)"
 
+lemma idprtop:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"convergence0 q X" and
+          A1:"convergence1 q X" and
+          A2:"convergence2 q X" and
+          A3:"convergence3 q X" and
+          A4:"q \<noteq> {}"
+  defines "Clq \<equiv> \<lambda>A. {x \<in> X. \<exists>G. (G, x) \<in> q \<and> A \<in> G} "
+  defines "Ncl \<equiv> \<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)}"
+  defines "qcl \<equiv> {(F, x). F \<in> pfilters_on (Pow X) \<and> Ncl x \<subseteq> F}"
+  shows "qcl = q"
+proof-
+  let ?FX="pfilters_on (Pow X)"
+  define Nq where "Nq \<equiv> \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
+  have B0:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<in> Clq (X-A) \<longleftrightarrow> (\<exists>G. (G, x) \<in> q \<and> (X-A) \<in> G)"   by (simp add: Clq_def)
+  have B1:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<notin> q \<or> (X-A) \<notin> G)"   using B0 by auto 
+  have B2:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<in> q \<longrightarrow> (X-A) \<notin> G)"  using B1 by auto 
+  have B3:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> \<Inter>{G. (G, x) \<in>q}"   using B0 local.A3 by blast
+  have B4:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X\<rbrakk> \<Longrightarrow>  (X-A) \<notin> \<Inter>{G. (G, x) \<in>q} \<longleftrightarrow> x \<notin> Clq (X-A)" 
+  proof-
+      fix A x assume B4A0:"A \<in> Pow X" and B4A1:"x \<in> X"
+      show "(X-A) \<notin> \<Inter>{G. (G, x) \<in>q} \<longleftrightarrow> x \<notin> Clq (X-A)"
+  have B3:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>(G, x) \<in> q. (X-A) \<notin> G)" 
+  proof-
+    fix A x assume B3A0:"A \<in> Pow X" and B3A1:"x \<in> X"
+    show " x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>(G, x) \<in> q. (X-A) \<notin> G)"
+
+  have B3:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> ((X-A) \<notin> Nq x)" 
+  apply( simp add:Nq_def)
+  have B0:"\<And>x G. \<lbrakk>x \<in> X; G \<in> pfilters_on (Pow X); (G, x) \<in> qcl\<rbrakk> \<Longrightarrow>(G, x) \<in> q"
+  proof- 
+    fix x G assume B0A0:"x \<in> X" and B0A1:"G \<in>  pfilters_on (Pow X)" and B0A2:"(G, x) \<in> qcl"
+    obtain B01:"Ncl x \<subseteq> G"   using B0A2 qcl_def by blast
+    obtain B02:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Clq (X-V)\<rbrakk> \<Longrightarrow> V \<in> G"   using B01 Ncl_def by blast
+    show "(G, x) \<in> q"
 
 
 end
