@@ -5600,10 +5600,15 @@ lemma inf_insert9: "\<lbrakk>trans R Y;A \<subseteq> Y;is_inf R Y A s1; is_inf R
 lemma sup_ubd: "\<lbrakk>trans R Y; F \<subseteq> Y;is_sup R Y F s; is_sup R Y {x, s} t\<rbrakk> \<Longrightarrow> is_sup R Y (insert x F) t" by (meson bsup_commute is_supI5 sup_insert7 sup_insert9) 
 
 lemma inf_lbd: "\<lbrakk>trans R Y; F \<subseteq> Y;is_inf R Y F s; is_inf R Y {x, s} t\<rbrakk> \<Longrightarrow> is_inf R Y (insert x F) t"  by (simp add: sup_ubd) 
+lemma sup_ex:"\<lbrakk>antisym R X; refl R X; trans R Y;is_lattice R X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> is_sup R X {x, y} (Sup R X {x, y})" by (simp add: lattD32)
+lemma ssup_ex:"\<lbrakk>antisym R X; refl R X; trans R Y;is_sup_semilattice R X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> is_sup R X {x, y} (Sup R X {x, y})" by (simp add: ssupD3)
 
-(*
 
 
+lemma fsup_insert:"\<lbrakk>antisym R X; refl R X; trans R X; is_lattice R X; finite F; F \<subseteq> X; F \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, (Sup R X F)} = Sup R X (insert x F)"
+  by (smt (verit, best) bsup_finite2 finite.intros(2) insert_not_empty insert_subset is_supE1 is_sup_unique lattD42 ssupD3 sup_ubd)  
+lemma finf_insert:"\<lbrakk>antisym R X; refl R X; trans R X; is_lattice R X; finite F; F \<subseteq> X; F \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, (Inf R X F)} = Inf R X (insert x F)"
+  by (metis Sup_def antisym_on_converse fsup_insert lattice_dualization trans_on_converse) 
 
 lemma distr_finite2:
   assumes A0:"b \<in> X" and
@@ -5627,37 +5632,34 @@ next
   let ?ba="{Inf R X {b, a} |a::'a. a \<in> F}" and ?xba="{Inf R X {b, a}|a. a \<in> (insert x F)}"
   let ?s="Sup R X F" and ?sba="Sup R X ?ba" and ?sxba="Sup R X ?xba"
   have P4:"?ba \<subseteq> X" using L A0 P1 l_inf_closed A6 A7 A8 by (smt (verit, ccfv_threshold) mem_Collect_eq subset_iff)
-  have P5:"?xba \<subseteq> X" using L A0 P0 P1 l_inf_closed A6 A7 A8 by (smt (verit) insert.prems(1) mem_Collect_eq subset_iff)  
+  have P5:"?xba \<subseteq> X" using L A0 P0 P1 l_inf_closed A6 A7 A8  by (smt (verit, ccfv_threshold) insert.prems(1) mem_Collect_eq subset_iff) 
   have P6:"finite ?ba" using P2 by force
   have P7:"finite ?xba"  by (simp add: insert.hyps(1))
   have P8:"?xba = {Inf R X {b, x}} \<union> ?ba" by (auto)
-  have P9:"Inf R X {b, x} \<in> X" by (simp add: L A0 P0 l_inf_closed) 
+  have P9:"Inf R X {b, x} \<in> X"   by (simp add: A0 A6 A7 A8 L P0 l_inf_closed)
   have P10:"?ba \<noteq> {}"  using P3 by blast
   have P11:"?xba \<noteq> {}" using P3 by blast
-  have P12:"?sba \<in> X" using L P10 P4 P6 bsup_finite2 is_supE1 latt_iff by blast 
-  have P13:"?sxba \<in> X" using L P11 P5 P7 bsup_finite2 is_supE1 latt_iff by blast 
-  have P14:"(Sup X {?sba, (Inf X {b, x})}) \<in> X" using  P12 P9  L l_sup_closed by blast 
+  have P12:"?sba \<in> X" using L P10 P4 P6 bsup_finite2 is_supE1 latt_iff  by (metis (mono_tags, lifting) A7 A8) 
+  have P13:"?sxba \<in> X" using L P11 P5 P7 bsup_finite2 is_supE1 latt_iff   by (metis (no_types, lifting) A7 A8) 
+  have P14:"(Sup R X {?sba, (Inf R X {b, x})}) \<in> X" using  P12 P9  L l_sup_closed using A6 A7 A8 by fastforce 
   have B0:"Inf R X {b, ?s} = ?sba"  using A0 A1 insert.hyps(4) insert.prems(1) by blast
-  have B1:"Inf R X {b, (Sup X {?s, x})} = Sup R X {(Inf R X {b, ?s}), (Inf R X {b, x})}" by (meson A0 A5 L P0 P1 P2 P3 bsup_finite2 distr_latticeD3 is_supE1 lattD42)
+  have B1:"Inf R X {b, (Sup R X {?s, x})} = Sup R X {(Inf R X {b, ?s}), (Inf R X {b, x})}"  by (meson A0 A5 A6 A7 A8 L P0 P1 P2 P3 bsup_finite2 distr_latticeD3 is_supE1 lattD42) 
   have B2:"... = Sup R X {(?sba), (Inf R X {b, x})}"  using B0 by fastforce
   have B3:"... = Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}" 
   proof-
     have B4:"?ba \<subseteq> ?xba" by blast
-    have B5:"is_sup R X ?ba ?sba" by (simp add: P3 P4 P6 L l_finsup sup_exI)
-    have B6:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(Inf R X {b, x}), (?sba)} )" by (simp add: L P12 P9 lattD32) 
-    have B7:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(?sba), (Inf X {b, x})})" by (metis B6 insert_commute) 
-    have B8:"is_sup R X (insert (Inf R X {b, x}) ?ba) (Sup R X {(?sba), (Inf R X {b, x})})"  using B5 B7 sup_ubd by blast 
+    have B5:"is_sup R X ?ba ?sba"  using A7 A8 L P10 P4 P6 bsup_finite2 lattD42 by blast 
+    have B6:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(Inf R X {b, x}), (?sba)} )"  by (simp add: A8 L P12 P9 lattD32) 
+    have B7:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(?sba), (Inf R X {b, x})})" by (metis B6 insert_commute) 
+    have B8:"is_sup R X (insert (Inf R X {b, x}) ?ba) (Sup R X {(?sba), (Inf R X {b, x})})"     using A7 B5 B7 P4 sup_ubd by fastforce 
     have B9:"insert (Inf R X {b, x}) ?ba =  {Inf R X {b, a}|a. a \<in> (insert x F)}"  using B5 B7 sup_ubd by blast
-    show "(Sup R X {(?sba), (Inf R X {b, x})}) =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}"
-      using B8 B9 sup_equality by force
+    show "(Sup R X {(?sba), (Inf R X {b, x})}) =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}"   using A8 B8 B9 sup_equality by fastforce
   qed
   have B10:"Inf R X {b, (Sup R X {?s, x})} = Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}" using B0 B1 B3 by presburger
   have B11:"Inf R X {b, (Sup R X {?s, x})} = Inf R X {b, (Sup R X (insert x F))}"
   proof-
-    have B12:"Sup R X {Sup R X F, x} = Sup R X (insert x F)"
-      by (simp add: L P0 P1 P2 P3 fsup_insert insert_commute)
-    show " Inf R X {b, Sup R X {Sup R X F, x}} = Inf R X {b, Sup R X (insert x F)}"
-      by (simp add: B12)
+    have B12:"Sup R X {Sup R X F, x} = Sup R X (insert x F)"   by (simp add: A6 A7 A8 L P0 P1 P2 P3 fsup_insert insert_commute)
+    show " Inf R X {b, Sup R X {Sup R X F, x}} = Inf R X {b, Sup R X (insert x F)}"  by (simp add: B12)
   qed
   have B13:"Inf R X {b, (Sup R X (insert x F))} =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}" using B10 B11 by presburger
   then show ?case
@@ -5665,16 +5667,49 @@ next
 qed
 
 
+lemma distr_finite1:
+  assumes A0:"b \<in> X" and
+          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Sup R X {b, (Inf R X {a1, a2})} = Inf R X {Sup R X {b, a}|a. a \<in> {a1, a2}}" and 
+          A2:"finite A" and
+          A3:"A \<noteq> {}" and
+          A4:"A \<subseteq> X" and
+          A5:"distributive_lattice R X"  and 
+          A6:"refl R X" and
+          A7:"trans R X" and
+          A8:"antisym R X" 
+  shows "Sup R X {b, (Inf R X A)} = Inf R X {Sup R X {b, a}|a. a \<in> A}"
+proof-
+  let ?R="dual R"
+  have B0:"distributive_lattice ?R X"    by (simp add: A5 A6 A7 A8 distributive_lattice_dualization)
+  obtain B1:"refl ?R X" and B2:"trans ?R X" and B3:"antisym ?R X"  by (simp add: A6 A7 A8 refl_dualI)
+  obtain B4: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Inf ?R X {b, (Sup ?R X {a1, a2})} = Sup ?R X {Inf ?R X {b, a}|a. a \<in> {a1, a2}}"
+  proof -
+    assume a1: "(\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Posets17.Inf (dual R) X {b, Posets17.Sup (dual R) X {a1, a2}} = Posets17.Sup (dual R) X {Posets17.Inf (dual R) X {b, a} |a. a \<in> {a1, a2}}) \<Longrightarrow> thesis"
+    have "pord (dual R) X"
+      by (metis (no_types) \<open>\<And>thesis::bool. (\<lbrakk>Posets17.refl (dual (R::('a::type \<times> 'a::type) set)) (X::'a::type set); Posets17.trans (dual R) X; Posets17.antisym (dual R) X\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close>)
+    then show ?thesis
+      using a1 A0 B0 distr_eq_tmp1 by fastforce
+  qed  
+  have B5:"Inf ?R X {b, (Sup ?R X A)} = Sup ?R X {Inf ?R X {b, a}|a. a \<in> A}"
+  using B0 B1 B2 B3 B4 A0 A2 A3 A4 distr_finite2
+  
+(*
+
+
+
 
 
 lemma distr_finite1:
   assumes A0:"b \<in> X" and
-          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Sup X {b, (Inf X {a1, a2})} = Inf X {Sup X {b, a}|a. a \<in> {a1, a2}}" and 
+          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Sup R X {b, (Inf R X {a1, a2})} = Inf R X {Sup R X {b, a}|a. a \<in> {a1, a2}}" and 
           A2:"finite A" and
           A3:"A \<noteq> {}" and
           A4:"A \<subseteq> X" and
-          A5:"distributive_lattice R X"
-  shows "Sup X {b, (Inf X A)} = Inf X {Sup X {b, a}|a. a \<in> A}"
+          A5:"distributive_lattice R X"  and 
+          A6:"refl R X" and
+          A7:"trans R X" and
+          A8:"antisym R X" 
+  shows "Sup R X {b, (Inf R X A)} = Inf R X {Sup R X {b, a}|a. a \<in> A}"
   using A2 A3 A4 A1 A0
 proof (induct A rule: finite_ne_induct)
   case (singleton x) then show ?case using A5 by fastforce 
