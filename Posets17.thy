@@ -39,46 +39,94 @@ lemma pow_ne_iff2:
   "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}" 
   by (simp add: Pow_ne_def)
 
-lemma pow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X" by(simp add:Pow_ne_def)
+lemma pow_neI:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X"
+   by(simp add:Pow_ne_def)
 
-lemma pow_neD1: "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X " by(simp add:Pow_ne_def)
+lemma pow_neD1:
+  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X "
+   by(simp add:Pow_ne_def)
 
-lemma pow_neD2: " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} " by(simp add:Pow_ne_def)
+lemma pow_neD2: 
+  "A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} " 
+  by(simp add:Pow_ne_def)
 
-lemma pow_ne_iso0: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X"   by (drule pow_neD1)+ simp
+lemma pow_ne_iso0: 
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X" 
+    by (drule pow_neD1)+ simp
 
-lemma pow_ne_iso1:"A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
+lemma pow_ne_iso1:
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X" 
+  by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
 
-lemma pow_ne_bot:"{} \<notin> Pow_ne X"by(simp add:Pow_ne_def)
+lemma pow_ne_bot:
+  "{} \<notin> Pow_ne X" 
+  by(simp add:Pow_ne_def)
                
-lemma pow_ne_top: "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X" by(simp add:Pow_ne_def)
+lemma pow_ne_top:
+  "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X" 
+  by(simp add:Pow_ne_def)
 
-lemma fpow_ne_iff1:"A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"by (simp add: Fpow_ne_def)
+lemma fpow_ne_iff1:
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}" 
+  by (simp add: Fpow_ne_def)
 
-lemma fpow_ne_iff2:"A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}" by (simp add: Fpow_Pow_finite fpow_ne_iff1)
+lemma fpow_ne_iff2:
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}" 
+  by (simp add: Fpow_Pow_finite fpow_ne_iff1)
 
 
-lemma fpow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X" by (simp add: Fpow_def fpow_ne_iff1)
+lemma fpow_neI:
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X" 
+  by (simp add: Fpow_def fpow_ne_iff1)
 
-lemma fpow_neD0:"A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X " by (simp add: fpow_ne_iff2)
+lemma fpow_neD0:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow X " 
+  by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD0b:"A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow_ne X" by (simp add: fpow_ne_iff2 pow_ne_iff1)
+lemma fpow_neD0b:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<in> Pow_ne X" 
+  by (simp add: fpow_ne_iff2 pow_ne_iff1)
 
-lemma fpow_neD1: "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X " by (simp add: fpow_ne_iff2)
+lemma fpow_neD1:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X " 
+  by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD2:"A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} " by (simp add: fpow_ne_iff2)
+lemma fpow_neD2:
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} " 
+  by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD3:"A \<in> Fpow_ne X \<Longrightarrow> finite A "by (simp add: fpow_ne_iff2)
+lemma fpow_neD3:
+  "A \<in> Fpow_ne X \<Longrightarrow> finite A " 
+  by (simp add: fpow_ne_iff2)
 
-lemma fpow_ne_iso0:"A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" by (drule fpow_neD1)+ simp
+lemma fpow_ne_iso0:
+  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" 
+  by (drule fpow_neD1)+ simp
 
-lemma fpow_ne_iso1:"A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"by(rule fpow_neI,erule fpow_ne_iso0,simp,erule fpow_neD2, erule fpow_neD3)
+lemma fpow_ne_iso1:
+  "A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X" 
+  by(rule fpow_neI,erule fpow_ne_iso0,simp,erule fpow_neD2, erule fpow_neD3)
 
-lemma fpow_ne_iso2: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
+lemma fpow_ne_iso2: 
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X"
+ by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
 
-lemma fpow_ne_bot:"{} \<notin> Fpow_ne X"by (simp add: fpow_ne_iff1)
+lemma fpow_ne_bot:
+  "{} \<notin> Fpow_ne X"
+  by (simp add: fpow_ne_iff1)
 
-lemma ne_subset_ne:"A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"by blast
+lemma ne_subset_ne:
+  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}" 
+  by blast
+
+lemma fpow_neI3:
+  "\<lbrakk>A \<subseteq> X;finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> A \<in> Fpow_ne X"  
+  by (simp add: fpow_neI)
+
+lemma fpow_neD4:
+  "A \<in> Fpow_ne X  \<Longrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}"
+  by (simp add: fpow_ne_iff2)
 
 definition CartesianProduct::"'I set \<Rightarrow> ('I \<Rightarrow> 'X set) \<Rightarrow> ('I \<Rightarrow> 'X) set" where "CartesianProduct I X = {f::('I \<Rightarrow> 'X). \<forall>i \<in> I. (f i) \<in> (X i)}"
 
@@ -5776,7 +5824,57 @@ lemma finite_ind_fil4:
           A7:"antisym R X" and 
           A8:"trans R X"
   shows "Sup R X (x` I) \<in> \<Inter>(f`I)"
-  using A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil2[of R X top I f x "Sup R X (x` I)"]
+proof-
+  let ?F="(x` I)" let ?s="Sup R X (x` I)"
+  have B0:"finite ?F"
+    by (simp add: A2)
+  have B1:"?F \<subseteq> X"   by (meson A4 A5 filterD21 image_subsetI)
+  have B2:"is_sup R X ?F ?s"   by (simp add: A0 A3 A7 A8 B0 B1 bsup_finite2 lattD42)
+  then show ?thesis 
+  using A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil2[of R X top I f x ?s] by blast
+qed
+
+lemma finite_ind_fil5:
+  fixes f::"'b \<Rightarrow> 'a set"  and I::"'b set"
+  assumes A0:"is_lattice R X" and 
+          A1:"is_greatest R X top" and
+          A2:"finite I"  and
+          A3:"I \<noteq> {}" and 
+          A4:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
+          A5: "s \<in> (\<Inter>(f` I))" and
+          A6:"refl R X" and 
+          A7:"antisym R X" and 
+          A8:"trans R X"
+  shows "s \<in> {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
+  by (auto, metis A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil3 sup_equality)
+
+lemma finite_ind_fil6:
+  fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
+  assumes A0:"is_lattice R X" and 
+          A1:"is_greatest R X top" and 
+          A2:"finite I" and 
+          A3:"I \<noteq> {}" and
+          A4:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
+          A5:"refl R X" and 
+          A6:"antisym R X" and 
+          A7:"trans R X"
+  shows "\<Inter>(f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
+  apply(auto)
+  apply (smt (verit, best) A0 A1 A2 A3 A4 A5 A6 A7 INT_iff finite_ind_fil3 sup_equality)
+  by (smt (verit) A0 A1 A2 A3 A4 A5 A6 A7 INT_E finite_ind_fil4)
+
+lemma exp_lattice_filter_inf:
+ fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
+  assumes A0:"is_lattice R X" and 
+          A1:"is_greatest R X top" and 
+          A2:"finite I" and
+          A3: "I \<noteq> {}" and
+          A4:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
+          A5:"refl R X" and 
+          A6:"antisym R X" and 
+          A7:"trans R X"
+  shows "Inf (pwr X) (filters_on R X) (f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
+
 (*
 
 
@@ -5784,60 +5882,10 @@ lemma finite_ind_fil4:
 
 
 
-
-
-
-
-
-
-
-lemma finite_ind_fil4:
-  fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
-  assumes A0:"is_lattice R X" and 
-          A1:"is_greatest X top" and
-          A2:"finite I" and 
-          A3:"I \<noteq> {}" and
-          A4:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
-          A5:"(\<And>i. i \<in> I \<Longrightarrow> (x i) \<in> (f i))" and
-          A6:"refl R X" and 
-          A7:"antisym R X" and 
-          A8:"trans R X"
-  shows "Sup R X (x` I) \<in> \<Inter>(f`I)"
-  using A0 A1 A2 finite_ind_fil2[of X top I f x]
-  by (metis (full_types) empty_is_image filterD21 finite_imageI image_subset_iff l_finsup sup_equality)
-
-
-
-lemma finite_ind_fil5:
-  fixes f::"'b \<Rightarrow> 'a::order set"  and I::"'b set"
-  assumes A0:"is_lattice R X" "is_greatest X top" and A1:"finite I" "I \<noteq> {}""(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
-          A2: "s \<in> (\<Inter>(f` I))" 
-  shows "s \<in> {Sup X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-  using A0 A1 A2 finite_ind_fil3[of X top I f s]  using sup_equality by fastforce
-
-lemma finite_ind_fil6:
-  fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
-  assumes A0:"is_lattice R X" "is_greatest X top" and A1:"finite I" "I \<noteq> {}""(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))"
-  shows "\<Inter>(f`I) = {Sup X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-  apply(auto)
-  apply (metis assms(4) assms(5) ex_in_conv filterD2 image_constant_conv subset_eq sup_singleton2)
-  by (metis (no_types, lifting) INT_E assms(1) assms(2) assms(3) assms(4) assms(5) finite_ind_fil4)
-
-lemma exp_lattice_filter_inf:
- fixes f::"'b \<Rightarrow> 'a::order set" and x::"'b \<Rightarrow> 'a::order" and I::"'b set"
-  assumes A0:"is_lattice R X" "is_greatest X top" and A1:"finite I" "I \<noteq> {}""(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))"
-  shows "Inf (filters_on R X) (f`I) = {Sup X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
   using A0 A1 finite_ind_fil_lattice[of X I top f] finite_ind_fil6[of X top I f] 
         inf_equality[of "(filters_on R X)" "f`I" "\<Inter>(f`I)"] by(auto)
 
 
-
-lemma fpow_neI3:
-  "\<lbrakk>A \<subseteq> X;finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> A \<in> Fpow_ne X"  by (simp add: fpow_neI)
-
-lemma fpow_neD4:
-  "A \<in> Fpow_ne X  \<Longrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}"
-  by (simp add: fpow_ne_iff2)
 
 
 lemma filter_closure_of_filters6_ne:
