@@ -8604,7 +8604,8 @@ lemma sets_pfilter:
   shows A1:"F \<noteq> {}" and
         A2:"F \<noteq> Pow X" and
         A3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
-        A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)"
+        A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)" and
+        A5:"{} \<notin> F"
   using assms filterD1 is_pfilterD1 apply auto[1]
   using assms is_pfilter_def apply blast 
   proof-
@@ -8621,6 +8622,7 @@ lemma sets_pfilter:
     qed
     show "\<And>(A::'a set) B::'a set. A \<in> F \<Longrightarrow> B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> B \<in> F"
       using assms filter_memI is_pfilterD1 by blast
+    show "{} \<notin> F"  by (meson Pow_bottom assms empty_subsetI is_pfilterD4 least_iff)
 qed
  
 lemma pfilter_sets_comp:
@@ -8643,6 +8645,11 @@ lemma pfilters_sets_comp3:
    "\<lbrakk>pfilter (Pow X) F; A \<subseteq> X; \<exists>U \<in> F. U \<inter> (X-A) = {}\<rbrakk> \<Longrightarrow> A \<in> F"
   by (metis Diff_eq_empty_iff Int_Diff PowD PowI filterD21 filter_memI inf.orderE)
 
+
+lemma pfilters_sets_comp4:
+   "\<lbrakk>pfilter (Pow X) F; A \<subseteq> X;  A \<notin> F\<rbrakk> \<Longrightarrow> \<forall>U \<in> F. U - A \<noteq> {}"
+  by (meson Diff_eq_empty_iff Pow_iff filter_memI)
+
 abbreviation convergence0 where
   "convergence0 R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on (Pow X) \<and> x \<in> X}" 
 
@@ -8654,6 +8661,9 @@ abbreviation convergence2 where
 
 abbreviation convergence3 where
   "convergence3 R X \<equiv> (\<forall>x \<in> X. (\<Inter>{F. (F, x) \<in> R}, x) \<in> R)"
+
+abbreviation pretop where
+  "pretop R X \<equiv> convergence0 R X \<and> convergence1 R X \<and> convergence2 R X \<and> convergence3 R X"
 
 lemma principal_filter_sets:
   "x \<in> X \<Longrightarrow> is_filter (Pow X) (lorc {x} (Pow X))"
@@ -8724,9 +8734,28 @@ proof-
   qed
 qed
 
+
+lemma set_filter_inter_ne:
+  assumes A0:"EF \<subseteq> filters_on (Pow X)" and A1:"EF \<noteq> {}"
+  shows "X \<in> \<Inter>EF"
+proof-
+  have B0:"\<And>F. F \<in> EF \<Longrightarrow> X \<in> F"
+    by (meson A0 Pow_iff Pow_top filter_greatestD2 filter_pow_memD greatest_iff)
+  then show ?thesis
+    by simp
+qed
+
         
       
-  
+lemma set_filter_inter:
+  assumes A0:"EF \<subseteq> filters_on (Pow X)" and A1:"EF \<noteq> {}"
+  shows "is_filter (Pow X) (\<Inter>EF)"
+  apply(rule filterI2)
+  apply (simp add: cinf_sinf clatD2 pow_is_clattice)
+  apply (metis A0 emptyE local.A1 set_filter_inter_ne)
+  apply (simp add: A0 filter_inter_sub2 local.A1 pow_ne_iff2)
+  apply (meson A0 cinf_sinf clatD2 filter_inter_dwdir1 is_finf_closed_def local.A1 pow_is_clattice pow_neI)
+  by (simp add: A0 filter_inter_upcl2)
     
   
 
@@ -8737,7 +8766,121 @@ lemma principal_ufilter_sets:
   apply (simp add: principal_pfilter_sets)
   by (simp add: lorc_mem_iff1)
 
+abbreviation ccl where
+  "ccl X Cl \<equiv> (Cl {} = {}) \<and> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<subseteq> Cl A) \<and> (\<forall>A B. A \<in> Pow X \<and> B \<in> Pow X \<longrightarrow> Cl (A \<union> B) = (Cl A) \<union> (Cl B))"
 
+
+lemma pretop_to_cc:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"pretop q X"
+  defines "Cl \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G})"
+  shows CCL0:"Cl {} = {}" and
+        CCL1:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl A" and
+        CCL2:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl (A \<union> B) = (Cl A) \<union> (Cl B)"
+proof-
+  have B0:"\<forall>G \<in>  pfilters_on (Pow X). {} \<notin> G"  by (simp add: A5 is_pfilter_def)
+  then show "Cl {} = {}"  using Cl_def by blast
+  show "\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl A"
+  proof-
+    fix A assume A1:"A \<in> Pow X"
+    show "A \<subseteq> Cl A"
+    proof
+      fix a assume A2:"a \<in> A"
+      obtain B0:"a \<in> X"    using local.A1 local.A2 by blast 
+      then obtain B1:"A \<in> (lorc {a} (Pow X))" and B2:"(lorc {a} (Pow X), a) \<in> q"     using A0 local.A1 local.A2 lorc_mem_iff1 by auto
+      then show "a \<in> Cl A" using Cl_def A0 by auto
+    qed
+  qed
+  show " \<And>A B. A \<in> Pow X \<Longrightarrow> B \<in> Pow X \<Longrightarrow> Cl (A \<union> B) = Cl A \<union> Cl B"
+  proof-
+    fix A B assume A3:"A \<in> Pow X" and A4:"B \<in> Pow X" 
+    show "Cl (A \<union> B) = Cl A \<union> Cl B" (is "?lhs = ?rhs")
+    proof
+      show "?lhs \<subseteq> ?rhs"
+      proof
+        fix x assume L:"x \<in> ?lhs"
+        obtain G where B2:"G \<in> pfilters_on (Pow X)" and  B3:"(G, x) \<in> q \<and> A \<union> B \<in> G" using Cl_def L by blast
+        have B4:"x \<notin> Cl A \<Longrightarrow> x \<in> Cl B"
+        proof-
+          assume A5:"x \<notin> Cl A"
+          then obtain B5:"A \<notin> G"   using B2 B3 Cl_def L by blast
+          have B6:"\<forall>g \<in> G. g \<inter> (X-A) \<noteq> {}"   by (metis (no_types, lifting) B2 B5 Int_Collect Int_iff PowD local.A3 pfilters_sets_comp3)
+          have B7:"is_pfilter (Pow X) G"   using B2 is_pfilter_def by blast
+          have B8:"(X-A) \<in> Pow X"    by simp
+          define H where "H \<equiv> {E \<in> Pow X. \<exists>g \<in> G. (X-A) \<inter> g \<subseteq> E}" 
+          obtain B9:"is_pfilter (Pow X) H"  using finer_proper_filter[of X G "(X-A)"] B6 B7 B8 H_def by blast
+          obtain B10:"G \<subseteq> H"  using finer_proper_filter[of X G "(X-A)"] B6 B7 B8 H_def by blast
+          have B11:"(X - A) \<inter> (A \<union> B) \<subseteq> B"   by blast
+          have B12:"(X - A) \<inter> (A \<union> B) \<in> H"      using B3 H_def by blast
+          have B13:"B \<in> H"      using B12 B9 Posets16.A4 local.A4 by blast
+          have B14:"(H, x) \<in> q"     by (smt (verit) A0 B10 B3 B9 case_prodD insert_absorb insert_subset is_pfilter_def mem_Collect_eq)
+          show "x \<in> Cl B"  using B13 B14 B9 Cl_def L is_pfilter_def by auto
+        qed
+        have B15:"x \<in> Cl A \<or> x \<in> Cl B"   using B4 by blast
+        then show "x \<in> Cl A \<union> Cl B" by simp
+      qed
+    next
+      show "?rhs \<subseteq> ?lhs"
+      proof
+        fix x assume R:"x \<in> ?rhs"
+        then obtain B0:"x \<in> Cl A \<or> x \<in> Cl B" by auto
+        then obtain G where B1:"G \<in> pfilters_on (Pow X)" and B2:"(G, x) \<in> q \<and> A \<in> G \<or>  B \<in> G"  using Cl_def by blast
+        then obtain B3:"A \<union> B \<in> G"
+          by (smt (verit) CollectD Pow_iff filter_memI inf_sup_ord(4) le_sup_iff local.A3 local.A4 semilattice_sup_class.sup_ge1)
+        show "x \<in> ?lhs"   by (smt (verit, del_insts) B0 Cl_def CollectD CollectI Pow_iff filter_memI le_sup_iff local.A3 local.A4 semilattice_sup_class.sup_ge1 sup_commute)  
+      qed
+    qed
+  qed
+qed
+
+    
+          
+
+
+lemma cc_to_pretop:
+  fixes Cl::"'a set \<Rightarrow> 'a set" and X::"'a set"
+  assumes A0:"ccl X Cl"
+  defines "N \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Cl (X-V)})"
+  defines "q \<equiv> {(EF, x). EF \<in>  pfilters_on (Pow X) \<and> N x \<subseteq> EF}"
+  shows gc1:"\<And>x. x \<in> X \<Longrightarrow> (lorc {x} (Pow X), x) \<in> q" and
+        gc2:"\<And>x F G. \<lbrakk>x\<in> X; F\<in> pfilters_on (Pow X); G \<in> pfilters_on (Pow X); (F, x) \<in> q; F \<subseteq> G\<rbrakk> \<Longrightarrow> (G, x)\<in>q" and
+        gc3:"\<And>x. x \<in> X \<Longrightarrow>  (\<Inter>{F. (F, x) \<in> q}, x) \<in> q"
+proof-
+  show "\<And>x. x \<in> X \<Longrightarrow> (lorc {x} (Pow X), x) \<in> q"
+  proof-
+     fix x assume A1:"x \<in> X" 
+     let ?U="(lorc {x} (Pow X))"
+     obtain B0:"?U \<in> pfilters_on (Pow X)"    using local.A1 maximalD1 principal_ufilter_sets by fastforce
+     have B1:"N x \<subseteq> ?U"
+     proof
+      fix V assume A2:"V \<in> N x"
+      have B2:"x \<notin> Cl (X-V)"   using N_def local.A2 by auto
+      have B3:"Cl (X-V) \<supseteq> X-V"   by (simp add: A0)
+      obtain B4:"x \<in> V"   using B2 B3 local.A1 by blast
+      show "V \<in> ?U"   using A0 B4 N_def local.A2 lorc_mem_iff1 by auto
+     qed
+     show "(?U, x)\<in> q" using B0 B1 q_def by blast
+  qed
+  show "\<And>x F G. \<lbrakk>x\<in> X; F\<in> pfilters_on (Pow X); G \<in> pfilters_on (Pow X); (F, x) \<in> q; F \<subseteq> G\<rbrakk> \<Longrightarrow> (G, x)\<in>q"
+    using q_def by auto 
+  show "\<And>x. x \<in> X \<Longrightarrow>  (\<Inter>{F. (F, x) \<in> q}, x) \<in> q"
+  proof-
+    fix x assume A1:"x \<in> X"
+    have B0:"\<And>F. (F, x) \<in> q \<Longrightarrow> F \<in> pfilters_on (Pow X) \<and>  N x \<subseteq> F"  using q_def by fastforce
+    have B1:"N x \<subseteq>  \<Inter>{F. (F, x) \<in> q}"  using B0 by blast
+    have B2:"\<And>F. (F, x) \<in> q \<Longrightarrow> F \<in> filters_on (Pow X) "    using B0 filters_on_iff by blast
+    have B3:"is_filter (Pow X) (\<Inter>{F. (F, x) \<in> q} )"
+      by (smt (verit, ccfv_threshold) B0 Collect_mono_iff \<open>\<And>x::'a::type. x \<in> (X::'a::type set) \<Longrightarrow> (lorc {x}(Pow X), x) \<in> (q::('a::type set set \<times> 'a::type) set)\<close> emptyE filters_on_def local.A1 mem_Collect_eq set_filter_inter)
+    have B4:"(\<Inter>{F. (F, x) \<in> q}) \<noteq> Pow X"
+      by (smt (verit) B0 B3 \<open>\<And>x::'a::type. x \<in> (X::'a::type set) \<Longrightarrow>  (lorc {x}(Pow X), x) \<in> (q::('a::type set set \<times> 'a::type) set)\<close> filterD2 le_Inf_iff local.A1 mem_Collect_eq subset_antisym)
+    have B5:"is_pfilter (Pow X) (\<Inter>{F. (F, x) \<in> q} )"
+      using B3 B4 is_pfilterI1 by blast
+    show "(\<Inter>{F. (F, x) \<in> q}, x) \<in> q"
+      using B1 B3 B4 q_def by force
+  qed
+qed
+    
+  
 context
   fixes q::"('a set set \<times> 'a) set" and X::"'a set"
   assumes A0:"convergence0 q X" and
