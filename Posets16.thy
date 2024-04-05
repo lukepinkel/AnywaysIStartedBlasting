@@ -8655,41 +8655,263 @@ abbreviation convergence2 where
 abbreviation convergence3 where
   "convergence3 R X \<equiv> (\<forall>x \<in> X. (\<Inter>{F. (F, x) \<in> R}, x) \<in> R)"
 
-lemma idprtop:
+lemma principal_filter_sets:
+  "x \<in> X \<Longrightarrow> is_filter (Pow X) (lorc {x} (Pow X))"
+  by (simp add: lorc_filter)
+
+lemma principal_pfilter_sets:
+  "x \<in> X \<Longrightarrow> is_pfilter (Pow X) (lorc {x} (Pow X))"
+  by (metis Pow_bottom insert_not_empty is_pfilter_def lorc_eq_upbd principal_filter_sets subset_antisym subset_insertI ubd_mem_singleE)
+
+
+lemma pmb_filters2:
+  assumes A0:"is_pfilter (Pow X) F" and A1:"\<And>x. x \<in> (Pow X) \<Longrightarrow> (x \<in> F \<or> (X-x) \<in> F) \<and> \<not>(x \<in> F \<and> (X-x) \<in> F)"
+  shows "is_maximal (pfilters_on (Pow X)) F"
+proof-
+  let ?X="Pow X"
+  have B0:"F \<in> pfilters_on ?X"    using A0 is_pfilter_def by blast
+  have B1:"\<And>G. \<lbrakk>G \<in> filters_on ?X;  F \<subset> G \<rbrakk> \<Longrightarrow> G = ?X"
+  proof-
+    fix G assume A2:"G \<in> filters_on ?X" and A3:"F \<subset> G"
+    obtain z where B10: "z \<in> G - F"  using A3 by auto
+    have B11:"z \<notin> F" using B10 by blast 
+    have B12:"X-z \<in> F"  by (meson A1 A2 B10 Diff_iff filterD21 filters_on_iff)
+    have B13:"X-z \<in> G \<and> z \<in> G"  using A3 B10 B12 by blast
+    have B14:"is_filter ?X G"   using A2 filters_on_iff by auto
+    show "G=?X"  using B13 B14     using pfilters_sets_comp2 by blast
+  qed
+  have B2:"\<And>G. \<lbrakk>G \<in> pfilters_on ?X;  F \<subseteq> G \<rbrakk> \<Longrightarrow> G = F" using B1 filters_on_def by blast
+  show ?thesis
+    by (metis (no_types, lifting) B0 B2 is_maximal_def)
+qed
+
+lemma finer_proper_filter:
+  assumes A0:"is_pfilter (Pow X) F" and A1:"A \<in> Pow X" and A2:"\<forall>B \<in> F. B \<inter> A \<noteq> {}"
+  defines "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. A \<inter> B \<subseteq> E}" 
+  shows "is_pfilter (Pow X) H" and "F \<subseteq> H"
+proof-
+  show "is_pfilter (Pow X) H"
+  proof(rule is_pfilterI1)
+    show "is_filter (Pow X) H"
+    apply(rule filterI1)
+      using A0 H_def Posets16.A1 local.A1 apply fastforce
+      using H_def apply blast
+      proof(rule is_dwdirI1)
+        show "\<And>(a::'a set) b::'a set. a \<in> H \<Longrightarrow> b \<in> H \<Longrightarrow> \<exists>c::'a set\<in>H. c \<subseteq> a \<and> c \<subseteq> b"
+        proof-
+          fix a b assume A3:"a \<in> H" and A4:"b \<in> H"
+          obtain aB bB where B0:"aB \<in> F" and B1:"bB \<in> F" and B2:"A \<inter> aB \<subseteq> a" and B3:"A \<inter> bB \<subseteq> b"  using H_def local.A3 local.A4 by auto
+          obtain B4:"aB \<inter> bB \<in> F"  using A0 B0 B1 Posets16.A3 by blast
+          obtain B5:"A \<inter> aB \<inter> bB \<in> H"      using B2 B4 H_def local.A3 by blast
+          also have B6:"A \<inter> aB \<inter> bB \<subseteq> a \<and> A \<inter> aB \<inter> bB \<subseteq> b"    using B2 B3 by blast
+          then show "\<exists>c::'a set\<in>H. c \<subseteq> a \<and> c \<subseteq> b"   using calculation by auto
+        qed
+        show "is_ord_cl (Pow X) H (\<subseteq>)"
+        apply(rule is_ord_clI1)   using H_def inf.absorb_iff2 by fastforce
+      qed
+  show "Pow X \<noteq> H"
+    proof-
+      have B7:"{} \<notin> H"   by (simp add: H_def Int_commute local.A2)
+      then show ?thesis by blast
+     qed
+  qed
+  show "F \<subseteq> H"
+  proof
+    fix f assume A4:"f \<in> F"
+    have B8:"X \<in> F"    by (meson A0 Posets16.A4 PowD Pow_top filterD21 is_pfilterD1 local.A4) 
+    also have B9:"X \<inter> f \<subseteq> f" by simp
+    then show "f \<in> H"  using A0 H_def is_pfilterD3 local.A4 by force
+  qed
+qed
+
+        
+      
+  
+    
+  
+
+
+lemma principal_ufilter_sets:
+  "x \<in> X \<Longrightarrow> is_maximal (pfilters_on (Pow X)) (lorc {x} (Pow X))"
+  apply(rule pmb_filters2)
+  apply (simp add: principal_pfilter_sets)
+  by (simp add: lorc_mem_iff1)
+
+
+context
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"convergence0 q X" and
+          A1:"convergence1 q X" and
+          A2:"convergence2 q X" and
+          A3:"convergence3 q X" and
+          A4:"q \<noteq> {}" 
+begin
+
+definition Nh_prtp where "Nh_prtp \<equiv>  \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
+definition Cl_prtp where "Cl_prtp \<equiv> (\<lambda>A. {x \<in> X. \<forall>U \<in> Pow X. U \<in> Nh_prtp x \<longrightarrow> A \<inter> U \<noteq> {}})"
+
+lemma prtp0:
+  "Cl_prtp A = {x \<in> X. \<forall>U \<in> Pow X. (\<forall>F. (F, x)\<in>q \<longrightarrow> U \<in> F) \<longrightarrow> A \<inter> U \<noteq> {}}"
+  using Cl_prtp_def Nh_prtp_def by force
+
+lemma prtp1:
+   "\<And>x F. (F, x)\<in>q\<Longrightarrow> F \<in> pfilters_on (Pow X) \<and> x \<in>X"
+proof-
+  fix x F assume A5:"(F, x)\<in>q"
+  show "F \<in> pfilters_on (Pow X) \<and> x \<in>X"
+    using A0 A5 by auto
+qed
+
+
+lemma prtp2: 
+  "\<And>x F. (F, x)\<in>q\<Longrightarrow> X \<in> F"
+proof-
+  fix x F assume A5:"(F, x)\<in>q"
+  obtain B0:"F \<in> pfilters_on (Pow X) "  using A0 A5 by blast
+  obtain B1:"is_filter (Pow X) F"  using B0 by fastforce
+  obtain B2:"is_greatest (Pow X) X"   by (simp add: greatest_iff)
+  show "X \<in> F"
+    using B1 B2 filter_greatestD2 by blast
+qed
+
+lemma prtp3: 
+  "\<And>x F. (F, x)\<in>q\<Longrightarrow>(\<exists>U \<in> F. x \<in> U)"
+proof-
+  fix x F assume A5:"(F, x)\<in>q"
+  obtain B0:"X \<in> F" using prtp2[of F x] A5 by blast
+  obtain B1:"x \<in> X" using prtp1[of F x] A5 by blast
+  have B2:"x \<in> X"   by (simp add: B1)
+  show "(\<exists>U \<in> F. x \<in> U)"   using B0 B2 by auto
+qed
+
+lemma prtp4:
+  "\<And>x. x \<in> X \<Longrightarrow> ({A \<in> Pow X. x \<in> A}, x) \<in> q"
+proof-
+  fix x assume A5:"x \<in> X"
+  have B0:"{A \<in> Pow X. x \<in> A} ={A \<in> Pow X. {x} \<subseteq> A}" by simp
+  have B1:" ... =  lorc {x}  (Pow X)" by (simp add: lorc_def)
+  show "({A \<in> Pow X. x \<in> A}, x) \<in> q"    using A5 B0 B1 local.A1 by presburger
+qed
+
+lemma prtp5:
+  "\<And>F G x. \<lbrakk>(F, x) \<in> q; F \<subseteq> G; is_pfilter (Pow X) G\<rbrakk> \<Longrightarrow> (G, x)\<in> q"
+  by (metis (mono_tags, lifting) CollectI is_pfilter_def local.A2 prtp1)
+
+lemma prtp6:
+  "\<forall>x U. U \<in> Nh_prtp x \<longleftrightarrow> (\<forall>F. (F, x) \<in> q \<longrightarrow> U \<in> F)"
+  by (simp add: Nh_prtp_def)
+
+lemma prtp7:
+  "\<And>x A U. \<lbrakk>x \<in> X;  A \<in> Pow X; U \<in> Nh_prtp x; x \<in> Cl_prtp A\<rbrakk> \<Longrightarrow> U \<inter> A \<noteq> {} "
+  by (smt (verit, best) Cl_prtp_def Int_commute mem_Collect_eq prtp4 prtp6)
+
+
+lemma prtp8:
+  "\<And>x. x \<in> X \<Longrightarrow> is_pfilter (Pow X) (Nh_prtp x)"
+  using Nh_prtp_def is_pfilter_def local.A3 prtp1 by fastforce
+
+     
+lemma prtp9:
+  "\<And>x V. \<lbrakk>x \<in> X; V \<in> (Nh_prtp x)\<rbrakk> \<Longrightarrow> x \<in> V"
+  using prtp4 prtp6 by auto
+
+lemma prtp10:
+  "\<And>x V1 V2. \<lbrakk>x \<in> X; V1 \<in> (Nh_prtp x); V2 \<in>(Nh_prtp x)\<rbrakk> \<Longrightarrow> (\<exists>V3 \<in>(Nh_prtp x). V3 \<subseteq> V1 \<inter> V2)"
+  by (metis Posets16.A3 prtp8 subset_refl)
+
+lemma prtp11:
+  "\<And>x. x \<in> X \<Longrightarrow>  (Nh_prtp x) \<noteq> {}"
+  using Posets16.A1 prtp8 by blast
+
+
+lemma prtp12:
+  "\<And>x A U. \<lbrakk>x \<in> X; U \<in> Nh_prtp x; A \<in> Pow X; U \<inter> A = {}\<rbrakk> \<Longrightarrow> x \<notin> Cl_prtp A"
+  using prtp7 by blast         
+
+
+lemma prtp13:
+  "\<And>x A. \<lbrakk>x \<in> X; A \<subseteq> X; x \<notin> Cl_prtp A\<rbrakk> \<Longrightarrow> \<exists>U \<in> Nh_prtp x. U \<inter> A = {}"
+  using Cl_prtp_def by auto
+
+lemma prtp14:
+  "\<And>x U. \<lbrakk>x \<in> X; U \<in> Nh_prtp x\<rbrakk> \<Longrightarrow>x \<notin>  Cl_prtp (X -U)"
+proof-
+  fix x U assume A6:"x \<in> X" and A7:"U \<in> Nh_prtp x"
+  show "x \<notin> Cl_prtp (X -U)"
+  proof(rule ccontr)
+    assume contr0:"\<not>(x \<notin> Cl_prtp (X -U))" then obtain contr1:"x \<in>Cl_prtp (X -U)" by auto
+    then have B0:"\<forall>V \<in> Pow X. V \<in> Nh_prtp x \<longrightarrow> (X-U) \<inter> V \<noteq> {}"   using Cl_prtp_def by auto
+    also obtain B1:"U \<in> Nh_prtp x" and B2:"(X-U) \<inter> U = {}" by (simp add: A7 Int_commute)
+    then show False
+      using A6 contr1 prtp12 by force
+  qed
+qed
+
+
+lemma prtp15:
+  "\<And>x V. \<lbrakk>x \<in> X; V \<subseteq> X; x \<notin> Cl_prtp (X-V)\<rbrakk> \<Longrightarrow> \<exists>U \<in> Nh_prtp x. U \<subseteq> V"
+proof-
+  fix x V assume A6:"x \<in> X" and A7:"V \<subseteq> X" and A8:"x \<notin>  Cl_prtp (X-V)"
+  show "\<exists>U \<in> Nh_prtp x. U \<subseteq> V"
+  proof(rule ccontr)
+    assume contr0:"\<not>(\<exists>U \<in> Nh_prtp x. U \<subseteq> V)" obtain contr1:"(\<forall>U \<in> Nh_prtp x. U \<inter> (X-V) \<noteq> {})"
+      by (metis A6 A7 PowI contr0 dual_order.eq_iff is_pfilterD1 pfilters_sets_comp3 prtp8)
+    then obtain B0:"x \<in> Cl_prtp (X-V)"  by (meson A6 Diff_subset prtp13)
+    then show False by (simp add: A8)
+  qed
+qed
+
+end
+
+
+
+lemma pretop1:
   fixes q::"('a set set \<times> 'a) set" and X::"'a set"
   assumes A0:"convergence0 q X" and
           A1:"convergence1 q X" and
           A2:"convergence2 q X" and
           A3:"convergence3 q X" and
           A4:"q \<noteq> {}"
-  defines "Clq \<equiv> \<lambda>A. {x \<in> X. \<exists>G. (G, x) \<in> q \<and> A \<in> G} "
-  defines "Ncl \<equiv> \<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)}"
-  defines "qcl \<equiv> {(F, x). F \<in> pfilters_on (Pow X) \<and> Ncl x \<subseteq> F}"
-  shows "qcl = q"
+  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow> F \<in> pfilters_on (Pow X) \<and> x \<in>X"
 proof-
-  let ?FX="pfilters_on (Pow X)"
-  define Nq where "Nq \<equiv> \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
-  have B0:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<in> Clq (X-A) \<longleftrightarrow> (\<exists>G. (G, x) \<in> q \<and> (X-A) \<in> G)"   by (simp add: Clq_def)
-  have B1:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<notin> q \<or> (X-A) \<notin> G)"   using B0 by auto 
-  have B2:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<in> q \<longrightarrow> (X-A) \<notin> G)"  using B1 by auto 
-  have B3:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> \<Inter>{G. (G, x) \<in>q}"   using B0 local.A3 by blast
-  have B4:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X\<rbrakk> \<Longrightarrow>  (X-A) \<notin> \<Inter>{G. (G, x) \<in>q} \<longleftrightarrow> x \<notin> Clq (X-A)" 
-  proof-
-      fix A x assume B4A0:"A \<in> Pow X" and B4A1:"x \<in> X"
-      show "(X-A) \<notin> \<Inter>{G. (G, x) \<in>q} \<longleftrightarrow> x \<notin> Clq (X-A)"
-  have B3:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>(G, x) \<in> q. (X-A) \<notin> G)" 
-  proof-
-    fix A x assume B3A0:"A \<in> Pow X" and B3A1:"x \<in> X"
-    show " x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>(G, x) \<in> q. (X-A) \<notin> G)"
+  fix x F assume A5:"(F, x)\<in>q"
+  show "F \<in> pfilters_on (Pow X) \<and> x \<in>X"
+    using A0 A5 by auto
+qed
 
-  have B3:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> ((X-A) \<notin> Nq x)" 
-  apply( simp add:Nq_def)
-  have B0:"\<And>x G. \<lbrakk>x \<in> X; G \<in> pfilters_on (Pow X); (G, x) \<in> qcl\<rbrakk> \<Longrightarrow>(G, x) \<in> q"
-  proof- 
-    fix x G assume B0A0:"x \<in> X" and B0A1:"G \<in>  pfilters_on (Pow X)" and B0A2:"(G, x) \<in> qcl"
-    obtain B01:"Ncl x \<subseteq> G"   using B0A2 qcl_def by blast
-    obtain B02:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Clq (X-V)\<rbrakk> \<Longrightarrow> V \<in> G"   using B01 Ncl_def by blast
-    show "(G, x) \<in> q"
+lemma pretop2:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"convergence0 q X" and
+          A1:"convergence1 q X" and
+          A2:"convergence2 q X" and
+          A3:"convergence3 q X" and
+          A4:"q \<noteq> {}"
+  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow> X \<in> F"
+proof-
+  fix x F assume A5:"(F, x)\<in>q"
+  obtain B0:"F \<in> pfilters_on (Pow X) "  using A0 A5 by blast
+  obtain B1:"is_filter (Pow X) F"  using B0 by fastforce
+  obtain B2:"is_greatest (Pow X) X"   by (simp add: greatest_iff)
+  show "X \<in> F"
+    using B1 B2 filter_greatestD2 by blast
+qed
 
+lemma pretop3:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"convergence0 q X" and
+          A1:"convergence1 q X" and
+          A2:"convergence2 q X" and
+          A3:"convergence3 q X" and
+          A4:"q \<noteq> {}"
+  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow>(\<exists>U \<in> F. x \<in> U)"
+proof-
+  fix x F assume A5:"(F, x)\<in>q"
+  obtain B0:"X \<in> F" using pretop2[of q X F x] A0 A1 A2 A3 A4 A5 by blast
+  obtain B1:"x \<in> X" using pretop1[of q X F x] A0 A1 A2 A3 A4 A5 by blast
+  have B2:"x \<in> X"   by (simp add: B1)
+  show "(\<exists>U \<in> F. x \<in> U)"   using B0 B2 by auto
+qed
+
+  
 
 end
