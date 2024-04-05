@@ -8913,5 +8913,56 @@ proof-
 qed
 
   
+lemma idprtop:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"convergence0 q X" and
+          A1:"convergence1 q X" and
+          A2:"convergence2 q X" and
+          A3:"convergence3 q X" and
+          A4:"q \<noteq> {}"
+  defines "Clq \<equiv> \<lambda>A. {x \<in> X. \<exists>G. (G, x) \<in> q \<and> A \<in> G} "
+  defines "Nclq \<equiv> \<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)}"
+  defines "qclq \<equiv> {(F, x). F \<in> pfilters_on (Pow X) \<and> Nclq x \<subseteq> F \<and> x \<in> X}"
+  shows "qclq = q"
+proof-
+  let ?FX="pfilters_on (Pow X)" 
+  define Nq where "Nq \<equiv> \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
+  have C0:"\<And>x. x \<in> X \<Longrightarrow>  Nq x \<noteq> {}"
+  proof-
+    fix x assume C0A0:"x \<in> X"
+    have C01:"X \<in> (Nq x)"
+    proof-
+      have C010:"\<And>F. F \<in> {F. (F,x) \<in>q} \<Longrightarrow> X \<in> F" using pretop2[of q X] A0 A1 A2 A3 A4 by blast
+      have C011:"X \<in>  \<Inter>{F. (F, x) \<in> q}"
+        using C010 by blast
+      show "X \<in> (Nq x)"
+        by (simp add: C010 Nq_def)
+    qed
+    show " Nq x \<noteq> {}"
+      using C01 by blast
+  qed
+  have C0:"\<And>A F x. \<lbrakk>A \<in> Nq x; (F, x) \<in> q \<rbrakk> \<Longrightarrow>  A \<in> F"   using Nq_def by blast
+  have B0:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<in> Clq (X-A) \<longleftrightarrow> (\<exists>G. (G, x) \<in> q \<and> (X-A) \<in> G)"   by (simp add: Clq_def)
+  have B1:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<notin> q \<or> (X-A) \<notin> G)"   using B0 by auto 
+  have B2:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<in> q \<longrightarrow> (X-A) \<notin> G)"  using B1 by auto 
+  have B3:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> \<Inter>{G. (G, x) \<in>q}"   using B0 local.A3 by blast
+  have B4:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> (lorc {x} (Pow X))"  using B1 local.A1 by blast
+  have B5:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> A \<in> (lorc {x} (Pow X))" by (metis B4 Diff_iff Diff_subset PowI empty_subsetI insert_subset lorcI1) 
+  have B6:"\<And>G x. (G, x)\<in> qclq \<Longrightarrow> (G, x) \<in> q"
+  proof-
+    fix G x assume A5:"(G, x) \<in> qclq"   
+    obtain A6:"x \<in> X"  using A5 qclq_def by blast
+    obtain A7:"G \<in> pfilters_on (Pow X)" using A5 qclq_def by fastforce
+    obtain A8:"Nclq x \<subseteq> G"  using A5 qclq_def by fastforce
+    have B60:"Nq x \<subseteq> G"
+    proof-
+      fix A assume B60A0:"A \<in> Nq x"
+      have B601:"lorc {x} (Pow X) \<in> {F. (F, x) \<in> q}"   by (simp add: A6 local.A1)
+      obtain B602:"(X-A) \<notin> (lorc {x} (Pow X))"   by (metis A6 B60A0 C0 Posets16.A2 local.A1 pfilters_sets_comp2 principal_filter_sets principal_pfilter_sets)
+      have B603:"A \<in> (lorc {x} (Pow X))"   using B601 B60A0 C0 by blast
+      obtain B604:"x \<in> Clq (A)"  using A6 B603 Clq_def local.A1 by auto
+    obtain B60:"\<And>A. A \<in> Pow X "
+    
+
 
 end
