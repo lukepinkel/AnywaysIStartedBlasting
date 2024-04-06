@@ -9025,42 +9025,59 @@ lemma cc_pretop_cc:
   shows "\<And>A. A \<in> Pow X \<Longrightarrow> Cl A = ClqCl A"
 proof-
   fix A assume A1:"A \<in> Pow X"
-  have B0:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> Cl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))" using cc_cl_mem[of Cl X A]  using A0 NCl_def local.A1 by presburger
-  have B1:"\<And>x . x \<in> X \<Longrightarrow> (x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
-  proof-
-    fix x assume A2:"x \<in> X"
-    have B10:"x \<in> ClqCl A \<Longrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
+  have B0:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> Cl A    \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))" using cc_cl_mem[of Cl X A]  using A0 NCl_def local.A1 by presburger
+  have B1:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
     proof-
-      assume B10A0:"x \<in> ClqCl A"  then obtain G where B10A1:"G \<in> pfilters_on (Pow X)" and 
-       B10A2:"(G, x) \<in> qCl" and B10A3:"A \<in> G" using ClqCl_def by blast
-      then have B101:"NCl x \<subseteq> G "  using qCl_def by auto
-      have B102:"\<And>V. V \<in> NCl x \<Longrightarrow> V \<inter> A \<noteq> {}" 
+      fix x assume A2:"x \<in> X"
+      have B10:"x \<in> ClqCl A \<Longrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
       proof-
-        fix V assume B103:"V \<in> NCl x"
-        obtain B104:"V \<in> G"  and B105:"A \<in> G" and B106:"is_pfilter (Pow X) G"
-        by (metis (mono_tags, lifting) B101 B103 B10A1 B10A3 Int_Collect Int_iff is_pfilterI1 subset_eq)
-        then show " V \<inter> A \<noteq> {}"  by (metis A3 A5)
+        assume B10A0:"x \<in> ClqCl A"  then obtain G where B10A1:"G \<in> pfilters_on (Pow X)" and 
+         B10A2:"(G, x) \<in> qCl" and B10A3:"A \<in> G" using ClqCl_def by blast
+        then have B101:"NCl x \<subseteq> G "  using qCl_def by auto
+        have B102:"\<And>V. V \<in> NCl x \<Longrightarrow> V \<inter> A \<noteq> {}" 
+        proof-
+          fix V assume B103:"V \<in> NCl x"
+          obtain B104:"V \<in> G"  and B105:"A \<in> G" and B106:"is_pfilter (Pow X) G"
+          by (metis (mono_tags, lifting) B101 B103 B10A1 B10A3 Int_Collect Int_iff is_pfilterI1 subset_eq)
+          then show " V \<inter> A \<noteq> {}"  by (metis A3 A5)
+        qed
+        then show "(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
+        by blast
       qed
-      then show "(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
-      by blast
-    qed
-    have B11:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}) \<Longrightarrow> x \<in> ClqCl A "
-    proof-
-      assume B11A0:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"  then obtain  B6:"\<forall>V \<in> NCl x. V \<inter>A  \<noteq> {}"   using NCl_def by blast 
-      also have  B7:"is_pfilter (Pow X) (NCl x)" using cc_pretop_nhf[of Cl X x] A0 NCl_def local.A2 by blast 
-      define H where "H \<equiv> {E \<in> Pow X. \<exists>V \<in> (NCl x). A \<inter> V \<subseteq> E}" 
-      obtain B9:"is_pfilter (Pow X) H"  using finer_proper_filter[of X "NCl x" "A"] B6 A1 B7  using H_def by blast
-      obtain B10:"H \<in>  pfilters_on (Pow X)"  using B9 CollectI is_pfilter_def by fastforce 
-      obtain B11:"NCl x \<subseteq> H" using finer_proper_filter[of X "NCl x" "A"]  using B7 H_def calculation local.A1 by fastforce 
-      then obtain B010:"(H, x) \<in> qCl" using B10 local.A2 qCl_def by blast 
-      have  B011:"A \<in> H"  using B7 H_def filter_ex_elem is_pfilterD1 local.A1 by fastforce
-      then show "x \<in> ClqCl A"
-      using B010 B10 ClqCl_def local.A2 by blast
-   qed
-  then show "(x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
-  using B10 by linarith
+      have B11:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}) \<Longrightarrow> x \<in> ClqCl A "
+      proof-
+        assume B11A0:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"  then obtain  B6:"\<forall>V \<in> NCl x. V \<inter>A  \<noteq> {}"   using NCl_def by blast 
+        also have  B7:"is_pfilter (Pow X) (NCl x)" using cc_pretop_nhf[of Cl X x] A0 NCl_def local.A2 by blast 
+        define H where "H \<equiv> {E \<in> Pow X. \<exists>V \<in> (NCl x). A \<inter> V \<subseteq> E}" 
+        obtain B9:"is_pfilter (Pow X) H"  using finer_proper_filter[of X "NCl x" "A"] B6 A1 B7  using H_def by blast
+        obtain B10:"H \<in>  pfilters_on (Pow X)"  using B9 CollectI is_pfilter_def by fastforce 
+        obtain B11:"NCl x \<subseteq> H" using finer_proper_filter[of X "NCl x" "A"]  using B7 H_def calculation local.A1 by fastforce 
+        then obtain B010:"(H, x) \<in> qCl" using B10 local.A2 qCl_def by blast 
+        have  B011:"A \<in> H"  using B7 H_def filter_ex_elem is_pfilterD1 local.A1 by fastforce
+        then show "x \<in> ClqCl A"
+        using B010 B10 ClqCl_def local.A2 by blast
+     qed
+    then show "(x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
+    using B10 by linarith
   qed
-  then show "Cl A = ClqCl A"
+  obtain B2:"Cl A \<subseteq> X" and B3:"ClqCl A \<subseteq> X" using A0 ClqCl_def local.A1 by auto
+  show "Cl A = ClqCl A"
+  proof 
+  show "Cl A \<subseteq> ClqCl A"
+    proof
+       fix x assume L:"x \<in> Cl A" then obtain L0:"x \<in> X"   using B2 by blast
+       then obtain "(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"  using B0 L by presburger
+       show "x \<in> ClqCl A" using B0 B1 L L0 by blast
+    qed
+  next
+ show "ClqCl A \<subseteq> Cl A"
+    proof
+       fix x assume R:"x \<in> ClqCl A" then obtain L0:"x \<in> X"  using B2 ClqCl_def by blast
+       then obtain "(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"  using B1 R by presburger
+       show "x \<in> Cl A"
+       using B0 B1 L0 R by presburger 
+    qed
+ qed
 qed
 
 end
