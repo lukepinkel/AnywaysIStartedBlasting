@@ -8767,7 +8767,7 @@ lemma principal_ufilter_sets:
   by (simp add: lorc_mem_iff1)
 
 abbreviation ccl where
-  "ccl X Cl \<equiv> (Cl {} = {}) \<and> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<subseteq> Cl A) \<and> (\<forall>A B. A \<in> Pow X \<and> B \<in> Pow X \<longrightarrow> Cl (A \<union> B) = (Cl A) \<union> (Cl B))"
+  "ccl X Cl \<equiv> (Cl {} = {}) \<and> (\<forall>A. A \<in> Pow X \<longrightarrow> A \<subseteq> Cl A) \<and> (\<forall>A B. A \<in> Pow X \<and> B \<in> Pow X \<longrightarrow> Cl (A \<union> B) = (Cl A) \<union> (Cl B)) \<and>  (\<forall>A. A \<in> Pow X \<longrightarrow> Cl A \<subseteq> X) "
 
 
 lemma pretop_to_cc:
@@ -8879,233 +8879,188 @@ proof-
       using B1 B3 B4 q_def by force
   qed
 qed
-    
-  
-context
+
+lemma pretop_cl_nh:
   fixes q::"('a set set \<times> 'a) set" and X::"'a set"
-  assumes A0:"convergence0 q X" and
-          A1:"convergence1 q X" and
-          A2:"convergence2 q X" and
-          A3:"convergence3 q X" and
-          A4:"q \<noteq> {}" 
-begin
-
-definition Nh_prtp where "Nh_prtp \<equiv>  \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
-definition Cl_prtp where "Cl_prtp \<equiv> (\<lambda>A. {x \<in> X. \<forall>U \<in> Pow X. U \<in> Nh_prtp x \<longrightarrow> A \<inter> U \<noteq> {}})"
-
-lemma prtp0:
-  "Cl_prtp A = {x \<in> X. \<forall>U \<in> Pow X. (\<forall>F. (F, x)\<in>q \<longrightarrow> U \<in> F) \<longrightarrow> A \<inter> U \<noteq> {}}"
-  using Cl_prtp_def Nh_prtp_def by force
-
-lemma prtp1:
-   "\<And>x F. (F, x)\<in>q\<Longrightarrow> F \<in> pfilters_on (Pow X) \<and> x \<in>X"
+  assumes A0:"pretop q X" 
+  defines "Clq \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G})"
+  defines "NClq \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)})"
+  shows "\<And>x. x \<in> X \<Longrightarrow> NClq x = \<Inter>{F. (F, x) \<in> q} "
 proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  show "F \<in> pfilters_on (Pow X) \<and> x \<in>X"
-    using A0 A5 by auto
-qed
-
-
-lemma prtp2: 
-  "\<And>x F. (F, x)\<in>q\<Longrightarrow> X \<in> F"
-proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  obtain B0:"F \<in> pfilters_on (Pow X) "  using A0 A5 by blast
-  obtain B1:"is_filter (Pow X) F"  using B0 by fastforce
-  obtain B2:"is_greatest (Pow X) X"   by (simp add: greatest_iff)
-  show "X \<in> F"
-    using B1 B2 filter_greatestD2 by blast
-qed
-
-lemma prtp3: 
-  "\<And>x F. (F, x)\<in>q\<Longrightarrow>(\<exists>U \<in> F. x \<in> U)"
-proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  obtain B0:"X \<in> F" using prtp2[of F x] A5 by blast
-  obtain B1:"x \<in> X" using prtp1[of F x] A5 by blast
-  have B2:"x \<in> X"   by (simp add: B1)
-  show "(\<exists>U \<in> F. x \<in> U)"   using B0 B2 by auto
-qed
-
-lemma prtp4:
-  "\<And>x. x \<in> X \<Longrightarrow> ({A \<in> Pow X. x \<in> A}, x) \<in> q"
-proof-
-  fix x assume A5:"x \<in> X"
-  have B0:"{A \<in> Pow X. x \<in> A} ={A \<in> Pow X. {x} \<subseteq> A}" by simp
-  have B1:" ... =  lorc {x}  (Pow X)" by (simp add: lorc_def)
-  show "({A \<in> Pow X. x \<in> A}, x) \<in> q"    using A5 B0 B1 local.A1 by presburger
-qed
-
-lemma prtp5:
-  "\<And>F G x. \<lbrakk>(F, x) \<in> q; F \<subseteq> G; is_pfilter (Pow X) G\<rbrakk> \<Longrightarrow> (G, x)\<in> q"
-  by (metis (mono_tags, lifting) CollectI is_pfilter_def local.A2 prtp1)
-
-lemma prtp6:
-  "\<forall>x U. U \<in> Nh_prtp x \<longleftrightarrow> (\<forall>F. (F, x) \<in> q \<longrightarrow> U \<in> F)"
-  by (simp add: Nh_prtp_def)
-
-lemma prtp7:
-  "\<And>x A U. \<lbrakk>x \<in> X;  A \<in> Pow X; U \<in> Nh_prtp x; x \<in> Cl_prtp A\<rbrakk> \<Longrightarrow> U \<inter> A \<noteq> {} "
-  by (smt (verit, best) Cl_prtp_def Int_commute mem_Collect_eq prtp4 prtp6)
-
-
-lemma prtp8:
-  "\<And>x. x \<in> X \<Longrightarrow> is_pfilter (Pow X) (Nh_prtp x)"
-  using Nh_prtp_def is_pfilter_def local.A3 prtp1 by fastforce
-
-     
-lemma prtp9:
-  "\<And>x V. \<lbrakk>x \<in> X; V \<in> (Nh_prtp x)\<rbrakk> \<Longrightarrow> x \<in> V"
-  using prtp4 prtp6 by auto
-
-lemma prtp10:
-  "\<And>x V1 V2. \<lbrakk>x \<in> X; V1 \<in> (Nh_prtp x); V2 \<in>(Nh_prtp x)\<rbrakk> \<Longrightarrow> (\<exists>V3 \<in>(Nh_prtp x). V3 \<subseteq> V1 \<inter> V2)"
-  by (metis Posets16.A3 prtp8 subset_refl)
-
-lemma prtp11:
-  "\<And>x. x \<in> X \<Longrightarrow>  (Nh_prtp x) \<noteq> {}"
-  using Posets16.A1 prtp8 by blast
-
-
-lemma prtp12:
-  "\<And>x A U. \<lbrakk>x \<in> X; U \<in> Nh_prtp x; A \<in> Pow X; U \<inter> A = {}\<rbrakk> \<Longrightarrow> x \<notin> Cl_prtp A"
-  using prtp7 by blast         
-
-
-lemma prtp13:
-  "\<And>x A. \<lbrakk>x \<in> X; A \<subseteq> X; x \<notin> Cl_prtp A\<rbrakk> \<Longrightarrow> \<exists>U \<in> Nh_prtp x. U \<inter> A = {}"
-  using Cl_prtp_def by auto
-
-lemma prtp14:
-  "\<And>x U. \<lbrakk>x \<in> X; U \<in> Nh_prtp x\<rbrakk> \<Longrightarrow>x \<notin>  Cl_prtp (X -U)"
-proof-
-  fix x U assume A6:"x \<in> X" and A7:"U \<in> Nh_prtp x"
-  show "x \<notin> Cl_prtp (X -U)"
-  proof(rule ccontr)
-    assume contr0:"\<not>(x \<notin> Cl_prtp (X -U))" then obtain contr1:"x \<in>Cl_prtp (X -U)" by auto
-    then have B0:"\<forall>V \<in> Pow X. V \<in> Nh_prtp x \<longrightarrow> (X-U) \<inter> V \<noteq> {}"   using Cl_prtp_def by auto
-    also obtain B1:"U \<in> Nh_prtp x" and B2:"(X-U) \<inter> U = {}" by (simp add: A7 Int_commute)
-    then show False
-      using A6 contr1 prtp12 by force
-  qed
-qed
-
-
-lemma prtp15:
-  "\<And>x V. \<lbrakk>x \<in> X; V \<subseteq> X; x \<notin> Cl_prtp (X-V)\<rbrakk> \<Longrightarrow> \<exists>U \<in> Nh_prtp x. U \<subseteq> V"
-proof-
-  fix x V assume A6:"x \<in> X" and A7:"V \<subseteq> X" and A8:"x \<notin>  Cl_prtp (X-V)"
-  show "\<exists>U \<in> Nh_prtp x. U \<subseteq> V"
-  proof(rule ccontr)
-    assume contr0:"\<not>(\<exists>U \<in> Nh_prtp x. U \<subseteq> V)" obtain contr1:"(\<forall>U \<in> Nh_prtp x. U \<inter> (X-V) \<noteq> {})"
-      by (metis A6 A7 PowI contr0 dual_order.eq_iff is_pfilterD1 pfilters_sets_comp3 prtp8)
-    then obtain B0:"x \<in> Cl_prtp (X-V)"  by (meson A6 Diff_subset prtp13)
-    then show False by (simp add: A8)
-  qed
-qed
-
-end
-
-
-
-lemma pretop1:
-  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
-  assumes A0:"convergence0 q X" and
-          A1:"convergence1 q X" and
-          A2:"convergence2 q X" and
-          A3:"convergence3 q X" and
-          A4:"q \<noteq> {}"
-  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow> F \<in> pfilters_on (Pow X) \<and> x \<in>X"
-proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  show "F \<in> pfilters_on (Pow X) \<and> x \<in>X"
-    using A0 A5 by auto
-qed
-
-lemma pretop2:
-  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
-  assumes A0:"convergence0 q X" and
-          A1:"convergence1 q X" and
-          A2:"convergence2 q X" and
-          A3:"convergence3 q X" and
-          A4:"q \<noteq> {}"
-  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow> X \<in> F"
-proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  obtain B0:"F \<in> pfilters_on (Pow X) "  using A0 A5 by blast
-  obtain B1:"is_filter (Pow X) F"  using B0 by fastforce
-  obtain B2:"is_greatest (Pow X) X"   by (simp add: greatest_iff)
-  show "X \<in> F"
-    using B1 B2 filter_greatestD2 by blast
-qed
-
-lemma pretop3:
-  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
-  assumes A0:"convergence0 q X" and
-          A1:"convergence1 q X" and
-          A2:"convergence2 q X" and
-          A3:"convergence3 q X" and
-          A4:"q \<noteq> {}"
-  shows "\<And>x F. (F, x)\<in>q\<Longrightarrow>(\<exists>U \<in> F. x \<in> U)"
-proof-
-  fix x F assume A5:"(F, x)\<in>q"
-  obtain B0:"X \<in> F" using pretop2[of q X F x] A0 A1 A2 A3 A4 A5 by blast
-  obtain B1:"x \<in> X" using pretop1[of q X F x] A0 A1 A2 A3 A4 A5 by blast
-  have B2:"x \<in> X"   by (simp add: B1)
-  show "(\<exists>U \<in> F. x \<in> U)"   using B0 B2 by auto
-qed
-
-  
-lemma idprtop:
-  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
-  assumes A0:"convergence0 q X" and
-          A1:"convergence1 q X" and
-          A2:"convergence2 q X" and
-          A3:"convergence3 q X" and
-          A4:"q \<noteq> {}"
-  defines "Clq \<equiv> \<lambda>A. {x \<in> X. \<exists>G. (G, x) \<in> q \<and> A \<in> G} "
-  defines "Nclq \<equiv> \<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)}"
-  defines "qclq \<equiv> {(F, x). F \<in> pfilters_on (Pow X) \<and> Nclq x \<subseteq> F \<and> x \<in> X}"
-  shows "qclq = q"
-proof-
-  let ?FX="pfilters_on (Pow X)" 
-  define Nq where "Nq \<equiv> \<lambda>x. \<Inter>{F. (F, x) \<in> q}"
-  have C0:"\<And>x. x \<in> X \<Longrightarrow>  Nq x \<noteq> {}"
+  fix x assume A1:"x \<in> X"
+  let ?N="\<Inter>{F. (F, x) \<in> q}"
+  have B0:"\<And>U. \<lbrakk>U \<in> Pow X; U \<notin> ?N\<rbrakk> \<Longrightarrow> U \<notin> NClq x"
   proof-
-    fix x assume C0A0:"x \<in> X"
-    have C01:"X \<in> (Nq x)"
+    fix U assume A2:"U \<in> Pow X" and A3:"U \<notin> ?N"
+    have B01:"is_pfilter (Pow X) ?N" 
+      apply(auto simp add:is_pfilter_def)
+      using A0 local.A1 apply blast
+      using local.A2 local.A3 by blast
+    obtain G where B02:"(G, x)\<in>q" and B03:"U \<notin> G" using local.A3 by auto
+    have B04:"G \<in> pfilters_on (Pow X)"   using A0 B02 by auto
+    have B05:"\<forall>g \<in> G. g \<inter> (X-U) \<noteq> {}"  by (metis (no_types, lifting) B04 B03 Int_Collect Int_iff PowD local.A2 pfilters_sets_comp3)
+    have B06:"(X-U) \<in> Pow X"    by simp
+    define H where "H \<equiv> {E \<in> Pow X. \<exists>g \<in> G. (X-U) \<inter> g \<subseteq> E}" 
+    obtain B07:"is_pfilter (Pow X) H"  using finer_proper_filter[of X G "(X-U)"]  using B04 B05 H_def is_pfilterI1 by fastforce 
+    obtain B08:"G \<subseteq> H"  using finer_proper_filter[of X G "(X-U)"]  using B04 B05 H_def is_pfilterI1 by auto
+    have B010:"(H, x) \<in> q"  by (metis (mono_tags, lifting) A0 B02 B04 B08 B07 CollectI is_pfilter_def local.A1)
+    have B011:"(X-U) \<in>H"    using B04 H_def filter_ex_elem by fastforce
+    have B012:"x \<in> Clq (X-U)"     using A0 B010 B011 Clq_def by auto
+    show "U \<notin> NClq x" using B012 NClq_def by fastforce
+  qed
+  have B1:"\<And>U. \<lbrakk>U \<in> Pow X; U \<notin> NClq x\<rbrakk> \<Longrightarrow> U \<notin> ?N"
+  proof-
+    fix U assume A2:"U \<in> Pow X" and A3:"U \<notin> NClq x"
+    then obtain B10:"x \<in> Clq (X-U)" using NClq_def by auto
+    then obtain G where B11:"G \<in> pfilters_on (Pow X)" and  B12:"(G, x) \<in> q"  and B13:"(X-U) \<in> G"  using Clq_def by auto
+    then show "U \<notin> ?N"
+      using pfilters_sets_comp2 by fastforce
+  qed
+  show "NClq x = \<Inter>{F. (F, x) \<in> q}"
+  proof
+    show "NClq x \<subseteq> \<Inter>{F. (F, x) \<in> q}"  using B0 NClq_def by blast
+    next
+    show " \<Inter>{F. (F, x) \<in> q} \<subseteq> NClq x"   by (metis (no_types, lifting) A0 B1 CollectI Inter_lower local.A1 lorc_mem_iff1 subsetD subsetI) 
+  qed
+qed
+
+lemma pretop_cc_pretop:
+  fixes q::"('a set set \<times> 'a) set" and X::"'a set"
+  assumes A0:"pretop q X"
+  defines "Clq \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G})"
+  defines "NClq \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Clq (X-V)})"
+  defines "qClq \<equiv> {(EF, x). x \<in> X \<and> EF \<in>  pfilters_on (Pow X) \<and> NClq x \<subseteq> EF}"
+  shows "qClq = q"
+proof
+  show "qClq \<subseteq> q"
+  proof
+    fix z assume LA0:"z\<in>qClq" then obtain EF x where LA1:"z=(EF, x)"  by fastforce
+    then obtain LA2:"(EF, x) \<in> qClq"  and LA3:"EF \<in>  pfilters_on (Pow X)" and LA4:"NClq x \<subseteq> EF" and LA5:"x \<in> X" using LA0 qClq_def by fastforce
+    have LB0:"\<Inter>{F. (F, x) \<in> q}=NClq x" using pretop_cl_nh[of q X x] LA5 A0 NClq_def Clq_def by presburger
+    then have LB1:" \<Inter>{F. (F, x) \<in> q}  \<subseteq> EF"  by (simp add: LA4) 
+    have LB2:"\<Inter>{F. (F, x) \<in> q} \<in>  pfilters_on (Pow X)"   by (metis (mono_tags, lifting) A0 Ball_Collect LA5 case_prodD)
+    have LB3:"(\<Inter>{F. (F, x) \<in> q}, x) \<in> q"   using A0 LA5 by fastforce
+    have LB4:"(EF, x) \<in> q"  by (meson A0 LA3 LA5 LB1 LB2) 
+    then show "z\<in> q" using LA1 by blast
+  qed
+  next
+  show "q \<subseteq> qClq"
+  proof
+    fix z assume RA0:"z \<in> q" then obtain EF x where RA1:"z=(EF, x)"  by fastforce
+    then obtain RA2:"(EF, x) \<in> q"  and RA3:"EF \<in>  pfilters_on (Pow X)" and RA4:"\<Inter>{F. (F, x) \<in> q} \<subseteq> EF" and RA5:"x \<in> X" using A0 RA1  using Inf_lower RA0 by auto
+    have RB0:"\<Inter>{F. (F, x) \<in> q}=NClq x" using pretop_cl_nh[of q X x] RA5 A0 NClq_def Clq_def by presburger
+    then have RB1:" \<Inter>{F. (F, x) \<in> q}  \<subseteq> EF" using RA4 by blast 
+    then have RB2:"NClq x \<subseteq> EF"  by (simp add: RB0)
+    then have RB3:"(EF, x) \<in> qClq"   using RA3 RA5 qClq_def by blast
+    then show "z \<in> qClq"    by (simp add: RA1)
+  qed  
+qed
+
+lemma cc_cl_mem:
+  fixes Cl::"'a set \<Rightarrow> 'a set" and X::"'a set"
+  assumes A0:"ccl X Cl"
+  defines "NCl \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Cl (X-V)})"
+  shows "\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X\<rbrakk> \<Longrightarrow> (x \<in> Cl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})) "
+proof-
+  fix A x assume A1:"A \<in> Pow X" and A2:"x \<in> X"
+  have B0:"\<not>(x \<in> Cl A) \<Longrightarrow> (\<not>(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
+  proof-
+    assume "\<not>(x \<in> Cl A)" then obtain B0A0:"x \<notin> Cl A" by auto
+    obtain B01:"(X-A) \<in> Pow X" and B02:"x \<notin> Cl(X-(X-A))"    using B0A0 double_diff local.A1 by fastforce
+    then have B02:"(X-A) \<in> NCl x" by (simp add: NCl_def)
+    also have B03:"A \<inter> (X-A) = {}"  by simp
+    then show "(\<not>(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"  using calculation by blast
+  qed
+  have B1:" (\<not>(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})) \<Longrightarrow> \<not>(x \<in> Cl A) "
+  proof-
+      assume " \<not>(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})" 
+      then obtain V where B1A0:"V \<in> Pow X" and B1A1:"V \<in> NCl x" and B1A2:" V \<inter> A = {}" by auto
+      then obtain B10:"A \<subseteq> (X-V)"   using local.A1 by blast
+      have B11:"Cl A \<subseteq> Cl (X-V)"  by (metis A0 B10 Diff_subset PowI local.A1 sup.orderE sup.orderI)
+      also have B12:"x \<notin> Cl (X - V)"   using B1A1 NCl_def by blast
+      then show "\<not>(x \<in> Cl A)"  using calculation by blast
+  qed
+  show "(x \<in> Cl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
+  using B0 B1 by blast
+qed
+  
+lemma cc_pretop_nhf:
+  fixes Cl::"'a set \<Rightarrow> 'a set" and X::"'a set"
+  assumes A0:"ccl X Cl"
+  defines "NCl \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Cl (X-V)})"
+  shows "\<And>x. x \<in> X \<Longrightarrow> is_pfilter (Pow X) (NCl x)"
+proof-
+  fix x assume A1:"x \<in> X"
+  have B0:"{} \<notin> NCl x" using A0 NCl_def local.A1 by auto
+  have B1:"is_filter (Pow X) (NCl x)"
+  apply(rule filterI1)
+  using A0 NCl_def apply fastforce
+  using NCl_def apply blast
+  apply(rule is_dwdirI1)
+  proof-
+  show "\<And>(a::'a set) b::'a set. a \<in> NCl x \<Longrightarrow> b \<in> NCl x \<Longrightarrow> \<exists>c::'a set\<in>NCl x. c \<subseteq> a \<and> c \<subseteq> b"
+  proof-
+    fix a b assume " a \<in> NCl x " and "b \<in> NCl x "
+    then have "x \<notin> Cl (X -(a \<inter> b))"  by (metis (no_types, lifting) A0 CollectD Diff_Int Diff_subset NCl_def Pow_iff Un_iff)
+    then have "(a \<inter> b) \<in> NCl x"
+    using NCl_def \<open>(a::'a::type set) \<in> (NCl::'a::type \<Rightarrow> 'a::type set set) (x::'a::type)\<close> by blast
+    then show "\<exists>c::'a set\<in>NCl x. c \<subseteq> a \<and> c \<subseteq> b"
+    by (metis Int_lower2 inf.cobounded1)
+  qed
+  show "is_ord_cl (Pow X) (NCl x) (\<subseteq>)"
+  apply(rule is_ord_clI1)
+  apply(auto simp add:NCl_def)
+  by (metis A0 Diff_Int Diff_subset PowI UnCI inf.absorb_iff2)
+  qed
+  then show "is_pfilter (Pow X) (NCl x)"
+  using B0 is_pfilterI1 by auto
+qed
+
+lemma cc_pretop_cc:
+  fixes Cl::"'a set \<Rightarrow> 'a set" and X::"'a set"
+  assumes A0:"ccl X Cl"
+  defines "NCl \<equiv> (\<lambda>x. {V \<in> Pow X. x \<notin> Cl (X-V)})"
+  defines "qCl \<equiv> {(EF, x). x \<in> X \<and> EF \<in>  pfilters_on (Pow X) \<and> NCl x \<subseteq> EF}"
+  defines "ClqCl \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> qCl \<and> A \<in> G})"
+  shows "\<And>A. A \<in> Pow X \<Longrightarrow> Cl A = ClqCl A"
+proof-
+  fix A assume A1:"A \<in> Pow X"
+  have B0:"\<And>x. x \<in> X \<Longrightarrow> (x \<in> Cl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))" using cc_cl_mem[of Cl X A]  using A0 NCl_def local.A1 by presburger
+  have B1:"\<And>x . x \<in> X \<Longrightarrow> (x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
+  proof-
+    fix x assume A2:"x \<in> X"
+    have B10:"x \<in> ClqCl A \<Longrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
     proof-
-      have C010:"\<And>F. F \<in> {F. (F,x) \<in>q} \<Longrightarrow> X \<in> F" using pretop2[of q X] A0 A1 A2 A3 A4 by blast
-      have C011:"X \<in>  \<Inter>{F. (F, x) \<in> q}"
-        using C010 by blast
-      show "X \<in> (Nq x)"
-        by (simp add: C010 Nq_def)
+      assume B10A0:"x \<in> ClqCl A"  then obtain G where B10A1:"G \<in> pfilters_on (Pow X)" and 
+       B10A2:"(G, x) \<in> qCl" and B10A3:"A \<in> G" using ClqCl_def by blast
+      then have B101:"NCl x \<subseteq> G "  using qCl_def by auto
+      have B102:"\<And>V. V \<in> NCl x \<Longrightarrow> V \<inter> A \<noteq> {}" 
+      proof-
+        fix V assume B103:"V \<in> NCl x"
+        obtain B104:"V \<in> G"  and B105:"A \<in> G" and B106:"is_pfilter (Pow X) G"
+        by (metis (mono_tags, lifting) B101 B103 B10A1 B10A3 Int_Collect Int_iff is_pfilterI1 subset_eq)
+        then show " V \<inter> A \<noteq> {}"  by (metis A3 A5)
+      qed
+      then show "(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"
+      by blast
     qed
-    show " Nq x \<noteq> {}"
-      using C01 by blast
-  qed
-  have C0:"\<And>A F x. \<lbrakk>A \<in> Nq x; (F, x) \<in> q \<rbrakk> \<Longrightarrow>  A \<in> F"   using Nq_def by blast
-  have B0:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<in> Clq (X-A) \<longleftrightarrow> (\<exists>G. (G, x) \<in> q \<and> (X-A) \<in> G)"   by (simp add: Clq_def)
-  have B1:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<notin> q \<or> (X-A) \<notin> G)"   using B0 by auto 
-  have B2:"\<forall>A \<in> Pow X. \<forall>x \<in> X. x \<notin> Clq (X-A) \<longleftrightarrow> (\<forall>G. (G, x) \<in> q \<longrightarrow> (X-A) \<notin> G)"  using B1 by auto 
-  have B3:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> \<Inter>{G. (G, x) \<in>q}"   using B0 local.A3 by blast
-  have B4:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> (X-A) \<notin> (lorc {x} (Pow X))"  using B1 local.A1 by blast
-  have B5:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<notin> Clq (X-A)\<rbrakk> \<Longrightarrow> A \<in> (lorc {x} (Pow X))" by (metis B4 Diff_iff Diff_subset PowI empty_subsetI insert_subset lorcI1) 
-  have B6:"\<And>G x. (G, x)\<in> qclq \<Longrightarrow> (G, x) \<in> q"
-  proof-
-    fix G x assume A5:"(G, x) \<in> qclq"   
-    obtain A6:"x \<in> X"  using A5 qclq_def by blast
-    obtain A7:"G \<in> pfilters_on (Pow X)" using A5 qclq_def by fastforce
-    obtain A8:"Nclq x \<subseteq> G"  using A5 qclq_def by fastforce
-    have B60:"Nq x \<subseteq> G"
+    have B11:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}) \<Longrightarrow> x \<in> ClqCl A "
     proof-
-      fix A assume B60A0:"A \<in> Nq x"
-      have B601:"lorc {x} (Pow X) \<in> {F. (F, x) \<in> q}"   by (simp add: A6 local.A1)
-      obtain B602:"(X-A) \<notin> (lorc {x} (Pow X))"   by (metis A6 B60A0 C0 Posets16.A2 local.A1 pfilters_sets_comp2 principal_filter_sets principal_pfilter_sets)
-      have B603:"A \<in> (lorc {x} (Pow X))"   using B601 B60A0 C0 by blast
-      obtain B604:"x \<in> Clq (A)"  using A6 B603 Clq_def local.A1 by auto
-    obtain B60:"\<And>A. A \<in> Pow X "
-    
-
+      assume B11A0:"(\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {})"  then obtain  B6:"\<forall>V \<in> NCl x. V \<inter>A  \<noteq> {}"   using NCl_def by blast 
+      also have  B7:"is_pfilter (Pow X) (NCl x)" using cc_pretop_nhf[of Cl X x] A0 NCl_def local.A2 by blast 
+      define H where "H \<equiv> {E \<in> Pow X. \<exists>V \<in> (NCl x). A \<inter> V \<subseteq> E}" 
+      obtain B9:"is_pfilter (Pow X) H"  using finer_proper_filter[of X "NCl x" "A"] B6 A1 B7  using H_def by blast
+      obtain B10:"H \<in>  pfilters_on (Pow X)"  using B9 CollectI is_pfilter_def by fastforce 
+      obtain B11:"NCl x \<subseteq> H" using finer_proper_filter[of X "NCl x" "A"]  using B7 H_def calculation local.A1 by fastforce 
+      then obtain B010:"(H, x) \<in> qCl" using B10 local.A2 qCl_def by blast 
+      have  B011:"A \<in> H"  using B7 H_def filter_ex_elem is_pfilterD1 local.A1 by fastforce
+      then show "x \<in> ClqCl A"
+      using B010 B10 ClqCl_def local.A2 by blast
+   qed
+  then show "(x \<in> ClqCl A \<longleftrightarrow> (\<forall>V \<in> Pow X. V \<in> NCl x \<longrightarrow> V \<inter> A \<noteq> {}))"
+  using B10 by linarith
+  qed
+  then show "Cl A = ClqCl A"
+qed
 
 end
