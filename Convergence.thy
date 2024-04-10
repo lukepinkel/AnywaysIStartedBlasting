@@ -1,10 +1,7 @@
 theory Convergence
-  imports Main
+  imports Main Posets16
 begin
 no_notation Cons (infixr "#" 65) 
-
-definition preceq::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool"  (infixl "(\<preceq>)" 70) where
-  "\<A> \<preceq> \<B> \<equiv> (\<forall>A. A \<in> \<A> \<longrightarrow> (\<exists>B \<in> \<B>. B \<subseteq> A))"
 
 lemma preceqI[intro?]:
   "(\<And>A. A \<in> \<A> \<Longrightarrow>(\<exists>B \<in> \<B>. B \<subseteq> A)) \<Longrightarrow> \<A> \<preceq> \<B>"
@@ -36,18 +33,38 @@ lemma upclosedI:
   "\<lbrakk>(\<A> \<subseteq> Pow X) ;(\<And>A B. \<lbrakk>A \<in> \<A>; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> \<A>)\<rbrakk> \<Longrightarrow> upclosed X \<A>"
   by(auto simp add:upclosed_def)
 
-lemma upclosedE:
-  assumes up:"upclosed X \<A>" shows upcl_sub:"(\<A> \<subseteq> Pow X)" and upcl:"(\<And>A B. \<lbrakk>A \<in> \<A>; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> \<A>)"
-  using up upclosed_def apply blast
-  by (meson up upclosed_def)
+lemma upclosedE1:
+  "upclosed X \<A> \<Longrightarrow> \<A> \<subseteq> Pow X"
+   by(simp add:upclosed_def)
+
+lemma upclosedE2:
+  "upclosed X \<A> \<Longrightarrow> (\<And>A B. \<lbrakk>A \<in> \<A>; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> \<A>)"
+   by(simp add:upclosed_def)
+
+lemma upclosed_memI1:
+  "\<lbrakk>upclosed X \<A>; E \<in> Pow X; (\<exists>A \<in> \<A>. A \<subseteq> E)\<rbrakk> \<Longrightarrow> E \<in> \<A>"
+  using upclosedE2 by blast    
+   
 
 lemma upcl_memI:
   "\<lbrakk>E \<in> Pow X; (\<exists>A \<in> \<A>. A \<subseteq> E)\<rbrakk> \<Longrightarrow>  E \<in> upcl X \<A>"
   by (simp add: upcl_def)
 
+lemma upcl_memI2:
+  "\<lbrakk>E \<in> Pow X; A \<in> \<A>; A \<subseteq> E\<rbrakk> \<Longrightarrow>  E \<in> upcl X \<A>"
+proof-
+  assume A0:"E \<in> Pow X" and "A \<in> \<A>" and "A \<subseteq> E"
+  then obtain  "E \<in> Pow X"  and "(\<exists>A \<in> \<A>. A \<subseteq> E)" by blast
+  then show "E \<in> upcl X \<A>"  by(rule upcl_memI)
+qed
+
 lemma upcl_memE1:
    " E \<in> upcl X \<A> \<Longrightarrow> E \<in> Pow X"
    by (simp add: upcl_def) 
+
+lemma upcl_closed:
+  "(upcl X \<A>) \<subseteq> (Pow X)"
+  by(auto dest:upcl_memE1)
 
 lemma upcl_memE2:
    "E \<in> upcl X \<A> \<Longrightarrow> (\<exists>A \<in> \<A>. A \<subseteq> E)"
@@ -57,39 +74,95 @@ lemma upcl_mem_iff:
   "E \<in> upcl X \<A> \<longleftrightarrow> E \<in> Pow X \<and> (\<exists>A \<in> \<A>. A \<subseteq> E)"
   by (simp add: upcl_def)
   
-lemma upcl_closed[simp]:
-  "(upcl X \<A>) \<subseteq> (Pow X)"
-  by(auto simp add:upcl_def)
+lemma upcl_upclosed1:
+  "\<lbrakk>A \<in> upcl X \<A>; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> upcl X \<A>"
+proof(rule upcl_memI, simp)
+  assume A0:"A \<in> upcl X \<A>" and A1:"B \<in> Pow X" and A2:"A \<subseteq> B"
+  from A0 obtain C where "C \<in> \<A>" and "C \<subseteq> A"  using upcl_memE2 by blast 
+  then obtain "C \<in> \<A>" and "C \<subseteq> B" using A2 by simp
+  then show "\<exists>A\<in>\<A>. A \<subseteq> B" by auto
+qed
+
+lemma upcl_ref:
+  "\<A> \<subseteq> Pow X \<Longrightarrow> E \<in> \<A> \<Longrightarrow> E \<in> upcl X \<A>"
+proof-
+    assume "\<A> \<subseteq> Pow X" and "E \<in> \<A>"
+    then obtain "(\<exists>A \<in> \<A>. A \<subseteq> E)" and "E \<in> Pow X" by blast
+    then show "E \<in> upcl X \<A>"    by (simp add: upcl_memI) 
+qed
 
 lemma upcl_ext:
-  assumes sub:"\<A> \<subseteq> Pow X" 
-  shows "\<A> \<subseteq> upcl X \<A>"
-  using sub upcl_def by fastforce 
+ "\<A> \<subseteq> Pow X \<Longrightarrow> \<A> \<subseteq> upcl X \<A>"
+ by (simp add: subset_eq upcl_ref)
 
 lemma upcl_iso:
-  assumes  sub1:"\<B> \<subseteq> Pow X" and sub2:"\<A> \<subseteq> \<B>"
-  shows "upcl X \<A> \<subseteq> upcl X \<B>"
-  using sub1 sub2 by(auto simp add:upcl_def) 
+  "\<lbrakk>\<A> \<subseteq> \<B>; \<B> \<subseteq> Pow X\<rbrakk> \<Longrightarrow> upcl X \<A> \<subseteq> upcl X \<B>"
+proof-
+  assume "\<A> \<subseteq> \<B>" and "\<B> \<subseteq> Pow X" then obtain "\<A> \<subseteq> Pow X" by simp
+  show "upcl X \<A> \<subseteq> upcl X \<B>"
+  proof
+    fix E assume "E\<in> upcl X \<A>"
+    then obtain "E \<in> Pow X" and " (\<exists>A \<in> \<A>. A \<subseteq> E)"   by (simp add: upcl_mem_iff)
+    then obtain A where "A \<in> \<A>" and "A \<subseteq> E" by blast
+    also obtain  "E \<in> Pow X" and  "A \<in> \<B>" and "A \<subseteq> E"  using \<open>E \<in> Pow X\<close> \<open>\<A> \<subseteq> \<B>\<close> calculation(1,2) by blast  
+    then show "E \<in> upcl X \<B>" by(rule upcl_memI2)
+  qed
+qed
 
 
 lemma upcl_ide:
-  assumes sub:"\<A> \<subseteq> Pow X" 
-  shows "upcl X \<A> = upcl X (upcl X \<A>)"
-  using assms apply(auto simp add:upcl_def)
-  by (meson dual_order.trans)
+  "\<lbrakk>\<A> \<subseteq> Pow X\<rbrakk> \<Longrightarrow> upcl X \<A> = upcl X (upcl X \<A>)"
+proof-
+  assume A0:"\<A> \<subseteq> Pow X"
+   show "upcl X \<A> = upcl X (upcl X \<A>)"
+  proof
+    show "upcl X \<A>  \<subseteq> upcl X (upcl X \<A>)"
+    proof
+      fix E assume "E \<in>upcl X \<A>"
+      then show "E \<in> upcl X (upcl X \<A>)" by (simp add: upcl_closed upcl_ref)
+    qed
+    show "upcl X (upcl X \<A>) \<subseteq> upcl X \<A> "
+    proof
+      fix E assume A1:"E \<in> upcl X (upcl X \<A>)"
+      then obtain A where "A \<in> upcl X \<A>" and "A \<subseteq> E"     using upcl_memE2 by blast
+      then obtain B where "B \<in> \<A>" and "B \<subseteq> A"    using upcl_memE2 by blast
+      also obtain "E \<in> Pow X" and "B \<in> \<A>" and "B \<subseteq> E"   using A1 \<open>A \<subseteq> E\<close> calculation(1,2)upcl_memE1 by blast
+      then show "E \<in>upcl X \<A>"  by (simp add: upcl_memI2)
+    qed
+  qed
+qed
 
-lemma upcl_upclosed:
-  assumes sub:"\<A> \<subseteq> Pow X" 
-  shows "upclosed X (upcl X \<A>)"
-  apply(rule upclosedI)
-  apply(simp add:sub)
-  apply(auto simp add:upcl_def)
-  by (meson order_trans)
+
+lemma upcl_upclosed2:
+  "\<lbrakk>\<A> \<subseteq> Pow X\<rbrakk> \<Longrightarrow> upclosed X (upcl X \<A>)"
+proof-
+  assume A0:"\<A> \<subseteq> Pow X"
+  show "upclosed X (upcl X \<A>)"
+  proof(rule upclosedI)
+    show "upcl X \<A> \<subseteq> Pow X" by (simp add: upcl_closed)
+    show "\<And>A B. A \<in> upcl X \<A> \<Longrightarrow> B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> B \<in> upcl X \<A>" using upcl_upclosed1 by blast
+  qed
+qed
+
+
+
 
 lemma upcl_fp:
-  assumes sub:"\<A> \<subseteq> Pow X" and up:"upclosed X \<A>"
-  shows "upcl X \<A>=\<A>"
-  using assms by(auto simp add:upcl_def upclosed_def)
+  "\<lbrakk>\<A> \<subseteq> Pow X; upclosed X \<A>\<rbrakk> \<Longrightarrow>upcl X \<A>=\<A>"
+proof-
+  assume sub:"\<A> \<subseteq> Pow X" and up:"upclosed X \<A>"
+  show "upcl X \<A>=\<A>"
+  proof
+    show "upcl X \<A> \<subseteq> \<A>"
+    proof
+      fix E assume "E \<in> upcl X \<A>"  
+      then obtain "E \<in> Pow X" and "(\<exists>A \<in> \<A>. A \<subseteq> E)" by (simp add: upcl_mem_iff)
+      show "E \<in> \<A>"   using \<open>E \<in> Pow X\<close> \<open>\<exists>A\<in>\<A>. A \<subseteq> E\<close> up upclosedE2 by blast
+    qed
+    show " \<A>\<subseteq> upcl X \<A>" by (simp add: sub upcl_ext)
+  qed
+qed
+
 
 lemma up_cl_preceq:
   "\<A> \<subseteq> Pow X \<Longrightarrow> \<A> \<preceq> upcl X \<A>"
@@ -100,14 +173,48 @@ lemma up_cl_preceq2:
   by(auto simp add:preceq_def upcl_def)
 
 lemma preceq_iff:
-  assumes  sub1:"\<A> \<subseteq> Pow X" and sub2:"\<B> \<subseteq> Pow X"
-  shows "\<A> \<preceq> \<B> \<longleftrightarrow> \<A> \<subseteq> upcl X \<B>" 
-  using assms by(auto simp add:upcl_def preceq_def)
+  "\<lbrakk>\<A> \<subseteq> Pow X; \<B> \<subseteq> Pow X\<rbrakk> \<Longrightarrow> \<A> \<preceq> \<B> \<longleftrightarrow> \<A> \<subseteq> upcl X \<B> "
+proof-
+  assume sub1:"\<A> \<subseteq> Pow X" and sub2:"\<B> \<subseteq> Pow X" 
+  show "\<A> \<preceq> \<B> \<longleftrightarrow> \<A> \<subseteq> upcl X \<B>"
+  proof
+    assume L:"\<A> \<preceq> \<B>"
+    show "\<A> \<subseteq> upcl X \<B>"
+    proof
+      fix E assume "E \<in> \<A>"
+      then obtain B where "B \<in> \<B>" and "B \<subseteq> E"   using L preceqE by blast
+      also obtain "E \<in> Pow X" and "B \<in> \<B>" and "B \<subseteq> E"  using \<open>E \<in> \<A>\<close> calculation(1,2) sub1 by blast 
+      then show "E \<in> upcl X \<B>" by(rule upcl_memI2)
+    qed
+    next
+    assume R:"\<A> \<subseteq> upcl X \<B>"
+    show "\<A> \<preceq> \<B>"
+    proof(rule preceqI)
+      fix A assume "A \<in> \<A>"
+      then obtain "A \<in> upcl X \<B>" using R by blast
+      then show "\<exists>B\<in>\<B>. B \<subseteq> A"   by (simp add: upcl_memE2)
+    qed
+  qed
+qed
 
 lemma preceq_of_iso:
   assumes sub1:"\<A> \<subseteq> Pow X"  and sub2:"\<B> \<subseteq> Pow X" and up:"upclosed X \<B>"
   shows "\<A> \<preceq>\<B> \<longleftrightarrow>\<A>  \<subseteq> \<B> "
-  by (metis preceq_iff sub1 sub2 up upcl_fp)
+proof
+  assume L:"\<A> \<preceq> \<B>"
+  show "\<A>  \<subseteq> \<B>"
+  proof
+    fix A assume "A \<in> \<A>"
+    then obtain B where "B \<in> \<B>" and "B \<subseteq> A"  using L preceqE by blast
+    also obtain "A \<in> Pow X" and "B \<in> \<B>" and "B \<subseteq> A"  using \<open>A \<in> \<A>\<close> calculation(1,2) sub1 by blast 
+    then show "A \<in> \<B>"  using up upclosedE2 by blast 
+  qed
+  next
+  assume R: "\<A>  \<subseteq> \<B>"
+  show "\<A> \<preceq> \<B>" by (simp add: R sub_preceq)
+qed
+
+  
 
 lemma preceq_image:
   assumes map:"f`X =Y" and sub1:"\<A> \<subseteq> Pow X" and sub2:"\<B> \<subseteq> Pow Y" 
@@ -153,6 +260,22 @@ abbreviation filters_on where
 abbreviation pfilters_on where
   "pfilters_on X \<equiv> {\<F>. pfil X \<F>}"
 
+abbreviation filter_filters where
+  "filter_filters X \<A> \<equiv> {\<F>. \<A> \<subseteq> \<F> \<and> fil X \<F>}"
+           
+abbreviation filter_pfilters where
+  "filter_pfilters X \<A> \<equiv> {\<F>. \<A> \<subseteq> \<F> \<and> pfil X \<F>}"
+
+lemma filI:
+  "\<lbrakk>\<F>  \<noteq> {}; \<F> \<subseteq> Pow X; (\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>); (\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>)\<rbrakk> \<Longrightarrow> fil X \<F>"
+  by (metis fil_def)
+
+lemma pfilI:
+  "\<lbrakk>\<F>  \<noteq> {}; \<F> \<subseteq> Pow X; (\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>); (\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>);\<F> \<noteq> Pow X\<rbrakk> \<Longrightarrow> pfil X \<F>"
+  by (metis pfil_def)
+
+
+
 lemma pfil_fil:
   "pfil X \<F> \<Longrightarrow> fil X \<F>"
   by (simp add: fil_def pfil_def)
@@ -161,39 +284,111 @@ lemma fil_pfil:
   "fil X \<F> \<Longrightarrow>\<F> \<noteq> Pow X \<Longrightarrow> pfil X \<F> "
   by (simp add: fil_def pfil_def)
 
-lemma filE:
-  assumes f:"fil X \<F>" 
-  shows filsub:"\<F> \<subseteq> Pow X" and 
-        filupc:"\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>" and
-        filinc:"\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>" and
-        filnem:"\<F>  \<noteq> {} " and
-        filtop:"X \<in> \<F>"
- using f apply(simp add:fil_def)
- using f fil_def apply blast
- apply (metis f fil_def)
- using f fil_def apply blast
- by (metis PowD Pow_top ex_in_conv f fil_def subsetD)
+lemma pfilI2:
+  "\<lbrakk>fil X \<F>; {}  \<notin> \<F>\<rbrakk> \<Longrightarrow> pfil X \<F>"
+proof-
+  assume f:"fil X \<F>" and ne:"{} \<notin> \<F>"
+  also obtain "\<F> \<noteq> Pow X"  using ne by blast
+  then show "pfil X \<F>" by (simp add: f fil_pfil)
+qed    
+
+lemma filE1:
+  "fil X \<F> \<Longrightarrow> \<F> \<subseteq> Pow X"
+  by (simp add: fil_def)            
+
+lemma pfilE1:
+  "pfil X \<F> \<Longrightarrow> \<F> \<subseteq> Pow X"
+  by (simp add: pfil_def)
+
+lemma filE2:
+  "fil X \<F> \<Longrightarrow> (\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>)"
+  using fil_def by blast    
+
+lemma pfilE2:
+  "pfil X \<F> \<Longrightarrow> (\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>)"
+  using filE2 pfil_fil by blast
+  
+
+lemma filE3:
+  "fil X \<F> \<Longrightarrow>  (\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>)"
+proof-
+  assume f:"fil X \<F>"
+  show "\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>"
+  proof-
+    fix F1 F2 assume m1:"F1 \<in>  \<F>" and m2:"F2 \<in>  \<F>"
+    then obtain "F1 \<in> \<F> \<and> F2 \<in> \<F>" by auto
+    then show "F1 \<inter> F2 \<in>  \<F>" using f fil_def[of X \<F>]  by auto 
+  qed
+qed
 
 
-lemma pfilE:
-  assumes f:"pfil X \<F>" 
-  shows pfilsub:"\<F> \<subseteq> Pow X" and 
-        pfilupc:"\<And>A F. \<lbrakk>A \<in> Pow X; F \<in>  \<F>; F \<subseteq> A\<rbrakk> \<Longrightarrow> A \<in>  \<F>" and
-        pfilinc:"\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>" and
-        pfilnsp:"\<F> \<noteq> Pow X" and
-        pfiltop:"X \<in> \<F>" and
-        pfilnbt:"{} \<notin> \<F>" 
-        apply (meson f fil_def pfil_fil)
-        using f filupc pfil_fil apply blast
-        using f filinc pfil_fil apply blast
-        using f pfil_def apply blast
-        apply (simp add: f filtop  pfil_fil)
-        by (metis empty_subsetI f pfil_def subsetI subset_antisym)
+lemma pfilE3:
+  "pfil X \<F> \<Longrightarrow>  (\<And>F1 F2. \<lbrakk>F1 \<in>  \<F>; F2 \<in>  \<F>\<rbrakk> \<Longrightarrow> F1 \<inter> F2 \<in>  \<F>)"
+  using filE3 pfil_fil by blast
+
+lemma filE4:
+  "fil X \<F> \<Longrightarrow>   \<F> \<noteq> {}"
+  using fil_def by blast
+
+lemma pfilE4:
+  "pfil X \<F> \<Longrightarrow>   \<F> \<noteq> {}"
+  using pfil_def by blast
+
+lemma filE5:
+  "fil X \<F> \<Longrightarrow>  X \<in> \<F>"
+proof-
+  assume f:"fil X \<F>"
+  then obtain F where "F \<in> \<F>" using filE4 by fastforce 
+  then obtain "F \<subseteq> X" using f filE1 by auto
+  then obtain "X \<in> Pow X" and "F \<in> \<F>" and "F \<subseteq> X"  using \<open>F \<in> \<F>\<close> by blast
+  then show "X \<in> \<F>" using f filE2 by blast
+qed
+
+lemma pfilE5:
+  "pfil X \<F> \<Longrightarrow>  X \<in> \<F>"
+  by (simp add: filE5 pfil_fil)
+
+lemma pfilE6:
+  "pfil X \<F> \<Longrightarrow>  \<F> \<noteq> Pow X"
+  by (simp add: pfil_def)
+
+lemma pfilE7:
+  "pfil X \<F> \<Longrightarrow>  {} \<notin> \<F>"
+proof-
+  assume f:"pfil X \<F>"
+  show " {} \<notin> \<F>"
+  proof(rule ccontr)
+    assume "\<not> ({} \<notin> \<F>)" then obtain cont:"{} \<in> \<F>" by simp
+    then have "\<F>=Pow X"
+    proof-
+      show "\<F> = Pow X"
+      proof
+        show "\<F> \<subseteq> Pow X"  using f pfilE1 by auto
+        next
+        show "Pow X \<subseteq> \<F> "
+        proof
+          fix E assume "E \<in> Pow X"
+          then obtain"E \<in> Pow X" and  "{} \<in> \<F>" and "{} \<subseteq> E"        by (simp add: cont)
+          then show "E \<in> \<F>"    using f pfilE2 by blast
+        qed
+    qed
+  qed
+  then show False by (simp add: f pfilE6)
+  qed
+qed
+
 
 lemma fil_upcl:
   "fil X \<F> \<Longrightarrow> upclosed X \<F>"
-  apply(rule upclosedI,simp add: filsub)
-  using filupc by blast
+proof-
+  assume f:"fil X \<F>"
+  show "upclosed X \<F>"
+  proof(rule upclosedI)
+    show "\<F> \<subseteq> Pow X"   by (simp add: f filE1)
+    show "\<And>A B. A \<in> \<F> \<Longrightarrow> B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> B \<in> \<F>"   using f filE2 by blast
+  qed
+qed
+    
 
 lemma pfil_upcl:
   "pfil X \<F> \<Longrightarrow> upclosed X \<F>"
@@ -202,12 +397,13 @@ lemma pfil_upcl:
 lemma filter_inter:
   assumes ef:"\<forall>F. F \<in> EF \<longrightarrow> fil X F" and ne:"EF \<noteq> {}"
   shows "fil X (\<Inter>EF)"
-  apply(auto simp add:fil_def)
-  apply (metis InterI ef empty_iff filtop)
-  apply (metis IntD2 Int_commute Pow_iff all_not_in_conv ef fil_def inf.absorb_iff2 ne)
-  apply (meson PowI ef filupc)
-  by (meson ef filinc)
-
+proof(rule filI)
+  obtain "X \<in> \<Inter>EF" by (simp add: ef filE5)
+  then show "\<Inter> EF \<noteq> {}" by blast
+  show "\<Inter> EF \<subseteq> Pow X" by (simp add: Inf_less_eq ef filE1 ne)
+  show "\<And>A F. A \<in> Pow X \<Longrightarrow> F \<in> \<Inter> EF \<Longrightarrow> F \<subseteq> A \<Longrightarrow> A \<in> \<Inter> EF"  by (meson InterE InterI ef filE2)
+  show " \<And>F1 F2. F1 \<in> \<Inter> EF \<Longrightarrow> F2 \<in> \<Inter> EF \<Longrightarrow> F1 \<inter> F2 \<in> \<Inter> EF"   using ef filE3 by fastforce
+qed
 
 lemma pfilter_inter:
   assumes ef:"\<forall>F. F \<in> EF \<longrightarrow> pfil X F" and ne:"EF \<noteq> {}"
@@ -215,12 +411,17 @@ lemma pfilter_inter:
 proof(rule fil_pfil)
   obtain "fil X (\<Inter>EF)"  by (simp add: ef filter_inter ne pfil_fil)
   then show "fil X (\<Inter> EF)" using filter_inter by auto
-  then show "\<Inter> EF \<noteq> Pow X"   using ef ne pfilnbt by fastforce
+  then show "\<Inter> EF \<noteq> Pow X"  using ef ne pfilE7 by fastforce  
 qed
 
 
-definition mesh::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" (infix "(#)" 50) where
-  "\<A>#\<B> \<equiv> (\<forall>A B. A \<in> \<A> \<and> B \<in> \<B> \<longrightarrow> A \<inter> B \<noteq> {})"
+lemma subset_simp1:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X\<rbrakk> \<Longrightarrow> A \<subseteq> B \<longleftrightarrow> A \<inter> (X-B) = {}"
+  by blast
+
+lemma subset_simp2:
+  "\<lbrakk>A \<subseteq> X; B \<subseteq> X\<rbrakk> \<Longrightarrow> A \<subseteq> (X-B)\<longleftrightarrow> A \<inter> B = {}"
+  by blast
 
 lemma mesh_sym:
   "\<A>#\<B> \<longleftrightarrow> \<B>#\<A>"
@@ -237,8 +438,18 @@ lemma mesh_sub:
 lemma mesh_props1:
   assumes sub1:"\<A> \<subseteq> Pow X" and sub2:"E \<in> Pow X" and up:"upclosed X \<A>"
   shows msh1:"E \<notin> \<A> \<longleftrightarrow> {X-E}#\<A>"
-  using assms apply(simp)
-  by (metis Diff_disjoint Diff_eq_empty_iff Int_Diff Int_commute PowD in_mono inf.absorb2 sub2 upcl)
+proof
+  assume L:"E \<notin> \<A>"  show "{X-E}#\<A>"
+    proof(rule ccontr)
+      assume "\<not>{X-E}#\<A>" then obtain cont1:"\<not>(\<forall>B. B \<in> \<A> \<longrightarrow> (X-E) \<inter> B \<noteq> {})"  using mesh_single by blast
+      then obtain B where "B \<in> \<A>" and "(X-E) \<inter> B = {}"  by fastforce
+      then obtain "B \<subseteq> E"   using sub1 by fastforce
+      then obtain "E \<in>\<A>" using \<open>B \<in> \<A>\<close> sub2 up upclosedE2 by blast
+      show False   using L \<open>E \<in> \<A>\<close> by auto
+    qed
+  next
+  assume R:"{X-E}#\<A>" show "E \<notin> \<A>"  using R by auto
+qed
 
 
 definition grill::"'a set \<Rightarrow> 'a set set \<Rightarrow> 'a set set" where
@@ -276,7 +487,7 @@ proof-
   also have "...           \<longleftrightarrow> (\<exists>A \<in> \<A>. A \<inter> (X-E) = {})" by simp
   also have "...           \<longleftrightarrow> (\<exists>A \<in> \<A>. A \<subseteq> E)"  using Diff_triv sub1 subset_iff by fastforce
   then have "(X-E) \<notin> grill X \<A>  \<longleftrightarrow> (\<exists>A \<in> \<A>. A \<subseteq> E)"   by (simp add: \<open>(X - E \<notin> grill X \<A>) = (\<not> (\<forall>A\<in>\<A>. A \<inter> (X - E) \<noteq> {}))\<close>)
-  then have "(X-E) \<notin> grill X \<A> \<Longrightarrow> E \<in> \<A>"  using sub2 up upcl by blast
+  then have "(X-E) \<notin> grill X \<A> \<Longrightarrow> E \<in> \<A>"  using sub2 up upclosed_memI1 by blast  
   then have "E \<in> \<A> \<Longrightarrow> (X-E) \<notin> grill X \<A>"   using \<open>(X - E \<notin> grill X \<A>) = (\<exists>A\<in>\<A>. A \<subseteq> E)\<close> by blast
   then show ?thesis
   using \<open>X - E \<notin> grill X \<A> \<Longrightarrow> E \<in> \<A>\<close> by blast
@@ -328,11 +539,35 @@ lemma refined_pfil_mesh:
   shows  "\<F>#\<G> "
 proof(rule ccontr)
   assume  "\<not> \<F>#\<G> " then obtain F G where f1:"F \<in> \<F>" and g1:"G \<in> \<G>" and fg:"F \<inter> G = {}" using mesh_def by blast
-  obtain "\<F> \<subseteq> Pow X" and  "\<G> \<subseteq> Pow X" and "upclosed X \<G>" using pf1 pf2 by (simp add: pfil_upcl pfilsub) 
-  then have "\<F> \<subseteq> \<G>" using pr preceq_of_iso by metis
+  obtain "\<F> \<subseteq> Pow X" and  "\<G> \<subseteq> Pow X" and "upclosed X \<G>" by (simp add: pf1 pf2 pfilE1 pfil_upcl)
+  then have "\<F> \<subseteq> \<G>" using pr preceq_of_iso[of \<F> X \<G>] by blast
   then obtain "F \<in> \<G>"  using f1 by blast
-  then have "{} \<in>  \<G>"  by (metis fg g1 pf2 pfilinc)
-  then show False  using pf2 pfilnbt by auto
+  then have "{} \<in>  \<G>"  using fg g1 pf2 pfilE3[of X \<G> F G] by auto
+  then show False  using pf2 pfilE7 by blast  
+qed
+
+lemma finer_pfilters1:
+  assumes ne:"\<C> \<noteq> {}" and "subset.chain (filter_pfilters X \<F>) \<C>"
+  shows "\<Union>\<C> \<in> filter_pfilters X \<F>"
+proof(auto)
+  let ?U="\<Union>\<C>"
+  have B0:"\<And>C. C \<in> \<C> \<Longrightarrow> pfil X C \<and> \<F> \<subseteq> C" by (metis (no_types, lifting) CollectD assms(2) in_mono subset_chain_def)
+  have B1:"\<And>C1 C2. \<lbrakk>C1 \<in> \<C>;C2 \<in> \<C>\<rbrakk> \<Longrightarrow> C1 \<subseteq> C2 \<or> C2 \<subseteq> C1"  by (meson assms(2) subset_chain_def)
+  show "\<And>F. F \<in> \<F> \<Longrightarrow> \<exists>C\<in>\<C>. F \<in> C" using B0 ne by blast
+  show "pfil X (?U)"
+  proof(rule pfilI)
+    show "?U \<noteq> {}"   using B0 ne pfilE4 by fastforce
+    show "?U \<subseteq> Pow X"  by (simp add: B0 Sup_le_iff pfilE1)
+    show "\<And>A F. A \<in> Pow X \<Longrightarrow> F \<in> ?U \<Longrightarrow> F \<subseteq> A \<Longrightarrow> A \<in> ?U"  by (meson B0 Union_iff pfilE2)
+    show "\<And>F1 F2. F1 \<in> ?U \<Longrightarrow> F2 \<in> ?U\<Longrightarrow> F1 \<inter> F2 \<in>?U" 
+    proof-
+      fix F1 F2 assume "F1 \<in> ?U" and"F2 \<in> ?U"
+      then obtain C1 C2 where "C1 \<in> \<C>" and "C2 \<in> \<C>" and "F1 \<in> C1" and "F2 \<in> C2" by blast
+      then obtain "F1 \<inter> F2 \<in> C1 \<or> F1 \<inter> F2 \<in> C2" by (metis B0 B1 filE3 insert_Diff insert_subset pfil_fil) 
+      then show "F1 \<inter> F2 \<in> ?U"   using \<open>C1 \<in> \<C>\<close> \<open>C2 \<in> \<C>\<close> by blast
+    qed
+    show "?U\<noteq> Pow X"  using B0 pfilE7 by force
+ qed
 qed
 
 
@@ -341,9 +576,21 @@ locale conv=
 
 locale convergence=conv+
   assumes frel:"q \<subseteq> (pfilters_on X) \<times> X"
+begin
+
+lemma frel1:"fst`q \<subseteq> pfilters_on X" using frel by auto
+lemma frel2:"snd`q \<subseteq> X" using frel by auto
+lemma frel3:"\<forall>(\<F>, x) \<in> q. \<F> \<in> pfilters_on X \<and> x \<in> X" using frel by auto
+lemma frel4:"\<forall>(\<F>, x) \<in> q. pfil X \<F> \<and> x \<in> X" using frel by auto
+lemma frel5:"\<forall>(\<F>, x) \<in> q. fil X \<F> \<and> x \<in> X" using frel pfil_fil by auto
+
+
+end
 
 locale iso_conv=conv+
   assumes iso:"\<And>x F G. \<lbrakk>(F, x) \<in> q; F \<preceq> G\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> q "
+
+
 
 
 end
