@@ -1973,14 +1973,6 @@ lemma isotoneD42:
   "\<lbrakk>is_isotone X f; b \<in> lbd X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd (f`X) (f`A)"
   by (simp add: lbd_mem_iff isotoneD32)
 
-lemma isotoneD51:
-  "\<lbrakk>is_isotone X f; is_least A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> is_least (f`A) (f x)"
-  by (simp add: is_least_def isotoneD2 isotoneD42)   
-
-lemma isotoneD52:
-  "\<lbrakk>is_isotone X f; is_greatest A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> is_greatest (f`A) (f x)"
-  by (simp add: is_greatest_def isotoneD2 isotoneD41)
-
 lemma isotoneD61:
   "\<lbrakk>is_isotone X f; is_sup X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f x) ub f`A"
   by (simp add: is_supE1 is_supE2 isotoneD31)
@@ -7539,8 +7531,6 @@ lemma grill_reform3:
   shows 11395:"grill (Pow X) A = {E \<in> Pow X. (X-E) \<notin> A}"
   using assms grill_def "11393"[of A X]   by (metis (mono_tags, lifting) Collect_cong mem_Collect_eq)
 
-
-
 abbreviation is_conv where
   "is_conv R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on (Pow X) \<and> x \<in> X}" 
 
@@ -7550,11 +7540,11 @@ abbreviation centered_conv where
 abbreviation iso_conv where
   "iso_conv R X \<equiv> (\<forall>x \<in> X. \<forall>F \<in> pfilters_on (Pow X). \<forall>G \<in> pfilters_on (Pow X). (F, x) \<in> R \<and> F \<subseteq> G \<longrightarrow> (G, x)\<in>R)"
 
-abbreviation vicinity where
-  "vicinity R X \<equiv> \<lambda>x. (\<Inter>{F. (F, x) \<in> R})"
+abbreviation nhood where
+  "nhood R X \<equiv> \<lambda>x. (\<Inter>{F. (F, x) \<in> R})"
 
 abbreviation onep_conv where
-  "onep_conv R X \<equiv> (\<forall>x \<in> X. (vicinity R X x, x) \<in> R)"
+  "onep_conv R X \<equiv> (\<forall>x \<in> X. (nhood R X x, x) \<in> R)"
 
 abbreviation is_prtop where
   "is_prtop R X \<equiv> is_conv R X \<and> centered_conv R X \<and> iso_conv R X \<and> onep_conv R X"
@@ -7568,6 +7558,32 @@ abbreviation ufilters_on where
 abbreviation finer_ufilters where
   "finer_ufilters X F \<equiv> {U. is_maximal (pfilters_on X) U \<and> F \<subseteq> U}"
 
+lemma adherence_equalities:
+  assumes sub:"A \<subseteq> X" and c1:"is_conv q X" and iso:"iso_conv q X"
+  defines "Adh \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G})"
+  shows adh1:"Adh A = {x \<in> X. \<exists>F \<in> pfilters_on (Pow X). (F, x) \<in> q \<and> F#{A}}" and
+        adh2:"Adh A = {x \<in> X. \<exists>F \<in> pfilters_on (Pow X). (F, x) \<in> q \<and> A \<in> grill (Pow X) F}"
+  proof(auto simp add:Adh_def)
+    show adh1l:"\<And>x G. x \<in> X \<Longrightarrow> G \<in> pfilters_on (Pow X) \<Longrightarrow> (G, x) \<in> q \<Longrightarrow> A \<in> G \<Longrightarrow> \<exists>F\<in>pfilters_on (Pow X). (F, x) \<in> q \<and> F # {A}"
+    proof-
+      fix x G assume "x \<in> X" and g0:"G \<in> pfilters_on (Pow X)" and g2:"(G, x) \<in> q"  and  g1:"A \<in> G"
+      then obtain "G # {A}"  by (metis insert_absorb mesh_iff pfilter_mesh singleton_iff subset_insertI subset_preceq)
+      then show " \<exists>F::'a set set\<in>pfilters_on (Pow X). (F, x) \<in> q \<and> F # {A}" using g0 g1 g2 by blast
+    qed
+    show adh1r:"\<And>x F. x \<in> X \<Longrightarrow> F \<in> pfilters_on (Pow X) \<Longrightarrow> (F, x) \<in> q \<Longrightarrow> F # {A} \<Longrightarrow> \<exists>G\<in>pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G"
+    proof-
+      fix x F assume a0:"x \<in> X" and a1:"F \<in> pfilters_on (Pow X) " and a2:"(F, x) \<in> q" and a3:"F # {A}"
+      then obtain a3:"is_pfilter (Pow X) F" and a4:"A \<in> Pow X" and a5:"\<forall>B \<in> F. B \<inter> A \<noteq> {}"      by (simp add: mesh_iff pfilters_on_iff sub)
+      define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. A \<inter> B \<subseteq> E}"
+      then obtain a6:"H \<in> pfilters_on (Pow X)" and a7:"F \<subseteq> H" using a3 a4 a5 finer_proper_filter[of X F A] H_def by (simp add: pfilters_onI)
+      obtain a8:"A \<in> H" using H_def a3 is_pfilterE1 sets_filter_top sub by fastforce
+      then show "\<exists>G\<in>pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G" using a0 a1 a2 a6 a7 iso by blast
+    qed
+    show "\<And>x G. x \<in> X \<Longrightarrow> G \<in> pfilters_on (Pow X) \<Longrightarrow> (G, x) \<in> q \<Longrightarrow> A \<in> G \<Longrightarrow> \<exists>F\<in>pfilters_on (Pow X). (F, x) \<in> q \<and> A \<in> grill (Pow X) F"
+      by (meson "11394" PowI pfilter_sets_comp pfilters_onE sets_pfilter2_upc sets_pfilter_sub sub)
+    show "\<And>x F. x \<in> X \<Longrightarrow> F \<in> pfilters_on (Pow X) \<Longrightarrow> (F, x) \<in> q \<Longrightarrow> A \<in> grill (Pow X) F \<Longrightarrow> \<exists>G\<in>pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G"
+      by (simp add: adh1r grill_def mesh_sym)
+qed
 
 lemma maximal_filter_ext:
   assumes lat:"is_lattice X" and 
@@ -7677,7 +7693,26 @@ proof-
   then show "F=\<Inter>(finer_ufilters (Pow X) F)" by blast
 qed
 
-unused_thms
+lemmas closure_range_iso = 
+  cl_sup_eq_sup
+  cl_sup_eq_sup
+  cl_sup_ge_sup_cl 
+  closure_induced_clr_dual 
+  closure_induced_clr_id
+  closure_range_is_clattice
+  clr_induced_closure_dual
+  extensiveI4
+  isotoneI4
+  idempotentI4
+
+lemmas cech_closure_iso=
+  cc_pretop_cc
+  pretop_to_cc
+  pretop_cl_nh
+  pretop_cc_pretop
+  cc_pretop_nhf
+
+
 
 (*
 cc_pretop_cc
@@ -7693,5 +7728,82 @@ sup_iso2
 
 
 *)
+
+
+lemma finer_than_vicinity:
+  assumes "onep_conv q X" and "(\<F>, x) \<in> q"
+  shows "nhood q X x \<subseteq> \<F>"
+  by (simp add: Inter_lower assms)
+
+lemma nhood_is_pfilter:
+  assumes A0:"is_conv q X" and A1:"centered_conv q X"  and A3:"x \<in> X"
+  shows "is_pfilter (Pow X) (nhood q X x)"
+proof-
+  let ?EF="{F. (F, x) \<in> q}"
+  have B0:"\<And>F. F \<in> ?EF \<Longrightarrow> is_pfilter (Pow X) F"   using A0 pfilters_onE by fastforce
+  also have B1:"?EF \<noteq> {}"   using A1 A3 by blast
+  then show "is_pfilter (Pow X) (nhood q X x)"
+    by (simp add: Collect_mono_iff calculation pfilters_on_def set_pfilter_inter)
+qed
+
+lemma nhood_sub:
+  assumes A0:"is_conv q X" and A1:"centered_conv q X" and A2:"x \<in> X"and A3:"V \<in> (nhood q X x)"
+  shows "V \<in> Pow X"
+  by (metis A1 A2 A3 CollectI InterE lorcD11)
+
+definition continuous_at:: "('a::type \<Rightarrow> 'b::type) \<Rightarrow> 'a::type set \<Rightarrow> ('a::type set set \<times> 'a::type) set \<Rightarrow> 'b::type set \<Rightarrow> ('b::type set set \<times> 'b::type) set \<Rightarrow> 'a::type \<Rightarrow> bool" where
+  "continuous_at f X q Y p x \<equiv> (\<forall>\<F> x.  (\<F>, x)\<in> q \<longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p)"
+
+lemma continuousD:
+  "\<lbrakk>continuous_at f X q Y p x; (\<F>, x) \<in> q\<rbrakk> \<Longrightarrow>({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p "
+  by (simp add:continuous_at_def)
+
+lemma continuousI:
+  "(\<And>\<F> x. (\<F>, x) \<in> q \<Longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p) \<Longrightarrow>  continuous_at f X q Y p x"
+  by (simp add:continuous_at_def)
+
+
+lemma cont12:
+  assumes A0:"is_prtop q X" and A1:"is_prtop p Y" and A2: "\<And>x. x \<in> X \<Longrightarrow> continuous_at f X q Y p x"
+  shows "\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
+proof-
+  fix x assume A3:"x \<in> X"
+  from A0 A3 obtain "(nhood q X x, x) \<in> q" by auto
+  then obtain "({E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}, f x) \<in> p"   using A2 A3 continuous_at_def by fastforce 
+  then show "nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}" by (simp add: Inf_lower)  
+qed
+
+lemma cont23:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and
+     A2:"\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow>(vimage f V) \<in> nhood q X x"
+  shows "\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow> \<exists>U \<in> nhood q X x. f`U \<subseteq> V "
+proof-
+  fix V assume A3:"V \<in> nhood p Y (f x)"
+  then obtain A4:"f`(vimage f V) \<subseteq> V"  and A5:"vimage f V \<in> nhood q X x" using A2 by blast
+  then show "\<exists>U \<in> nhood q X x. f`U \<subseteq> V" by blast
+qed
+              
+
+lemma cont32:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and 
+          A2:"x \<in> X" and
+          A3:"vimage f Y \<subseteq> X" and A3b:"f`X \<subseteq> Y" and
+     A4:"\<And>V.  V \<in> nhood p Y (f x) \<Longrightarrow> \<exists>U \<in> nhood q X x. f`U \<subseteq> V "
+  shows "\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow>(vimage f V) \<in> nhood q X x"
+proof-
+  fix V assume A5:"V \<in> nhood p Y (f x)"
+  then obtain U where A6:"U \<in> nhood q X x" and A7:"f`U \<subseteq> V"  using A4 by blast
+  then have A8:"U \<subseteq> vimage f (f`U)" by blast
+  also have A9:"... \<subseteq> vimage f V"   using A7 by auto
+  then obtain A10:"U \<subseteq>  vimage f V" and A11:"U \<in> nhood q X x" using A6 by blast
+  have A11:"is_pfilter (Pow X) (nhood q X x)" using nhood_is_pfilter[of q X x] A0 A2 by fastforce
+  have A12:"is_pfilter (Pow Y) (nhood p Y (f x))" using nhood_is_pfilter[of p Y "f x"]  using A1 A2 A3b by fastforce 
+  have A13:"V \<subseteq> Y"   by (meson A12 A5 Pow_iff is_filterE1 is_pfilterE1 subsetD)
+  have A14:"( vimage f V) \<in> Pow X"  using A13 A3 by blast 
+  then show "vimage f V \<in> nhood q X x"  using A10 A11 A6 sets_pfilter_upcl by blast
+qed
+
 
 end
