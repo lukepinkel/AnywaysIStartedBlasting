@@ -9055,47 +9055,49 @@ proof-
   have ind:"\<And>C. \<lbrakk>C\<noteq>{}; subset.chain ?A C\<rbrakk> \<Longrightarrow> \<Union>C \<in> ?A"
   proof-
     fix C assume nem:"C \<noteq> {}" and lin:"subset.chain ?A C" 
+    have ne1:"\<And>c. c \<in> C \<Longrightarrow> is_pfilter X c" using lin pfilters_on_def chainsD2 chains_alt_def by fastforce
     have cpfil:"is_pfilter X (\<Union>C)"
       proof(rule is_pfilterI1)
-      show "is_filter X (\<Union> C)"
-      proof(rule is_filterI1)
-        show "\<Union> C \<noteq> {}" 
-        show "\<Union> C \<subseteq> X"  by (metis (no_types, lifting) Union_Pow_eq Union_mono inf.boundedE inf.orderE lin sub subset_chain_def) 
-        show "is_dir (\<Union> C) (\<lambda>(x::'a) y::'a. y \<le> x)"
-        proof(rule is_dwdirI1)
+        show "is_filter X (\<Union> C)"
+        proof(rule is_filterI1)
+        have ne2:"\<And>c. c \<in> C \<Longrightarrow> c \<noteq> {}" using is_filterE1 is_pfilterE1 ne1 by blast
+        show f1:"\<Union> C \<noteq> {}"  by (simp add: ne2 nem) 
+        show f2:"\<Union> C \<subseteq> X" by (simp add: Sup_le_iff is_filterE1 is_pfilterE1 ne1)
+        show f3:"is_dir (\<Union> C) (\<lambda>(x::'a) y::'a. y \<le> x)"
+        proof(rule is_dirI1)
           fix a b assume amem:" a \<in> \<Union> C " and bmem:"b \<in> \<Union> C" 
           then obtain Fa Fb where fa1:"Fa \<in> C" and fb1:"Fb \<in> C" and fa2:"a \<in> Fa" and fb2:"b \<in> Fb" by blast
-          then obtain fa3:"is_pfilter X Fa" and fb3:"is_pfilter X Fb" and  fab:"Fa \<subseteq> Fb \<or> Fb \<subseteq> Fa"  by (metis (mono_tags, lifting) Ball_Collect is_pfilterI1 lin mem_Collect_eq subset_chain_def) 
-          then obtain or:"(a \<in> Fa \<and> b \<in> Fa) \<or> (a \<in> Fb \<and> b \<in> Fb)"   using fa2 fb2 by blast
-          have abmem:"a \<in> X \<and> b \<in> X"  using \<open>\<Union> (C::'a::order set set) \<subseteq> (X::'a::order set)\<close> amem bmem by blast 
+          then obtain fa3:"is_pfilter X Fa" and fb3:"is_pfilter X Fb" and  fab:"Fa \<subseteq> Fb \<or> Fb \<subseteq> Fa"  by (meson lin ne1 subset_chain_def) 
+          then obtain or:"(a \<in> Fa \<and> b \<in> Fa) \<or> (a \<in> Fb \<and> b \<in> Fb)" using fa2 fb2 by blast
+          have abmem:"a \<in> X \<and> b \<in> X"  using f2 amem bmem by blast 
           then obtain c  where inf:"is_inf X {a,b} c"  using lat lattD21 by blast
           show "\<exists>c::'a\<in>\<Union> C. c \<le> a \<and> c \<le> b"
           proof(cases "a \<in> Fa \<and> b \<in> Fa")
-            case True then obtain  "c \<in> Fa" using fa3 filter_finf_closed1 inf inf_equality is_pfilterD1 lat lattD41 by blast
+            case True then obtain  "c \<in> Fa" using fa3 filter_finf_closed inf is_pfilter_def by blast
             then obtain "c \<in>\<Union> C" and "c \<le> a" and "c \<le> b"  using fa1 inf is_infD1121 by auto
             then show ?thesis by blast
           next
-          case False then obtain  "c \<in> Fb" using fb3 filter_finf_closed1 inf inf_equality is_pfilterD1 lat lattD41 or by blast 
+          case False then obtain  "c \<in> Fb" using fb3 filter_finf_closed inf is_pfilterE1 or by blast
             then obtain "c \<in>\<Union> C" and "c \<le> a" and "c \<le> b"  using fb1 inf is_infD1121 by fastforce
             then show ?thesis by blast
           qed
         qed
         show "is_ord_cl X (\<Union> C) (\<le>)"
-        proof(rule is_ord_clI1)
+        proof(rule is_ord_clI)
           fix a b assume amem:" a \<in> \<Union> C " and bmem:"b \<in>X"  and le:"a \<le> b"
           obtain Fa where famem:"Fa \<in>C" and amem2:"a \<in> Fa"   using amem by blast 
-          then obtain "is_pfilter X Fa"      by (metis (mono_tags, lifting) Ball_Collect is_pfilter_def lin mem_Collect_eq subset_chain_def) 
-          then obtain "b \<in> Fa"   using amem2 bmem filter_memI is_pfilterD1 le by blast
+          then obtain "is_pfilter X Fa"    by (simp add: ne1) 
+          then obtain "b \<in> Fa" by (meson amem2 bmem is_filterE1 is_ord_clE is_pfilterE1 le)  
           then show "b \<in> \<Union>C"  using famem  by auto
         qed
       qed
-      have "\<forall>c \<in> C. is_pfilter X c"  by (metis (mono_tags, lifting) Ball_Collect is_pfilter_def lin mem_Collect_eq subset_chain_def)
-      then have "\<forall>c \<in> C. bot \<notin> c"  using bot is_pfilterD4 by blast
+      have "\<forall>c \<in> C. is_pfilter X c" by (simp add: ne1)  
+      then have "\<forall>c \<in> C. bot \<notin> c"  by (metis is_filter_def bot is_pfilter_def up_cl_bot)  
       then have "bot \<notin> \<Union>C" by blast
-      then show "X \<noteq> \<Union> C"   using bot leastD11 by blast
+      then show "\<Union> C \<noteq> X"  using bot leastD11 by blast
     qed
-    have finer:"F \<subseteq> (\<Union>C)"     by (metis (no_types, lifting) CollectD in_mono less_eq_Sup lin nem subset_chain_def)
-    then show "\<Union>C \<in> ?A" using cpfil is_pfilter_def by blast
+    have finer:"F \<subseteq> (\<Union>C)" by (metis (no_types, lifting) CollectD in_mono less_eq_Sup lin nem subset_chain_def)
+    then show "\<Union>C \<in> ?A" by (simp add: cpfil pfilters_on_iff)
   qed
   obtain M where maxins:"M\<in>?A" and maximp:"\<forall>a\<in>?A. M \<subseteq> a \<longrightarrow> a = M" using subset_Zorn_nonempty[of ?A] ind ne by auto
   have "is_maximal (pfilters_on X) M"
@@ -9120,8 +9122,8 @@ lemma filter_max_inter:
     shows "F=\<Inter>(finer_ufilters (Pow X) F)"
 proof- 
   let ?U="finer_ufilters (Pow X) F"
-  have c1:"?U \<subseteq> Pow (Pow X)"   using maximalD1 sets_filter_sub by fastforce
-  have c2:"F \<subseteq> Pow X"  by (simp add: is_pfilterD3 pfil)
+  have c1:"?U \<subseteq> Pow (Pow X)" using maximalD1 pfilters_on_def sets_pfilter_sub by fastforce 
+  have c2:"F \<subseteq> Pow X" using pfil sets_pfilter_sub by blast 
   have ne:"?U \<noteq> {}" using pfil maximal_filter_set by auto
   have L:"F \<subseteq> \<Inter>?U" by(auto)
   also have R:"\<Inter>?U \<subseteq> F"
@@ -9130,18 +9132,18 @@ proof-
     have a3:"A \<in> Pow X"  using a1 c1 ne by auto    
     let ?Ac="X-A"
     have a4:"?Ac \<in> grill (Pow X) F"  by (meson "11391" a2 a3 c2 pfil sets_pfilter2_upc)
-    have fr1:"\<forall>B \<in> F. B \<inter> ?Ac \<noteq> {}"  by (metis PowD a2 a3 is_pfilter_def pfil pfilters_sets_comp3)
+    have fr1:"\<forall>B \<in> F. B \<inter> ?Ac \<noteq> {}" by (metis PowD a2 a3 pfil pfilters_sets_comp3)
     have fr2:"?Ac \<in> Pow X" by simp
     define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. ?Ac \<inter> B \<subseteq> E}" 
-    obtain  pfr1:"H \<subseteq> Pow X" and pfr2:"X \<in> H" and   pfr3:"H \<noteq> {}" and   pfr4:"is_dir H (\<lambda>(x::'a set) y::'a set. y \<subseteq> x)" and
-           pfr5:"is_ord_cl (Pow X) H (\<subseteq>) "  and  pfr6:"{} \<notin> H" and   pfr7:"Pow X \<noteq> H" and   pfr8:"is_pfilter (Pow X) H" 
+    obtain pfr1:"H \<subseteq> Pow X" and pfr2:"X \<in> H" and   pfr3:"H \<noteq> {}" and   pfr4:"is_dir H (\<lambda>x y. y \<subseteq> x)" and
+           pfr5:"is_ord_cl (Pow X) H (\<subseteq>) "  and  pfr6:"{} \<notin> H" and   pfr7:"Pow X \<noteq> H" and pfr8:"is_pfilter (Pow X) H" 
             using pfilter_refinment[of X F ?Ac] H_def fr1 fr2 pfil by(auto)
     have pfr9:"F \<subseteq> H"  using H_def c2 by auto
-    obtain UH where uh1:"is_maximal (pfilters_on (Pow X)) UH" and  uh2:"H \<subseteq> UH" using  pfr8 maximal_filter_set[of X H] by(auto)
+    obtain UH where uh1:"is_maximal (pfilters_on (Pow X)) UH" and uh2:"H \<subseteq> UH" using  pfr8 maximal_filter_set[of X H] by(auto)
     also obtain uh3:"F \<subseteq> UH" using pfr9 uh2 by auto
     then have uh4:"UH \<in> ?U"  using uh1 by force
     have uh5:"?Ac \<in> UH"   using H_def uh2 fr2 pfr2 by blast 
-    have uh6:"A \<notin> UH"  using uh5 maximalD1 pfilters_sets_comp2 uh1 by fastforce
+    have uh6:"A \<notin> UH"  using uh5 maximalD1 pfilters_sets_comp2 uh1 pfilters_onE by blast
     then obtain "A \<notin> \<Inter>?U"   using uh4 by blast
     then show False using a1 by blast
   qed
