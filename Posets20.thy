@@ -1952,10 +1952,6 @@ lemma binfI:
   "\<lbrakk>is_inf_semilattice X; (\<And>s. is_inf X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Inf X {a, b})"
   by (simp add: sinfD3)
 
-lemma binf_commute1:
-  "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Inf X {a, b} = Inf X {b, a}"
-  by (simp add: insert_commute)
-
 lemma binf_iff:
   "\<lbrakk>is_inf_semilattice X;a \<in> X; b \<in> X; c \<in> X\<rbrakk>  \<Longrightarrow> (c \<le> Inf X {a, b} \<longleftrightarrow> c \<le> a \<and> c \<le> b)"
   by (simp add: binary_infD4 sinfD3 sinfD4)
@@ -1970,10 +1966,6 @@ lemma binf_assoc2:
 
 lemma binf_idem2:
   "is_inf_semilattice X \<Longrightarrow>a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> Inf X {a, Inf X {a, b}} = Inf X {a, b}"
-  by (metis binf_assoc1 binf_idem1)
-
-lemma binf_idem3:
-  "is_inf_semilattice X \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow>  Inf X {Inf X {a, b}, b} = Inf X {a, b}"
   by (metis binf_assoc1 binf_idem1)
 
 lemma binf_le1:
