@@ -7849,6 +7849,19 @@ proof-
   then show "V \<in> nhood q X x \<longleftrightarrow> x \<in> X-(Adh q X (X-V))" by blast
 qed
 
+
+lemma adherence_props3:
+  assumes A0:"pretop q X" and A1:"A \<in> Pow X" and A2:"B \<in> Pow X" and A3:" A \<subseteq> B"
+  shows "Adh q X A \<subseteq> Adh q X B"
+proof-
+  have B0:"B-A \<in> Pow X" using A2 by blast
+  have B1:"Adh q X A \<subseteq>  (Adh q X A) \<union> (Adh q X (B-A))"  by blast
+  also have B2:"... = Adh q X (A \<union> (B- A))" using B0 A0 A1 adh5[of q X A "B-A"] by presburger
+  also have B3:"... = Adh q X B"  using A3 Diff_partition by force
+  then show ?thesis
+  using calculation by auto
+qed
+
 lemma cont23:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and 
@@ -7879,17 +7892,52 @@ lemma cont35:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and  
           A2:"f`X \<subseteq> Y" and 
-          A3:"vimage f Y \<subseteq> X" and
-          A4:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
+          A3:"vimage f UNIV \<subseteq> X" and 
+          A4:"x \<in> X" and
+          A5:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
   shows      "\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow>(vimage f V) \<in> nhood q X x"
 proof-
-  have "\<And>V. (vimage f V) \<notin> nhood q X x \<Longrightarrow> V \<notin> nhood p Y (f x)"
+  have A7:"\<And>V. \<lbrakk>V \<in> Pow Y;(vimage f V) \<notin> nhood q X x\<rbrakk> \<Longrightarrow> V \<notin> nhood p Y (f x)"
   proof-
-    fix V assume A5:"(vimage f V) \<notin> nhood q X x"
-    then obtain B0:"x \<in> Adh q X (X-(vimage f V))"
-    then show "V \<notin> nhood p Y (f x)"
-  fix V assume A5:"V \<in> nhood p Y (f x)"
-  then show "(vimage f V) \<in> nhood q X x"
+    fix V assume A6a:"V \<in> Pow Y" and A6:"(vimage f V) \<notin> nhood q X x"
+    then obtain B0:"(vimage f V) \<in> Pow X"  using A3 by blast 
+    then obtain B1:"x \<in> Adh q X (X-(vimage f V))" using adherence_props2[of q X x] B0 A4 A0 A5 Diff_iff A6 by metis
+    then obtain B2:"(f x) \<in> Adh p Y (f`(X-(vimage f V)))" using A5 B0   by (simp add: image_subset_iff)
+    then obtain B3:"(f x) \<in> Adh p Y (f`(vimage f (Y-V)))"   by (metis A2 A3 image_subset_iff_subset_vimage top.extremum_uniqueI vimage_Diff vimage_UNIV)
+    obtain B4:"f`(vimage f (Y-V)) \<subseteq> Y-V" and  B5:"f`(vimage f (Y-V)) \<in> Pow Y" and B6:"(Y-V) \<in> Pow Y" by blast
+    then obtain B7:" Adh p Y (f`(vimage f (Y-V))) \<subseteq>  Adh p Y (Y-V)" using A1 adherence_props3[of p Y "f`(vimage f (Y-V))" "Y-V"] by fastforce
+    then obtain B8:"(f x) \<in> Adh p Y (Y-V)"  using B3 by blast
+    then show "V \<notin> nhood p Y (f x)" using adherence_props2[of p Y "f x"]   using A1 A2 A4 A6a by blast 
+  qed
+  fix V assume A8:"V \<in> nhood p Y (f x)" 
+  obtain B0:"f x \<in> Y" and  B1:"V \<in> Pow Y" using A2 A4 nhood_sub[of p Y "f x" V]  using A1 A8 by auto
+  then show "(vimage f V) \<in> nhood q X x" using A7 A8 by blast
+qed
+
+lemma cont53:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and  
+          A2:"f`X \<subseteq> Y" and 
+          A3:"vimage f UNIV \<subseteq> X" and 
+          A5:"\<And>V x. \<lbrakk>x \<in> X; V \<in> nhood p Y (f x)\<rbrakk> \<Longrightarrow>(vimage f V) \<in> nhood q X x"
+  shows      "\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
+proof-
+  fix A assume A6:"A \<in> Pow X"
+  have B0:"\<And>x. \<lbrakk>x \<in> X; (f x) \<in> (Y-Adh p Y (f`A))\<rbrakk> \<Longrightarrow> x \<notin> Adh q X A"
+  proof-
+    fix x assume A7:"(f x) \<in> (Y-Adh p Y (f`A))" and A7a:"x \<in> X" then obtain B01:"(f x) \<in> Y-(Adh p Y (Y-(Y-(f`A))))" by (metis A2 A6 PowD double_diff equalityD1 image_subset_iff_subset_vimage subset_trans)
+    obtain B02:"(f x) \<in> Y" and B03:"Y-(f`A) \<in> Pow Y" using A2 A6  B01  by blast
+    then obtain B04:"(Y-(f`A)) \<in> nhood p Y (f x)" using B01 B02 B03 A1 adherence_props2[of p Y "f x" "Y-(f`A)"] by blast
+    then obtain B05:"vimage f (Y-(f`A)) \<in> nhood q X x" using A7a A5 by blast
+    have B06:"vimage f (Y-(f`A)) = X - (vimage f (f`A))"   using A2 A3 by force
+    also have B07:"... \<subseteq> X - A" by blast
+    then obtain B08:"vimage f (Y-(f`A)) \<inter> A = {}"   by blast
+    then obtain B09:"\<not> (nhood q X x)#{A} "  by (metis B05 Int_commute mesh_singleE mesh_sym)
+    then show B10:"x \<notin> Adh q X A" using adherence_iff[of q X x A] A7a A6 A0 by blast
+  qed
+  show "f`(Adh q X A) \<subseteq> Adh p Y (f`A)" 
+  using A2 A3 B0 by auto
+qed
 
 lemma cont32:
   assumes A0:"is_prtop q X" and
