@@ -14,74 +14,89 @@ declare [[show_consts,show_sorts,show_types, show_results]]
 
 section Misc
 
-lemma image_p: "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))"  by blast
+lemma image_p:
+  "(\<And>a. a \<in> A \<Longrightarrow> P (f a)) \<Longrightarrow> (\<forall>y \<in> f ` A.  P(y))"
+  by blast
 
-lemma un_to_ind_un: "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Union>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Union>i \<in> I. f i))"  by simp
+lemma un_to_ind_un: 
+  "(\<And>(A::'a set set). P A \<Longrightarrow> Q (\<Union>A)) \<Longrightarrow> (\<And>(f::('b \<Rightarrow> 'a set)) (I::'b set). P(f`I) \<Longrightarrow> Q(\<Union>i \<in> I. f i))"
+  by simp
 
 
-lemma leq_iff_leq_eq: "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> a \<longleftrightarrow> x \<le> b) \<Longrightarrow> a =b" by (simp add: order_class.order_eq_iff)
+lemma leq_iff_leq_eq: 
+  "\<lbrakk>(a::'a::order) \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<le> a \<longleftrightarrow> x \<le> b) \<Longrightarrow> a =b" 
+  by (simp add: order_class.order_eq_iff)
 
 
 definition Pow_ne::"'a set \<Rightarrow> 'a set set" where 
   "Pow_ne X = Pow X - {{}}"
 
 definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where
-     "Fpow_ne X = Fpow X - {{}}"
+   "Fpow_ne X = Fpow X - {{}}"
 
-lemma pow_ne_iff1: "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"
+lemma pow_ne_iff1: 
+  "A \<in> Pow_ne X \<longleftrightarrow> A \<in> Pow X \<and> A \<noteq> {}"
   by (simp add: Pow_ne_def)
 
-lemma pow_ne_iff2: "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}" 
+lemma pow_ne_iff2: 
+  "A \<in> Pow_ne X \<longleftrightarrow> A \<subseteq> X \<and> A \<noteq> {}" 
   by (simp add: Pow_ne_def)
 
-lemma pow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X" 
+lemma pow_neI: 
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> A \<in> Pow_ne X" 
   by(simp add:Pow_ne_def)
 
-lemma pow_neD1: "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X " 
+lemma pow_neD1: 
+  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X " 
   by(simp add:Pow_ne_def)
 
-lemma pow_neD2: " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} " 
+lemma pow_neD2: 
+  " A \<in> Pow_ne X \<Longrightarrow> A \<noteq> {} " 
   by(simp add:Pow_ne_def)
 
-lemma pow_ne_iso0: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X"  
+lemma pow_ne_iso0: 
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<subseteq> X"  
    by (drule pow_neD1)+ simp
 
-lemma pow_ne_iso1:"A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"
+lemma pow_ne_iso1:
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Pow_ne A \<Longrightarrow> B \<in> Pow_ne X"
   by(rule pow_neI,erule pow_ne_iso0,simp,erule pow_neD2)
 
-lemma pow_ne_bot:"{} \<notin> Pow_ne X"
+lemma pow_ne_bot:
+  "{} \<notin> Pow_ne X"
   by(simp add:Pow_ne_def)
                
-lemma pow_ne_top: "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X" 
+lemma pow_ne_top: 
+  "X \<noteq> {} \<Longrightarrow> X \<in> Pow_ne X" 
   by(simp add:Pow_ne_def)
 
-lemma fpow_ne_iff1:"A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"
+lemma fpow_ne_iff1:
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<in> Fpow X \<and> A \<noteq> {}"
   by (simp add: Fpow_ne_def)
 
-lemma fpow_ne_iff2:"A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}" 
+lemma fpow_ne_iff2: 
+  "A \<in> Fpow_ne X \<longleftrightarrow> A \<subseteq> X \<and> finite A \<and> A \<noteq> {}" 
   by (simp add: Fpow_Pow_finite fpow_ne_iff1)
 
-
-lemma fpow_neI: "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X" 
+lemma fpow_neI: 
+  "A \<subseteq> X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> finite A \<Longrightarrow> A \<in> Fpow_ne X" 
   by (simp add: Fpow_def fpow_ne_iff1)
 
-lemma fpow_neD1: "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X " 
+lemma fpow_neD1: 
+  "A \<in> Fpow_ne X \<Longrightarrow> A \<subseteq> X " 
   by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD2:"A \<in> Fpow_ne X \<Longrightarrow> A \<noteq> {} " 
+lemma fpow_neD3:
+  "A \<in> Fpow_ne X \<Longrightarrow> finite A "
   by (simp add: fpow_ne_iff2)
 
-lemma fpow_neD3:"A \<in> Fpow_ne X \<Longrightarrow> finite A "
-  by (simp add: fpow_ne_iff2)
-
-lemma fpow_ne_iso0:"A \<in> Fpow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<subseteq> X" 
-  by (drule fpow_neD1)+ simp
-
-lemma fpow_ne_iso2: "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X" 
+lemma fpow_ne_iso2: 
+  "A \<in> Pow_ne X \<Longrightarrow> B \<in> Fpow_ne A \<Longrightarrow> B \<in> Fpow_ne X" 
   by (metis dual_order.trans fpow_ne_iff2 pow_ne_iff2)
 
 
-lemma ne_subset_ne:"A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
+lemma ne_subset_ne:
+  "A \<subseteq> B \<Longrightarrow> A \<noteq> {} \<Longrightarrow> B \<noteq> {}"
   by blast
 
 section Bounds
@@ -121,7 +136,6 @@ lemma ub_empty:
 lemma ub_singleton:
   "x ub {x}"
   by (simp add: ub_def)
-
 
 lemma ub_singleton_simp:
   "x ub {y} \<longleftrightarrow> x \<ge> y"
@@ -196,7 +210,6 @@ lemma ubdD2:
 lemma ubdD3:
   "b \<in> ubd X A \<Longrightarrow> b ub A"
   by (simp add: ubd_def)
-
 
 lemma ubd_mem_iff:
   "b \<in> ubd X A \<longleftrightarrow> (b \<in> X \<and> b ub A)" 
@@ -290,7 +303,6 @@ subsection LowerBoundsPredicate
 
 definition lb::"'a::order \<Rightarrow> 'a::order set \<Rightarrow> bool" (infix "lb" 50) where 
    "x lb  A \<equiv> (\<forall>a. a \<in> A \<longrightarrow> a \<ge> x)"
-
 
 lemma lb_iff1:
   "x lb A \<longleftrightarrow> (\<forall>a \<in> A. a \<ge> x)"
@@ -1537,10 +1549,6 @@ lemma bsup_finite2:
   by (simp add: bsup_finite ssupD3)
 
 
-lemma fsup_geI1:
-  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; a \<in> A\<rbrakk> \<Longrightarrow> a \<le> Sup X A"
-  using is_supD1121[of X A "Sup X A" a] bsup_finite2[of X A] by blast
-
 lemma fsup_ub:
   "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Sup X A ub A"
   using is_supD32[of X A "Sup X A"] bsup_finite2[of X A] by (simp add: is_supE2)
@@ -1549,18 +1557,10 @@ lemma fsup_lub:
    "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; b \<in> ubd X A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
   using is_supE3[of X A "Sup X A" b] bsup_finite2[of X A] by fastforce  
 
-lemma fsup_lub2:
-  "\<lbrakk>is_sup_semilattice X;  A \<subseteq> X;A \<noteq> {}; finite A; b \<in> X; b ub A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
-  by (simp add: fsup_lub ubdI2)
-
 lemma fsup_lub3:
   "\<lbrakk>is_sup_semilattice X;  A \<in> Fpow_ne X; b \<in> ubd X A\<rbrakk> \<Longrightarrow> Sup X A \<le> b"
   by (simp add: fpow_ne_iff2 fsup_lub)
 
-
-lemma fsup_closedD1:
-  "is_fsup_closed X A \<Longrightarrow> (\<And>a1 a2. a1 \<in> A\<Longrightarrow> a2 \<in> A \<Longrightarrow> Sup X {a1, a2} \<in> A)"
-  by (simp add: is_fsup_closed_def)
 
 lemma finite_sup_closed2:
   assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow> Sup X {a1, a2} \<in> A" and 
@@ -1605,10 +1605,6 @@ lemma sup_semilattice_fsup_closed:
 lemma sup_semilattice_fsup:
   "\<lbrakk>is_sup_semilattice X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_sup X A (Sup X A)"
   by (simp add: bsup_finite2 fpow_ne_iff2)
-
-lemma fsupI:
-  "\<lbrakk>is_sup_semilattice X; (\<And>s E. is_sup X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Sup X F)"
-  using sup_semilattice_fsup by blast
 
 lemma sup_assoc_ubd1:
   "is_sup X {b, c} s \<Longrightarrow> x \<in> ubd X {a, s} \<Longrightarrow> x \<in> ubd X {a, b, c}"
@@ -2043,10 +2039,6 @@ lemma iso_idemD2:
 lemma iso_idemD3:
   "\<lbrakk>is_isotone X f; is_idempotent X f; f`X \<subseteq> X; x1 \<in> X;x2 \<in> X;   x1 \<le> f x2\<rbrakk> \<Longrightarrow> f x1  \<le> (f x2)"
   by (simp add: image_subset_iff iso_idemD2)
-
-lemma idemp_iff:
-  "is_idempotent X f \<longleftrightarrow> (\<forall>x \<in> X. (f \<circ> f) x = f x)"
-  using is_idempotent_def by auto
 
 lemma idempotentI2:
   "\<lbrakk>is_extensive X f;is_isotone X f;  f`X \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> f (f x) \<le> f x)\<rbrakk> \<Longrightarrow> is_idempotent X f"
@@ -3635,10 +3627,6 @@ lemma dw_cl_memI1:
   "x \<in> X \<Longrightarrow> a \<in> A \<Longrightarrow> x \<le> a \<Longrightarrow> x \<in> dw_cl X A"
   using dw_cl_def by auto
 
-lemma dw_cl_memI2:
-  "x \<in> X \<Longrightarrow> (\<exists>a \<in> A. x \<le> a) \<Longrightarrow> x \<in> dw_cl X A"
-  by (simp add: dw_cl_mem_iff)
-
 lemma dw_cl_sub1:
   "A \<subseteq> X \<Longrightarrow> a \<in> A \<Longrightarrow> a \<in> dw_cl X A"
   by (simp add: subsetD dw_cl_memI1)
@@ -4216,11 +4204,6 @@ lemma inf_cl_obtains:
   assumes "x \<in> inf_cl X A"
   obtains Ex where "Ex \<in> Pow A \<and> Ex \<noteq> {} \<and> is_inf X Ex x"
   by (meson assms inf_cl_imp1)
-
-lemma fin_inf_cl_obtains:
-  assumes "x \<in> fin_inf_cl X A"
-  obtains F where "F \<in> Fpow A \<and> is_inf X F x"
-  by (meson assms fin_inf_cl_imp1)
 
 lemma fne_inf_cl_obtains:
   assumes "x \<in> fne_inf_cl X A"
@@ -6292,12 +6275,7 @@ next
     by (metis A4 A5 B0 B1 B2 B3 B4 finite_imageI image_is_empty insert.hyps(4) insert.prems insert_subset sfsup_insert sup_equality)
 qed
 
-lemma homosupD3:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice X; is_sup_semilattice Y; homosup X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Sup X F) = Sup Y (f`F)"  by (meson homosupD1 homosupD2)
 
-
-lemma homosupD4:"\<lbrakk>f`X \<subseteq> Y; is_sup_semilattice X; is_sup_semilattice Y; homosup X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y"
-  by(rule_tac ?X="Y" in ge_bsup1; auto; frule_tac ?a="x" and ?b="y" in bsup_ge1, simp_all)
-    (frule_tac ?Y="Y" and ?f="f" and ?x="x" and ?y="y" in homosupD1, simp_all)
 
 lemma homoinfD4:"\<lbrakk>f`X \<subseteq> Y; is_inf_semilattice X; is_inf_semilattice Y; homoinf X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y"
   by(rule_tac ?X="Y" in le_binf1; auto; frule_tac ?a="x" and ?b="y" in binf_le1, simp_all)
@@ -6314,7 +6292,6 @@ definition homolatt::"'a::order set \<Rightarrow> 'b::order set \<Rightarrow> ('
    "homolatt X Y f \<equiv> (\<forall>x y s. is_sup X {x, y} s \<longrightarrow> is_sup Y {f x, f y} (f s)) \<and> (\<forall>x y i. is_inf X {x, y} i \<longrightarrow>  is_inf Y {f x , f y} (f i))"
 
 
-lemma homolattD0:"homolatt X Y f \<Longrightarrow> homosup X Y f" by (simp add: homolatt_def homosup_def)
 lemma homolattD1:"homolatt X Y f \<Longrightarrow> homoinf X Y f" by (simp add: homolatt_def homoinf_def)
 lemma homolattD2:"\<lbrakk>is_lattice X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (Sup X {x, y}) = Sup Y {f x, f y}" by (simp add:homolatt_def; metis lattD32 sup_equality)
 
@@ -6340,13 +6317,6 @@ next
   then show ?case
     by (metis A0 A4 A5 B0 B1 B2 B3 B4 B6 empty_is_image finite_imageI fsup_insert insert.hyps(4) insert.prems insert_subset)
 qed
-
-lemma homolattD4:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow>f (Sup X F) = Sup Y (f`F)"   by (meson homolattD2 homolattD3)
-
-lemma homolattD5:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; F \<subseteq> X; finite F; F \<noteq> {}\<rbrakk> \<Longrightarrow> f (Inf X F) = Inf Y (f`F)"by (simp add: homoinfsD3 homolattD1 lattD41)
-
-
-lemma homolattD6:"\<lbrakk>f`X \<subseteq> Y; is_lattice X; is_lattice Y; homolatt X Y f; x \<in> X; y \<in> X; x \<le> y\<rbrakk> \<Longrightarrow> f x \<le> f y" by (simp add: homoinfD4 homolattD1 latt_iff)
 
 definition sup_distributive where
   "sup_distributive X \<equiv> (\<forall>a \<in> X. \<forall>b \<in> X. \<forall>x \<in> X. x \<le> Sup X {a, b} \<longrightarrow> (\<exists>a1 b1. a1 \<in> X \<and> b1 \<in> X \<and> a1 \<le> a \<and> b1 \<le> b \<and> x = Sup X {a1, b1}))"
@@ -7693,43 +7663,6 @@ proof-
   then show "F=\<Inter>(finer_ufilters (Pow X) F)" by blast
 qed
 
-lemmas closure_range_iso = 
-  cl_sup_eq_sup
-  cl_sup_eq_sup
-  cl_sup_ge_sup_cl 
-  closure_induced_clr_dual 
-  closure_induced_clr_id
-  closure_range_is_clattice
-  clr_induced_closure_dual
-  extensiveI4
-  isotoneI4
-  idempotentI4
-
-lemmas cech_closure_iso=
-  cc_pretop_cc
-  pretop_to_cc
-  pretop_cl_nh
-  pretop_cc_pretop
-  cc_pretop_nhf
-
-
-
-(*
-cc_pretop_cc
-cl_sup_eq_sup
-cl_sup_ge_sup_cl
-closure_induced_clr_dual
-closure_induced_clr_id
-closure_range_is_clattice
-filter_closure_eq_closure
-filter_max_inter
-sup_iso1b
-sup_iso2
-
-
-*)
-
-
 lemma finer_than_vicinity:
   assumes "onep_conv q X" and "(\<F>, x) \<in> q"
   shows "nhood q X x \<subseteq> \<F>"
@@ -7804,6 +7737,93 @@ proof-
   have A14:"( vimage f V) \<in> Pow X"  using A13 A3 by blast 
   then show "vimage f V \<in> nhood q X x"  using A10 A11 A6 sets_pfilter_upcl by blast
 qed
+
+
+lemmas closure_range_iso = 
+  cl_sup_eq_sup
+  cl_sup_eq_sup
+  cl_sup_ge_sup_cl 
+  closure_induced_clr_dual 
+  closure_induced_clr_id
+  closure_range_is_clattice
+  clr_induced_closure_dual
+  extensiveI4
+  isotoneI4
+  idempotentI4
+  extensiveD4
+
+lemmas cech_closure_iso=
+  cc_pretop_cc
+  pretop_to_cc
+  pretop_cl_nh
+  pretop_cc_pretop
+  cc_pretop_nhf
+
+lemmas comp_dense=cmeet_dense_iff
+  compact_dense
+
+lemmas closures=
+  down_closed_infin_closed
+  dw_cl_is_dw_cl
+  dw_cl_cl
+  dw_cl_lorc   
+  dwdir_upcl_is_dwdir
+  fin_inf_cl_idempotent2
+  fin_inf_cl_is_cl
+  fne_inf_cl_idempotent0
+  fne_inf_cl_is_cl
+  fne_inf_cl_obtains
+  fne_sup_cl_idempotent0
+  fne_sup_cl_is_cl
+  fne_sup_cl_obtains 
+  inf_cl_idempotent2
+ inf_cl_is_cl inf_cl_obtains
+
+lemmas galois_connections=extrema_dual_gc 
+  gc_extrema_dual gc_extrema_dual2 gc_polar_pair gc_reverse2 gc_reverse21  gc_to_polar1
+
+lemmas filter_lemmas=filter_closure_eq_closure
+  filter_max_inter
+  filter_on_lattice_top0
+  filters_on_lattice_csup
+  filters_on_top_inf_semilattice_is_cinf
+  finite_ind_fil15
+  finite_ind_fil5
+  finite_ind_fil6
+  finite_ind_in
+
+lemmas distributivity=
+  fin_distr2 inf_distributiveD2 inf_distributiveI1 
+
+lemmas irreducibility=
+  fin_inf_irrD1
+  fin_inf_irrI1
+  fin_inf_irrI2
+  fin_irr_filter_prime
+  fin_sup_irrD1
+  fin_sup_irrI1
+  fin_sup_irrI2
+  finf_closedD1
+  finf_glb
+  finf_lb
+
+
+unused_thms
+
+(*
+cc_pretop_cc
+cl_sup_eq_sup
+cl_sup_ge_sup_cl
+closure_induced_clr_dual
+closure_induced_clr_id
+closure_range_is_clattice
+filter_closure_eq_closure
+filter_max_inter
+sup_iso1b
+sup_iso2
+
+
+*)
 
 
 end
