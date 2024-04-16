@@ -7685,19 +7685,53 @@ lemma nhood_sub:
   by (metis A1 A2 A3 CollectI InterE lorcD11)
 
 definition continuous_at:: "('a::type \<Rightarrow> 'b::type) \<Rightarrow> 'a::type set \<Rightarrow> ('a::type set set \<times> 'a::type) set \<Rightarrow> 'b::type set \<Rightarrow> ('b::type set set \<times> 'b::type) set \<Rightarrow> 'a::type \<Rightarrow> bool" where
-  "continuous_at f X q Y p x \<equiv> (\<forall>\<F> x.  (\<F>, x)\<in> q \<longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p)"
+  "continuous_at f X q Y p x \<equiv> (\<forall>\<F>.  (\<F>, x)\<in> q \<longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p)"
 
 lemma continuousD:
   "\<lbrakk>continuous_at f X q Y p x; (\<F>, x) \<in> q\<rbrakk> \<Longrightarrow>({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p "
   by (simp add:continuous_at_def)
 
 lemma continuousI:
-  "(\<And>\<F> x. (\<F>, x) \<in> q \<Longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p) \<Longrightarrow>  continuous_at f X q Y p x"
+  "(\<And>\<F>. (\<F>, x) \<in> q \<Longrightarrow> ({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p) \<Longrightarrow>  continuous_at f X q Y p x"
   by (simp add:continuous_at_def)
 
 
+lemma im_filter:
+  assumes A0:"is_pfilter (Pow X) \<F>"  and A1:"f`X \<subseteq> Y"
+  shows "is_pfilter (Pow Y) {E \<in> Pow Y. \<exists>F \<in> \<F>. f`F \<subseteq> E}"  
+proof(rule is_pfilterI1)
+  let ?fF="{E \<in> Pow Y. \<exists>F \<in> \<F>. f`F \<subseteq> E}"
+  show "is_filter (Pow Y)?fF"
+  proof(rule is_filterI1)
+    show "?fF \<noteq> {}"  using A0 A1 Pow_iff image_mono in_mono sets_pfilter_nem sets_pfilter_sub by fastforce
+    show ysub:"?fF \<subseteq> Pow Y" by blast
+    show "is_dir ?fF (\<lambda>x y. y \<subseteq> x)"
+    proof(rule is_dirI1)
+      fix a b assume "a \<in> ?fF" and bmem:"b \<in> ?fF" 
+      then obtain fa fb where "fa \<in> \<F>"  and "fb \<in> \<F>" and asub:"f`fa \<subseteq> a" and bsub:"f`fb \<subseteq> b" by auto
+      then obtain fc where fcmem:"fc \<in> \<F>" and "fc \<subseteq> fa" and "fc \<subseteq> fb"   using sets_pfilter2_dir[of X \<F>] is_dwdir_obtain[of \<F> fa fb] A0 by blast
+      then obtain "f`fc \<subseteq> f`fc" and "f`fc \<in> Pow Y" and "f`fc \<subseteq> a" and "f`fc \<subseteq> b"
+      by (meson PowD PowI bmem asub bsub ysub dual_order.trans image_mono subset_eq subset_refl)
+      then show "\<exists>c \<in> ?fF. c \<subseteq> a \<and> c \<subseteq> b" using fcmem by auto
+    qed
+    show " is_ord_cl (Pow Y) ?fF (\<subseteq>)"
+    proof(rule is_ord_clI)
+      fix a b assume "a \<in> ?fF" and bmem:"b \<in> Pow Y" and asb:"a \<subseteq> b "
+      then show "b \<in> ?fF" using inf.order_iff by fastforce
+    qed
+  qed
+  show "?fF \<noteq> Pow Y"
+  proof-
+    have ne:"{} \<notin> \<F>"  using A0 sets_pfilter_emp by blast
+    then obtain "{} \<notin> ?fF"  by auto
+    then show "?fF \<noteq> Pow Y"    by blast
+  qed
+qed
+
+
 lemma cont12:
-  assumes A0:"is_prtop q X" and A1:"is_prtop p Y" and A2: "\<And>x. x \<in> X \<Longrightarrow> continuous_at f X q Y p x"
+  assumes A0:"is_prtop q X" and A1:"is_prtop p Y" and 
+    A2: "\<And>x. x \<in> X \<Longrightarrow> continuous_at f X q Y p x"
   shows "\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
 proof-
   fix x assume A3:"x \<in> X"
@@ -7706,7 +7740,24 @@ proof-
   then show "nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}" by (simp add: Inf_lower)  
 qed
 
-lemma cont23:
+
+lemma cont21:
+  assumes A0:"is_prtop q X" and A1:"is_prtop p Y" and  A1b:"f`X \<subseteq>Y" and
+    A2:"\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}" 
+  shows "\<And>x. x \<in> X \<Longrightarrow> continuous_at f X q Y p x" 
+proof(rule continuousI)
+  fix x \<F>  assume A3:"x \<in> X" and A4:"(\<F>, x) \<in> q" 
+  then obtain B0:"nhood q X x \<subseteq> \<F>" by blast
+  from A2 A3 have B1:"nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}" by blast
+  also have B2:"... \<subseteq>{E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E} "  using B0 by auto
+  then obtain B3:"nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}" using calculation by auto
+  obtain B4:"is_pfilter (Pow X) \<F>" by (metis A0 A4 Int_Collect case_prodD inf.orderE pfilters_onE) 
+  then have B5:"{E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E} \<in> pfilters_on (Pow Y)" using A1b im_filter[of X \<F> f Y]  pfilters_onI by blast
+  have B6:"(nhood p Y (f x), f x) \<in> p"  using A1 A1b A3 by blast
+  then show "({E \<in> Pow Y. \<exists>F\<in>\<F>. f ` F \<subseteq> E}, f x) \<in> p" using B3 B5 B6 A1 by blast
+qed
+
+lemma cont56:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and
      A2:"\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow>(vimage f V) \<in> nhood q X x"
@@ -7718,7 +7769,7 @@ proof-
 qed
               
 
-lemma cont32:
+lemma cont65:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and 
           A2:"x \<in> X" and
@@ -7738,6 +7789,67 @@ proof-
   then show "vimage f V \<in> nhood q X x"  using A10 A11 A6 sets_pfilter_upcl by blast
 qed
 
+definition adherence where
+   "adherence q X \<equiv> (\<lambda>A. {x \<in> X. \<exists>G \<in> pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G})"
+abbreviation Adh where "Adh q X \<equiv> adherence q X"
+
+lemma adherence_props1:
+  assumes A0:"pretop q X"
+  shows adh3:"Adh q X {} = {}" and
+        adh4:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Adh q X A" and
+        adh5:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Adh q X (A \<union> B) = (Adh q X A) \<union> (Adh q X B)" and
+        adh6:"\<And>A. A \<in> Pow X  \<Longrightarrow> Adh q X A = {x \<in> X. \<exists>F \<in> pfilters_on (Pow X). (F, x) \<in> q \<and> F#{A}}" and
+        adh7:"\<And>A. A \<in> Pow X  \<Longrightarrow> Adh q X A = {x \<in> X. \<exists>F \<in> pfilters_on (Pow X). (F, x) \<in> q \<and> A \<in> grill (Pow X) F}"
+  using A0 CCL0[of q X] adherence_def[of q X] apply presburger 
+  using A0 CCL1[of q X] adherence_def[of q X] apply presburger 
+  using A0 CCL2[of q X] adherence_def[of q X] apply presburger 
+  using A0 adh1[of _ X q] adherence_def[of q X]  apply (smt (verit, ccfv_SIG) Pow_iff)
+  using A0 adh2[of _ X q] adherence_def[of q X]  by (smt (verit, ccfv_SIG) Pow_iff)
+
+lemma adherence_iff:
+  assumes A0:"pretop q X" and A1:"x \<in> X" and A2:"A \<in> Pow X"
+  shows "x \<in> Adh q X A \<longleftrightarrow> (nhood q X x)#{A}" (is "?lhs \<longleftrightarrow> ?rhs")
+proof
+  assume L:"?lhs"
+  then obtain F where "F \<in> pfilters_on (Pow X)" and  ftx:"(F, x) \<in> q" and fma:"F#{A}" using adh6[of q X A] A0 A2  by (smt (verit, del_insts) mem_Collect_eq)
+  then obtain "(nhood q X x) \<subseteq> F" by blast
+  then show "?rhs" using fma ftx  by (simp add: mesh_iff)
+next
+ assume L:"?rhs" 
+ then obtain A00:"is_pfilter (Pow X) (nhood q X x)" and A01:"A \<in> Pow X" and A02:"\<forall>B \<in> (nhood q X x). B \<inter> A \<noteq> {}"
+ by (smt (verit) A0 A1 A2 Ball_Collect case_prodD empty_iff mem_Collect_eq mesh_iff set_pfilter_inter singletonI subsetI)
+ define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> (nhood q X x). A \<inter> B \<subseteq> E}" 
+ then obtain pfr1:"H \<subseteq> Pow X" and pfr2:"A \<in> H" and pfr3:"H \<noteq> {}" and prf4:"nhood q X x \<subseteq> H"  and pfr8:"is_pfilter (Pow X) H"
+ using pfilter_refinment[of X "nhood q X x" A] A00 A01 A02 H_def  by (smt (verit, ccfv_threshold) DiffE Int_lower1 Int_lower2 double_diff dual_order.refl mem_Collect_eq sets_pfilter_sub subsetI)
+ then obtain "x \<in> X" and "H \<in> pfilters_on (Pow X)" and  "(H, x) \<in> q"  and "A \<in> H" by (metis A0 A00 A1 pfilters_onI)
+ then show "?lhs"  by (metis (no_types, lifting) CollectI adherence_def)
+qed
+
+lemma cont23:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and 
+          A2:"A \<in> Pow X" and 
+          A3:"f`X \<subseteq> Y" and
+          A4:"\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
+  shows "f`(Adh q X A) \<subseteq> Adh p Y (f`A)" (is "?lhs \<subseteq> ?rhs")
+proof
+  fix fx assume B0:"fx \<in> ?lhs" then obtain x where B1:"x \<in>Adh q X A" and B2:"fx = (f x)"  by blast
+  have B1b:"x \<in> X" by (metis (no_types, lifting) B1 CollectD adherence_def)
+  then obtain B3:"(nhood q X x)#{A}" using adherence_iff[of q X x A] A0 A2 B1 by blast
+  let ?fF="{E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
+  have B4:"(?fF)#{f`A}"
+  proof(rule meshI)
+    fix a b assume "a \<in> ?fF" and "b \<in> {f`A}"
+    then obtain F where "F \<in> nhood q X x" and ffa:"f`F \<subseteq> a" and bfa:"b=f`A"  by fastforce
+    then obtain fa where "fa \<in> F \<inter> A" using B3  by (meson all_not_in_conv insertI1 mesh_iff)
+    then obtain "f fa \<in> a \<inter> b"  using bfa ffa by auto
+    then show "a \<inter> b \<noteq> {}" by blast
+  qed
+  have B5:"nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"  using A4 B1b by presburger
+  then obtain "(nhood p Y (f x))#{f`A}"  by (smt (verit) B4 mesh_iff subset_iff)
+  then obtain "f x \<in>  Adh p Y (f`A)"  using adherence_iff[of p Y "f x" "f`A"] A1 A3 A2 B1b by blast
+  then show "fx \<in> ?rhs"  using B2 by blast
+qed
 
 lemmas closure_range_iso = 
   cl_sup_eq_sup
