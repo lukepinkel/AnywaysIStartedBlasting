@@ -7914,6 +7914,7 @@ proof-
   then show "(vimage f V) \<in> nhood q X x" using A7 A8 by blast
 qed
 
+
 lemma cont53:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and  
@@ -7943,13 +7944,14 @@ lemma cont32:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and  
           A2:"f`X \<subseteq> Y" and 
-      A3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
+          A3:"vimage f UNIV \<subseteq> X" and 
+      A4:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
    shows "\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
 proof-
-  fix x assume A4:"x \<in> X"
+  fix x assume A5:"x \<in> X"
   show "nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"  (is "?lhs \<subseteq> ?rhs")
   proof
-    fix y assume A5:"y \<in> ?lhs"
+    fix y assume A6:"y \<in> ?lhs"
     show "y \<in> ?rhs"
 
 
