@@ -7810,20 +7810,7 @@ lemmas irreducibility=
 
 unused_thms
 
-(*
-cc_pretop_cc
-cl_sup_eq_sup
-cl_sup_ge_sup_cl
-closure_induced_clr_dual
-closure_induced_clr_id
-closure_range_is_clattice
-filter_closure_eq_closure
-filter_max_inter
-sup_iso1b
-sup_iso2
 
-
-*)
 
 
 end
