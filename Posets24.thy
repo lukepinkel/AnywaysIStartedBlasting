@@ -7825,6 +7825,30 @@ next
  then show "?lhs"  by (metis (no_types, lifting) CollectI adherence_def)
 qed
 
+lemma adherence_props2:
+  assumes A0:"pretop q X" and A1:"x \<in> X" and A2:"V \<in> Pow X" 
+  shows "V \<notin> nhood q X x \<longleftrightarrow> x \<notin> X-(Adh q X (X-V))" and
+        "V \<in> nhood q X x \<longleftrightarrow> x \<in> X-(Adh q X (X-V))" 
+proof-
+  show "V \<notin> nhood q X x \<longleftrightarrow> x \<notin> X-(Adh q X (X-V))"  (is "?lhs \<longleftrightarrow> ?rhs") 
+  proof
+      assume L:"?lhs" then obtain F where pfl:"is_pfilter (Pow X) F" and fxq:"(F, x) \<in> q" and VnF:"V \<notin> F"   by (metis A0 A1 nhood_is_pfilter)
+      then obtain "F#{X-V}"  by (meson "11372" A2 mesh_sym sets_pfilter2_upc sets_pfilter_sub)
+      then obtain A01:"(X-V) \<in> Pow X" and A02:"\<forall>B \<in> F. B \<inter> (X-V) \<noteq> {}"   by (simp add: mesh_def)
+      define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. (X-V) \<inter> B \<subseteq> E}" 
+      then obtain pfr1:"H \<subseteq> Pow X" and pfr2:"(X-V) \<in> H" and prf4:"F \<subseteq> H"  and pfr8:"is_pfilter (Pow X) H"
+      using pfilter_refinment[of X F "(X-V)"] A01 A02 pfl by (smt (verit) Int_lower1 Int_lower2 in_mono mem_Collect_eq sets_pfilter_sub subsetI)
+      then obtain "x \<in> (Adh q X (X-V))" using adherence_def[of q X] fxq  by (metis (mono_tags, lifting) A0 A1 CollectI pfilters_onI pfl)
+      then show "?rhs" by simp
+   next
+      assume R:"?rhs" then obtain "x \<in> (Adh q X (X-V))"   by (simp add: A1)
+      then obtain F where pfil:"is_pfilter (Pow X) F" and fxq:"(F, x) \<in> q" and  "(X-V) \<in> F" using adherence_def[of q X] pfilters_on_def[of "Pow X"] by auto
+      also obtain "V \<notin> F"   using calculation(3) pfil pfilter_sets_comp by blast
+      then show "?lhs" using fxq by blast
+  qed
+  then show "V \<in> nhood q X x \<longleftrightarrow> x \<in> X-(Adh q X (X-V))" by blast
+qed
+
 lemma cont23:
   assumes A0:"is_prtop q X" and
           A1:"is_prtop p Y" and 
@@ -7850,6 +7874,36 @@ proof
   then obtain "f x \<in>  Adh p Y (f`A)"  using adherence_iff[of p Y "f x" "f`A"] A1 A3 A2 B1b by blast
   then show "fx \<in> ?rhs"  using B2 by blast
 qed
+
+lemma cont35:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and  
+          A2:"f`X \<subseteq> Y" and 
+          A3:"vimage f Y \<subseteq> X" and
+          A4:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
+  shows      "\<And>V. V \<in> nhood p Y (f x) \<Longrightarrow>(vimage f V) \<in> nhood q X x"
+proof-
+  have "\<And>V. (vimage f V) \<notin> nhood q X x \<Longrightarrow> V \<notin> nhood p Y (f x)"
+  proof-
+    fix V assume A5:"(vimage f V) \<notin> nhood q X x"
+    then obtain B0:"x \<in> Adh q X (X-(vimage f V))"
+    then show "V \<notin> nhood p Y (f x)"
+  fix V assume A5:"V \<in> nhood p Y (f x)"
+  then show "(vimage f V) \<in> nhood q X x"
+
+lemma cont32:
+  assumes A0:"is_prtop q X" and
+          A1:"is_prtop p Y" and  
+          A2:"f`X \<subseteq> Y" and 
+      A3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`(Adh q X A) \<subseteq> Adh p Y (f`A)"
+   shows "\<And>x. x \<in> X \<Longrightarrow> nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"
+proof-
+  fix x assume A4:"x \<in> X"
+  show "nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"  (is "?lhs \<subseteq> ?rhs")
+  proof
+    fix y assume A5:"y \<in> ?lhs"
+    show "y \<in> ?rhs"
+
 
 lemmas closure_range_iso = 
   cl_sup_eq_sup
