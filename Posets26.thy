@@ -7694,7 +7694,12 @@ lemma Cl_to_Adh1:
   apply (meson PowD pfilters_onE sets_pfilter_sub subsetD)
   apply (metis Image_singleton_iff ex_in_conv pfilters_onE sets_pfilter_nem)
   by blast
-    
+
+lemma Cl_to_Adh2:
+  assumes A0:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))"  and A1:"A \<in> Pow X"
+  shows "(ClAdh Adh X)``{A} = \<Union>{Adh``{\<F>}|\<F>. \<F> \<in> pfilters_on (Pow X) \<and> A \<in> \<F>}"
+  unfolding ClAdh_def using assms by(auto)
+   
   
 lemma Cl_to_Lim1:
   assumes A0:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X" and A1:"\<F> \<in> pfilters_on (Pow X)"
@@ -7703,6 +7708,12 @@ lemma Cl_to_Lim1:
   apply (metis (full_types) ImageE Pow_iff mesh_def pfilter_mesh2 pfilters_onE sets_pfilter_sub subsetD subset_refl)
   by blast 
     
+  
+lemma Cl_to_Lim2:
+  assumes A0:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))"  and A1:"A \<in> Pow X"
+  shows "(ClLim Lim X)``{A} = \<Union>{Lim``{\<F>}|\<F>. \<F> \<in> pfilters_on (Pow X) \<and> {A}#\<F>}"
+  unfolding ClLim_def using assms by(auto)
+
   
 
 (*
