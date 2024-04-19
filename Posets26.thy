@@ -7573,6 +7573,17 @@ proof-
 qed
 
 
+lemma double_grill21:
+  assumes anx:"A \<in> (Pow (Pow X))"  and upcl:"is_ord_cl (Pow X) A (\<subseteq>)"
+  shows "grill (Pow X) (grill (Pow X) A) = A" 
+  using assms double_grill2 by blast 
+
+lemma grill_union_inter:
+  assumes A0:"\<AA> \<in> Pow (Pow (Pow X))" and A1:"\<AA> \<noteq> {}"
+  shows "grill (Pow X) (\<Union>\<AA>) = \<Inter>{grill (Pow X) \<A>|\<A>. \<A> \<in> \<AA>}"
+  unfolding grill_def using assms apply(auto, simp add: mesh_single_iff)
+  unfolding mesh_def using assms apply(auto) by(blast)
+
 definition ClN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set \<times> 'a) set" where
   "ClN N X \<equiv> {(B, x). B \<in> Pow X \<and> x \<in> X \<and> {B}#( N``{x})}"
 
@@ -7687,6 +7698,9 @@ next
     qed
 qed
 
+
+
+
 lemma Cl_to_Adh1:
   assumes A0:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X" and A1:"\<F> \<in> pfilters_on (Pow X)"
   shows "(AdhCl Cl X)``{\<F>} = \<Inter>{Cl``{A}|A. A \<in> \<F>}"
@@ -7795,15 +7809,7 @@ proof-
   qed
 qed
 
-(*
 
-definition NLim::"('a set set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a set) set" where
-  "NLim Lim X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E>. \<E> \<in> pfilters_on (Pow X) \<and> (\<E>, x) \<in> Lim \<longrightarrow>A \<in> \<E>)}"
-
-definition LimN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
-  "LimN N X \<equiv> {(\<E>, x). \<E> \<in> pfilters_on( Pow X) \<and> x \<in> X \<and> (\<forall>A \<in>  Pow X. (x, A) \<in> N \<longrightarrow> A \<in> \<E>)}"
-
-*)
 (*
   have B0:"\<And>x. x \<in> X \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"  by (simp add: Cl_to_Nhoods1)
   have B1:"\<And>x. x \<in> X \<Longrightarrow> (converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})" by (simp add:Cl_to_Nhoods2)
