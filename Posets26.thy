@@ -7747,12 +7747,19 @@ proof-
   then show "(A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" by simp
 qed
 
-  proof
-    assume L:?L then show ?R unfolding ClN_def apply(auto) unfolding NCl_def apply(auto) unfolding mesh_def apply(simp)
-    using assms L xmem amem
-  next
-    assume ?R then show ?L sorry
- 
+lemma cl_nh_mono2:
+  assumes is_nh:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"  and  upcl:"\<And>x A B. \<lbrakk>(x, A) \<in> N ; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>(x, B) \<in> N" 
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl (ClN N X) X) \<longleftrightarrow> (x, A) \<in> N"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
+  have ordcl:"is_ord_cl (Pow X) (N``{x}) (\<subseteq>)" using upcl xmem amem is_nh  by (metis Image_singleton_iff is_ord_clI)
+  have B0:"(converse (ClN N X))``{x} = grill (Pow X) (N``{x})"  by (simp add: Cl_to_Nhoods2 xmem)
+  have B1:"(NCl (ClN N X) X)``{x} = grill (Pow X) ((converse (ClN N X))``{x})" by (simp add: Cl_to_Nhoods1 xmem)
+  also have B2:"...               = grill (Pow X) (grill (Pow X) (N``{x}))"   using B1 B0 by auto 
+  also have B3:"...               = N``{x}" using ordcl double_grill2  by (metis Image_singleton_iff Pow_iff is_nh subsetI)
+  finally show "(x, A) \<in> (NCl (ClN N X) X) \<longleftrightarrow> (x, A) \<in> N"  by blast
+qed
+
 
 (*
   have B0:"\<And>x. x \<in> X \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"  by (simp add: Cl_to_Nhoods1)
