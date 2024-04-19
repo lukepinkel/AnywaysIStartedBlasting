@@ -7760,7 +7760,50 @@ proof-
   finally show "(x, A) \<in> (NCl (ClN N X) X) \<longleftrightarrow> (x, A) \<in> N"  by blast
 qed
 
+lemma nh_lim_prtp1:
+  assumes is_prtp:"\<And>x. x \<in> X \<Longrightarrow> (N``{x}) \<in> pfilters_on (Pow X)" 
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
+  show "(x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume L:?L then show ?R unfolding NLim_def LimN_def using xmem amem is_prtp by auto
+  next
+    assume R:?R then show ?L unfolding NLim_def LimN_def using xmem amem is_prtp by auto
+  qed
+qed
 
+lemma nh_lim_prtp2:
+  assumes centered:"\<And>x. x \<in> X \<Longrightarrow> (lorc {x} (Pow X), x) \<in> Lim" and
+          upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim" and
+          vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim " and  
+          is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))" 
+  shows "\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (Pow X); x \<in> X\<rbrakk> \<Longrightarrow>(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim"
+proof-
+  fix \<F> x assume pfil:"\<F> \<in> pfilters_on (Pow X)" and xmem:"x \<in> X" 
+  show "(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume L:"(\<F>, x) \<in> LimN (NLim Lim X) X"
+    from vicinity xmem obtain smallest:"(\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim" by auto
+    from L have B0:"(\<And>A. \<lbrakk>A \<in>  Pow X; (x, A) \<in> (NLim Lim X)\<rbrakk> \<Longrightarrow> A \<in> \<F>)" unfolding LimN_def by(auto)
+    have B1:"\<Inter>{\<F>. (\<F>, x) \<in> Lim} = (NLim Lim X)``{x}"
+      unfolding NLim_def using is_limit vicinity pfil B0 xmem centered by(auto, meson Pow_iff lorcD11 subsetD)
+    also have B2:"... \<subseteq> \<F>" unfolding NLim_def using B1 B0 L is_limit  by blast
+    finally show "(\<F>, x) \<in> Lim" using upclosed smallest pfil   by blast 
+  next
+    assume R:"(\<F>, x) \<in> Lim" then show "?L" unfolding LimN_def NLim_def using pfil xmem by auto
+  qed
+qed
+
+(*
+
+definition NLim::"('a set set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a set) set" where
+  "NLim Lim X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E>. \<E> \<in> pfilters_on (Pow X) \<and> (\<E>, x) \<in> Lim \<longrightarrow>A \<in> \<E>)}"
+
+definition LimN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
+  "LimN N X \<equiv> {(\<E>, x). \<E> \<in> pfilters_on( Pow X) \<and> x \<in> X \<and> (\<forall>A \<in>  Pow X. (x, A) \<in> N \<longrightarrow> A \<in> \<E>)}"
+
+*)
 (*
   have B0:"\<And>x. x \<in> X \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"  by (simp add: Cl_to_Nhoods1)
   have B1:"\<And>x. x \<in> X \<Longrightarrow> (converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})" by (simp add:Cl_to_Nhoods2)
