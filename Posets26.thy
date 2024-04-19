@@ -7725,6 +7725,51 @@ lemma Adh_to_Lim2:
   shows "(LimAdh Adh X)``{\<F>} = \<Inter>{Adh``{\<G>}|\<G>. \<G> \<in>  pfilters_on (Pow X) \<and> \<G>#\<F>}"
   unfolding LimAdh_def using assms by(auto, metis Image_singleton_iff PowD Pow_top pfilter_mesh2)
 
+lemma cl_nh_mono1:
+  assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  iso:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A} \<subseteq> Cl``{B}" 
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
+  have B0:"(NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"  by (simp add: Cl_to_Nhoods1 xmem)
+  have B1:"(converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})" by (simp add:Cl_to_Nhoods2 xmem)
+  have B2:"(converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((grill (Pow X) ((converse Cl)``{x})))"  by (simp add: B1 Cl_to_Nhoods1 xmem)
+  have B3:"\<And>A1 A2. \<lbrakk>A2 \<in> Pow X; A1 \<in> ((converse Cl)``{x}); A1 \<subseteq> A2\<rbrakk> \<Longrightarrow> A2 \<in> ((converse Cl)``{x})"
+  proof-
+    fix A1 A2 assume B30:"A2 \<in> Pow X" and B31:"A1 \<in> ((converse Cl)``{x})" and B32:"A1 \<subseteq> A2"
+    from B31 is_cl obtain B33:"(A1, x) \<in> Cl" and B34:"A1 \<in> Pow X"   by blast
+    then obtain B35:"Cl``{A1} \<subseteq> Cl``{A2}" using iso  B34 B32 B30  by force 
+    then obtain "(A2, x) \<in> Cl"  using  B33    by blast
+    then show "A2 \<in> ((converse Cl)``{x})" by simp
+  qed
+  then obtain B4:"is_ord_cl (Pow X) ((converse Cl)``{x}) (\<subseteq>)" by (metis is_ord_clI) 
+  have B5:"grill (Pow X) ((grill (Pow X) ((converse Cl)``{x}))) = (converse Cl)``{x}" using double_grill2 xmem  by (metis B4 Image_singleton_iff Pow_iff converseD is_cl subsetI)
+  have B6:"(x, A) \<in> (converse (ClN (NCl Cl X) X)) \<longleftrightarrow> (x, A) \<in> converse Cl"  using B2 B5 by blast
+  then show "(A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" by simp
+qed
+
+  proof
+    assume L:?L then show ?R unfolding ClN_def apply(auto) unfolding NCl_def apply(auto) unfolding mesh_def apply(simp)
+    using assms L xmem amem
+  next
+    assume ?R then show ?L sorry
+ 
+
+(*
+  have B0:"\<And>x. x \<in> X \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"  by (simp add: Cl_to_Nhoods1)
+  have B1:"\<And>x. x \<in> X \<Longrightarrow> (converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})" by (simp add:Cl_to_Nhoods2)
+  have B2:"\<And>x. x \<in> X \<Longrightarrow> (converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((grill (Pow X) ((converse Cl)``{x})))"  by (simp add: B1 Cl_to_Nhoods1)
+  have B3:"\<And>x A1 A2. \<lbrakk>A2 \<in> Pow X; A1 \<in> ((converse Cl)``{x}); A1 \<subseteq> A2\<rbrakk> \<Longrightarrow> A2 \<in> ((converse Cl)``{x})"
+  proof-
+    fix x A1 A2 assume B30:"A2 \<in> Pow X" and B31:"A1 \<in> ((converse Cl)``{x})" and B32:"A1 \<subseteq> A2"
+    from B31 is_cl obtain B33:"(A1, x) \<in> Cl" and B34:"A1 \<in> Pow X"   by blast
+    then obtain B35:"Cl``{A1} \<subseteq> Cl``{A2}" using iso  B34 B32 B30  by force 
+    then obtain "(A2, x) \<in> Cl"  using  B33    by blast
+    then show "A2 \<in> ((converse Cl)``{x})" by simp
+  qed
+  then obtain "\<And>x. x \<in> X \<Longrightarrow> is_ord_cl (Pow X) ((converse Cl)``{x}) (\<subseteq>)" by (metis is_ord_clI) 
+  have B4:"\<And>x. x \<in> X \<Longrightarrow> grill (Pow X) ((grill (Pow X) ((converse Cl)``{x}))) = (converse Cl)``{x}" using double_grill2
+  by (metis Image_singleton_iff Pow_iff \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (X::'a::type set) \<Longrightarrow> is_ord_cl (Pow X) ((Cl::('a::type set \<times> 'a::type) set)\<inverse> `` {x}) (\<subseteq>)) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> converseD is_cl subsetI)
+  have B5:"" *)
 (*
 abbreviation is_conv where
   "is_conv R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on (Pow X) \<and> x \<in> X}" 
