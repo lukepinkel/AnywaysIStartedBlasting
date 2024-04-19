@@ -7714,7 +7714,16 @@ lemma Cl_to_Lim2:
   shows "(ClLim Lim X)``{A} = \<Union>{Lim``{\<F>}|\<F>. \<F> \<in> pfilters_on (Pow X) \<and> {A}#\<F>}"
   unfolding ClLim_def using assms by(auto)
 
-  
+lemma Adh_to_Lim1:
+  assumes A0:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))"  and A1:"\<F> \<in> pfilters_on (Pow X)"
+  shows "(AdhLim Lim X)``{\<F>} = \<Union>{Lim``{\<G>}|\<G>. \<G> \<in>  pfilters_on (Pow X) \<and> \<G>#\<F>}"
+  unfolding AdhLim_def using assms by(auto)
+
+
+lemma Adh_to_Lim2:
+  assumes A0:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))"  and A1:"\<F> \<in> pfilters_on (Pow X)"
+  shows "(LimAdh Adh X)``{\<F>} = \<Inter>{Adh``{\<G>}|\<G>. \<G> \<in>  pfilters_on (Pow X) \<and> \<G>#\<F>}"
+  unfolding LimAdh_def using assms by(auto, metis Image_singleton_iff PowD Pow_top pfilter_mesh2)
 
 (*
 abbreviation is_conv where
