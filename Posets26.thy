@@ -7557,6 +7557,14 @@ proof-
   by (smt (verit))
 qed
 
+lemma grill_of_filter:
+  assumes A0:"\<F> \<in> pfilters_on (Pow X)"
+  shows "\<F> \<subseteq> grill (Pow X) \<F>"
+proof
+  fix F assume "F \<in> \<F>" then show "F \<in> grill (Pow X) \<F>" unfolding grill_def mesh_def
+  using assms mesh_def pfilter_mesh2 pfilters_onE sets_pfilter_sub by fastforce
+qed 
+
 
 lemma double_grill2:
   assumes anx:"A \<in> (Pow (Pow X))" 
@@ -7578,11 +7586,104 @@ lemma double_grill21:
   shows "grill (Pow X) (grill (Pow X) A) = A" 
   using assms double_grill2 by blast 
 
+lemma grill_union_inter1:
+  assumes A0:"\<AA> \<in> Pow (Pow (Pow X))" and A1:"\<AA> \<noteq> {}" and A2:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> is_ord_cl (Pow X) \<A> (\<subseteq>)"
+  shows "grill (Pow X) (\<Inter>\<AA>) = \<Union>{grill (Pow X) \<A>|\<A>. \<A> \<in> \<AA>}" (is "?L = ?R")
+proof-
+  let ?I ="\<Inter>\<AA>"
+  have B0:"?I \<in> (Pow (Pow X))" using A0 A1 by blast
+  have B1:"?R \<subseteq> ?L" 
+  proof-
+    have B10:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> grill (Pow X) \<A> \<subseteq> grill (Pow X) ?I"
+    proof-
+      fix \<A> assume A3:"\<A> \<in> \<AA>" 
+      then obtain B100:"\<A> \<in> Pow (Pow X)" and B101:"is_ord_cl (Pow X) \<A> (\<subseteq>)"  and B103:"?I \<subseteq> \<A>"  using A0 A2 by auto
+      then show "grill (Pow X) \<A> \<subseteq> grill (Pow X) ?I" by (simp add: grill_anti1)
+    qed
+    then show ?thesis
+    by blast
+  qed
+  have B2:"\<And>A. \<lbrakk>A \<in> Pow X; A \<notin> ?R\<rbrakk> \<Longrightarrow> A \<notin> ?L "
+  proof-
+    fix A assume B2A0:"A \<in> Pow X" and B2A1:"A \<notin> ?R"
+    then obtain B22:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> A \<notin> grill (Pow X) \<A>" by blast
+    then obtain B23:"\<And>\<A>. \<A> \<in>\<AA> \<Longrightarrow> (\<exists>B. B \<in> \<A> \<and> B \<inter> A = {})" unfolding grill_def mesh_def using  B2A0 by fastforce
+    define f where "f \<equiv> (\<lambda>\<A>. SOME B. B \<in> \<A> \<and> B \<inter> A = {})"
+    have B24:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> (f \<A>) \<in> \<A>  \<and> (f \<A>) \<inter> A = {}"
+    proof-
+      fix \<A> assume B24A0:"\<A> \<in> \<AA>" then obtain "(\<exists>B. B \<in> \<A> \<and> B \<inter> A = {})" using B23 B24A0 by auto
+      then show "(f \<A>) \<in> \<A>  \<and> (f \<A>) \<inter> A = {}" unfolding f_def using someI_ex[of "\<lambda>B. B \<in> \<A> \<and> B \<inter> A = {}"] by blast
+    qed
+    have B25:"(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> Pow X" using B24 A0 by blast
+    have B26:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> \<A>"
+    proof-
+      fix \<A> assume B26A0:"\<A> \<in> \<AA>"  
+      then obtain B260:"is_ord_cl (Pow X) \<A> (\<subseteq>)"  using A2 by auto
+      also obtain B261:"f \<A> \<in> \<A>" and B262:"f \<A> \<subseteq> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>})"   using B24 B26A0 by auto  
+      then show "(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> \<A>"  using B25 calculation is_ord_clE by fastforce
+    qed
+    then obtain B27:"(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> (\<Inter>\<AA>)" and B28:"A \<inter> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) = {}"  using B24 by blast
+    then show "A \<notin> ?L" unfolding grill_def mesh_def by(auto)
+  qed
+  have B3:"?R \<subseteq> Pow X"   using grill_space by blast
+  from B2 B3 have B4:"?L \<subseteq> ?R" unfolding grill_def mesh_def by blast
+  from B1 B4 show ?thesis by blast
+qed
+
 lemma grill_union_inter:
   assumes A0:"\<AA> \<in> Pow (Pow (Pow X))" and A1:"\<AA> \<noteq> {}"
   shows "grill (Pow X) (\<Union>\<AA>) = \<Inter>{grill (Pow X) \<A>|\<A>. \<A> \<in> \<AA>}"
   unfolding grill_def using assms apply(auto, simp add: mesh_single_iff)
   unfolding mesh_def using assms apply(auto) by(blast)
+
+lemma ideals_filter_grill:
+  assumes A0:"\<G> \<in> (Pow (Pow X))"  and A1:"\<G> \<noteq> {}" and A2:"{} \<notin> \<G>"
+  shows "(\<exists>\<F> \<in> pfilters_on (Pow X). \<G> = grill (Pow X) \<F>) \<longleftrightarrow>   (\<forall>A \<in> Pow X. \<forall>B \<in> Pow X. A \<union> B \<in> \<G> \<longrightarrow> A \<in> \<G> \<or> B \<in> \<G>) \<and> is_ord_cl (Pow X) \<G> (\<subseteq>)"
+  (is "?L \<longleftrightarrow> ?R")
+proof
+  assume L:?L then obtain F where B0:"F \<in> pfilters_on (Pow X)" and B1:" \<G> = grill (Pow X) F" by auto
+  from B0 have B2:"F \<in> Pow (Pow X)"   by (simp add: pfilters_onE sets_pfilter_sub)
+  from B1 B2 obtain B3:" is_ord_cl (Pow X) \<G> (\<subseteq>)" using grill_upcl[of F X] by blast
+  have B4:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X; A \<notin> \<G>; B \<notin> \<G>\<rbrakk> \<Longrightarrow> A \<union> B \<notin> \<G>"
+  proof-
+    fix A B assume B4A0:"A \<in> Pow X" and B4A1:"B \<in> Pow X" and B4A2:"A \<notin> \<G>" and B4A3:"B \<notin> \<G>"
+    then obtain B40:"A \<notin> grill (Pow X) F" and B41:"B \<notin> grill (Pow X) F" using B1 by auto
+    then obtain Fa Fb where B42:"Fa \<in> F" and B43:"Fb \<in> F" and B44:"Fa \<inter> A = {}" and B45:"Fb \<inter> B = {}"
+      by (metis "11393" B0 B2 B4A0 B4A1 Diff_disjoint Int_commute pfilters_on_iff sets_pfilter2_upc)
+    then obtain "Fa \<inter> Fb \<in> F" and "(Fa \<inter> Fb) \<inter> (A \<union> B) = {}"
+      by (metis B0 boolean_algebra.de_Morgan_disj inf_mono inf_shunt pfilters_onE sets_pfilter_dir)
+    then obtain "A \<union> B \<notin> grill (Pow X) F" 
+       by (metis A0 B1 B2 Int_absorb inf.absorb_iff2 mesh_def mesh_iff_grill2)
+    then show "A \<union> B \<notin> \<G>" using B1 by auto
+  qed
+  then have B5:"(\<forall>A \<in> Pow X. \<forall>B \<in> Pow X. A \<union> B \<in> \<G> \<longrightarrow> A \<in> \<G> \<or> B \<in> \<G>)" by blast
+  then show ?R  using B3 by blast
+next
+  assume R:?R then obtain B0:"\<G> = grill (Pow X) (grill (Pow X) \<G>)" using A0 double_grill21[of \<G> X] by auto
+  let ?F="grill (Pow X) \<G>"
+  have B1:"is_pfilter (Pow X) ?F"
+  proof(rule is_pfilterI1)
+    show "is_filter (Pow X) ?F"
+    proof(rule is_filterI1)
+      show "?F \<noteq> {}"  by (metis "11391" A0 A2 Pow_bottom R empty_iff)
+      show "?F \<subseteq> Pow X" by simp
+      show "is_dir ?F (\<lambda>x y. y \<subseteq> x)"
+      proof(rule is_dirI1)
+        fix a b assume amem:"a \<in> ?F" and bmem:"b \<in> ?F" 
+        then obtain B2:"is_ord_cl (Pow X) ?F (\<subseteq>)" and B3:"a \<in> Pow X"   and B4:"b \<in> Pow X" by (meson A0 grill_space grill_upcl subset_eq)  
+        then obtain B5:"(X-a) \<notin> \<G>" and B6:"(X-b) \<notin> \<G>"   by (meson "11393" A0 R amem bmem) 
+        then obtain B7:"(X-a) \<union> (X-b) \<notin> \<G>"   using R by blast
+        then obtain B8:"(X-((X-a) \<union> (X-b))) \<in> grill (Pow X) \<G>" by (meson "11391" A0 Diff_subset PowI R le_supI)
+        then obtain B9:"a \<inter> b \<in> ?F"  by (metis B3 B4 Diff_Diff_Int Diff_Un PowD inf.absorb2)
+        then show "\<exists>c \<in> ?F. c \<subseteq> a \<and> c \<subseteq> b"   by (meson Int_lower2 inf_le1)
+      qed
+      show "is_ord_cl (Pow X) ?F (\<subseteq>)" using A0 grill_upcl by blast
+  qed
+  show "?F \<noteq> (Pow X)"
+  by (metis A0 A1 Pow_bottom R bot.extremum_uniqueI grill_anti2 grill_space is_ord_cl_empty)
+  qed
+  then show ?L using B0 pfilters_on_iff by blast
+qed
 
 definition ClN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set \<times> 'a) set" where
   "ClN N X \<equiv> {(B, x). B \<in> Pow X \<and> x \<in> X \<and> {B}#( N``{x})}"
