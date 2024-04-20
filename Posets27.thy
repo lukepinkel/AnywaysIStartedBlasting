@@ -5231,6 +5231,7 @@ proof-
  qed
  then show " \<Union> D \<in> filters_on X"  by (simp add: filters_on_iff)
 qed
+
 qed
 
 lemma filters_on_lattice_compactgen:
@@ -7761,20 +7762,39 @@ next
 qed
 
 lemma maybe_tho:
-  assumes A0:"is_pfilter (Pow X) \<F>"
-  shows "\<F> = \<Union>{(lorc F ((Pow X)))|F. F \<in>\<F>}"
+  assumes A0:"is_lattice X" and A1:"is_greatest X top" and A2:"is_filter X F"
+  shows "F = Sup (filters_on X) {(lorc f X)|f. f \<in>F}"
 proof-
-  from A0 have fs:" \<F> \<in> Pow (Pow X)" by (simp add: sets_pfilter_sub)
-  have B0:"is_clattice (Pow X)"  by (simp add: pow_is_clattice)
-  then also obtain B1:"is_lattice (Pow X)"  and B2:"is_greatest (Pow X) X" and B3:"Pow X \<noteq> {}" 
-    using clat_lattice pwr_greatesst by blast
-  then obtain B4:"compactly_generated (filters_on (Pow X))" using filters_on_lattice_compactgen by blast
-  have B5:"\<F> \<subseteq> \<Union>{(lorc F ((Pow X)))|F. F \<in>\<F>}"
-  proof 
-    fix F assume "F \<in> \<F>"  then also obtain "F \<in> lorc F(Pow X)" using A0  by (meson in_mono lorc_memI1 sets_pfilter_sub)
-    then show "F \<in> \<Union>{(lorc F ((Pow X)))|F. F \<in>\<F>}"   using calculation by blast 
-  qed 
-  
+  from A0 A1 obtain B0:"is_clattice (filters_on X)" and B1:"compactly_generated (filters_on X)" 
+    using lattice_filters_complete[of X top] filters_on_lattice_compactgen[of X top] lattD1 by blast
+  have B2:"F= Sup (filters_on X) {k \<in> compact_elements (filters_on X). k \<le> F}" 
+    using compact_dense[of "filters_on X" F]  using A2 B0 B1 filters_on_iff by auto
+  have B3:"\<And>f. f \<in> compact_elements (filters_on X) \<Longrightarrow> f \<in> {lorc x X|x. x \<in> X}"
+  proof-
+    fix f assume "f \<in> compact_elements (filters_on X) " 
+      then obtain "is_filter X f" unfolding compact_elements_def    by (simp add: compact_element_memD2 compact_elements_def filters_onE) 
+    then obtain x where "lorc x X = f"  using A0 A1 principal_filters_compact[of X top f]
+    using \<open>(f::'a::order set) \<in> compact_elements (filters_on (X::'a::order set))\<close> compact_elements_mem_iff1 filters_on_iff lattD1 by blast
+    then show  "f \<in> {lorc x X|x. x \<in> X}"
+    using A0 A1 \<open>(f::'a::order set) \<in> compact_elements (filters_on (X::'a::order set))\<close> \<open>Posets27.is_filter (X::'a::order set) (f::'a::order set)\<close> compact_element_memD1 filters_onI lattD1 principal_filters_compact by fastforce
+  qed
+  have B4:"\<And>f.  f \<in> {lorc x X|x. x \<in> X} \<Longrightarrow> f \<in> compact_elements (filters_on X) "
+     using A0 A1 principal_filters_compact[of X top]  compact_elements_mem_iff1 lorc_filter2 by fastforce
+  have B5:" {lorc x X|x. x \<in> X} =  compact_elements (filters_on X)"  using B3 B4 by blast
+  have B7:"\<And>z. \<lbrakk>z \<in> X; lorc z X \<le> F\<rbrakk> \<Longrightarrow> z \<in> F" by (simp add: in_mono lorc_memI1)  
+  have B8:"\<And>z. \<lbrakk>z \<in> X; z \<in> F\<rbrakk> \<Longrightarrow> lorc z X \<le> F "  using A2 is_filterE1 is_ord_clE lorcD12 lorc_subset1 by fastforce
+  have B9:"{lorc x X|x. x \<in> X}  \<subseteq> Pow X" using lorcD1 by blast
+  have B10:"{k \<in>{lorc x X|x. x \<in> X}. k \<le> F}  \<subseteq> Pow X"   using B9 by blast
+  have B11:"{k \<in>{lorc x X|x. x \<in> X}. k \<le> F} \<subseteq> {lorc x X|x. x \<in> F}" using  B7 B8 B9 B10 by(auto) 
+  have B12:"F \<subseteq> X"  by (simp add: A2 is_filterE1)
+  have B13:" {lorc x X|x. x \<in> F} \<subseteq> {k \<in>{lorc x X|x. x \<in> X}. k \<le> F} " using B7 B8 B9 B10 B12  by fastforce
+  have B14:"{lorc x X|x. x \<in> F} = {k \<in>{lorc x X|x. x \<in> X}. k \<le> F}" using B11 B13 by blast
+  have B15:"F= Sup (filters_on X) {k \<in>{lorc x X|x. x \<in> X}. k \<le> F}"  using B2 B5 by presburger
+  also have B16:"... = Sup (filters_on X)  {(lorc f X)|f. f \<in>F}" using B14 by auto
+  finally show ?thesis
+  by simp
+qed
+
   
 (*
 is_lattice X; is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> "compactly_generated (filters_on (Pow X))"
