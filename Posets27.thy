@@ -4603,7 +4603,7 @@ proof-
         using P1 by blast
       obtain ss where B11A1:"is_inf X ?S ss"
         using B11A0 B2 by auto
-      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_inf X Ai si)"l
+      have B8:"\<forall>Ai \<in> ?fE. (\<exists>si. is_inf X Ai si)"
         using B1 by blast
       have B11:"(\<And>Ai. Ai \<in> ?fE \<Longrightarrow> \<exists>ti. is_inf X Ai ti)"
         using B1 by blast
@@ -5190,48 +5190,55 @@ lemma clr_compgen2:
  "\<lbrakk>is_clr C (Pow X); (\<And>A. \<lbrakk>A \<subseteq> C; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in> C);(\<And>D. \<lbrakk>D \<subseteq> C; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in> C)\<rbrakk> \<Longrightarrow> compactly_generated C"
   by (simp add: clr_compgen1)
 
+lemma filters_on_lattice_compactgen0:
+  assumes lat:"is_lattice X" and top:"is_greatest X top" and nem:"X \<noteq> {}"
+  shows filters_on_lattice_compactgen01:"is_clr (filters_on X) (Pow X)" and 
+        filters_on_lattice_compactgen02:"(\<And>A. \<lbrakk>A \<subseteq>  (filters_on X) ; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter>A \<in>  (filters_on X) )" and
+        filters_on_lattice_compactgen03:"(\<And>D. \<lbrakk>D \<subseteq>  (filters_on X) ; D \<noteq> {}\<rbrakk> \<Longrightarrow> is_dir D (\<le>) \<Longrightarrow> \<Union>D \<in>  (filters_on X) )"
+proof-
+  show "is_clr (filters_on X) (Pow X)"  using filter_is_clr lat lattD41 nem top by blast
+  show " \<And>A. A \<subseteq> filters_on X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> \<Inter> A \<in> filters_on X"  using filters_onI inter_filters_filter lat latt_iff pow_ne_iff2 top by blast
+  show " \<And>D. D \<subseteq> filters_on X \<Longrightarrow> D \<noteq> {} \<Longrightarrow> is_dir D (\<subseteq>) \<Longrightarrow> \<Union> D \<in> filters_on X"
+  proof-
+    fix D assume A0:"D \<subseteq> filters_on X" and A1:"D \<noteq> {}" and A2:"is_dir D (\<subseteq>)"
+    have A3:"is_filter X (\<Union> D)"
+    proof(rule is_filterI1)
+      show "\<Union> D \<noteq> {}" using A0 A1 filters_on_iff is_filter_top top by fastforce
+      show "\<Union> D \<subseteq> X" using A0 filters_onE is_filterE1 by fastforce
+      show "is_dir (\<Union> D) (\<lambda>x y. y \<le> x)"
+      proof(rule is_dirI1)
+        show "\<And>a b. a \<in> \<Union> D \<Longrightarrow> b \<in> \<Union> D \<Longrightarrow> \<exists>c\<in>\<Union> D. c \<le> a \<and> c \<le> b"
+        proof-
+          fix a b assume A4:"a \<in> \<Union> D " and A5:"b \<in> \<Union> D"
+          then obtain Fa Fb where fa1:"Fa \<in> D" and fb1:"Fb \<in>D" and fa2:"a \<in> Fa" and fb2:"b\<in> Fb" by blast
+          then obtain Fab where fab1:"Fab \<in> D" and  fab2:"Fa \<subseteq>  Fab" and fab3: "Fb \<subseteq> Fab" using A2 is_dirE1[of D "(\<le>)" Fa Fb] by blast
+          then obtain fab4:"a \<in> Fab" and fab5:"b \<in> Fab" and fab6:"is_filter X Fab"     using A0 fa2 fb2 filters_onE by blast
+          then obtain fab5:"Inf X {a, b} \<in> Fab"  using filter_finf_closed_isl lat lattD41 by blast
+          obtain "Inf X {a, b} \<le> a" and "Inf X {a, b} \<le> b" by (meson A4 A5 \<open>\<Union> (D::'a::order set set) \<subseteq> (X::'a::order set)\<close> binary_infD32 binf_leI1 dual_order.refl lat lattD41 sinfD3 sinfD4 subset_iff)
+          then show "\<exists>c\<in>\<Union> D. c \<le> a \<and> c \<le> b"   using fab1 fab5 by blast
+        qed
+    qed
+    show " is_ord_cl X (\<Union> D) (\<le>)"
+    proof(rule is_ord_clI)
+      show " \<And>a b. a \<in> \<Union> D \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> \<Union> D"
+      proof-
+        fix a b assume a0:"a \<in> \<Union> D " and b0:" b \<in> X " and ab:"a \<le> b"
+        then obtain F where f0:"F \<in> D" and "a \<in> F"  and "is_filter X F"  using A0 filters_onE by auto 
+        then obtain "b \<in> F" using ab b0 is_filterE1[of X F] is_ord_clE[of X F "(\<le>)" a b] by blast
+        then show "b \<in> \<Union> D" using f0 by blast
+      qed
+   qed
+ qed
+ then show " \<Union> D \<in> filters_on X"  by (simp add: filters_on_iff)
+qed
+qed
+
 lemma filters_on_lattice_compactgen:
   "\<lbrakk>is_lattice X; is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> compactly_generated (filters_on X)" 
 proof-
   assume lat:"is_lattice X" and top:" is_greatest X top" and nem:"X \<noteq> {}"
   show "compactly_generated (filters_on X)"
-  proof(rule_tac ?X="X" in clr_compgen2)
-    show "is_clr (filters_on X) (Pow X)"  using filter_is_clr lat lattD41 nem top by blast
-    show " \<And>A. A \<subseteq> filters_on X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> \<Inter> A \<in> filters_on X"  using filters_onI inter_filters_filter lat latt_iff pow_ne_iff2 top by blast
-    show " \<And>D. D \<subseteq> filters_on X \<Longrightarrow> D \<noteq> {} \<Longrightarrow> is_dir D (\<subseteq>) \<Longrightarrow> \<Union> D \<in> filters_on X"
-    proof-
-      fix D assume A0:"D \<subseteq> filters_on X" and A1:"D \<noteq> {}" and A2:"is_dir D (\<subseteq>)"
-      have A3:"is_filter X (\<Union> D)"
-      proof(rule is_filterI1)
-        show "\<Union> D \<noteq> {}" using A0 A1 filters_on_iff is_filter_top top by fastforce
-        show "\<Union> D \<subseteq> X" using A0 filters_onE is_filterE1 by fastforce
-        show "is_dir (\<Union> D) (\<lambda>x y. y \<le> x)"
-        proof(rule is_dirI1)
-          show "\<And>a b. a \<in> \<Union> D \<Longrightarrow> b \<in> \<Union> D \<Longrightarrow> \<exists>c\<in>\<Union> D. c \<le> a \<and> c \<le> b"
-          proof-
-            fix a b assume A4:"a \<in> \<Union> D " and A5:"b \<in> \<Union> D"
-            then obtain Fa Fb where fa1:"Fa \<in> D" and fb1:"Fb \<in>D" and fa2:"a \<in> Fa" and fb2:"b\<in> Fb" by blast
-            then obtain Fab where fab1:"Fab \<in> D" and  fab2:"Fa \<subseteq>  Fab" and fab3: "Fb \<subseteq> Fab" using A2 is_dirE1[of D "(\<le>)" Fa Fb] by blast
-            then obtain fab4:"a \<in> Fab" and fab5:"b \<in> Fab" and fab6:"is_filter X Fab"     using A0 fa2 fb2 filters_onE by blast
-            then obtain fab5:"Inf X {a, b} \<in> Fab"  using filter_finf_closed_isl lat lattD41 by blast
-            obtain "Inf X {a, b} \<le> a" and "Inf X {a, b} \<le> b" by (meson A4 A5 \<open>\<Union> (D::'a::order set set) \<subseteq> (X::'a::order set)\<close> binary_infD32 binf_leI1 dual_order.refl lat lattD41 sinfD3 sinfD4 subset_iff)
-            then show "\<exists>c\<in>\<Union> D. c \<le> a \<and> c \<le> b"   using fab1 fab5 by blast
-          qed
-      qed
-      show " is_ord_cl X (\<Union> D) (\<le>)"
-      proof(rule is_ord_clI)
-        show " \<And>a b. a \<in> \<Union> D \<Longrightarrow> b \<in> X \<Longrightarrow> a \<le> b \<Longrightarrow> b \<in> \<Union> D"
-        proof-
-          fix a b assume a0:"a \<in> \<Union> D " and b0:" b \<in> X " and ab:"a \<le> b"
-          then obtain F where f0:"F \<in> D" and "a \<in> F"  and "is_filter X F"  using A0 filters_onE by auto 
-          then obtain "b \<in> F" using ab b0 is_filterE1[of X F] is_ord_clE[of X F "(\<le>)" a b] by blast
-          then show "b \<in> \<Union> D" using f0 by blast
-        qed
-     qed
-   qed
-  then show " \<Union> D \<in> filters_on X"  by (simp add: filters_on_iff)
-  qed
-qed
+  by (metis clr_compgen2 filters_on_lattice_compactgen01 filters_on_lattice_compactgen02 filters_on_lattice_compactgen03 lat nem top)
 qed
 
 lemma principal_filters_compact:
@@ -5241,10 +5248,7 @@ proof-
   let ?A="{lorc x X|x. x \<in>F}"
   have B0:"F \<subseteq> X" by (simp add: A3 filters_onE is_filterE1)
   have B1:"\<And>x. x \<in> F \<Longrightarrow> x \<in> lorc x X"  using B0 lorc_memI1 by blast
-  have B3:"{lorc x X|x. x \<in>F} \<in> Pow_ne (filters_on X)" 
-    unfolding Pow_ne_def apply(auto)
-    using B0 lorc_filter2 apply auto[1]
-    using A3 filters_on_def is_filterE1 by blast
+  have B3:"{lorc x X|x. x \<in>F} \<in> Pow_ne (filters_on X)"   unfolding Pow_ne_def apply(auto)   using B0 lorc_filter2 apply auto[1]    using A3 filters_on_def is_filterE1 by blast
   obtain s where iss:"is_sup (filters_on X) ?A s"  by (metis (no_types, lifting) A0 B3 csupD2 filters_on_lattice_csup pow_ne_iff2)
   have B2:"F \<subseteq>\<Union>?A" using B0 B1 by blast
   also have B21:"... \<le>  s" using is_supD1121 iss by fastforce
@@ -5252,10 +5256,35 @@ proof-
   then obtain B4:"F \<le> Sup (filters_on X) {lorc x X|x. x \<in>F}"   using calculation by blast
   have B5:" Sup (filters_on X) {lorc x X|x. x \<in>F} \<in> filters_on X"  using B22 is_supE1 iss by blast
   then have B6:"is_dir ( Sup (filters_on X) {lorc x X|x. x \<in>F}) (\<le>)"    by (smt (verit) A1 filters_onE greatest_iff in_mono is_dirI1 is_filterE1 is_filter_top) 
-  have B3:"is_compact (filters_on X) F \<Longrightarrow>  (\<exists>x \<in> X.  lorc x X \<subseteq> F )"
+  have B4:" (\<exists>x \<in> X.  lorc x X = F ) \<Longrightarrow> is_compact (filters_on X) F "
+  proof-
+    assume "(\<exists>x \<in> X. lorc x X = F)" then obtain x where "x \<in> X" and B40:"lorc x X = F"  by auto
+    then obtain B41:"is_compact (filters_on X) (cl_from_clr (filters_on X) {x})"
+      by (metis A0 A1 A2 filters_on_lattice_compactgen01 filters_on_lattice_compactgen02 filters_on_lattice_compactgen03 singleton_closure_compact)
+    have B42:"lorc x X \<in> ubd (filters_on X) {{x}}" 
+     proof(rule  ubdI)
+        show "\<And>a::'a set. a \<in> {{x}} \<Longrightarrow> a \<subseteq> [x)\<^sub>X"  using \<open>(x::'a::order) \<in> (X::'a::order set)\<close> lorc_memI1 by force
+        show "([x)\<^sub>X) \<in> filters_on X"   by (simp add: A3 B40)
+     qed
+   have B43:"is_least (ubd (filters_on X) {{x}}) (lorc x X)"
+    proof(rule leastI3)
+      show " \<And>a::'a set. a \<in> ubd (filters_on X) {{x}} \<Longrightarrow> ([x)\<^sub>X) \<subseteq> a"
+      proof-
+        fix a assume  "a \<in> ubd (filters_on X) {{x}}" then obtain "x \<in> a"  and "is_ord_cl X a (\<le>)"
+        by (meson filters_on_iff insert_subset is_filterE1 ubdD2 ubd_mem_singleE)  
+        then show "([x)\<^sub>X) \<subseteq> a"
+        by (metis B0 B40 is_ord_clE lorc_eq_upbd subset_iff ubd_mem_singleE)
+      qed 
+     show "([x)\<^sub>X) \<in> ubd (filters_on X) {{x}}" using B42 by auto
+  qed
+  then show "is_compact (filters_on X) F"
+  by (metis B40 B41 cl_from_clr_def least_equality2)
+  qed 
+  have B3:"is_compact (filters_on X) F \<Longrightarrow>  (\<exists>x \<in> X.  lorc x X = F )"
   proof-
     assume B3A0:"is_compact (filters_on X) F"  
-    obtain A0 where B31:"A0 \<in> Fpow_ne ?A " and B32:"F \<le> Sup (filters_on X) A0" using B3A0 B4 B3 compactD[of "filters_on X" F ?A] by(auto)
+    obtain A0 where B31:"A0 \<in> Fpow_ne ?A " and B32:"F \<le> Sup (filters_on X) A0" using B3A0 B4 B3 compactD[of "filters_on X" F ?A]
+    using \<open>\<And>thesis::bool. ((F::'a::order set) \<subseteq> Posets27.Sup (filters_on (X::'a::order set)) {[x)\<^sub>X |x::'a::order. x \<in> F} \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> by blast 
     have B33:"\<And>Ai. Ai \<in> A0 \<Longrightarrow> (\<exists>x. is_least Ai x)"
     proof-
       fix Ai assume "Ai \<in> A0" then obtain x where "x \<in> F" and "Ai = lorc x X"   using B31 fpow_neD1 by blast
@@ -5263,18 +5292,29 @@ proof-
       then show "(\<exists>x. is_least Ai x)" by blast
     qed
     define S where "S \<equiv> (\<lambda>Ai. THE x. x \<in> F \<and> is_least Ai x)"
-    have B34:"\<And>Ai. Ai \<in> A0 \<Longrightarrow> (S Ai) \<in> F \<and> is_least Ai (S Ai)"
+    have B34:"\<And>Ai. Ai \<in> A0 \<Longrightarrow> (S Ai) \<in> F \<and> is_least Ai (S Ai) \<and> lorc (S Ai) X = Ai" 
     proof-
-      fix Ai assume "Ai \<in> A0" then obtain x where B340:"x \<in> F" and "Ai = lorc x X"   using B31 fpow_neD1 by blast
+      fix Ai assume "Ai \<in> A0" then obtain x where B340:"x \<in> F" and B34A0:"Ai = lorc x X"   using B31 fpow_neD1 by blast
       then obtain B341:"is_least Ai x"  by (simp add: B1 leastI3 lorcD12)
-      then obtain " (S Ai) \<in>F" and "is_least Ai (S Ai)" unfolding S_def   by (metis (no_types, lifting) B340 least_unique theI')
-      then show "(S Ai) \<in> F \<and> is_least Ai (S Ai)" by blast
+      then obtain B342: "(S Ai) \<in>F" and B343:"is_least Ai (S Ai)" unfolding S_def   by (metis (no_types, lifting) B340 least_unique theI')
+       obtain "lorc (S Ai) X = Ai"   by (metis B341 B343 B34A0 least_unique)
+      then show "(S Ai) \<in> F \<and> is_least Ai (S Ai) \<and> lorc (S Ai) X = Ai" using B342 B343 by blast
     qed
-    then obtain B34:"(S`A0) \<subseteq> F" and B34:"finite (S`A0)"   using B31 fpow_ne_iff2 by blast 
-    then obtain "Inf X (S`A0) \<in> F"   by (metis (no_types, lifting) A0 A3 B31 empty_is_image filter_finf_closed3 filters_on_iff fpow_ne_iff2 latt_iff)
-    then obtain "lorc (Inf X (S`A0)) X \<subseteq> F " unfolding lorc_def using filters_onE[of F X] is_filterE1[of X F] is_ord_clE[of X F "(\<le>)"] A3 by blast
-    have "F \<subseteq> lorc (Inf X (S`A0)) X"
-    then obtain "\<lbrakk>is_compact X c; A \<in> Pow_ne X; c \<le> Sup X A; is_dir A (\<le>)\<rbrakk> \<Longrightarrow> (\<exists>A0. \<exists>a. a \<in> A \<and> a ub A0 \<and> A0 \<in> Fpow_ne A \<and> c \<le> Sup X A0)"
+    then obtain B35:"(S`A0) \<subseteq> F" and B36:"finite (S`A0)"   using B31 fpow_ne_iff2 by blast 
+    then obtain B37:"Inf X (S`A0) \<in> F"   by (metis (no_types, lifting) A0 A3 B31 empty_is_image filter_finf_closed3 filters_on_iff fpow_ne_iff2 latt_iff)
+    then obtain B38:"lorc (Inf X (S`A0)) X \<subseteq> F " unfolding lorc_def using filters_onE[of F X] is_filterE1[of X F] is_ord_clE[of X F "(\<le>)"] A3 by blast
+    have B39:"\<And>Ai. Ai \<in> {lorc f X|f. f \<in>  (S`A0)} \<Longrightarrow> Ai \<in> A0" using B34 by force
+    also have B40:"\<And>Ai. Ai \<in> A0 \<Longrightarrow>  Ai \<in> {lorc f X|f. f \<in>  (S`A0)} " using B34 by force
+    then have B41:"A0 =  {lorc f X|f. f \<in>  (S`A0)}"   using calculation by blast 
+    obtain B42:"lorc (Inf X (S`A0)) X = Sup (filters_on X) A0" unfolding S_def using lorc_inter2[of X "(S`A0)"] B41
+    by (metis (no_types, lifting) A0 B0 B31 B35 B36 S_def fpow_ne_iff2 image_cong image_is_empty subset_trans)
+    then show " (\<exists>x \<in> X.  lorc x X = F )"
+    using B0 B32 B37 B38 by blast
+  qed
+  then show ?thesis
+  using B4 by blast
+qed 
+
 
 lemma distr_lattice_filters:
   "distributive_lattice X \<Longrightarrow> is_lattice (filters_on X)"
