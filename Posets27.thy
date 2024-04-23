@@ -8083,6 +8083,33 @@ proof-
   qed
 qed
   
+
+lemma adh_cl_mono1:
+  assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  
+          cl_emp:"Cl``{{}} = {}" and
+          is_iso:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A} \<subseteq> Cl``{B}" 
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
+  show "(A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"  (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume L:?L
+    then obtain \<F> where f1:"\<F> \<in> pfilters_on (Pow X)" and f2:"A \<in> \<F>" and f3:"(\<F>, x) \<in> AdhCl Cl X" 
+      unfolding ClAdh_def using xmem amem L  by blast
+    have f4:"\<And>B. B \<in> \<F> \<Longrightarrow> B \<in> Pow X"  using f1 pfilters_on_iff sets_pfilter_sub by blast
+    have f5:"\<And>B. B \<in> \<F> \<Longrightarrow> (B, x) \<in> Cl" using f3 unfolding AdhCl_def using xmem f1 f4  by fastforce
+    then show ?R using f2  by auto
+  next
+    assume R:?R
+    let ?F="lorc A (Pow X)"
+    have B0:"?F \<in> pfilters_on (Pow X)"  by (metis Image_singleton_iff R amem cl_emp equals0D lorc_set_pfilter pfilters_on_iff)
+    have B1:"\<And>B. B \<in> ?F \<Longrightarrow> (B, x) \<in> Cl"  by (meson Image_singleton_iff R amem is_iso lorc_mem_iff1 subset_iff)
+    have B2:"(?F, x) \<in>  (AdhCl Cl X)"  by (simp add: AdhCl_def B0 B1 xmem)
+    have B3:"A \<in> ?F"  by (meson amem lorc_memI1)
+    have B4:"(\<exists>\<F> \<in> pfilters_on (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> (AdhCl Cl X))"  using B0 B2 B3 by blast
+    show ?L using B4 xmem amem unfolding ClAdh_def by blast
+  qed
+qed
 (*
 lemma adh_nh_mono2:
   assumes is_nh:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"  and 
