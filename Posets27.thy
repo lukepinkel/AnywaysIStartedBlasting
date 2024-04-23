@@ -3369,6 +3369,7 @@ proof-
   qed
 qed
 
+
 lemma lorc_filter2:
   "x \<in> X \<Longrightarrow>  ([x)\<^sub>X) \<in> filters_on X"
   by (simp add: filters_on_iff lorc_filter)
@@ -7796,11 +7797,6 @@ proof-
 qed
 
   
-(*
-is_lattice X; is_greatest X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> "compactly_generated (filters_on (Pow X))"
-  have B0:"is_compact"
-  filters_on_lattice_compactgen
-*)
 definition ClN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set \<times> 'a) set" where
   "ClN N X \<equiv> {(B, x). B \<in> Pow X \<and> x \<in> X \<and> {B}#( N``{x})}"
 
@@ -7808,10 +7804,10 @@ definition NCl:: "('a set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('
   "NCl Cl X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> {A}#(converse Cl)``{x}}"
 
 definition NAdh::"('a set set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a set) set" where
-  "NAdh Adh X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E> \<in> (Pow (Pow X)). (\<E>, x) \<in> Adh \<longrightarrow> {A}#\<E>)}"
+  "NAdh Adh X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E> \<in> pfilters_on (Pow X). (\<E>, x) \<in> Adh \<longrightarrow> {A}#\<E>)}"
 
 definition AdhN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
-  "AdhN N X \<equiv> {(\<E>, x). \<E> \<in> Pow( Pow X) \<and> x \<in> X \<and> (\<forall>A. A \<in>  Pow X \<and> (x, A) \<in> N \<longrightarrow> {A}#\<E>)}"
+  "AdhN N X \<equiv> {(\<E>, x). \<E> \<in> pfilters_on (Pow X) \<and> x \<in> X \<and> (\<forall>A. A \<in>  Pow X \<and> (x, A) \<in> N \<longrightarrow> {A}#\<E>)}"
 
 definition AdhCl::"('a set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
   "AdhCl Cl X \<equiv> {(\<F>, x). \<F> \<in>  pfilters_on (Pow X) \<and> x \<in> X \<and> (\<forall>A. A \<in>  Pow X \<and> A \<in> \<F> \<longrightarrow> (A, x) \<in> Cl)}"
@@ -7850,17 +7846,17 @@ lemma Cl_to_Nhoods2:
     unfolding ClN_def grill_def using assms by auto
   
 lemma Nhoods_to_Adh0:
-  assumes A0:"\<E> \<in> (Pow (Pow X))" and A1:"x \<in> X" and A2:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"
+  assumes A0:"\<E> \<in> pfilters_on (Pow X)" and A1:"x \<in> X" and A2:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"
   shows "x \<in> (AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E> " 
   unfolding AdhN_def mesh_def using assms by auto
 
 lemma Nhoods_to_Adh1a: 
-  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> Pow (Pow X)" and A2:"Adh \<noteq> {}"
+  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in>pfilters_on (Pow X)" and A2:"Adh \<noteq> {}"
   shows "(NAdh Adh X)``{x} \<subseteq> \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
   unfolding NAdh_def grill_def mesh_def using assms by blast
   
 lemma Nhoods_to_Adh1b: 
-  assumes A0:"x \<in> X" and A1:"A \<in> Pow X" and A2:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> Pow (Pow X)" and A3:"Adh \<noteq> {}" and
+  assumes A0:"x \<in> X" and A1:"A \<in> Pow X" and A2:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (Pow X)" and A3:"Adh \<noteq> {}" and
           A4:"(x, A) \<in> (NAdh Adh X)"
   shows " (\<And>\<E>. \<lbrakk>\<E> \<in> Pow (Pow X); (\<E>, x) \<in> Adh\<rbrakk> \<Longrightarrow> {A}#\<E>)"
   unfolding NAdh_def mesh_def using assms by(auto,metis (no_types, lifting) A2 CollectD NAdh_def case_prodD mesh_singleE) 
@@ -7873,12 +7869,12 @@ lemma Nhoods_to_Adh1c:
   unfolding NAdh_def mesh_def using assms by(simp add:mesh_def)
 
 lemma Nhoods_to_Adh1d: 
-  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> Pow (Pow X)" and A2:"Adh \<noteq> {}"
+  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (Pow X)" and A2:"Adh \<noteq> {}"
   shows "\<And>E.  \<lbrakk>E \<in> Pow X; E \<notin> (NAdh Adh X)``{x}\<rbrakk> \<Longrightarrow> E \<notin>  \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
   unfolding NAdh_def grill_def mesh_def using assms by(auto, smt (verit, ccfv_SIG) mem_Collect_eq)
 
 lemma Nhoods_to_Adh1: 
-  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> Pow (Pow X)" and A2:"Adh \<noteq> {}" and A3:"(converse Adh)``{x} \<noteq> {}"
+  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in>pfilters_on(Pow X)" and A2:"Adh \<noteq> {}" and A3:"(converse Adh)``{x} \<noteq> {}"
   shows "(NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}" (is "?L = ?R")
 proof
   show "?L \<subseteq> ?R" using assms Nhoods_to_Adh1a[of x X Adh] by auto
@@ -7973,7 +7969,8 @@ proof-
     then show "A2 \<in> ((converse Cl)``{x})" by simp
   qed
   then obtain B4:"is_ord_cl (Pow X) ((converse Cl)``{x}) (\<subseteq>)" by (metis is_ord_clI) 
-  have B5:"grill (Pow X) ((grill (Pow X) ((converse Cl)``{x}))) = (converse Cl)``{x}" using double_grill2 xmem  by (metis B4 Image_singleton_iff Pow_iff converseD is_cl subsetI)
+  have B5:"grill (Pow X) ((grill (Pow X) ((converse Cl)``{x}))) = (converse Cl)``{x}" 
+    using double_grill2 xmem  by (metis B4 Image_singleton_iff Pow_iff converseD is_cl subsetI)
   have B6:"(x, A) \<in> (converse (ClN (NCl Cl X) X)) \<longleftrightarrow> (x, A) \<in> converse Cl"  using B2 B5 by blast
   then show "(A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" by simp
 qed
@@ -8025,6 +8022,106 @@ proof-
     assume R:"(\<F>, x) \<in> Lim" then show "?L" unfolding LimN_def NLim_def using pfil xmem by auto
   qed
 qed
+
+
+lemma lorc_pfilter:
+  assumes A0:"x \<in> X" and A1:"\<not>(is_least X x)"
+  shows "is_pfilter X (lorc x X)"
+proof(rule is_pfilterI1)
+  show "is_filter X (lorc x X)"  by (simp add: A0 lorc_filter)
+  show "(lorc x X) \<noteq> X"  by (metis A0 A1 leastI3 lorcD12)
+qed
+
+
+lemma lorc_set_pfilter:
+  assumes A0:"A \<in> Pow X" and A1:"A \<noteq> {}" 
+  shows "is_pfilter (Pow X) (lorc A (Pow X))"
+  using lorc_pfilter[of A "Pow X"] A0 A1 least_unique pwr_least by blast
+
+
+lemma adh_nh_mono2:
+  assumes is_nh:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X \<and> V \<noteq> {}"  and 
+          upcl:"\<And>x A B. \<lbrakk>(x, A) \<in> N ; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>(x, B) \<in> N" and
+          ntr:"\<And>x. x \<in> X \<Longrightarrow> N``{x} \<noteq> {}"
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
+  have "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (Pow X). (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
+    unfolding NAdh_def using amem xmem by blast
+  also have "... \<longleftrightarrow>  (\<forall>\<F> \<in> pfilters_on (Pow X). (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
+    unfolding AdhN_def using amem xmem by auto
+  also have "... \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"
+    by (metis Image_singleton_iff is_nh mesh_def singletonD singletonI)
+  finally have P0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"  by blast
+  show "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume R:?R 
+    have B0:"\<And>\<F>. \<lbrakk>\<F> \<in> pfilters_on (Pow X); (\<F>, x) \<in> (AdhN N X)\<rbrakk> \<Longrightarrow> {A}#\<F>"
+    proof-
+      fix \<F> assume fmem:"\<F> \<in> pfilters_on (Pow X)" and fadh:"(\<F>, x) \<in> (AdhN N X)"
+      then obtain "\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> {V}#\<F>" unfolding AdhN_def using xmem by blast
+      then show"{A}#\<F>" using R xmem amem by blast
+    qed
+    then show ?L unfolding NAdh_def using amem xmem by blast
+  next
+    assume L:?L 
+    have B0:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
+    proof-
+      assume negr:"\<not>(?R)"
+      then obtain B1:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)" using upcl amem by blast
+      then obtain B2:"{(X-A)}#(N``{x}) " by (meson Image_singleton_iff amem disj_sub is_nh mesh_singleI) 
+      then have B3:"(lorc (X-A) (Pow X))#(N``{x})"
+        unfolding mesh_def lorc_def by fastforce
+      have B4:"\<not>((lorc (X-A) (Pow X))#{A})" 
+        unfolding mesh_def lorc_def using Int_Diff by auto    
+      obtain B5:"(X-A) \<in> Pow X" and B6:"(X-A) \<noteq> {}"  by (metis B2 Diff_disjoint Diff_empty Diff_subset Pow_iff ex_in_conv mesh_singleE ntr xmem) 
+      then obtain B7:"(lorc (X-A) (Pow X)) \<in> pfilters_on (Pow X)" using lorc_set_pfilter pfilters_onI by metis
+      from B7 B3 B4 have B8:"\<not>(\<forall>\<F> \<in> pfilters_on (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)" using mesh_sym by blast  
+      then show "\<not>(?L)" using P0 by blast
+    qed
+    then show ?R using L by fastforce
+  qed
+qed
+  
+(*
+lemma adh_nh_mono2:
+  assumes is_nh:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"  and 
+          upcl:"\<And>x A B. \<lbrakk>(x, A) \<in> N ; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>(x, B) \<in> N" and
+          ntr:"\<And>x. x \<in> X \<Longrightarrow> N``{x} \<noteq> {}"
+  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N"
+proof-
+  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
+  have B0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (Pow X). (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
+    unfolding NAdh_def using amem xmem by blast
+  have B1:"... \<longleftrightarrow>  (\<forall>\<F> \<in> pfilters_on (Pow X). (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
+    unfolding AdhN_def using amem xmem by auto
+  have B2:"... \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"
+    by (metis Image_singleton_iff is_nh mesh_def singletonD singletonI)
+  show "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
+*)
+(*
+  proof
+    assume L:?L then obtain "(\<And>\<F>. \<lbrakk>\<F> \<in>  pfilters_on (Pow X); (\<F>, x) \<in>(AdhN N X)\<rbrakk> \<Longrightarrow> {A}#\<F>)" 
+      unfolding NAdh_def by blast
+
+*)
+(*
+definition NAdh::"('a set set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a set) set" where
+  "NAdh Adh X \<equiv> {(x, A). A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E> \<in> pfilters_on (Pow X). (\<E>, x) \<in> Adh \<longrightarrow> {A}#\<E>)}"
+
+definition AdhN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
+  "AdhN N X \<equiv> {(\<E>, x). \<E> \<in> pfilters_on (Pow X) \<and> x \<in> X \<and> (\<forall>A. A \<in>  Pow X \<and> (x, A) \<in> N \<longrightarrow> {A}#\<E>)}"
+
+lemma Nhoods_to_Adh0:
+  assumes A0:"\<E> \<in> (Pow (Pow X))" and A1:"x \<in> X" and A2:"\<And>x V. (x, V) \<in> N \<Longrightarrow> x \<in> X \<and> V \<in> Pow X"
+  shows "x \<in> (AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E> " 
+  unfolding AdhN_def mesh_def using assms by auto
+
+lemma Nhoods_to_Adh1: 
+  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> Pow (Pow X)" and A2:"Adh \<noteq> {}" and A3:"(converse Adh)``{x} \<noteq> {}"
+  shows "(NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}" (is "?L = ?R")
+
+*)
 
 
 (*
