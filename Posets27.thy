@@ -8117,12 +8117,12 @@ lemma cl_lim_prtp2:
           upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim" and
           vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim " and  
           is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))" 
-  shows "\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (Pow X); x \<in> X\<rbrakk> \<Longrightarrow>(\<F>, x) \<in> LimCl (ClLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim"
+  shows "\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> Lim \<longrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X"
 proof-
   fix \<F> x assume pfil:"\<F> \<in> pfilters_on (Pow X)" and xmem:"x \<in> X" 
-  show "(\<F>, x) \<in> LimCl (ClLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" (is "?L \<longleftrightarrow> ?R")
+  show "  (\<F>, x) \<in> Lim \<longrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X" (is "?L \<longrightarrow> ?R")
 proof
-  assume R:?R
+  assume R:?L
   have R0:"\<And>A. \<lbrakk>A \<in> Pow X; {A}#\<F>\<rbrakk> \<Longrightarrow> (\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"
   proof-
     fix A assume amem:"A \<in> Pow X" and amesh:"{A}#\<F>"
@@ -8135,11 +8135,9 @@ proof
     also obtain hmesh:"{A}#\<H>" unfolding \<H>_def mesh_def  using amesh_unfold by fastforce
     then show "(\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"   using gmem hlim by blast
   qed
-  then show ?L unfolding LimCl_def ClLim_def using pfil xmem by (smt (verit, best) CollectI case_prodI)
-next
-  assume L:?L
-  then show ?R unfolding LimCl_def ClLim_def using pfil xmem
-
+  then show ?R unfolding LimCl_def ClLim_def using pfil xmem by (smt (verit, best) CollectI case_prodI)
+qed
+qed
 (*
 
 definition LimCl::"('a set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
