@@ -8306,10 +8306,11 @@ proof-
         then have B4:"G \<in>  pfilters_on (Pow X) \<and> (G, x) \<in> Lim\<and> (A \<union> B) \<in> G" by (simp add: B1 B2)
         then obtain B5:"\<exists>G1 \<in> pfilters_on (Pow X). (G1, x) \<in> Lim \<and> (A \<union>B ) \<in> G1" by blast
         also obtain "x \<in> X" using B0 ClLim_def Q0 by blast
-        then show "x \<in> ?lhs" using ClLim_def Q0  calculation
+        then show "x \<in> ?lhs" using ClLim_def Q0  calculation Pow_iff Un_subset_iff amem bmem by auto
       qed
     qed
   qed
+qed
       
 
   
