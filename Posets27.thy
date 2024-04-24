@@ -8136,27 +8136,61 @@ lemma cl_lim_prtp2:
           upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim" and
           vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim " and  
           is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (Pow X))" 
-  shows "\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> Lim \<longrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X"
+  shows "\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> Lim \<longleftrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X"
 proof-
   fix \<F> x assume pfil:"\<F> \<in> pfilters_on (Pow X)" and xmem:"x \<in> X" 
-  show "  (\<F>, x) \<in> Lim \<longrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X" (is "?L \<longrightarrow> ?R")
+  show "(\<F>, x) \<in> Lim \<longleftrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X" (is "?L \<longleftrightarrow> ?R")
 proof
-  assume R:?L
-  have R0:"\<And>A. \<lbrakk>A \<in> Pow X; {A}#\<F>\<rbrakk> \<Longrightarrow> (\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"
+  assume L:?L
+  have L0:"\<And>A. \<lbrakk>A \<in> Pow X; {A}#\<F>\<rbrakk> \<Longrightarrow> (\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"
   proof-
     fix A assume amem:"A \<in> Pow X" and amesh:"{A}#\<F>"
     obtain is_pfil:"is_pfilter (Pow X) \<F>" and amesh_unfold:"\<forall>B \<in> \<F>. A \<inter> B \<noteq> {}" using amesh mesh_singleE pfil pfilters_on_iff by blast
     define \<H> where  "\<H> \<equiv> {E \<in> Pow X. \<exists>B \<in> \<F>. A \<inter> B \<subseteq> E}" 
     then obtain hpfil:"is_pfilter (Pow X) \<H>" and fsub:"\<F>\<subseteq> \<H>" 
       using is_pfil amesh_unfold amem finer_proper_filter[of X \<F> A]   by (simp add: Int_commute)
-    obtain gmem:"\<H> \<in> pfilters_on (Pow X)" and rassum:"(\<F>, x) \<in> Lim"  and fsubh:"\<F> \<subseteq> \<H>"  using R fsub hpfil pfilters_onI by blast
+    obtain gmem:"\<H> \<in> pfilters_on (Pow X)" and rassum:"(\<F>, x) \<in> Lim"  and fsubh:"\<F> \<subseteq> \<H>"  using L fsub hpfil pfilters_onI by blast
     then obtain hlim:"(\<H>, x) \<in> Lim" using upclosed  by blast
     also obtain hmesh:"{A}#\<H>" unfolding \<H>_def mesh_def  using amesh_unfold by fastforce
     then show "(\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"   using gmem hlim by blast
   qed
   then show ?R unfolding LimCl_def ClLim_def using pfil xmem by (smt (verit, best) CollectI case_prodI)
+next
+  assume R:?R
+  then obtain R0:"\<And>F. \<lbrakk>F \<in> Pow X; {F}#\<F>\<rbrakk> \<Longrightarrow>  (\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> {F}#\<G>)" 
+    unfolding LimCl_def ClLim_def using pfil xmem by blast
+  have R1:"\<And>F. \<lbrakk>F \<in> Pow X; {F}#\<F>\<rbrakk> \<Longrightarrow>  (\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> F \<in> \<G>)"
+  proof-
+    fix F assume fmem:"F \<in> Pow X" and fmesh:"{F}#\<F>" 
+    then obtain \<G> where gfil:"\<G> \<in> pfilters_on (Pow X)" and gx:"(\<G>, x) \<in> Lim" and fg:"{F}#\<G>"  using R0 by auto
+    then obtain is_pfil:"is_pfilter (Pow X) \<G>"  and fmesh_unfold:"\<forall>B \<in> \<G>. F \<inter> B \<noteq> {}" using fmesh mesh_singleE pfil pfilters_on_iff by blast
+    define \<H> where  "\<H> \<equiv> {E \<in> Pow X. \<exists>B \<in>  \<G>. F \<inter> B \<subseteq> E}" 
+    then obtain hpfil:"is_pfilter (Pow X) \<H>" and gsub:" \<G>\<subseteq> \<H>"
+      using is_pfil fmesh_unfold fmem finer_proper_filter[of X  \<G> F] by (simp add: Int_commute)
+    obtain hmem:"\<H> \<in> pfilters_on (Pow X)"   by (simp add: hpfil pfilters_onI) 
+    obtain fmem2:"F \<in> \<H>"   using \<H>_def fmem is_pfil sets_pfilter_nem by fastforce
+    obtain hlim:"(\<H>, x) \<in> Lim" using gsub hmem gx upclosed   by blast
+    then show "(\<exists>\<G> \<in>  pfilters_on (Pow X). (\<G>, x) \<in> Lim \<and> F \<in>\<G>)" using hmem fmem2
+    by blast
+  qed
+  let ?N="\<Inter>{\<F>. (\<F>, x) \<in> Lim}"
+  have R2:"?N \<subseteq>\<F>"
+  proof(rule ccontr)
+    assume contr1:"\<not>(?N \<subseteq> \<F>)" then obtain F where f1:"F \<in> ?N" and f2:"F \<notin> \<F>" by blast
+    from pfil obtain f3:"\<F>  \<in> Pow (Pow X)" and  f4:"is_ord_cl (Pow X)  \<F> (\<subseteq>)" by (simp add: pfilters_on_iff sets_pfilter2_upc sets_pfilter_sub)
+    from f2 f3 f4 obtain "(X-F) \<in> grill (Pow X) \<F>"  by (metis "11391" InterE centered f1 lorcD1 mem_Collect_eq xmem) 
+    then obtain "{X-F}#\<F>" by (simp add: grill_def)
+    then obtain \<G> where gfil:"\<G> \<in> pfilters_on (Pow X)" and gx:"(\<G>, x) \<in> Lim" and fg:"(X-F) \<in> \<G>" by (meson Diff_subset PowI R1)
+    from f1 have "F \<in> \<G>"  using gx by blast
+    then obtain "{} \<in> \<G>"  by (metis Diff_disjoint fg gfil pfilters_onE sets_pfilter_dir)
+    then show False
+    using gfil pfilters_onE sets_pfilter_emp by blast
+  qed
+  then show ?L
+  using pfil upclosed vicinity xmem by blast
 qed
 qed
+
 (*
 
 definition LimCl::"('a set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
