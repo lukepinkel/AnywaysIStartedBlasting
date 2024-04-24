@@ -7913,6 +7913,25 @@ qed
 
 
 
+lemma Nhoods_to_Lim1_via_cl: 
+  assumes A0:"x \<in> X" and 
+          A1:"\<And>x \<E>. (\<E>, x) \<in>Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (Pow X)" and 
+          A2:"Lim \<noteq> {}" and 
+          A3:"(converse Lim)``{x} \<noteq> {}"
+  shows "\<And>V. \<lbrakk>V \<in> Pow X\<rbrakk> \<Longrightarrow> (x, V) \<in> (NLim Lim X) \<longleftrightarrow> (X-V, x) \<notin> (ClLim Lim X) "
+proof-
+  fix V assume vmem:"V \<in> Pow X"
+  have lfil:"\<And>\<F>. \<F> \<in> converse (Lim)``{x} \<Longrightarrow>  \<F>  \<in> Pow (Pow X) \<and> is_ord_cl (Pow X)  \<F> (\<subseteq>)" using A0 A1 by (simp add:  PowI pfilters_on_iff sets_pfilter2_upc sets_pfilter_sub)
+  have B0:"(x, V) \<in> (NLim Lim X) \<longleftrightarrow> (\<forall>\<F> \<in> converse (Lim)``{x}. V \<in> \<F>)" unfolding NLim_def using A0 vmem A1 by blast
+  also have B1:"...                   \<longleftrightarrow> (\<forall>\<F> \<in> converse (Lim)``{x}. (X-(X-V)) \<in> \<F>)" using double_diff vmem by fastforce
+  also have B2:"...                   \<longleftrightarrow> \<not>(\<exists>\<F> \<in> converse (Lim)``{x}. (X-(X-V)) \<notin> \<F>)"  by blast
+  also have B3:"...                   \<longleftrightarrow> \<not>(\<exists>\<F> \<in> converse (Lim)``{x}. (X-(X-(X-V))) \<in> grill (Pow X) \<F>)"    using "11394" lfil by(simp add:"11391")
+  also have B4:"...                   \<longleftrightarrow> \<not>(\<exists>\<F> \<in> converse (Lim)``{x}. (X-V) \<in> grill (Pow X) \<F>)" by (simp add: double_diff)  
+  also have B5:"...                   \<longleftrightarrow> \<not>(\<exists>\<F> \<in> converse (Lim)``{x}. {(X-V)}#\<F>)" by (simp add: grill_def) 
+  also have B6:"...                   \<longleftrightarrow> (X-V, x) \<notin> (ClLim Lim X)" unfolding ClLim_def using A0 A1 vmem by blast
+  finally show "(x, V) \<in> (NLim Lim X) \<longleftrightarrow> (X-V, x) \<notin> (ClLim Lim X)" by blast
+qed
+
 
 lemma Cl_to_Adh1:
   assumes A0:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X" and A1:"\<F> \<in> pfilters_on (Pow X)"
