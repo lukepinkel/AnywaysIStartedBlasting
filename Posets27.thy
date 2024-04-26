@@ -8343,7 +8343,7 @@ qed
 
   
 
-lemma cl_lim_prtp2:
+lemma cl_lim_prtp1:
   assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  
           CCl1:"Cl``{{}} = {}" and
           CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}" and
@@ -8353,13 +8353,50 @@ proof-
   have CCl4:"\<And>A B. \<lbrakk>A\<in> Pow X; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" using is_cl CCl1 CCl2 CCl3 ccl_mnono[of Cl]  by presburger
   fix A x assume A0:"A \<in> Pow X" and x0:"x \<in> X"
   show "(A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" (is "?L \<longleftrightarrow> ?R")
-proof
-  assume L:?L
-  then show ?R unfolding ClLim_def LimCl_def using L is_cl CCl1 CCl2 CCl3 CCl4 A0 x0 by(auto)
-next
-  assume R:?R
-  show ?L
-  
+  proof
+    assume L:?L
+    then show ?R 
+      unfolding ClLim_def LimCl_def using L is_cl CCl1 CCl2 CCl3 CCl4 A0 x0 by auto
+    next
+    assume R:?R
+    define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
+    have F0:"\<F> \<in> pfilters_on (Pow X)"
+    proof(rule pfilters_onI)
+      show "is_pfilter (Pow X) \<F>"
+      proof(rule is_pfilterI1)
+        show  "is_filter (Pow X) \<F>"
+        proof(rule is_filterI1)
+            show "\<F> \<noteq> {}" using CCl1 \<F>_def by fastforce
+            show "\<F> \<subseteq> Pow X" using \<F>_def by blast
+            show "is_dir \<F> (\<lambda>x y. y \<subseteq> x)"
+            proof(rule is_dirI1)
+              fix a b assume "a \<in> \<F>" and "b \<in> \<F>" 
+              then obtain "a \<in> Pow X" and "x \<notin> Cl``{X-a}" and "b \<in> Pow X" and "x \<notin> Cl``{X-b}" unfolding \<F>_def by fastforce
+              then obtain "a \<inter> b \<in> Pow X" and "x \<notin> Cl``{X-(a \<inter> b)}"   by (metis CCl3 Diff_Int Diff_subset Int_Un_eq(1) Pow_iff Un_iff Un_subset_iff)
+              then show "\<exists>c\<in>\<F>. c \<subseteq> a \<and> c \<subseteq> b"  using \<F>_def by auto
+            qed
+            show "is_ord_cl (Pow X) \<F> (\<subseteq>)"
+            proof(rule is_ord_clI)
+              fix a b assume "a \<in> \<F>" and b0:"b \<in> Pow X"  and  ab0:"a \<subseteq> b" 
+              then obtain "a \<in> Pow X" and "x \<notin> Cl``{X-a}" unfolding \<F>_def by fastforce
+              then show "b \<in> \<F>" unfolding \<F>_def using ab0 b0 by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
+            qed
+        qed
+        show "\<F> \<noteq> Pow X" by (metis (no_types, lifting) CCl2 CollectD Diff_empty Pow_bottom Pow_top UnCI \<F>_def subset_Un_eq x0)
+      qed
+    qed
+    have F1:"{A} # \<F> " unfolding \<F>_def mesh_def by (smt (verit, del_insts) CCl1 CCl2 CCl3 CollectD Image_singleton_iff Int_commute R cl_lim_prtp2b is_cl singletonD)
+    have F2:"\<And>E. \<lbrakk>E \<in> Pow X; {E}#\<F>\<rbrakk> \<Longrightarrow> (E, x) \<in> Cl"
+    proof-
+      fix E assume E0:"E \<in> Pow X" and E1:"{E}#\<F>"
+      then show "(E, x) \<in> Cl" by (smt (verit, del_insts) CollectI Diff_Diff_Int Diff_disjoint Image_singleton_iff PowD Pow_def \<F>_def inf.absorb_iff2 insert_iff mesh_def)
+    qed
+    then show ?L
+       unfolding ClLim_def LimCl_def using A0 x0 R F0 F1 F2 by auto
+    qed
+qed
+
+
 
 (*
 
