@@ -8312,6 +8312,34 @@ proof-
   qed
 qed
       
+lemma cl_lim_prtp2b:
+  assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  
+          CCl1:"Cl``{{}} = {}" and
+          CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}" and
+          CCl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B}"
+  shows "\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+proof-
+  fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
+  show "(A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})" (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume L:?L 
+    also have contrp:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
+    proof-
+      assume nQ:"\<not>(?R)" then obtain V where V0:"V \<in> Pow X" and V1:"(X-V, x)\<notin>Cl" and V2:"V \<inter> A = {}" by blast
+      then obtain "A \<subseteq> (X-V)"  using A0 by blast 
+      then obtain "Cl``{A} \<subseteq> Cl``{(X-V)}"   by (metis A0 CCl3 Diff_subset Pow_iff subset_Un_eq)
+      then obtain "x \<notin> Cl``{A}" using V1 by blast
+      then show "\<not>(?L)"   by force
+    qed
+    then show ?R  using calculation by blast
+  next
+    assume R:?R then show ?L using A0 A1 is_cl CCl1 CCl2 CCl3 apply(auto)
+    by (metis (no_types, lifting) Diff_Diff_Int Diff_disjoint Pow_iff inf.absorb_iff2)
+  qed
+qed
+
+  
+
 
   
 
@@ -8330,9 +8358,6 @@ proof
   then show ?R unfolding ClLim_def LimCl_def using L is_cl CCl1 CCl2 CCl3 CCl4 A0 x0 by(auto)
 next
   assume R:?R
-  have cpos:"\<not>?L \<Longrightarrow> \<not>?R"
-  proof-
-    assume negQ:"\<not>?L"
   show ?L
   
 
