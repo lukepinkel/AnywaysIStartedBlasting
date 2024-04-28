@@ -8436,9 +8436,18 @@ lemma NAdh_antitone:
   "is_antitone (Pow ((Pow (Pow X)) \<times> X)) (\<lambda>Adh. NAdh Adh X)"
   unfolding is_antitone_def NAdh_def by (simp add: Collect_mono_iff mesh_def subsetD)
 
+lemma NAdh_antitone2:
+  "is_antitone (Pow (pfilters_on (Pow X) \<times> X)) (\<lambda>Adh. NAdh Adh X)"
+  unfolding is_antitone_def NAdh_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
 lemma NAdh_rng:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((pfilters_on (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
+
+lemma NAdh_rng2:
   "(\<lambda>Adh. NAdh Adh X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
   unfolding NAdh_def mesh_def by(auto)
+
 
 lemma AdhN_antitone:
   "is_antitone (Pow (X \<times> (Pow X))) (\<lambda>N. AdhN N X)"
@@ -8448,32 +8457,74 @@ lemma AdhN_rng:
   "(\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
   unfolding AdhN_def mesh_def by (auto, metis Pow_iff in_mono pfilters_onE sets_pfilter_sub)
 
+lemma AdhN_rng2:
+  "(\<lambda>N. AdhN N X) ` Pow (X \<times> Pow X) \<subseteq> Pow (pfilters_on (Pow X) \<times> X)"
+  unfolding AdhN_def mesh_def by(auto)
+
 lemma NAdhN_ext:
   "is_extensive(Pow (X \<times> (Pow X)))  ((\<lambda>Adh. NAdh Adh X) \<circ>(\<lambda>N. AdhN N X))"
   unfolding is_extensive_def NAdh_def AdhN_def mesh_def by(auto)
 
+lemma AdhNAdh_ext:
+  "is_extensive (Pow (pfilters_on (Pow X) \<times> X)) ((\<lambda>N. AdhN N X) \<circ> (\<lambda>Adh. NAdh Adh X))"
+  unfolding is_extensive_def AdhN_def NAdh_def mesh_def by auto
+
+lemma NAdh_galois:
+  "galois_conn (\<lambda>Adh. NAdh Adh X) (Pow (pfilters_on (Pow X) \<times> X)) (\<lambda>N. AdhN N X) (Pow (X \<times> (Pow X)))"
+  apply(rule gcI)
+  apply (simp add: NAdh_antitone2)
+  apply (simp add: AdhNAdh_ext)
+  apply (simp add: AdhN_antitone)
+  apply (simp add: NAdhN_ext)
+  apply (simp add: NAdh_rng)
+  by (simp add:AdhN_rng2)
 
 lemma NLim_antitone:
   "is_antitone (Pow ((Pow (Pow X)) \<times> X)) (\<lambda>Lim. NLim Lim X)"
+  unfolding is_antitone_def NLim_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+
+lemma NLim_antitone2:
+  "is_antitone (Pow ((pfilters_on (Pow X)) \<times> X)) (\<lambda>Lim. NLim Lim X)"
   unfolding is_antitone_def NLim_def by (simp add: Collect_mono_iff mesh_def subsetD)
 
 lemma NLim_rng:
   "(\<lambda>Lim. NLim Lim X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
   unfolding NLim_def mesh_def by(auto)
 
+lemma NLim_rng2:
+  "(\<lambda>Lim. NLim Lim X)` (Pow ((pfilters_on (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NLim_def mesh_def by(auto)
+
 lemma LimN_antitone:
   "is_antitone (Pow (X \<times> (Pow X))) (\<lambda>N. LimN N X)"
   unfolding is_antitone_def LimN_def by (simp add: Collect_mono_iff mesh_def subsetD)
-
 
 lemma LimN_rng:
   "(\<lambda>N. LimN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
   unfolding LimN_def mesh_def  by (auto, metis Pow_iff in_mono pfilters_onE sets_pfilter_sub)
 
+lemma LimN_rng2:
+  "(\<lambda>N. LimN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow (pfilters_on (Pow X) \<times> X))"
+ unfolding LimN_def mesh_def by(auto)
 
 lemma NLim_ext:
   "is_extensive(Pow (X \<times> (Pow X)))  ( (\<lambda>Lim. NLim Lim X) \<circ> (\<lambda>N. LimN N X))"
   unfolding is_extensive_def LimN_def NLim_def mesh_def by(auto)
+
+lemma LimN_ext:
+  "is_extensive (Pow (pfilters_on (Pow X) \<times> X)) ((\<lambda>N. LimN N X) \<circ> (\<lambda>Lim. NLim Lim X))"
+  unfolding is_extensive_def LimN_def NLim_def mesh_def by(auto)
+
+lemma LimN_galois:
+  "galois_conn (\<lambda>Lim. NLim Lim X) (Pow (pfilters_on (Pow X) \<times> X)) (\<lambda>N. LimN N X) (Pow (X \<times> (Pow X)))"
+  apply(rule gcI)
+  apply (simp add: NLim_antitone2)
+  apply (simp add: LimN_ext)
+  apply (simp add: LimN_antitone)
+  apply (simp add: NLim_ext)
+  apply (simp add: NLim_rng2)
+  by (simp add: LimN_rng2)
 
 
 abbreviation is_conv where
