@@ -1217,13 +1217,38 @@ proof(rule Upper_eq_sup_eq)
   proof
     show "?L \<subseteq> ?R"
     proof
-      fix u assume L:"u \<in> ?L"  show "u \<in> ?R" 
-    by(rule ubd_imageI,auto intro:L ubdD2,metis A1 L Sup_le_iff imageI is_supE4 order_refl ubdD2 ubdD3 ubd_ant1b)
+      fix u assume L:"u \<in> ?L"  
+      show "u \<in> ?R" 
+      proof(rule ubdI)
+        show "\<And>si. si \<in> s ` I \<Longrightarrow> (si, u) \<in> R"
+        proof-
+          fix si assume s0:"si \<in> (s ` I)"
+          then obtain i where s1:"i \<in> I"  and s2:"si = s i"  by blast
+          then obtain s3:"is_sup R X (A i) (s i)" using A1 by blast
+          have s4:"A i \<subseteq> \<Union> (A ` I)"  using s1 by blast
+          then show "(si, u)\<in>R" 
+            using L s2 s3 is_supE3[of R X "A i" "s i" u] 
+            ubd_ant1b[of "A i" "\<Union> (A ` I)" u R X]  by fastforce
+        qed
+        show "u \<in> X" using L ubdD2[of u R X "\<Union>(A ` I)"]  by blast
+      qed
     qed
     next show "?R \<subseteq> ?L"
     proof
-      fix u assume R:"u \<in> ?R" show "u \<in> ?L" 
-      apply(rule ubd_unI, meson R ubdD2)  using A1 A2 A3 R fbdE1 ubdD2 ubdD3   by (metis (full_types) image_iff is_supD5 ubdI2)
+      fix u assume R:"u \<in> ?R" 
+      show "u \<in> ?L" 
+      proof(rule ubdI) 
+        show "\<And>x. x \<in> \<Union> (A ` I)  \<Longrightarrow> (x, u) \<in> R"
+        proof-
+          fix x assume x0:"x \<in> \<Union> (A ` I)"
+          then obtain i where x1:"i \<in> I" and x2:"x \<in> A i" by blast
+          then obtain x3:"(x, s i)\<in> R" using A1 is_supD1121[of R X "A i" "s i" x] by blast
+          obtain x4:"(s i, u)\<in>R"   using R ubdD1 x1 by fastforce
+          obtain x5:"x \<in> X" and x6:"s i \<in> X" and x7:"u \<in> X" by (meson A1 A3 R is_supE1 subsetD ubdD2 x1 x2)
+          then show "(x, u) \<in> R" using A2 x3 x4 trans_onD[of X R x "s i" u]  by blast 
+        qed
+        show "u \<in> X" using R ubdD2[of u R X "s ` I"] by blast
+      qed
     qed
   qed
 qed   
@@ -1231,9 +1256,11 @@ qed
 lemma sup_families1b:
   "\<lbrakk>trans R X; antisym_on X R; (\<And>Ai. Ai \<in> A \<Longrightarrow> Ai \<subseteq> X); A \<noteq> {}; (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup R X Ai si); x \<in> X\<rbrakk> \<Longrightarrow> ub R (Sup R X ` A) x \<Longrightarrow> ub R (\<Union> A) x"  
   by (metis fbdE1 is_supD41 sup_equality ub_unI)
+
 lemma sup_families2b:
   "\<lbrakk>trans R X; antisym_on X R; (\<And>Ai. Ai \<in> A \<Longrightarrow> Ai \<subseteq> X); A \<noteq> {}; (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup R X Ai si); x \<in> X; ub R (\<Union>A) x\<rbrakk>   \<Longrightarrow>  ub R ((Sup R X) ` A) x" 
   by (metis is_supD5 sup_equality ub_imageI ub_unD)
+
 lemma sup_families:
   "\<lbrakk>trans R X; antisym_on X R; (\<And>Ai. Ai \<in> A \<Longrightarrow> Ai \<subseteq> X); A \<noteq> {}; (\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup R X Ai si)\<rbrakk> \<Longrightarrow>(is_sup R X ((\<lambda>Ai. Sup R X Ai)`A) s) \<longleftrightarrow> (is_sup R X (\<Union>A) s)"  
   by(rule Upper_eq_sup_eq, rule ubd_eqI1,simp add: sup_families1b,simp add: sup_families2b) 
@@ -6462,7 +6489,7 @@ proof-
         proof-
           fix a b assume A3:"a \<in> H" and A4:"b \<in> H"
           obtain aB bB where B0:"aB \<in> F" and B1:"bB \<in> F" and B2:"A \<inter> aB \<subseteq> a" and B3:"A \<inter> bB \<subseteq> b"  using H_def local.A3 local.A4 by auto
-          obtain B4:"aB \<inter> bB \<in> F"  using A0 B0 B1 A3 by (simp add: Posets19.A3) 
+          obtain B4:"aB \<inter> bB \<in> F"  using A0 B0 B1 A3 by (simp add: Posets21.A3) 
           obtain B5:"A \<inter> aB \<inter> bB \<in> H"    using B2 B4 H_def local.A3 by blast
           also have B6:"A \<inter> aB \<inter> bB \<subseteq> a \<and> A \<inter> aB \<inter> bB \<subseteq> b"    using B2 B3 by blast
           then show " \<exists>c::'a set\<in>H. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"   using calculation
