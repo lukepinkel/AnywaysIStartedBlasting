@@ -70,6 +70,10 @@ lemma lower_dual:
 definition is_lst::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_lst R A m \<equiv>  m \<in> A \<and> (\<forall>x. x\<in> A \<longrightarrow> (m,x)\<in>R)"
 
+lemma is_lstI:
+  "m \<in> A \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> (m, x) \<in> R) \<Longrightarrow> is_lst R A m" 
+  by(simp add:is_lst_def)
+
 lemma is_lstE:
   "is_lst R A m \<Longrightarrow> m \<in> A \<and> (\<forall>x. x \<in> A \<longrightarrow> (m,x)\<in>R)"
   by(simp add:is_lst_def)
@@ -80,6 +84,12 @@ definition is_grt::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> b
 lemma is_grtE:
   "is_grt R A m \<Longrightarrow> m \<in> A \<and> (\<forall>x. x \<in> A \<longrightarrow> (x,m)\<in>R)"
   by(simp add:is_grt_def)
+
+lemma is_grtI:
+  "m \<in> A \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> (x,m) \<in> R) \<Longrightarrow> is_grt R A m"
+  by(simp add:is_grt_def)
+
+
 
 
 
