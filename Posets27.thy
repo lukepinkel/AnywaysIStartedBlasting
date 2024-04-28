@@ -3677,6 +3677,7 @@ lemma dw_cl_is_dw_cl:
   "is_ord_cl X (dw_cl X A) (\<ge>)"
   by (simp add: is_ord_clI dw_cl_memI3)
 
+section Galois
 
 definition galois_conn::"('a::order \<Rightarrow> 'b::order) \<Rightarrow> 'a::order set \<Rightarrow> ('b::order \<Rightarrow> 'a::order) \<Rightarrow> 'b::order set \<Rightarrow> bool" where
   "galois_conn f X g Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  (x \<le> g y \<longleftrightarrow> y \<le> f x))"
@@ -8333,7 +8334,7 @@ proof-
     qed
     then show ?R  using calculation by blast
   next
-    assume R:?R then show ?L using A0 A1 is_cl CCl1 CCl2 CCl3 apply(auto)
+    assume R:?R then show ?L using A0 A1 is_cl apply(auto)
     by (metis (no_types, lifting) Diff_Diff_Int Diff_disjoint Pow_iff inf.absorb_iff2)
   qed
 qed
@@ -8356,7 +8357,7 @@ proof-
   proof
     assume L:?L
     then show ?R 
-      unfolding ClLim_def LimCl_def using L is_cl CCl1 CCl2 CCl3 CCl4 A0 x0 by auto
+      unfolding ClLim_def LimCl_def using L A0 x0 by auto
     next
     assume R:?R
     define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
@@ -8396,18 +8397,85 @@ proof-
     qed
 qed
 
+lemma NCl_antitone:
+  "is_antitone (Pow ((Pow X) \<times> X)) (\<lambda>Cl. NCl Cl X)"
+  unfolding is_antitone_def NCl_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+lemma NCl_rng:
+  " (\<lambda>Cl. NCl Cl X)`(Pow ((Pow X) \<times> X)) \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NCl_def mesh_def by(auto)
+
+lemma ClN_antitone:
+  "is_antitone (Pow (X \<times> (Pow X))) (\<lambda>N. ClN N X)"
+  unfolding is_antitone_def ClN_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+lemma ClN_rng:
+  " (\<lambda>N. ClN N X)`( (Pow (X \<times> (Pow X))) ) \<subseteq>  (Pow ((Pow X) \<times> X))"
+  unfolding ClN_def mesh_def by(auto)
+
+lemma ClNCl_ext:
+  "is_extensive (Pow ((Pow X) \<times> X)) ( (\<lambda>N. ClN N X) \<circ> (\<lambda>Cl. NCl Cl X))"
+  unfolding is_extensive_def ClN_def NCl_def mesh_def by(auto)
+
+lemma NClN_ext:
+  "is_extensive (Pow (X \<times> (Pow X))) ((\<lambda>Cl. NCl Cl X) \<circ> (\<lambda>N. ClN N X))"
+  unfolding is_extensive_def ClN_def NCl_def mesh_def by(auto)
 
 
-(*
+lemma NCl_galois:
+  "galois_conn (\<lambda>Cl. NCl Cl X) (Pow ((Pow X) \<times> X)) (\<lambda>N. ClN N X) (Pow (X \<times> (Pow X)))"
+  apply(rule gcI)
+  apply (simp add: NCl_antitone)
+  apply (simp add: ClNCl_ext)
+  apply (simp add: ClN_antitone)
+  apply(simp add:NClN_ext)
+  apply(simp add:NCl_rng)
+  by(simp add:ClN_rng)
 
-definition LimCl::"('a set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> ('a set set \<times> 'a) set" where
-  "LimCl Cl X \<equiv> {(\<F>, x). \<F> \<in>  pfilters_on (Pow X) \<and> x \<in> X \<and> (\<forall>A. A \<in>  Pow X \<and> {A}#\<F> \<longrightarrow> (A, x) \<in> Cl)}"
+lemma NAdh_antitone:
+  "is_antitone (Pow ((Pow (Pow X)) \<times> X)) (\<lambda>Adh. NAdh Adh X)"
+  unfolding is_antitone_def NAdh_def by (simp add: Collect_mono_iff mesh_def subsetD)
 
-definition ClLim::"('a set set \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow>('a set \<times> 'a) set " where
-  "ClLim Lim X \<equiv> {(A, x). A \<in> Pow X \<and> x \<in> X \<and> (\<exists>\<F> \<in> pfilters_on (Pow X). {A} # \<F> \<and> (\<F>, x) \<in> Lim)}"
-*)
+lemma NAdh_rng:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
 
-(*
+lemma AdhN_antitone:
+  "is_antitone (Pow (X \<times> (Pow X))) (\<lambda>N. AdhN N X)"
+  unfolding is_antitone_def AdhN_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+lemma AdhN_rng:
+  "(\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
+  unfolding AdhN_def mesh_def by (auto, metis Pow_iff in_mono pfilters_onE sets_pfilter_sub)
+
+lemma NAdhN_ext:
+  "is_extensive(Pow (X \<times> (Pow X)))  ((\<lambda>Adh. NAdh Adh X) \<circ>(\<lambda>N. AdhN N X))"
+  unfolding is_extensive_def NAdh_def AdhN_def mesh_def by(auto)
+
+
+lemma NLim_antitone:
+  "is_antitone (Pow ((Pow (Pow X)) \<times> X)) (\<lambda>Lim. NLim Lim X)"
+  unfolding is_antitone_def NLim_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+lemma NLim_rng:
+  "(\<lambda>Lim. NLim Lim X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NLim_def mesh_def by(auto)
+
+lemma LimN_antitone:
+  "is_antitone (Pow (X \<times> (Pow X))) (\<lambda>N. LimN N X)"
+  unfolding is_antitone_def LimN_def by (simp add: Collect_mono_iff mesh_def subsetD)
+
+
+lemma LimN_rng:
+  "(\<lambda>N. LimN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
+  unfolding LimN_def mesh_def  by (auto, metis Pow_iff in_mono pfilters_onE sets_pfilter_sub)
+
+
+lemma NLim_ext:
+  "is_extensive(Pow (X \<times> (Pow X)))  ( (\<lambda>Lim. NLim Lim X) \<circ> (\<lambda>N. LimN N X))"
+  unfolding is_extensive_def LimN_def NLim_def mesh_def by(auto)
+
+
 abbreviation is_conv where
   "is_conv R X \<equiv> R \<subseteq> {(F, x). F \<in> pfilters_on (Pow X) \<and> x \<in> X}" 
 
@@ -8444,13 +8512,13 @@ lemma adherence_equalities:
     show adh1l:"\<And>x G. x \<in> X \<Longrightarrow> G \<in> pfilters_on (Pow X) \<Longrightarrow> (G, x) \<in> q \<Longrightarrow> A \<in> G \<Longrightarrow> \<exists>F\<in>pfilters_on (Pow X). (F, x) \<in> q \<and> F # {A}"
     proof-
       fix x G assume "x \<in> X" and g0:"G \<in> pfilters_on (Pow X)" and g2:"(G, x) \<in> q"  and  g1:"A \<in> G"
-      then obtain "G # {A}"  by (metis insert_absorb mesh_iff pfilter_mesh singleton_iff subset_insertI subset_preceq)
+      then obtain "G # {A}" unfolding mesh_def  using filter_mem_mesh mesh_singleE by blast 
       then show " \<exists>F::'a set set\<in>pfilters_on (Pow X). (F, x) \<in> q \<and> F # {A}" using g0 g1 g2 by blast
     qed
     show adh1r:"\<And>x F. x \<in> X \<Longrightarrow> F \<in> pfilters_on (Pow X) \<Longrightarrow> (F, x) \<in> q \<Longrightarrow> F # {A} \<Longrightarrow> \<exists>G\<in>pfilters_on (Pow X). (G, x) \<in> q \<and> A \<in> G"
     proof-
       fix x F assume a0:"x \<in> X" and a1:"F \<in> pfilters_on (Pow X) " and a2:"(F, x) \<in> q" and a3:"F # {A}"
-      then obtain a3:"is_pfilter (Pow X) F" and a4:"A \<in> Pow X" and a5:"\<forall>B \<in> F. B \<inter> A \<noteq> {}"      by (simp add: mesh_iff pfilters_on_iff sub)
+      then obtain a3:"is_pfilter (Pow X) F" and a4:"A \<in> Pow X" and a5:"\<forall>B \<in> F. B \<inter> A \<noteq> {}" unfolding mesh_def  by (simp add: pfilters_onE sub) 
       define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. A \<inter> B \<subseteq> E}"
       then obtain a6:"H \<in> pfilters_on (Pow X)" and a7:"F \<subseteq> H" using a3 a4 a5 finer_proper_filter[of X F A] H_def by (simp add: pfilters_onI)
       obtain a8:"A \<in> H" using H_def a3 is_pfilterE1 sets_filter_top sub by fastforce
@@ -8551,7 +8619,7 @@ proof-
     assume nR:"\<not>(\<Inter>?U \<subseteq> F)" then obtain A where a1:"A \<in>\<Inter>?U" and a2:"A \<notin> F" by auto
     have a3:"A \<in> Pow X"  using a1 c1 ne by auto    
     let ?Ac="X-A"
-    have a4:"?Ac \<in> grill (Pow X) F"  by (meson "11391" a2 a3 c2 pfil sets_pfilter2_upc)
+    have a4:"?Ac \<in> grill (Pow X) F"     by (meson "11392" Pow_iff a2 a3 c2 pfil sets_pfilter2_upc)
     have fr1:"\<forall>B \<in> F. B \<inter> ?Ac \<noteq> {}" by (metis PowD a2 a3 pfil pfilters_sets_comp3)
     have fr2:"?Ac \<in> Pow X" by simp
     define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. ?Ac \<inter> B \<subseteq> E}" 
@@ -8569,6 +8637,8 @@ proof-
   qed
   then show "F=\<Inter>(finer_ufilters (Pow X) F)" by blast
 qed
+
+
 
 lemma finer_than_vicinity:
   assumes "onep_conv q X" and "(\<F>, x) \<in> q"
@@ -8720,11 +8790,11 @@ proof
   assume L:"?lhs"
   then obtain F where "F \<in> pfilters_on (Pow X)" and  ftx:"(F, x) \<in> q" and fma:"F#{A}" using adh6[of q X A] A0 A2  by (smt (verit, del_insts) mem_Collect_eq)
   then obtain "(nhood q X x) \<subseteq> F" by blast
-  then show "?rhs" using fma ftx  by (simp add: mesh_iff)
+  then show "?rhs" using fma ftx unfolding mesh_def by blast
 next
  assume L:"?rhs" 
  then obtain A00:"is_pfilter (Pow X) (nhood q X x)" and A01:"A \<in> Pow X" and A02:"\<forall>B \<in> (nhood q X x). B \<inter> A \<noteq> {}"
- by (smt (verit) A0 A1 A2 Ball_Collect case_prodD empty_iff mem_Collect_eq mesh_iff set_pfilter_inter singletonI subsetI)
+  unfolding mesh_def by (metis A0 A1 A2 nhood_is_pfilter singletonI)
  define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> (nhood q X x). A \<inter> B \<subseteq> E}" 
  then obtain pfr1:"H \<subseteq> Pow X" and pfr2:"A \<in> H" and pfr3:"H \<noteq> {}" and prf4:"nhood q X x \<subseteq> H"  and pfr8:"is_pfilter (Pow X) H"
  using pfilter_refinment[of X "nhood q X x" A] A00 A01 A02 H_def  by (smt (verit, ccfv_threshold) DiffE Int_lower1 Int_lower2 double_diff dual_order.refl mem_Collect_eq sets_pfilter_sub subsetI)
@@ -8740,7 +8810,7 @@ proof-
   show "V \<notin> nhood q X x \<longleftrightarrow> x \<notin> X-(Adh q X (X-V))"  (is "?lhs \<longleftrightarrow> ?rhs") 
   proof
       assume L:"?lhs" then obtain F where pfl:"is_pfilter (Pow X) F" and fxq:"(F, x) \<in> q" and VnF:"V \<notin> F"   by (metis A0 A1 nhood_is_pfilter)
-      then obtain "F#{X-V}"  by (meson "11372" A2 mesh_sym sets_pfilter2_upc sets_pfilter_sub)
+      then obtain "F#{X-V}" by (meson "11371" A2 PowI mesh_sym sets_pfilter2_upc sets_pfilter_sub)
       then obtain A01:"(X-V) \<in> Pow X" and A02:"\<forall>B \<in> F. B \<inter> (X-V) \<noteq> {}"   by (simp add: mesh_def)
       define H where "H \<equiv> {E \<in> Pow X. \<exists>B \<in> F. (X-V) \<inter> B \<subseteq> E}" 
       then obtain pfr1:"H \<subseteq> Pow X" and pfr2:"(X-V) \<in> H" and prf4:"F \<subseteq> H"  and pfr8:"is_pfilter (Pow X) H"
@@ -8785,12 +8855,12 @@ proof
   proof(rule meshI)
     fix a b assume "a \<in> ?fF" and "b \<in> {f`A}"
     then obtain F where "F \<in> nhood q X x" and ffa:"f`F \<subseteq> a" and bfa:"b=f`A"  by fastforce
-    then obtain fa where "fa \<in> F \<inter> A" using B3  by (meson all_not_in_conv insertI1 mesh_iff)
+    then obtain fa where "fa \<in> F \<inter> A" using B3 unfolding mesh_def by (meson all_not_in_conv insertI1) 
     then obtain "f fa \<in> a \<inter> b"  using bfa ffa by auto
     then show "a \<inter> b \<noteq> {}" by blast
   qed
   have B5:"nhood p Y (f x) \<subseteq> {E \<in> Pow Y. \<exists>F \<in> nhood q X x. f`F \<subseteq> E}"  using A4 B1b by presburger
-  then obtain "(nhood p Y (f x))#{f`A}"  by (smt (verit) B4 mesh_iff subset_iff)
+  then obtain "(nhood p Y (f x))#{f`A}" unfolding mesh_def by (metis (no_types, lifting) B4 mesh_def subset_iff) 
   then obtain "f x \<in>  Adh p Y (f`A)"  using adherence_iff[of p Y "f x" "f`A"] A1 A3 A2 B1b by blast
   then show "fx \<in> ?rhs"  using B2 by blast
 qed
@@ -8937,7 +9007,7 @@ lemmas irreducibility=
 
 
 unused_thms
-*)
+
 
 
 end
