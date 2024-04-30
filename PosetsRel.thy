@@ -1239,6 +1239,10 @@ lemma isotoneD2:
   "isotone Rx X Ry f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> isotone Rx A Ry f"  
   by (simp add: isotone_def subset_iff) 
 
+lemma dual_isotone:
+  "isotone Rx X Ry f \<longleftrightarrow> isotone (dual Rx) X (dual Ry) f"
+  unfolding isotone_def converse_def by blast
+
 lemma isotone_emp:
   "isotone Rx {} Ry f"
    by(blast intro:isotoneI1)
@@ -1258,24 +1262,8 @@ proof(rule ubdI)
 qed
 
 lemma isotoneD42: 
-   "\<lbrakk>isotone R X Ry f; b \<in>lbd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd Ry (f`X) (f`A)"
-   by (simp add: isotoneD32 ubd_mem_iff)
-
-lemma isotoneD51:
-   "\<lbrakk>isotone R  X Ry f; is_greatest R A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> is_greatest Ry (f`A) (f x)"
-    by (meson greatestD11 greatestD12 greatestI2 image_eqI isotoneD31 isotoneD2 order_refl) 
-
-lemma isotoneD52:
-   "\<lbrakk>isotone R  X Ry f; is_least R A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> is_least Ry (f`A) (f x)"
-  by (meson is_greatest_def isotoneD2 isotoneD42 order_refl)
-
-lemma isotoneD61:
-  "\<lbrakk>isotone R  X Ry f; is_sup R X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> ub Ry (f`A) (f x)" 
-  by (simp add: is_supE1 is_supE2 isotoneD31) 
-
-lemma isotoneD62:
-  "\<lbrakk>isotone R  X Ry f; is_inf R X A x; A \<subseteq> X\<rbrakk> \<Longrightarrow> lb Ry (f`A) (f x)"
-  by (simp add: is_supE1 is_supE2 isotoneD32) 
+  "\<lbrakk>isotone R X Ry f; b \<in>lbd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd Ry (f`X) (f`A)"
+  using isotoneD41[of "dual R" X "dual Ry" f b] dual_isotone by blast
 
 subsection Extensivity
 
@@ -1295,16 +1283,6 @@ lemma extensive_emp:
   "extensive R {} f"  
   by (simp add: extensive_def) 
 
-lemma extensiveD2:
-  "\<lbrakk>trans R X; (f`X) \<subseteq> X; extensive R X f; ub R (f`X) b; b \<in> X\<rbrakk> \<Longrightarrow> ub R X b"
-proof(rule ubI)
-  fix a assume A0:"trans R X " "f`X \<subseteq> X"  "extensive R X f" "ub R (f`X) b" "b \<in> X" "a\<in>X"
-  then have "(a, f a)\<in>R"  by (simp add: extensiveD1)
-  also have "(f a, b)\<in>R" by(meson A0 fbdE1)
-  then show "(a,b)\<in>R" using A0(1) trans_onD[of X R a "f a" b]
-    using A0(2) A0(5) A0(6) calculation by blast
-qed
-    
 lemma extensiveD3:
   "\<lbrakk>trans R X;(f`X) \<subseteq> X;extensive R X f; x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> (x,f y)\<in>R"
   using extensiveD1[of R X f y] trans_onD[of X R x y "f y"] by blast
@@ -1316,33 +1294,22 @@ lemma extensiveD4:
 lemma extensive_ub:
   "trans R X \<Longrightarrow> extensive R X f \<Longrightarrow> f ` X \<subseteq> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b \<in> ubd R X (f ` A) \<Longrightarrow> a \<in> A \<Longrightarrow> (a, b) \<in> R"
 proof-
-  fix a assume A0:"trans R X" "extensive R X f" "f`X \<subseteq> X" "A \<subseteq> X" " b \<in> ubd R X (f ` A)" "a \<in> A"
+  fix a assume A0:"trans R X" and A1:"extensive R X f" and A2:"f`X \<subseteq> X" and A3:"A \<subseteq> X" and A4:" b \<in> ubd R X (f ` A)" and A5:"a \<in> A"
     then have "(a, f a)\<in>R" by (metis extensiveD1 in_mono)  
-    also have "(f a, b)\<in>R"  by (meson A0(5) A0(6) fbdE1 ubdD3) 
-    then show "(a,b)\<in>R" using A0(1) trans_onD[of X R a "f a" b]
-      by (metis A0(3) A0(4) A0(5) A0(6) calculation image_subset_iff in_mono ubdD2)
+    also have "(f a, b)\<in>R" using A4 A5 ubdD2 by fastforce 
+    then show "(a,b)\<in>R" using A0 trans_onD[of X R a "f a" b]  by (metis A2 A3 A4 A5 calculation image_subset_iff subsetD ubdD1)
 qed
   
 
-lemma extensive_ub_imp0:
-  "trans R X \<Longrightarrow> extensive R X f \<Longrightarrow> f ` X \<subseteq> X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> b \<in> ubd R (f ` X) (f ` A) \<Longrightarrow> ub R A b"
-  apply(rule ubI)
-  proof-
-    fix a assume A0:"trans R X" "extensive R X f" "f`X \<subseteq> X" "A \<subseteq> X" " b \<in> ubd R (f ` X) (f ` A)" "a \<in> A"
-    then have "(a, f a)\<in>R" by (metis extensiveD1 in_mono)  
-    also have "(f a, b)\<in>R"  by (meson A0(5) A0(6) fbdE1 ubdD3) 
-    then show "(a,b)\<in>R" using A0(1) trans_onD[of X R a "f a" b]
-      by (metis A0(3) A0(4) A0(5) A0(6) calculation image_subset_iff in_mono ubdD2)
-qed
 
 lemma extensive_ub_imp:
   "\<lbrakk>trans R X; extensive R X f ; (f`X \<subseteq> X); A \<subseteq> X ; b \<in> ubd R (f`X) (f`A) \<rbrakk> \<Longrightarrow> b \<in> ubd R X A"
-  apply(rule ubdI2,simp add: extensive_ub_imp0)
-  using ubd_mem_iff2 by fastforce
+  by (metis extensive_ub subset_eq ubdI ubd_iso2 ubd_sub)
+
 
 lemma extensive_ub_imp2:
   "\<lbrakk>trans R X;extensive R X f; (f`X \<subseteq> X); A \<subseteq> X; b \<in> ubd R X (f`A)\<rbrakk> \<Longrightarrow> b \<in> ubd R X A"
-  by(rule ubdI,simp add: extensive_ub,simp add: ubd_mem_iff2)
+  by (meson extensive_ub ubdD1 ubdI)
 
 lemma is_iso_extD1:
   "\<lbrakk>isotone R X R f;  extensive R X f;  (f`X \<subseteq> X);  x \<in> X\<rbrakk> \<Longrightarrow> (f x, f (f x))\<in>R"
@@ -1350,10 +1317,11 @@ lemma is_iso_extD1:
 
 lemma is_iso_sup:
   "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_sup R X A x \<Longrightarrow> is_sup R (f`X) (f`A) y  \<Longrightarrow> (y, f x)\<in>R"
-  by (simp add: is_supE1 is_supE4 isotoneD61)
+  by (simp add: greatestD is_supD2 is_sup_def isotoneD41)
 
 lemma is_iso_inf:
   "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf R A X x \<Longrightarrow> is_inf R (f`X) (f`A) y  \<Longrightarrow> (f x, y)\<in>R"
+  using is_iso_sup[of ]
   by (meson converseD in_mono is_supE1 is_supE2 isotoneD32 order_refl ubE)
 subsection Idempotency
 
