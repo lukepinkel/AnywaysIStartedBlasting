@@ -1214,7 +1214,7 @@ lemma sup_iso2:
 
 lemma inf_anti1:
   "\<lbrakk>ord R X; is_clattice R X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (Inf R X B, Inf R X A)\<in>R"
-  by (smt (verit, ccfv_SIG) antisym_on_converse clatD22 converseD is_sup_iso1 is_sup_unique subset_trans the_equality)
+  by (meson clatD22 converseD dual_order.trans inf_equality2 is_sup_iso1)
 
 lemma pow_is_clattice2:
   "is_inf (pwr X) (Pow X) {} X"
@@ -1243,18 +1243,19 @@ lemma isotone_emp:
   "isotone Rx {} Ry f"
    by(blast intro:isotoneI1)
 
-lemma isotoneD31: 
-  "\<lbrakk>isotone R X Ry f; ub R A b; A \<subseteq> X; b \<in> X \<rbrakk> \<Longrightarrow> ub Ry (f`A) (f b)" 
-   by (simp add: isotone_def subsetD ubE ub_imageI)
-
-lemma isotoneD32: 
-  "\<lbrakk>isotone R X Ry f; lb R A b; A \<subseteq> X; b \<in> X \<rbrakk> \<Longrightarrow> lb Ry (f`A) (f b)"
-  by (meson converse.cases converseI isotoneD1 subsetD ubE ub_imageI) 
-
-
 lemma isotoneD41: 
    "\<lbrakk>isotone R X Ry f; b \<in>ubd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> ubd Ry (f`X) (f`A)"
-   by (simp add: isotoneD31 ubd_mem_iff)
+proof(rule ubdI)
+  show "isotone R X Ry f \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> A \<subseteq> X \<Longrightarrow> f b \<in> f ` X" using ubdD1 by fastforce
+  show " \<And>y. isotone R X Ry f \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> A \<subseteq> X \<Longrightarrow> y \<in> f ` A \<Longrightarrow> (y, f b) \<in> Ry"
+  proof-
+    fix y assume A0:" isotone R X Ry f " and A1:"b \<in> ubd R X A" and A2:"A \<subseteq> X" and A3:"y \<in> f`A"
+    then obtain a where B0:"a \<in> A" and B1:"f a = y"  by blast
+    then obtain B2:"(a, b)\<in>R"   by (meson A1 ubdD2)
+    then obtain B3:"(f a, f b)\<in>Ry"  by (meson A0 A1 A2 B0 isotoneD1 subsetD ubdD1)
+    then show "(y, f b)\<in>Ry"   by (simp add: B1)
+  qed
+qed
 
 lemma isotoneD42: 
    "\<lbrakk>isotone R X Ry f; b \<in>lbd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd Ry (f`X) (f`A)"
