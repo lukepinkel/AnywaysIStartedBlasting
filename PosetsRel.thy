@@ -799,6 +799,10 @@ lemma maximalI1:
 
 subsection SupSemilattices
 
+lemma sup_semilattice_dual:
+  "is_sup_semilattice R X \<longleftrightarrow> is_inf_semilattice (dual R ) X"
+  by (simp add: is_sup_semilattice_def)
+
 lemma ssupD2:
   "\<lbrakk>is_sup_semilattice R X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup R X {a, b} x) "
   by (simp add: is_sup_semilattice_def)
@@ -808,17 +812,62 @@ lemma ssupD3:
   using ssupD2 sup_equality by metis
 
 lemma ssupD4:
-  "\<lbrakk>antisym_on X R;is_sup_semilattice R X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow>  (Sup R X {a, b}) \<in> X"
+  "\<lbrakk>antisym_on X R;is_sup_semilattice R X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow> Sup R X {a, b} \<in> X"
   by (meson is_supD1 ssupD3)
 
-lemma bsup_geI1:
-  "\<lbrakk>ord R X; is_sup_semilattice R X; a \<in> X; b \<in> X; c \<in> X; (c, a) \<in> R\<rbrakk>  \<Longrightarrow> (c, Sup R X {a, b}) \<in> R"
-  by (meson insertCI is_supD3 ssupD3 ssupD4 trans_onD)
+lemma bsup_ge1:
+  "\<lbrakk>ord R X; is_sup_semilattice R X; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (a,Sup R X {a,b})\<in>R"
+  by (meson insertI1 is_supD3 ssupD3)
 
-lemma bsup_geI3:
-  "\<lbrakk>ord R X; is_sup_semilattice R X;a \<in> X; b \<in> X; c \<in> X; (a, c) \<in> R; (b, c)\<in>R\<rbrakk> \<Longrightarrow> (Sup R X {a, b}, c) \<in> R"
-  using insert_iff is_supD1 ssupD3 by force
+lemma bsup_ge2:
+  "\<lbrakk>ord R X; is_sup_semilattice R X; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (b,Sup R X {a,b})\<in>R"
+  by (metis bsup_ge1 insert_commute)
 
+lemma bsup_ge3:
+  assumes A0:"ord R X" and A1:"is_sup_semilattice R X" and A2:"a \<in> X" and A3:"b \<in> X" and A4:"c \<in> X" and
+          A5:"(a,c)\<in>R" and A6:"(b,c)\<in>R"
+  shows "(Sup R X {a, b}, c) \<in> R"
+proof-
+  have B0:"(\<And>x. x \<in> {a,b} \<Longrightarrow> (x,c)\<in>R)" using A5 A6 by blast
+  then show "(Sup R X {a, b}, c) \<in> R" by (metis A0 A1 A2 A3 A4 is_supD1 ssupD3)
+qed
+
+lemma le_supI1:
+  "\<lbrakk>ord R X; is_sup_semilattice R X; a \<in> X; b \<in> X; c \<in> X; (c,a)\<in>R\<rbrakk> \<Longrightarrow> (c,Sup R X {a,b})\<in>R"
+  by (meson bsup_ge1 ssupD4 trans_onD)
+ 
+lemma le_supI2:
+  "\<lbrakk>ord R X; is_sup_semilattice R X; a \<in> X; b \<in> X; c \<in> X; (c,b)\<in>R\<rbrakk> \<Longrightarrow> (c,Sup R X {a,b})\<in>R"
+  by (meson bsup_ge2 ssupD4 trans_onD)
+ 
+lemma binf_le1:
+  "\<lbrakk>ord R X; is_inf_semilattice R X; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (Inf R X {a,b},a)\<in>R"
+  by (metis converse_iff inf_equality insertI1 is_supD3)
+
+lemma binf_le2:
+  "\<lbrakk>ord R X; is_inf_semilattice R X; a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (Inf R X {a,b},b)\<in>R"
+  by (metis converse.simps inf_equality insertI2 is_supD3 singleton_iff)
+
+lemma binf_le3:
+  "\<lbrakk>ord R X; is_inf_semilattice R X;a \<in> X; b \<in> X; c \<in> X; (c,a) \<in> R; (c,b)\<in>R\<rbrakk> \<Longrightarrow> (c, Inf R X {a,b}) \<in> R"
+  using bsup_ge3[of X "dual R" a b c]  by (simp add: Sup_def is_sup_semilattice_def)
+
+lemma le_infI1:
+  "\<lbrakk>ord R X; is_inf_semilattice R X; a \<in> X; b \<in> X; c \<in> X; (a,c)\<in>R\<rbrakk> \<Longrightarrow> (Inf R X {a,b},c)\<in>R"
+  using le_supI1[of X "dual R" a b c]  by (simp add: Sup_def is_sup_semilattice_def)
+ 
+lemma le_infI2:
+  "\<lbrakk>ord R X; is_inf_semilattice R X; a \<in> X; b \<in> X; c \<in> X; (b,c)\<in>R\<rbrakk> \<Longrightarrow> (Inf R X {a,b},c)\<in>R"
+  using le_supI2[of X "dual R" a b c]  by (simp add: Sup_def is_sup_semilattice_def)
+
+lemma sup_iso:
+  "\<lbrakk>ord R X; is_sup_semilattice R X;a1\<in>X;b1\<in>X;a2\<in>X;b2\<in>X;(a1,b1)\<in>R;(a2,b2)\<in>R\<rbrakk> \<Longrightarrow> (Sup R X {a1,a2}, Sup R X {b1,b2})\<in>R"
+  by (simp add: le_supI1 le_supI2 bsup_ge3 ssupD4)
+
+lemma inf_iso:
+  "\<lbrakk>ord R X; is_inf_semilattice R X;a1\<in>X;b1\<in>X;a2\<in>X;b2\<in>X;(a1,b1)\<in>R;(a2,b2)\<in>R\<rbrakk> \<Longrightarrow> (Inf R X {a1,a2}, Inf R X {b1,b2})\<in>R"
+  using sup_iso[of X "dual R" a1 b1 a2 b2]
+  by (metis Sup_def antisym_on_converse converseD converseI is_sup_semilattice_def sup_iso trans_on_converse)
 
 lemma bsupI:
   "\<lbrakk>ord R X; is_sup_semilattice R X; (\<And>s. is_sup R X {a, b} s \<Longrightarrow> P s); a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> P (Sup R X {a, b})"
@@ -836,12 +885,12 @@ proof-
   obtain B0:"?sxy \<in> X" and  B1:"?sxy_z \<in> X"  by (simp add: A0 A1 A2 A3 A4 ssupD4)
   obtain B2:"(z,?sxy_z)\<in>R" and B3:"(?sxy,?sxy_z)\<in>R" by (meson A0 A1 A4 B0 insertCI is_supD3 ssupD3)
   obtain B4:"(x,?sxy)\<in>R" and B5:"(y,?sxy)\<in>R"  by (meson A0 A1 A2 A3 insertCI is_supD1 ssupD3)
-  then obtain B6:"(x,?sxy_z)\<in>R" and B7:"(y,?sxy_z)\<in>R"  by (simp add: A0 A1 A2 A3 A4 B0 bsup_geI1)
+  then obtain B6:"(x,?sxy_z)\<in>R" and B7:"(y,?sxy_z)\<in>R" by (simp add: A0 A1 A2 A3 A4 B0 le_supI1) 
   have "is_sup R X {x,y,z} ?sxy_z"
   proof(rule is_supI1)
     show B8:"?sxy_z \<in> X" by(simp add:B1)
     show "\<And>a. a \<in> {x, y, z} \<Longrightarrow> (a, ?sxy_z) \<in> R"  using B2 B6 B7 by fastforce
-    show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> {x, y, z} \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (?sxy_z, b) \<in> R"  by (simp add: A0 A1 A2 A3 A4 B0 bsup_geI3)
+    show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> {x, y, z} \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (?sxy_z, b) \<in> R"  by (simp add: A0 A1 A2 A3 A4 B0 bsup_ge3) 
   qed
   then show ?thesis  by (simp add: A0 sup_equality)
 qed
@@ -965,7 +1014,7 @@ lemma latt_iff:
 
 lemma latt_ge_iff1:
   "\<lbrakk>ord R X; is_lattice R X; (y,y)\<in>R;x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> ((x, y)\<in>R \<longleftrightarrow> Sup R X {x, y} = y)"
-  by (metis antisym_on_def bsup_commute1 bsup_geI1 bsup_geI3 lattD5 latt_iff ssupD4)
+  by (metis antisym_on_def bsup_ge2 bsup_ge3 lattD42 lattD5 ssupD4)
 
 lemma latt_ge_iff2:
   "\<lbrakk>ord R X;is_lattice R X; (x,x)\<in>R;x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> ((y, x)\<in>R \<longleftrightarrow> Sup R X {x, y} = x)"
@@ -982,10 +1031,21 @@ lemma lattice_absorb1:
 lemma lattice_absorb2:
   "\<lbrakk>ord R X; is_lattice R X; (x,x)\<in>R;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
   using lattice_absorb1[of X "dual R" x y] by (metis dual_lattice Sup_def antisym_on_converse converseI converse_converse trans_on_converse)
-
+       
 lemma distrib_sup_le: 
-  "\<lbrakk>ord R X;is_lattice R X;x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
-  by (smt (verit, del_insts) dual_lattice Sup_def antisym_on_converse bsup_geI3 converse_iff insertCI insert_commute is_supD3 lattD32 lattD42 ssupD4 trans_onD trans_on_converse)
+  assumes A0:"ord R X" and A1:"is_lattice R X" and A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X"
+  shows "(Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
+proof-
+  obtain B0:"is_sup_semilattice R X" and B1:"is_inf_semilattice R X"  using A1 lattD4 by blast
+  obtain B2:"Sup R X {x, y} \<in> X" and B3:"Sup R X {x, z} \<in> X" and B4:"Inf R X {y, z} \<in> X" by (meson A0 A1 A2 A3 A4 is_supD1 lattD31 lattD42 ssupD4)
+  then obtain B5:"(x, Sup R X {x, y})\<in>R" and B6:"(x, Sup R X {x, z})\<in>R"  by (meson A0 A1 A2 A3 A4 insertCI is_supD1 lattD32)
+  then obtain B7:"(x, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R" by (simp add: A0 A2 B1 B2 B3 binf_le3) 
+  then obtain B8:"(y, Sup R X {x, y})\<in>R" and B9:"(z, Sup R X {x, z})\<in>R" and B10:" Inf R X {Sup R X {x, y}, Sup R X {x, z}} \<in>X"
+    by (meson A0 A1 A2 A3 A4 B0 insertCI is_supD1 lattD31 ssupD3)
+  then obtain B11:"(Inf R X {y, z}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"  by (simp add: A0 A3 A4 B1 B2 B3 inf_iso)
+  then show "(Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R" 
+    using bsup_ge3[of X R x "Inf R X {y, z}" "Inf R X {Sup R X {x, y}, Sup R X {x, z}}"] A0 A2 B0 B10 B4 B7 by blast 
+qed
 
 lemma distrib_inf_le: 
   "\<lbrakk>ord R X;is_lattice R X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (Sup R X {Inf R X {x, y}, Inf R X {x, z}}, Inf R X {x, Sup R X {y, z}}) \<in> R"
@@ -1321,9 +1381,13 @@ lemma is_iso_sup:
 
 lemma is_iso_inf:
   "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf R A X x \<Longrightarrow> is_inf R (f`X) (f`A) y  \<Longrightarrow> (f x, y)\<in>R"
-  using is_iso_sup[of ]
-  by (meson converseD in_mono is_supE1 is_supE2 isotoneD32 order_refl ubE)
+  using is_iso_sup[of "dual R" X f A x y] dual_isotone[of R X R f] by (metis converseD greatestI2 is_supD1 subsetD sup_maxE1)
+
 subsection Idempotency
+
+lemma idempotentI1:
+  "(\<And>x. x \<in> X \<Longrightarrow> (f (f x) = f x)) \<Longrightarrow> idempotent X f"
+  by (simp add: idempotent_def)
 
 lemma idempotentD1:
   "\<lbrakk>idempotent X f; x \<in> X \<rbrakk> \<Longrightarrow>  f (f x) = f x"
@@ -1340,12 +1404,15 @@ lemma iso_idemD1:
 lemma iso_idemD2:
   "\<lbrakk>isotone R X R f; idempotent X f;  x1 \<in> X;x2 \<in> X; (f x2) \<in> X;  (x1,f x2)\<in>R\<rbrakk> \<Longrightarrow> (f x1,f x2)\<in>R"
    using idempotentD1[of X  f x2] isotoneD1[of R X R f x1 "f x2"] by presburger 
+
 lemma iso_idemD3:
   "\<lbrakk>isotone R X R f; idempotent X f; f`X \<subseteq> X; x1 \<in> X;x2 \<in> X;   (x1,f x2)\<in>R\<rbrakk> \<Longrightarrow> (f x1,f x2)\<in>R"
   by (simp add: image_subset_iff iso_idemD2)
+
 lemma idemp_iff:
   "idempotent X f \<longleftrightarrow> (\<forall>x \<in> X. (f \<circ> f) x = f x)"
   using idempotent_def by auto
+
 lemma idempotentI2:
   "\<lbrakk>antisym R X; extensive R X f; isotone R X R f;  f`X \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> (f (f x), f x)\<in>R)\<rbrakk> \<Longrightarrow> idempotent X f"
   by (simp add: antisym_onD idempotent_def image_subset_iff is_iso_extD1)
@@ -1367,9 +1434,11 @@ subsection Closures
 lemma closureI3:
   "\<lbrakk>trans R X; refl R X; antisym R X;extensive R X f; f`X \<subseteq> X;  closure_cond R X f\<rbrakk> \<Longrightarrow> closure R X f"
   by (simp add: closure_def idempotentI3 isotoneI2)
+
 lemma closureD1:
   "\<lbrakk>closure R X f;  x \<in> X\<rbrakk> \<Longrightarrow> f x \<in> X"
   by (simp add: image_subset_iff closure_def)
+
 lemma closureD2:
   "\<lbrakk>closure R X f;  y \<in> f`X\<rbrakk> \<Longrightarrow> y \<in> X"
   by(simp add: closure_def[of R X f] subsetD[of "f`X" X y])
@@ -1377,6 +1446,7 @@ lemma closureD2:
 lemma closureD3:
   "closure R X f \<Longrightarrow> closure_cond R X f"
   by(simp add:closure_cond_def[of R X f] closure_def[of R X f] iso_idemD3[of R X f])
+
 lemma closureD4:
   "\<lbrakk>closure R X f; x \<in> X; y \<in> X; (x, y)\<in>R\<rbrakk> \<Longrightarrow> (f x,f y)\<in>R"
   by (simp add: closure_def isotone_def)
@@ -1388,12 +1458,15 @@ lemma closureD5:
 lemma closureD7:
   "\<lbrakk>closure R X f; x \<in> X;  y \<in> (f`X) ;  (x, y)\<in>R\<rbrakk> \<Longrightarrow> (f x, y)\<in>R"
   by (meson closure_def idempotent_isotoneD1)
+
 lemma closureD8:
   "\<lbrakk>trans R X; closure R X f;  x \<in> X;  y \<in> (f`X) ;  (f x, y)\<in>R\<rbrakk> \<Longrightarrow>  (x, y)\<in>R"
   by (meson closureD1 closureD2 closureD5 trans_onD)
+
 lemma closureD9:
   "\<lbrakk>closure R X f;  y \<in> f`X\<rbrakk>  \<Longrightarrow> (f y,y)\<in>R"
   by (metis closureD2 closureD5 closure_def idempotentD3)
+
 lemma closureD10:
   "\<lbrakk>antisym R X;closure R X f;  x \<in> X;  (f x,x)\<in>R\<rbrakk> \<Longrightarrow> x = f x"
   by (simp add: antisym_onD closureD1 closureD5)
@@ -1404,8 +1477,7 @@ lemma closureD11:
 
 lemma cl_sup_eq_sup_cl1:
   "\<lbrakk>closure R X f; is_sup R X A s; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s) \<in> ubd R  (f`X) (f`A)"
-  by (meson closure_def is_supD32 isotoneD41)
-
+  by (meson closure_def is_supD1 is_sup_def isotoneD41 sup_empty)
 
 lemma cl_sup_eq_sup_cl2:
   "\<lbrakk>trans R X;closure R X f;  is_sup R X A s; b \<in> ubd R (f`X) (f`A); A \<subseteq> X\<rbrakk> \<Longrightarrow> (s, b)\<in>R"
@@ -1413,31 +1485,31 @@ lemma cl_sup_eq_sup_cl2:
 
 lemma cl_sup_eq_sup_cl3:
   "\<lbrakk>trans R X;closure R X f; is_sup R X A s; b \<in> ubd R (f`X) (f`A);A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s, b)\<in>R"
-  by (meson cl_sup_eq_sup_cl2 closureD7 is_supE1 ubd_mem_iff)
+  by (meson cl_sup_eq_sup_cl2 closureD7 is_supD1 subsetD ubd_sub)
 
 lemma cl_sup_eq_sup:
   "\<lbrakk>trans R X;closure R X f;  is_sup R X A s;A \<subseteq> X\<rbrakk> \<Longrightarrow> is_sup R (f`X) (f`A) (f s)"
-  by (simp add: cl_sup_eq_sup_cl1 cl_sup_eq_sup_cl3 is_supI5)
+  by (simp add: cl_sup_eq_sup_cl1 cl_sup_eq_sup_cl3 greatestI2 is_sup_def)
 
 lemma cl_sup_ge_sup_cl11:
   "\<lbrakk>trans R X;closure R X f; is_sup R X A s1; is_sup R X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> (s1, s2)\<in>R"
-  by (meson extensive_ub_imp2 closure_def is_supD32 is_supE3)
+  by (meson closure_def extensive_ub_imp2 greatestD is_supD2 is_sup_def)
 
 lemma cl_sup_ge_sup_cl2:
   "\<lbrakk>trans R X;closure R X f;  is_sup R X A s1;  is_sup R X (f`A) s2; A \<subseteq>  X\<rbrakk> \<Longrightarrow> (s2, f s1)\<in>R"
-  by (meson closureD1 closure_def is_supE1 is_supE2 is_supE4 isotoneD31)
+  by (metis cl_sup_eq_sup closure_def image_mono is_sup_iso2)
 
 lemma cl_sup_ge_sup_cl3:
   "\<lbrakk>closure R X f;  is_sup R X A s1;  is_sup R X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s2, f s1)\<in>R"
-  by (meson closureD1 closure_def is_supE1 is_supE4 iso_idemD3 isotoneD61)
+  by (smt (verit, ccfv_threshold) closureD4 closureD7 closure_def image_iff is_supD1 subset_eq)
 
 lemma cl_sup_ge_sup_cl4:
   "\<lbrakk>trans R X;closure R X f; is_sup R X A s1;  is_sup R X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f s1, f s2)\<in>R"
-  by (simp add: cl_sup_ge_sup_cl11 closureD4 is_supE1)
+  by (simp add: cl_sup_ge_sup_cl11 closureD4 is_supD1)
 
 lemma cl_sup_ge_sup_cl:
   "\<lbrakk>antisym R X;trans R X;closure R X f; is_sup R X A s1;  is_sup R X (f`A) s2; A \<subseteq> X\<rbrakk> \<Longrightarrow> f s1  = f s2"
-  by (simp add: antisym_on_def cl_sup_ge_sup_cl3 cl_sup_ge_sup_cl4 closureD1 is_supE1)
+  by (meson antisym_on_def cl_sup_ge_sup_cl3 cl_sup_ge_sup_cl4 closureD1 is_supD1)
 
 subsection ClosureRanges
 lemma clrI1:
@@ -1454,50 +1526,30 @@ lemma clrD3:
   "clr R X C \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least R (ubd R  C {x}) c))"
   by (simp add:closure_range_def)
 
-lemma clrD4:
-  "clr R X C \<Longrightarrow> x \<in> X \<Longrightarrow> (\<exists>c. is_least R (ubd R  C {x}) c)"
-  by (simp add:closure_range_def)
-
 lemma clrD5:
   "clr R X C \<Longrightarrow>  (\<And>x. x \<in> X  \<Longrightarrow> ((ubd R  C {x}) \<noteq> {}))"
-  by (metis clrD3 greatest_exD0)
-lemma clrD6:
-  "clr R X C \<Longrightarrow>  x \<in> X \<Longrightarrow> (ubd R C {x}) \<noteq> {}"
-  by (simp add: clrD5)
+  by (metis clrD3 empty_iff is_greatest_def ubd_empty)
 
 lemma clrD7:
   "clr R X C \<Longrightarrow>  x \<in> X \<Longrightarrow> (\<exists>c \<in> C.  (x, c)\<in>R)"
-  by (simp add: clrD6 upbd_neE3)
-
-lemma is_clr_cofinal1:
-  "clr R X C \<Longrightarrow> is_greatest R X m \<Longrightarrow> (\<exists>c \<in> C.  (m, c)\<in>R)"
-  by (simp add: clrD7 greatestD11)
-
-lemma is_clr_cofinal2:
-  "antisym R X \<Longrightarrow> clr R X C \<Longrightarrow> is_greatest R X m \<Longrightarrow> c \<in> C \<Longrightarrow> (m, c)\<in>R \<Longrightarrow> m =c"
-  by (simp add: antisym_onD clrD2b greatestD11 greatestD2)
-
-lemma is_clr_cofinal:
-  "antisym R X\<Longrightarrow>clr R X C \<Longrightarrow> is_greatest R X m \<Longrightarrow> m \<in> C"
-  by (metis is_clr_cofinal1 is_clr_cofinal2)
+  by (meson clrD3 greatestD singletonI ubdD1)
 
 definition cl_from_clr::"'a rel \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'a)" where
   "cl_from_clr R C \<equiv> (\<lambda>x. Least R  (ubd R  C {x}))"
 
 lemma clr_equality:
   "\<lbrakk>antisym R X; clr R X C;is_least R (ubd R  C {x}) c\<rbrakk> \<Longrightarrow> cl_from_clr R C x = c"
-  by (metis Greatest_def Least_def antisym_on_converse antisym_on_subset cl_from_clr_def clrD2 greatest_equality2 ubd_sub)
+  by (smt (verit, ccfv_SIG) Greatest_def Least_def antisym_on_converse antisym_on_subset cl_from_clr_def clrD2 greatest_equality1 is_greatest_def mem_Collect_eq ubd_def ubd_sub)
 
 lemma cl_range1:
   assumes A0:"antisym R X" and A1:"clr R X C" and A2:"x \<in> X" 
   shows "(cl_from_clr R C) x \<in> C"
 proof-
-  obtain c where A3:"is_least R (ubd R  C {x}) c"
-    by (meson A1 A2 clrD4)
+  obtain c where A3:"is_least R (ubd R  C {x}) c" by (meson A1 A2 clrD3)
   then have "(cl_from_clr R C) x = c"
     by (meson A0 A1 clr_equality)
-  also have "c \<in> C"
-    by (meson A3 greatestD11 ubdD2)
+  also have "c \<in> C" 
+     by (meson A3 greatestD ubdD1)
   finally show "(cl_from_clr R C) x \<in> C" by simp
 qed
 
@@ -1507,7 +1559,7 @@ lemma cl_range2:
 
 lemma cl_range3:
   "refl R C \<Longrightarrow> antisym R X \<Longrightarrow> clr R X C  \<Longrightarrow> x \<in> C \<Longrightarrow> (cl_from_clr R C) x = x"
-  by (simp add: clr_equality greatest_iff reflD1 ubdD1 ubd_singleton)
+  by (smt (verit, best) antisym_onD cl_range1 clrD2b clrD3 clr_equality converse_iff greatestD reflD2 singleton_iff ubdD2 ubdI)
 
 lemma cl_range31:
   "refl R X \<Longrightarrow> antisym R X \<Longrightarrow> clr R X C  \<Longrightarrow> x \<in> C \<Longrightarrow> (cl_from_clr R C) x = x"
@@ -1527,7 +1579,7 @@ lemma clr_induced_closure_id:
 
 lemma cl_ext1:
   "\<lbrakk>refl R C; antisym R X ;clr R X C\<rbrakk> \<Longrightarrow> x \<in> X \<Longrightarrow> (x, (cl_from_clr R C) x)\<in>R"
-  by (metis clrD4 clr_equality greatestD11 ubd_mem_singleE)
+  by (metis clrD3 clr_equality greatestD singletonI ubdD1)
 
 lemma cl_ext2:
   "\<lbrakk>refl R C; antisym R X ;clr R X C\<rbrakk>\<Longrightarrow> extensive R X (cl_from_clr R C)"
@@ -1535,11 +1587,11 @@ lemma cl_ext2:
 
 lemma cl_lt_ub1:
   "\<lbrakk>refl R C; antisym R X; clr R X C; x \<in> X; c \<in> ubd R C {x}\<rbrakk> \<Longrightarrow> ((cl_from_clr R C) x, c)\<in>R"
-  by (metis clrD3 clr_equality is_supE3 is_supI1)
+  by (metis clrD3 clr_equality converseD greatestD)
 
 lemma cl_lt_ub2:
   "\<lbrakk>refl R C; antisym R X; clr R X C; x \<in> X; c \<in> C; (x,c)\<in>R\<rbrakk> \<Longrightarrow> ((cl_from_clr R C) x, c)\<in>R"
-  by (simp add: ubd_singleton2 cl_lt_ub1)
+  by (metis cl_lt_ub1 singletonD ubdI)
 
 lemma cl_iso1:
   "\<lbrakk>refl R C; antisym R X;trans R X;clr R X C; x \<in> X;y \<in> X; (x, y)\<in>R\<rbrakk>\<Longrightarrow> ((cl_from_clr R C) x, (cl_from_clr R C) y)\<in>R"
@@ -1559,15 +1611,15 @@ lemma cl_is_closure:
 
 lemma closure_of_in_ub:
   "closure R X f \<Longrightarrow>x \<in> X \<Longrightarrow> (f x) \<in> (ubd R  (f`X) {x})"
-  by (simp add: ubd_singleton2 closureD5)
+  by (metis closure_def extensiveD1 image_eqI singletonD ubdI)
 
 lemma closure_of_lt_ub:
   "closure R X f \<Longrightarrow>x \<in> X \<Longrightarrow> y \<in>  (ubd R (f`X) {x}) \<Longrightarrow> ((f x), y)\<in>R"
-  by (simp add: closureD7 ubd_singleton_iff)
+  by (meson closureD7 insertI1 ubdD1)
 
 lemma closure_of_least_closed1:
   "closure R X f \<Longrightarrow> x \<in> X \<Longrightarrow> is_least R (ubd R  (f`X) {x}) (f x)"
-  by (simp add: closure_of_in_ub closure_of_lt_ub greatestI3)
+  by (simp add: closure_of_in_ub closure_of_lt_ub greatestI2)
 
 lemma closure_of_least_closed2:
   assumes A0:"antisym R X"  and A1:"closure R X f" and A2:"x \<in> X"
@@ -1576,7 +1628,7 @@ proof-
   obtain B0:"antisym R (f`X)"  by (meson A0 A1 antisym_on_subset closure_def)
   have B1:"is_least R (ubd R  (f`X) {x}) (f x)"  by (simp add: A1 A2 closure_of_least_closed1)
   then show "Least R (ubd R  (f`X) {x}) =  (f x)"
-    by (metis B0 Greatest_def Least_def antisym_on_converse antisym_on_subset greatest_equality2 ubd_sub)
+  by (metis B0 PosetsRel.Greatest_def PosetsRel.Least_def antisym_on_converse antisym_on_subset greatestD greatest_equality1 ubd_sub)
 qed
 
 lemma closure_induced_clr:
@@ -1593,59 +1645,63 @@ lemma closure_induced_clr_dual:
                     
 lemma clr_induced_closure_dual:
   "\<lbrakk>refl R C; antisym R X;clr R X C1; clr R X C2; C2 \<subseteq> C1; x \<in> X\<rbrakk> \<Longrightarrow> (((cl_from_clr R C1) x),((cl_from_clr R C2) x))\<in>R"
-  by (metis clrD4 clr_equality converseD greatest_iff ubd_iso2b)
+  by (metis clrD3 clr_equality converseD is_greatest_iso2 ubd_iso2)
+
 lemma extensiveI4:
   "refl R X \<Longrightarrow> (\<And>A s. A \<subseteq> X \<Longrightarrow> is_sup R X A s \<Longrightarrow> (s,f s)\<in>R) \<Longrightarrow>  f`X \<subseteq> X \<Longrightarrow> extensive R X f"
 proof(rule extensiveI1)
-  fix x assume A0:"refl R X" "(\<And>A s. A \<subseteq> X \<Longrightarrow> is_sup R X A s \<Longrightarrow> (s,f s)\<in>R) " " f`X \<subseteq> X" "x \<in> X"
-  have B0:"is_sup R X {x} x" by (metis A0(1) A0(4) reflE1 sup_singleton)
-  have B1:"{x} \<subseteq> X"   by (simp add: A0(4))
-  show "(x, f x) \<in> R"  using A0(2) B0 B1 by blast
+  fix x assume A0:"refl R X" and A1:"(\<And>A s. A \<subseteq> X \<Longrightarrow> is_sup R X A s \<Longrightarrow> (s,f s)\<in>R) " and A2:" f`X \<subseteq> X" and A3:"x \<in> X"
+  then obtain B0:"is_sup R X {x} x" and B1:"{x} \<subseteq> X"  using A0 A3 is_supI1 reflD2 by fastforce 
+  then show "(x, f x) \<in> R"  using A1 by presburger  
 qed
+
 lemma idempotentI4:
-  "\<lbrakk>refl R X; antisym R X; (\<And>A s1 s2. A \<subseteq> X \<Longrightarrow> is_sup R X A s1 \<Longrightarrow> is_sup R X (f`A) s2 \<Longrightarrow> f s1 = f s2);  f`X \<subseteq> X\<rbrakk> \<Longrightarrow> idempotent X f"
-  unfolding idempotent_def apply(auto)
-proof-
-  fix x assume A0:"refl R X" "antisym R X" "(\<And>A s1 s2. A \<subseteq> X \<Longrightarrow> is_sup R X A s1 \<Longrightarrow> is_sup R X (f`A) s2 \<Longrightarrow> f s1 = f s2)" "f`X \<subseteq> X" "x \<in> X "
-  have B0:"is_sup R X {x} x"   by (meson A0(1) A0(5) reflE1 sup_singleton)
-  have B1:"is_sup R X (f`{x}) (f x)"   by (metis A0(1) A0(4) A0(5) image_empty image_insert image_subset_iff reflE1 sup_singleton)
-  have B2:"{x} \<subseteq> X"  by (simp add: A0(5))
-  show "f (f x) = f x"
-    by (metis A0(3) B0 B1 B2)
+  assumes A0:"refl R X" and
+          A1:"antisym R X" and 
+          A2:"(\<And>A s1 s2. A \<subseteq> X \<Longrightarrow> is_sup R X A s1 \<Longrightarrow> is_sup R X (f`A) s2 \<Longrightarrow> f s1 = f s2)" and
+          A3:"f`X \<subseteq> X" 
+  shows "idempotent X f"
+proof(rule idempotentI1)
+  fix x assume A5:"x \<in> X"
+  obtain B0:"is_sup R X {x} x" and B1:"{x} \<subseteq> X" and B2:"f x \<in> X"  using A0 A3 A5 is_supI1 reflD2 by fastforce 
+  then obtain B3:"is_sup R X ({f x}) (f x)" by (metis A0 is_supI1 refl_def singletonD singletonI)
+  then obtain B4:"is_sup R X (f`{x}) (f x)"  by force
+  then show "f (f x) = f x"  by (metis A2 B0 B1)
 qed
 
 
 lemma isotoneI4:
   assumes A0:"(\<And>A s. \<lbrakk>A \<subseteq> X; is_sup R X A s\<rbrakk> \<Longrightarrow> is_sup R (f`X) (f`A) (f s))" and A1:"f`X \<subseteq>X " and A2:"refl R X"
   shows "isotone R X R f"
-proof- 
-  have P:"\<And>x1 x2. \<lbrakk>x1 \<in> X;x2 \<in> X; (x1, x2)\<in>R\<rbrakk> \<Longrightarrow> (f x1,f x2)\<in>R"
-    proof-
-      fix x1 x2 assume A2:"x1 \<in> X""x2 \<in> X" "(x1,x2)\<in>R"
-      have B01:"is_sup R X {x1, x2} x2"   by (meson A2(1) A2(2) A2(3) assms(3) binary_supI1 reflD1)
-      have B02:"is_sup R (f`X) (f`{x1, x2}) (f x2)"  by (meson A2 B01 assms(1) empty_subsetI insert_subset)
-      show "(f x1, f x2)\<in>R"   using B02 is_supD1121 by fastforce
-    qed
-  show ?thesis
-    by (simp add: P isotoneI1)
+proof(rule isotoneI1)
+  show "\<And>x1 x2. \<lbrakk>x1 \<in> X;x2 \<in> X; (x1, x2)\<in>R\<rbrakk> \<Longrightarrow> (f x1,f x2)\<in>R"
+  proof-
+    fix x1 x2 assume A3:"x1 \<in> X" and A4:"x2 \<in> X" and A5:"(x1,x2)\<in>R"
+    have B01:"is_sup R X {x1, x2} x2"  using A2 A4 A5 is_supI1 reflD2 by fastforce
+    have B02:"is_sup R (f`X) (f`{x1, x2}) (f x2)"  by (meson A0 A3 A4 B01 empty_subsetI insert_subset)
+    then show "(f x1, f x2)\<in>R"     by (simp add: is_supD3) 
+  qed
 qed
 
 lemma clrD8:
   "\<lbrakk>refl R X; antisym R X; clr R X C; A \<subseteq> C ; is_inf R X A i\<rbrakk> \<Longrightarrow> (cl_from_clr R C) i \<in> lbd R X A"
-  by (smt (verit, ccfv_threshold) cl_lt_ub2 cl_range1 clrD2b converseD converseI is_supD1121 is_supE1 refl_def subsetD ubd_mem_iff3)
+  by (smt (verit, ccfv_SIG) clrD2 clrD3 clr_equality converseD is_greatest_def is_supD1 singletonD subset_iff ubdD1 ubdI)
+
 lemma clrD9:
   "\<lbrakk>refl R X; antisym R X; clr R X C; A \<subseteq> C ; is_inf R X A i\<rbrakk>  \<Longrightarrow> ((cl_from_clr R C) i,i)\<in>R"
-  by (metis clrD8 converse.simps is_supE3)
+  by (metis clrD8 converse.simps is_supD2)
+
 lemma clrD10:
   "\<lbrakk>refl R X; antisym R X; clr R X C; A \<subseteq> C ; is_inf R X A i\<rbrakk>\<Longrightarrow> (cl_from_clr R C) i = i"
-  by (meson antisym_on_def cl_ext2 cl_range1 clrD2b clrD9 extensiveD1 is_supE1 refl_def)
+  by (meson antisym_on_def cl_ext2 cl_range1 clrD2 clrD9 extensiveD1 is_supD1 refl_subset subset_iff)
+
 lemma clrD11:
   "\<lbrakk>refl R X; antisym R X; clr R X C; A \<subseteq> C ; is_inf R X A i\<rbrakk> \<Longrightarrow>  i \<in> C"
-  by (metis cl_range1 clrD10 is_supE1)
+  by (metis cl_range1 clrD10 is_supD1)
 
 lemma moore_clI1:
   "C \<subseteq> Pow X \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> (X \<inter> (\<Inter>E)) \<in> C) \<Longrightarrow> x \<in> Pow X \<Longrightarrow> is_least (pwr X) (ubd (pwr X) C {x})  (X \<inter> (\<Inter>(ubd (pwr X) C {x}))) "
-  by(auto simp add:closure_range_def is_greatest_def ubd_def  ub_def pwr_def)
+  by (smt (verit) converse_iff greatestI2 is_supD1 powrel4 singletonD subset_trans ubdD1 ubdI ubd_sub)
 
 lemma moore_clI2:
   "C \<subseteq> Pow X \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> (X \<inter> (\<Inter>E)) \<in> C) \<Longrightarrow> clr (pwr X) (Pow X) C"
@@ -1667,13 +1723,13 @@ proof-
   proof-
     fix a assume P2:"a \<in> A" 
     then have B20:"a \<in> C" using P0 by auto
-    have B21:"(m, a)\<in>R"   using B1 P2 is_supE2 ubE by fastforce
+    have B21:"(m, a)\<in>R" using B1 P2 is_supD3 by fastforce  
     then have B22:"(?f m, ?f a)\<in>R"  by (metis A0 A2 A3 B1 B20 P0 cl_range31 clrD10)
     also have B23:"?f a = a"  by (meson A0 A2 A3 B20 cl_range31)
     finally show "(?f m, a)\<in>R" by simp
   qed
   have B3:"?f m \<in> lbd R X A" by (simp add: A0 A2 A3 B1 P0 clrD8)
-  have B4:"?f m \<in> lbd R C A"  by (metis A0 A2 A3 B1 P0 cl_range31 clrD11 is_supE2 ubdI2)
+  have B4:"?f m \<in> lbd R C A"  by (metis A0 A2 A3 B1 P0 clrD10 clrD11 is_supD1 ubdI) 
   have B5:"(?f m, m) \<in> R"  by (meson A0 A2 A3 B1 P0 clrD9)
   also have B5:"(m, ?f m)\<in> R"using A0 A2 A3 B1 P0 calculation clrD10 by fastforce
   then have B6:"?f m = m" by (metis A0 A2 A3 B1 P0 clrD10)
@@ -1714,9 +1770,6 @@ lemma is_dirE1:
   "is_dir X R \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. (a, c)\<in>R \<and> (b, c)\<in>R)"
   by (simp add: is_dir_def)
 
-lemma is_dirD1:
-  "is_dir X R \<Longrightarrow> a \<in> X \<Longrightarrow> b \<in> X \<Longrightarrow> (\<exists>c \<in> X. ub R {a,b} c)"
-  by (simp add: is_dirE1 ub_double_iff1)
 
 lemma is_dir_empty:
    "is_dir {} R"
@@ -1757,28 +1810,9 @@ next
   then show ?case  using P2 by blast
 qed
   
-lemma updir_finite2:
-  "\<lbrakk>is_dir X R;A \<subseteq> X;trans R X;finite A;A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. ub R A c)"
-  by (metis is_dir_def ubI updir_finite1)
-
-lemma updir_finite_obtain:
-  assumes "is_dir X R" and "A \<in> Fpow_ne X" and "trans R X"
-  obtains c where "c \<in> X \<and> ub R A c"
-  by (metis assms(1) assms(2) assms(3) fpow_ne_iff2 updir_finite2)
-
-lemma updir_finite3:
-  "(\<And>A. \<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. ub R A c)) \<Longrightarrow> is_dir X R"
-proof(rule is_dirI1)
-  fix a b assume A0:"(\<And>A. \<lbrakk>A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow>  (\<exists>c \<in> X. ub R A c))" and A1:"a \<in> X" and A2:"b \<in> X"
-  then obtain B0:"{a,b} \<subseteq> X" and B1:"finite {a,b}" and B2:"{a,b} \<noteq> {}" by blast
-  then obtain c where B3:"c \<in> X" and B4:"ub R {a,b} c"  by (meson A0)
-  then have B4:"(a, c) \<in> R \<and> (b, c) \<in> R"  by (simp add: ub_double_iff1)
-  then show "\<exists>c\<in>X. (a, c) \<in> R \<and> (b, c) \<in> R"  using B3 by auto
-qed
-
 lemma is_dirI2:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>i. is_sup R X {a, b} s)) \<Longrightarrow> is_dir X R"
-  by (metis binary_supD32 is_dir_def is_supE1)
+  by (metis insertCI is_dir_def is_supD1)
 
 lemma is_dirI4:
   "\<lbrakk>antisym R X;refl R X;trans R X;is_sup_semilattice R X; A \<subseteq> X; (\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (Sup R X {a, b} \<in> A))\<rbrakk> \<Longrightarrow> is_dir A R"
@@ -1786,9 +1820,11 @@ proof(rule is_dirI1)
   fix a b assume A0:"antisym R X" and A1:"refl R X" and A2:"trans R X" and A3:"is_sup_semilattice R X" and A4:"A \<subseteq> X" and
                  A5:"(\<And>a b. \<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> (Sup R X {a, b} \<in> A))"  and A6:"a \<in> A" and A7:"b \<in> A"
   let ?c="Sup R X {a,b}"
-  have B0:"?c \<in> A \<and> (a,?c)\<in>R \<and> (b,?c)\<in>R"    by (meson A0 A1 A2 A3 A4 A5 A6 A7 bsup_geI1 bsup_geI2 reflE1 subset_eq)
+  have B0:"?c \<in> A \<and> (a,?c)\<in>R \<and> (b,?c)\<in>R"
+  by (meson A0 A2 A3 A4 A5 A6 A7 bsup_ge1 bsup_ge2 subset_eq) 
   then show "\<exists>c::'a\<in>A. (a, c) \<in> R \<and> (b, c) \<in> R" by blast
 qed
+
 lemma is_dirI5:
   "\<lbrakk>antisym R X;refl R X;trans R X;is_sup_semilattice R X; A \<subseteq> X; is_fsup_closed R X A\<rbrakk> \<Longrightarrow> is_dir A R"
   by (simp add: is_dirI4 is_fsup_closed_def)
@@ -1805,6 +1841,7 @@ lemma is_ord_clI1:
 lemma is_ord_empty:
   "is_ord_cl X {} R "
   by (simp add: is_ord_cl_def)
+
 lemma is_ord_cl_space:
   "is_ord_cl X X R "
   by (simp add: is_ord_cl_def)
@@ -1842,10 +1879,10 @@ lemma ord_cl_dwdir_inf:
 proof-
   fix a b assume A3:"a \<in>A" and A4:"b\<in>A" and A5:"is_inf R X {a, b} i"
   then obtain c where B0:"c \<in> A" and B1:"(c,a)\<in>R" and B2:"(c,b)\<in>R"   by (meson A1 converse.cases is_dirE1)
-  then have B3:"c \<in> lbd R X {a, b}" by (meson A0 converse_iff in_mono ubd_mem_double)
-  then have B4:"(c, i) \<in> R"   by (meson A5 converseD is_supE3)
+  then have B3:"c \<in> lbd R X {a, b}"  using A0 ubd_def by fastforce
+  then have B4:"(c, i) \<in> R" by (meson A5 converseD is_supD2) 
   then have B5:"(i, c)\<in>(converse R)" by simp
-  also have B6:"i\<in>X"  by (meson A5 is_supE1)
+  also have B6:"i\<in>X" by (meson A5 is_supD1)  
   then show "i\<in>A"  by (meson A2 B0 B4 is_ord_clE1)
 qed
 
@@ -1856,7 +1893,7 @@ lemma ord_cl_updir_sup:
 
 lemma up_cl_bot:
   "\<lbrakk>is_least R X bot; A \<subseteq>X; is_ord_cl X A R; bot \<in> A\<rbrakk> \<Longrightarrow> A=X"
-  by (meson converseD greatestD2 is_ord_cl_def subset_antisym subset_eq)
+  by (metis converse_iff greatestD is_ord_clE1 subsetI subset_antisym)
 
 subsection Filters
 subsection DefinitionAndBasicProps
@@ -1890,22 +1927,25 @@ lemma filterD1:
 lemma filterD2:
   "is_filter R X F \<Longrightarrow> F \<subseteq> X" 
   by (simp add: is_filter_def)
+
 lemma filterD21:
   "is_filter R X F \<Longrightarrow> x \<in> F \<Longrightarrow> x \<in> X" 
   using filterD2 by blast
+
 lemma filterD3: 
   "is_filter R X F \<Longrightarrow> (is_dir F (converse R))"
   by (simp add: is_filter_def)
 lemma filterD4:
   "is_filter R X F \<Longrightarrow> (is_ord_cl X F R)" 
   by (simp add: is_filter_def)
+
 lemma filter_greatestD1:
   "is_greatest R X m \<Longrightarrow> is_filter R X F \<Longrightarrow>  (\<exists>f. f \<in> F \<and> (f, m)\<in>R)"
-  by (metis is_filter_def ex_in_conv filterD21 greatestD2)
+  by (metis empty_iff filterD1 filterD21 greatestD subsetI subset_antisym)
 
 lemma filter_greatestD2:
   "is_greatest R X m \<Longrightarrow> is_filter R X F \<Longrightarrow>  m \<in> F"
-  using filterD4 greatestD11 filter_greatestD1 is_ord_clE1 by fastforce
+  by (meson filterD4 filter_greatestD1 in_mono is_greatest_def is_ord_cl_def ubd_sub)
 
 lemma filter_finf_closed: 
   "\<lbrakk>is_filter R X F; a \<in> F;  b \<in> F;  is_inf R X {a, b} i\<rbrakk>\<Longrightarrow> i \<in> F"
@@ -1930,15 +1970,15 @@ lemma filter_finf_closed3:
 
 lemma filter_finf_closed4:
   "\<lbrakk>antisym R X; trans R X;is_inf_semilattice R X; is_filter R X F; A \<in> Fpow_ne F\<rbrakk> \<Longrightarrow> Inf R X A \<in> F"
-  by (simp add: filter_finf_closed3 fpow_ne_iff2)
+  by (simp add: filter_finf_closed3)
 
 lemma min_filter1:
   "(top,top)\<in>R \<Longrightarrow> antisym R X \<Longrightarrow> is_greatest R X top \<Longrightarrow> is_filter R X {top}"
-  by (simp add: is_filter_def antisym_onD greatest_iff is_dir_singleton is_ord_cl_def)
+  by (simp add: PosetsRel.is_filter_def antisym_onD greatestD is_dir_singleton is_ord_cl_def)
 
 lemma min_filter1b:
   "refl R X \<Longrightarrow> antisym R X \<Longrightarrow> is_greatest R X top \<Longrightarrow> is_filter R X {top}"
-  by (simp add: is_filter_def antisym_onD greatest_iff is_dir_singleton is_ord_cl_def)
+  by (simp add: greatestD min_filter1)
 
 lemma min_filter2:
   "\<lbrakk>is_greatest R X top; is_filter R X F\<rbrakk> \<Longrightarrow>{top} \<subseteq> F"
@@ -1946,11 +1986,17 @@ lemma min_filter2:
 
 lemma inf_dwdir:
   "\<lbrakk>is_inf_semilattice R X\<rbrakk> \<Longrightarrow> is_dir X (converse R)"
-  by (metis binary_supD31 binary_supD32 is_dirI1 is_supE1)
+proof(rule is_dirI1)
+  fix a b assume A0:"is_inf_semilattice R X" and A1:"a\<in>X" and A2:"b\<in>X"
+  then obtain c where "is_inf R X {a,b} c"  by blast
+  then show "\<exists>c\<in>X. (a, c) \<in> dual R \<and> (b, c) \<in> dual R"
+  by (meson insertCI is_supD1)
+qed
 
 lemma filters_max0:
   "is_inf_semilattice R X \<Longrightarrow> is_filter R X X"
   by (simp add: is_filter_def inf_dwdir is_ord_cl_def)
+
 lemma filters_max1:
   "is_cinf_semilattice R X \<Longrightarrow>is_filter R X X"
   by (simp add: cinf_sinf filters_max0)
@@ -1999,7 +2045,7 @@ lemma is_pfilterI1:
 
 lemma is_pfilterI2:
   "\<lbrakk>is_least R X bot; bot \<notin> A; is_filter R X A\<rbrakk> \<Longrightarrow> is_pfilter R X A"
-  by (metis greatestD11 is_pfilterI1)
+  by (metis greatestD is_pfilterI1)
 
 lemma pfilters_memD0:
   "F \<in> pfilters_on R X \<Longrightarrow> is_pfilter R X F"
@@ -2040,6 +2086,7 @@ subsubsection Upclosed
 lemma filter_inter_upcl2:
   "EF \<in> Pow (filters_on R X) \<Longrightarrow> is_ord_cl X (\<Inter>EF) R"
   by (simp add: filter_inter_upcl filter_pow_memD)
+
 subsubsection Nonempty
 
 lemma filter_inter_ne:
@@ -2052,16 +2099,17 @@ lemma filter_inter_ne2:
 
 lemma filter_inter_sub1:
   "\<lbrakk>EF \<in> Pow_ne (filters_on R X); x \<in> \<Inter>EF\<rbrakk> \<Longrightarrow> x \<in> X"
-  by (metis Inter_iff ex_in_conv filterD2 filters_on_iff in_mono pow_ne_iff2)
+  using filters_is_clr1 by fastforce
 
 lemma filter_inter_sub2:
   "\<lbrakk>EF \<in> Pow_ne (filters_on R X)\<rbrakk> \<Longrightarrow> \<Inter>EF \<subseteq> X"
-  by (simp add: filter_inter_sub1 subset_iff)
+  by (meson filter_inter_sub1 subsetI)
+
 subsubsection InfimaClosed
 
 lemma filter_inter_double:
   "\<lbrakk>antisym R X; is_inf_semilattice R X; EF \<in> Pow_ne (filters_on R X); x \<in> \<Inter>EF; y \<in> \<Inter>EF; F \<in> EF\<rbrakk> \<Longrightarrow> Inf R X {x, y} \<in> F "
-  by (metis (full_types) InterD filter_finf_closed1 filter_pow_memD pow_ne_iff1)
+  by (metis InterE PowI Pow_ne_iff filter_finf_closed filter_inter_sub1 filter_pow_memD inf_equality)
 
 lemma filter_inter_inf:
   "\<lbrakk>antisym R X;is_inf_semilattice R X; EF \<in> Pow_ne (filters_on R X); x \<in> \<Inter>EF; y \<in> \<Inter>EF\<rbrakk> \<Longrightarrow> Inf R X {x, y} \<in> \<Inter>EF "
@@ -2075,7 +2123,7 @@ proof-
   proof-
     fix a b assume P0:"a \<in> \<Inter> EF" and P1:"b \<in> \<Inter> EF"
     then obtain B01:"Inf R X {a,b} \<in> \<Inter>EF" and B02:"(a, Inf R X {a,b}) \<in> (converse R)" and B03:"(b, Inf R X {a,b}) \<in>(converse R)"
-      by (metis A0 A1 A2 Sup_def antisym_on_converse binary_supD31 binary_supD32 filter_inter_inf filter_inter_sub1 is_sup_semilattice_def ssupD3)
+      by (metis (full_types) A0 A1 A2 filter_inter_inf filter_inter_sub1 inf_equality insertCI is_supD1)
     then show "\<exists>c\<in>\<Inter> EF. (a, c) \<in> (converse R) \<and> (b, c) \<in>(converse R)" by auto
   qed
   show "is_dir (\<Inter>EF) (converse R)"   using B0 is_dirI1 by blast
@@ -2083,26 +2131,27 @@ qed
 
 lemma filter_inter_dir2:
   "\<lbrakk>antisym R X;is_inf_semilattice R X; is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> is_dir (\<Inter>{F1, F2}) (converse R)"
-  by(erule filter_inter_dwdir3, simp,simp add: filters_on_iff pow_neI)
+  by(erule filter_inter_dwdir3, simp,simp add: filters_on_iff)
 
 subsubsection ClosedUnderIntersection
 
 lemma filter_inter_closed1:
   "\<lbrakk>antisym R X;is_inf_semilattice R X; EF \<in> Pow_ne (filters_on R X); is_greatest R X top\<rbrakk> \<Longrightarrow>  is_filter R X (\<Inter>EF)"
-  by (metis is_filter_def filter_inter_dwdir3 filter_inter_ne filter_inter_sub2 filter_inter_upcl filter_pow_memD pow_ne_iff1)
+  by (metis PosetsRel.is_filter_def Pow_iff Pow_ne_iff filter_inter_dwdir3 filter_inter_ne2 filter_inter_sub2 filter_inter_upcl2)
 
 lemma filter_inter_closed2:
   "\<lbrakk>antisym R X;is_inf_semilattice R X;is_greatest R X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (\<And>E. \<lbrakk>E \<subseteq> (filters_on R X); E \<noteq> {}\<rbrakk> \<Longrightarrow> (\<Inter>E) \<in> (filters_on R X))"
-  by (simp add: filter_inter_closed1 filters_on_iff pow_neI)
+  by (simp add: filter_inter_closed1 filters_on_iff)
 
 subsection FilterMembership
 
 lemma filter_memI:
   "\<lbrakk>is_filter R X F; x \<in> X\<rbrakk> \<Longrightarrow>y \<in> F \<Longrightarrow> (y, x)\<in>R \<Longrightarrow> x \<in> F"
   by (meson filterD4 is_ord_clE1) 
+
 lemma filter_bsup_memI1: 
   "\<lbrakk>antisym R X; is_sup_semilattice R X; x \<in> F; is_filter R X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> F"
-  by (meson binary_supD31 filterD21 filterD4 is_ord_clE1 ssupD3 ssupD4) 
+  by (meson filterD21 filter_memI insertCI is_supD1 ssupD3)
 
 lemma filter_bsup_memI2:
    "\<lbrakk>antisym R X; is_sup_semilattice R X; x \<in> F; is_filter R X F; y \<in> X\<rbrakk> \<Longrightarrow> Sup R X {y, x} \<in> F" 
@@ -2117,20 +2166,19 @@ lemma filter_is_clr:
   by (simp add: cinf_sinf filter_inter_closed2 filters_is_clr1 filters_is_clr1b moore_clI3)
 
 lemma filter_closure_of_empty1:
-  "\<lbrakk>(top,top)\<in>R; antisym R X;is_inf_semilattice R X;is_greatest R X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (pwr X) (ubd  (pwr X) (filters_on R X) {{}}) {top}"
-proof-
-  assume A0:"(top,top)\<in>R" and A1:"antisym R X" and A2:"is_inf_semilattice R X" and A3:"is_greatest R X top" and
-         A4:"X \<noteq> {}"
-  show " is_least (pwr X) (ubd  (pwr X) (filters_on R X) {{}}) {top}"
-  apply(rule greatestI3)
-    apply (metis A3 converseI filter_greatestD2 filters_on_iff insert_subsetI pwr_mem_iff ubdD2 ubd_mem_singleE)
-    by (metis A0 A1 A3 filters_is_clr1 filters_on_iff min_filter1 powsimp1 pwr_memI subset_insertI ubd_singleton_iff)
-qed
+  assumes A0:"(top,top)\<in>R" and A1:"antisym R X" and A2:"is_inf_semilattice R X" and A3:"is_greatest R X top" and
+         A4:"X \<noteq> {}" 
+  shows "is_least (pwr X) (ubd  (pwr X) (filters_on R X) {{}}) {top}"
+  unfolding is_greatest_def ubd_def using assms apply auto
+  apply (simp add: filters_on_iff min_filter1)
+  apply (meson is_filter_def insertCI min_filter1 pwr_mem_iff subsetI)
+  by (simp add: filter_greatestD2 filters_on_iff pwr_mem_iff)
+
 
 
 lemma filter_closure_of_empty1b:
   "\<lbrakk>refl R X; antisym R X;is_inf_semilattice R X;is_greatest R X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> is_least (pwr X) (ubd  (pwr X) (filters_on R X) {{}}) {top}"
-  by (simp add: filter_closure_of_empty1 greatestD11 greatestD2)
+  by (simp add: filter_closure_of_empty1 greatestD)
 
 lemma filter_closure_of_empty2:
   "\<lbrakk>(top,top)\<in>R; antisym R X;is_inf_semilattice R X;is_greatest R X top; X \<noteq> {}\<rbrakk> \<Longrightarrow> (cl_from_clr (pwr X) (filters_on R X)) {} = {top}"
@@ -2142,11 +2190,11 @@ lemma filter_closure_iff:
 
 lemma filter_closure_memI1:
   "(x \<in> X \<and> ( \<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R)) \<Longrightarrow> x \<in> filter_closure R X A"
-  by (metis filter_closure_iff ne_subset_ne)
+  by (metis filter_closure_iff subset_empty)
 
 lemma filter_closure_memI2:
   "(x \<in> X \<and>  F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R) \<Longrightarrow> x \<in> filter_closure R X A"
-  by (metis filter_closure_iff ne_subset_ne)
+  by (meson filter_closure_memI1)
 
 lemma filter_closure_memD1:
   "\<lbrakk>A \<noteq> {}; x \<in> filter_closure R X A\<rbrakk> \<Longrightarrow> ( \<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R)"
@@ -2157,9 +2205,13 @@ lemma filter_closure_ne_simp:
   by (simp add: filter_closure_def)
 
 lemma filter_closure_singleton:
-  "\<lbrakk>(a,a)\<in>R;antisym R X;A \<subseteq> X; a \<in> A\<rbrakk> \<Longrightarrow> a \<in> filter_closure R X A"
-  apply(rule_tac ?F="{a}"  in filter_closure_memI2, simp)
-  by (metis Sup_def antisym_on_converse converse_iff in_mono sup_equality sup_singleton)
+  assumes A0:"(a,a)\<in>R" and A1:"antisym R X" and A2:"A \<subseteq> X" and A3:"a\<in>A"
+  shows "a \<in> filter_closure R X A"
+proof(rule_tac ?F="{a}" in filter_closure_memI2,auto)
+  show "a \<in> A" by (simp add:A3)
+  then show "a \<in> X" using A2 by auto
+  then show "(Inf R X {a}, a) \<in> R"
+
 
 lemma filter_closure_singletonb:
   "\<lbrakk>refl R X;antisym R X;A \<subseteq> X; a \<in> A\<rbrakk> \<Longrightarrow> a \<in> filter_closure R X A"
@@ -2172,7 +2224,7 @@ lemma filter_closure_obtains:
 
 lemma filter_closure_empty:
   "antisym R X \<Longrightarrow> is_greatest R X top \<Longrightarrow> filter_closure R X {} = {top}"
-  by (simp add: filter_closure_def greatest_equality2)
+  by (simp add: filter_closure_def greatestD greatest_equality1)
 
 lemma filter_closure_ne:
   "\<lbrakk>antisym R X;refl R X;X \<noteq> {}; A \<subseteq> X\<rbrakk> \<Longrightarrow> filter_closure R X A \<noteq> {}"
