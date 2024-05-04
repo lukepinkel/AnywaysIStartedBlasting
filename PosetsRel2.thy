@@ -4030,8 +4030,8 @@ lemma l_inf_closed:
   "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, y} \<in> X" by (simp add: lattD41 sinfD4)
 
 lemma l_finsup:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s" 
-  using  bsup_finite2 lattD42 by blast
+  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s"
+  by (meson Fpow_ne_iff lattD42 sup_semilattice_fsup) 
 
 lemma l_fininf:
   "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s" 
@@ -4039,10 +4039,10 @@ lemma l_fininf:
 
 lemma s_finsup:
   "\<lbrakk>refl R X; antisym R X; trans R X;is_sup_semilattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s"
-  by (meson fpow_ne_iff2 sup_semilattice_fsup) 
+  by (meson Fpow_ne_iff sup_semilattice_fsup)
  
-lemma s_fininf:"\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s" 
-   by (metis antisym_on_converse is_supE1 sup_finite trans_on_converse) 
+lemma s_fininf:"\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s"
+  by (metis inf_finite is_supD1) 
 
 
 
