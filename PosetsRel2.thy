@@ -714,6 +714,17 @@ next
   then show ?case using B2 by blast
 qed
 
+
+lemma inf_finite:
+  assumes A0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b \<in> X. is_inf R  X {a1, a2} b" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X" and
+          A4:"trans R X" and
+          A5:"antisym_on X R"
+  shows "\<exists>b \<in> X. is_inf R X A b"
+  by (simp add: A0 A1 A2 A3 A4 A5 sup_finite)
+
 lemma bsup_finite:
   assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_sup R X {a1, a2} (Sup R X {a1, a2})" and 
           A1:"finite A" and
@@ -726,6 +737,16 @@ proof-
   have "\<exists>b. is_sup R X A b"  by (metis A0 A1 A2 A3 A4 A5 is_supD1 sup_finite)
   then show ?thesis using A3 A5 sup_equality2 by blast
 qed
+
+lemma binf_finite:
+  assumes A0: "\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> is_inf R X {a1, a2} (Inf R X {a1, a2})" and 
+          A1:"finite A" and
+          A2:"A \<noteq> {}" and
+          A3:"A \<subseteq> X" and 
+          A4:"trans R X" and
+          A5:"antisym_on X R"
+  shows "is_inf R X A (Inf R X A)"
+  by (metis A0 A1 A2 A3 A4 A5 Sup_def antisym_on_converse bsup_finite trans_on_converse)
 
 
 
@@ -963,6 +984,10 @@ lemma binf_assoc2:
 lemma sup_semilattice_fsup:
   "\<lbrakk>ord R X;is_sup_semilattice R X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_sup R X A (Sup R X A)"
   by (simp add: bsup_finite ssupD3)
+
+lemma inf_semilattice_finf:
+  "\<lbrakk>ord R X;is_inf_semilattice R X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_inf R X A (Inf R X A)"
+  by (metis Fpow_ne_iff antisym_on_converse inf_equality2 is_sup_semilattice_def sup_semilattice_fsup trans_on_converse)
 
 lemma fsupI:
   "\<lbrakk>ord R X; is_sup_semilattice R X; (\<And>s E. is_sup R X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Sup R X F)"
@@ -1377,8 +1402,54 @@ proof-
   qed
 qed
 
+lemma assoc_inf:
+  assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
+          sab:"is_inf R X {a, b} s" and  tcd:"is_inf R X {c, d} t"
+  shows assoc_inf1:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}" and
+        assoc_inf2:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}" and
+        assoc_inf3:"lbd R X {s, t} =  lbd R X {a, b, c, d}" and
+        assoc_inf4:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r" and
+        assoc_inf5:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
+proof-
+ have rpor:"pord (dual R) X"
+  by (simp add: por refl_dualI)
+ show P0:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}"
+  by (meson assoc_sup1 ax bx cx dx rpor sab tcd)
+ show P1:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}"
+  using assoc_sup2 ax bx cx dx rpor sab tcd by metis  
+ show P2:"lbd R X {s, t} =  lbd R X {a, b, c, d}" 
+  using assoc_sup3 ax bx cx dx rpor sab tcd by metis  
+ show P3:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r"
+   using assoc_sup4 ax bx cx dx rpor sab tcd by metis  
+ show P4:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
+  using assoc_sup5 ax bx cx dx rpor sab tcd by metis  
+qed
+
+lemma semilattice_assoc_sup:
+  assumes por:"pord R X" and sem:"is_sup_semilattice R X" and
+          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
+  shows "Sup R X {Sup R X {a,b}, Sup R X {c,d}} = Sup R X {a,b,c,d}"
+proof(rule sup_equality)
+  show "antisym R X" using por by auto
+  obtain B0:"is_sup R X {a, b} (Sup R X {a,b})" and B1:"is_sup R X {a,b,c,d} (Sup R X {a,b,c,d})"
+    by (simp add: ax bx cx dx por sem sup_semilattice_fsup)
+  show " is_sup R X {Sup R X {a, b}, Sup R X {c, d}} (Sup R X {a, b, c, d})"
+    by (metis B1 assoc_sup4 ax bx cx dx por sem ssupD3) 
+qed
 
 
+
+lemma semilattice_assoc_inf:
+  assumes por:"pord R X" and sem:"is_inf_semilattice R X" and
+          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
+  shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
+proof(rule inf_equality)
+  show "antisym R X" using por by auto
+  obtain B0:"is_inf R X {a, b} (Inf R X {a,b})" and B1:"is_inf R X {a,b,c,d} (Inf R X {a,b,c,d})"
+    by (simp add: ax bx cx dx por sem inf_semilattice_finf)
+  show "is_inf R X {Inf R X {a, b}, Inf R X {c, d}} (Inf R X {a, b, c, d})"
+  by (metis (no_types, opaque_lifting) B1 antisym_on_converse assoc_sup4 ax bx cx dx inf_equality por refl_dualI sem trans_on_converse)
+qed
 
 section Functions
 subsection Isotonicity
@@ -2238,7 +2309,11 @@ lemma filters_on_lattice_inf_semilattice1:
         lattice_filters_isl5:"is_csup_semilattice (pwr X) (filters_on R X)" and
         lattice_filters_isl6:"is_sup_semilattice (pwr X) (filters_on R X)" and
         lattice_filters_isl7:"\<And>F1 F2. \<lbrakk>F1 \<in> filters_on R X; F2 \<in> filters_on R X\<rbrakk> \<Longrightarrow>Inf (pwr X) (filters_on R X) {F1, F2} =  (F1 \<inter> F2)"  and
-        lattice_filters_isl8:"\<And>EF. EF \<in> Fpow_ne (filters_on R X) \<Longrightarrow> (Sup (pwr X) (filters_on R X) EF) \<in> filters_on R X"
+        lattice_filters_isl8:"\<And>EF. EF \<in> Fpow_ne (filters_on R X) \<Longrightarrow> (Sup (pwr X) (filters_on R X) EF) \<in> filters_on R X" and
+        lattice_filters_isl9:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> filter_closure R X (\<Union> EF) \<in> filters_on R X" and
+        lattice_filters_isl10:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, filter_closure R X (\<Union> EF)) \<in> pwr X)" and
+        lattice_filters_isl11:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (filter_closure R X (\<Union> EF), b) \<in> pwr X)" and
+        lattice_filters_isl12:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) EF (filter_closure R X (\<Union>EF))"
 proof-
  have pwr0:"pord (pwr X) (Pow X)"
     by (simp add: powrel1 powrel2 pwr_mem_iff refl_def)
@@ -2408,7 +2483,53 @@ proof-
     then show "(Sup (pwr X) (filters_on R X) EF) \<in> filters_on R X"
       by (simp add: P5 csupD50 fil0)
   qed
+  show P9:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> filter_closure R X (\<Union> EF) \<in> filters_on R X"
+  proof-
+    fix EF assume ef0:"EF \<in> Pow_ne (filters_on R X)"
+    show "filter_closure R X (\<Union> EF) \<in> filters_on R X"
+      using P3 ef0 filters_on_iff by auto
+  qed
+  show P10:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, filter_closure R X (\<Union> EF)) \<in> pwr X)"
+    by (metis Int_Collect P3 Pow_ne_iff Sup_le_iff filter_cl0 filters_on_def inf.orderE is_filterD1 por pwr_memI)
+  show P11:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (filter_closure R X (\<Union> EF), b) \<in> pwr X)"
+  proof-
+    fix EF assume ef0:"EF \<in> Pow_ne (filters_on R X)"
+    show "\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (filter_closure R X (\<Union> EF), b) \<in> pwr X"
+    proof-
+      fix b assume bfil:"b \<in> filters_on R X" and bub:"(\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X)"
+      have fcsub:"filter_closure R X (\<Union> EF) \<subseteq> b"
+      proof
+        fix x assume fcmen:"x \<in> filter_closure R X (\<Union> EF)" 
+        then obtain Fx where B1:"Fx \<subseteq>  (\<Union>EF)" and B2:"finite Fx" and B3:"Fx \<noteq> {}" and  B4:"(Inf R X Fx,x)\<in>R"
+          by (metis is_filter_def Pow_empty Pow_ne_iff ef0 filter_closure_memD1 filters_on_def insert_subset mem_Collect_eq subset_Pow_Union subset_singletonD)
+        then obtain B5:"Fx \<subseteq> b" and B6:"Fx \<subseteq> X"
+          by (meson Union_least bub dual_order.trans pwr_memD)
+        obtain B7:"\<And>F. F \<in> EF \<Longrightarrow> is_filter R X F" and B8:"EF \<noteq> {}"
+          using ef0 filters_on_iff by fastforce
+        obtain B9:"Inf R X Fx \<in> b"
+          by (metis B2 B3 B5 bfil filter_inf_closed3 filters_on_iff lat latt_iff por)
+        then show "x \<in> b"
+          by (meson B4 P9 bfil ef0 fcmen filters_on_iff is_filterD1 is_ord_clE1 subsetD)
+      qed
+      show "(filter_closure R X (\<Union> EF), b) \<in> pwr X"
+        by (meson bfil fcsub filters_on_iff is_filterD1 pwr_memI) 
+    qed
+  qed
+  show P12:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) EF (filter_closure R X (\<Union>EF))"
+  proof-
+    fix EF assume ef0:"EF \<in> Pow_ne (filters_on R X)"
+    show " is_sup (pwr X) (filters_on R X) EF (filter_closure R X (\<Union>EF))"
+    proof(rule is_supI1) 
+      show "filter_closure R X (\<Union> EF) \<in> filters_on R X"
+        using P9 ef0 by auto
+      show "\<And>a. a \<in> EF \<Longrightarrow> (a, filter_closure R X (\<Union> EF)) \<in> pwr X"
+        using P10 ef0 by presburger
+      show "\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (filter_closure R X (\<Union> EF), b) \<in> pwr X"
+        using P11 ef0 by blast
+   qed
+  qed
 qed
+
 
 
 
@@ -3138,12 +3259,25 @@ lemma filter_bsup_memI1:
   "(x \<in> X \<and> (\<exists>a \<in> A. \<exists>b \<in> B. (Inf R X {a, b}, x)\<in>R)) \<Longrightarrow> x \<in> binary_filter_sup R X A B "
   by (simp add:binary_filter_sup_def)
 
+lemma filter_bsup_comm:
+  "binary_filter_sup R X A B = binary_filter_sup R X B A"
+  unfolding binary_filter_sup_def  by (metis (no_types, lifting) doubleton_eq_iff)
+
 lemma filter_on_lattice_bsup:
   assumes por:"pord R X" and lat:"is_lattice R X" 
-  shows filter_on_lattice_bsup1:"\<And>a F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; a \<in> F1\<rbrakk> \<Longrightarrow> a \<in> binary_filter_sup R X F1 F2" and
-        filter_on_lattice_bsup2:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  F1 \<subseteq> (binary_filter_sup R X F1 F2)" and
+  shows filter_on_lattice_bsup1a:"\<And>a F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; a \<in> F1\<rbrakk> \<Longrightarrow> a \<in> binary_filter_sup R X F1 F2" and
+        filter_on_lattice_bsup1b:"\<And>a F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; a \<in> F2\<rbrakk> \<Longrightarrow> a \<in> binary_filter_sup R X F1 F2" and
+        filter_on_lattice_bsup2a:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  F1 \<subseteq> (binary_filter_sup R X F1 F2)" and
+        filter_on_lattice_bsup2b:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  F2 \<subseteq> (binary_filter_sup R X F1 F2)" and
         filter_on_lattice_bsup3:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_ord_cl X (binary_filter_sup R X F1 F2) R" and
-        filter_on_lattice_bsup4:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_dir (binary_filter_sup R X F1 F2) (dual R)"
+        filter_on_lattice_bsup4:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_dir (binary_filter_sup R X F1 F2) (dual R)" and
+        filter_on_lattice_bsup5:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  binary_filter_sup R X F1 F2 \<noteq> {}" and
+        filter_on_lattice_bsup6:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  binary_filter_sup R X F1 F2 \<subseteq> X" and
+        filter_on_lattice_bsup7:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_filter R X (binary_filter_sup R X F1 F2)" and
+        filter_on_lattice_bsup8:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup R X F1 F2) \<in> ubd (pwr X) (filters_on R X) {F1, F2}" and
+        filter_on_lattice_bsup9:"\<And>G F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2;is_filter R X G; G \<in> (ubd (pwr X)  (filters_on R X) {F1, F2})\<rbrakk>  \<Longrightarrow> ((binary_filter_sup R X F1 F2), G)\<in>(pwr X)" and
+        filter_on_lattice_bsup10:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk>  \<Longrightarrow> is_sup (pwr X) (filters_on R X) {F1, F2} (binary_filter_sup R X F1 F2)" and
+        filter_on_lattice_bsup11:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) {F1, F2} = (binary_filter_sup R X F1 F2)" 
 proof-
   show P0: "\<And>a F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; a \<in> F1\<rbrakk> \<Longrightarrow> a \<in> binary_filter_sup R X F1 F2"
   proof-
@@ -3156,8 +3290,12 @@ proof-
     then show "a \<in> binary_filter_sup R X F1 F2"
       by (meson A3 A4 B1 filter_bsup_memI1)
   qed
+  show P0b:"\<And>a F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; a \<in> F2\<rbrakk> \<Longrightarrow> a \<in> binary_filter_sup R X F1 F2"
+    by (metis P0 filter_bsup_comm)
   show P1:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  F1 \<subseteq> (binary_filter_sup R X F1 F2)"
     by (simp add: P0 subsetI)
+  show P1b:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  F2 \<subseteq> (binary_filter_sup R X F1 F2)"
+    by (simp add: P0b subsetI)
   show P2:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_ord_cl X (binary_filter_sup R X F1 F2) R"
   proof-
      fix F1 F2 assume A1:"is_filter R X  F1" and A2:"is_filter R X  F2"
@@ -3197,126 +3335,86 @@ proof-
         by (metis B0 B1 B2 B3 fil1 fil2 filter_inf_closed2 lat latt_iff por)
       obtain B12:"Inf R X {a1,b1} \<in> X" and B13:"Inf R X {a2,b2}\<in>X"
         using B10 B11 fil1 fil2 is_filterD1 by auto
-      have B14:"Inf R X {Inf R X {a1,b1},Inf R X {a2,b2}} = Inf R X {a1,b1, Inf R X {a2,b2}}"
-        by (metis B13 B6 B8 binf_assoc emptyE lat lattD31 por)
-      also have B15:"... = Inf R X {a1,b1,a2,b2}"
+      obtain B14:"Inf R X {a1, a2} \<in> X" and B15:"Inf R X {b1, b2}\<in>X"
+        by (meson B6 B7 B8 B9 is_supD1 lat lattD31 por)
+      have B16:"Inf R X {Inf R X {a1,b1},Inf R X {a2,b2}} =  Inf R X {a1,b1,a2,b2}"
+        by (metis B6 B7 B8 B9 lat latt_iff por semilattice_assoc_inf)
+      also have B17:"... = Inf R X {a1,a2,b1,b2}"
+        by (simp add: insert_commute)
+      also have B18:"... = Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}"
+        by (metis B6 B7 B8 B9 lat latt_iff por semilattice_assoc_inf)
+      obtain B19:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},a)\<in>R "
+        by (metis B14 B15 B4 le_infI1 amem2 lat latt_iff por)
+      then obtain B20:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},a)\<in>R"
+        using B16 B17 B18 by presburger
+      obtain B21:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},b)\<in>R "
+        by (metis B14 B15 B5 le_infI2 bmem2 lat latt_iff por)
+      then obtain B22:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},b)\<in>R"
+        using B16 B17 B18 by presburger
+      have B23:"Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}} \<in> (binary_filter_sup R X F1 F2)"
+        by (meson B10 B11 B12 B13 filter_bsup_memI1 is_supD1 lat lattD31 por reflD2)
       show "\<exists>c \<in> ?FC. (a,c)\<in>(dual R)\<and>(b,c)\<in>(dual R)"
+        using B18 B19 B21 B23 calculation by auto
+    qed
+  qed
+  show P4:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  binary_filter_sup R X F1 F2 \<noteq> {}"
+    by (metis P1 empty_subsetI equalityI is_filterD1) 
+  show P5:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  binary_filter_sup R X F1 F2 \<subseteq> X"
+    by (meson filter_bsup_memD1 subsetI)
+  show P6:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow>  is_filter R X (binary_filter_sup R X F1 F2)"
+  proof-
+    fix F1 F2 assume fil1:"is_filter R X F1" and fil2:"is_filter R X F2" let ?FC="binary_filter_sup R X F1 F2"
+    show "is_filter R X ?FC"
+    proof(rule is_filterI1)
+      show "?FC \<noteq> {}"
+        by (simp add: P4 fil1 fil2)
+      show "?FC \<subseteq> X"
+        by (simp add: P5 fil1 fil2)
+      show "is_dir ?FC (dual R)"
+         by (simp add: P3 fil1 fil2)
+      show "is_ord_cl X ?FC R"
+         by (simp add: P2 fil1 fil2)
+    qed
+  qed
+  show P7:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup R X F1 F2) \<in> ubd (pwr X) (filters_on R X) {F1, F2}"
+  proof-
+    fix F1 F2 assume fil1:"is_filter R X F1" and fil2:"is_filter R X F2" let ?FC="binary_filter_sup R X F1 F2"
+    show "?FC \<in>ubd (pwr X) (filters_on R X) {F1, F2}"
+    proof(rule ubdI)
+      show "?FC \<in> filters_on R X"
+        by (simp add: P6 fil1 fil2 filters_on_iff)
+      show "\<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, ?FC) \<in> pwr X"
+        by (metis P1 P1b P5 fil1 fil2 insertE pwr_mem_iff singleton_iff)
+    qed
+  qed
+  show P8:"\<And>G F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2;is_filter R X G; G \<in> (ubd (pwr X)  (filters_on R X) {F1, F2})\<rbrakk> 
+        \<Longrightarrow> ((binary_filter_sup R X F1 F2), G)\<in>(pwr X)"
+  proof-
+    fix G F1 F2 
+    assume fil0:"is_filter R X G" and fil1:"is_filter R X F1" and fil2:"is_filter R X F2" and
+               gubd: "G \<in> (ubd (pwr X)  (filters_on R X) {F1, F2})" 
+     let ?FC="binary_filter_sup R X F1 F2"
+    have "?FC \<subseteq> G"
+    proof
+      fix x assume A4:"x \<in> ?FC"
+      obtain a1 a2 where B0:"a1 \<in> F1" and B1:"a2 \<in> F2" and B2:"(Inf R X {a1, a2},x)\<in>R"
+        by (meson A4 filter_bsup_memD1)
+      then obtain B3:"a1 \<in> G" and B4:"a2 \<in> G"
+        by (metis gubd insertCI insert_Diff insert_subset powrel8 ubdD1)
+      then obtain B4:"Inf R X {a1, a2} \<in> G"
+        by (metis fil0 filter_inf_closed2 lat latt_iff por)
+      show "x \<in> G"
+        by (meson A4 B2 B4 fil0 filter_bsup_memD1 is_filterD1 is_ord_clE1)
+    qed
+    then show "(?FC,G)\<in>(pwr X)"
+      by (meson fil0 is_filterD1 pwr_memI)
+  qed
+  show P9:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk>  \<Longrightarrow> is_sup (pwr X) (filters_on R X) {F1, F2} (binary_filter_sup R X F1 F2)"
+    by (meson P7 P8 converseI filters_on_iff greatestI2 is_sup_def subsetD ubd_sub)
+  show P10:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) {F1, F2} = (binary_filter_sup R X F1 F2)"
+  by (simp add: P9 antisym_on_def pwr_mem_iff subset_antisym sup_equality)
 qed
 
-
-
-lemma filters_on_lattice_bsup1b:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow>  is_ord_cl X (binary_filter_sup R X F1 F2) R"
-  by(auto simp add:binary_filter_sup_def is_ord_cl_def,meson ant filterD21 is_supE1 lattD31 trans_onD trn)
-
-lemma tmp_inf_lemma:
-  assumes "is_lattice R X"  "a \<in> X" "a1 \<in> X" "a2 \<in> X" "b1 \<in> X" "b2 \<in> X" "(Inf R X {a1, a2}, a)\<in>R" 
-  shows "(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}}, a)\<in>R"
-proof-
-  have B0:"Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}} = Inf R X {a1, b1, a2, b2}"
-    by (metis ant assms(1) assms(3) assms(4) assms(5) assms(6) inf_semilattice_finf_props4 latt_iff ref trn)
-  also have B1:"(Inf R X {a1, b1, a2, b2}, Inf R X {a1, a2})\<in>R"
-    using inf_semilattice_finf_anti[of R X "{a1, a2}" "{a1, b1, a2, b2}"]
-    by (smt (verit) ant assms(1) assms(3) assms(4) assms(5) assms(6) binary_supD31 calculation converseD is_supE1 lattD31 sup_ge5 trans_on_converse trn)
-  also have B2:"(Inf R X {a1, a2}, a)\<in>R"
-    using assms(7) by force
-  show ?thesis
-    by (meson B2 ant assms(1) assms(2) assms(3) assms(4) assms(5) assms(6) calculation is_supE1 lattD31 trans_onD trn)
-qed 
-  
-
-lemma filters_on_lattice_bsup2a:
-  assumes A0:"is_lattice R X" and A1:"is_filter R X F1" and A2:"is_filter R X F2" and
-          A3: "a \<in> (binary_filter_sup R X F1 F2)" and  A4:"b \<in> (binary_filter_sup R X F1 F2)"
-  shows "(\<exists>c \<in> (binary_filter_sup R X F1 F2). (c,a)\<in>R \<and> (c, b)\<in>R)"
-proof-
-  obtain a1 a2 where B0:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> (Inf R X {a1, a2}, a)\<in>R"
-    using A3 binary_filter_sup_obtains by blast
-  obtain b1 b2 where B1:"b1 \<in> F1 \<and> b2 \<in> F2 \<and> (Inf R X {b1, b2},b)\<in>R"
-    using A4 binary_filter_sup_obtains by blast
-  have B0b:"a \<in> X \<and> b \<in> X \<and> a1 \<in> X \<and> a2 \<in> X \<and> b1 \<in> X \<and> b2 \<in> X"
-    using A1 A2 A3 A4 B0 B1 filterD2 filter_bsup_mem_iff by auto
-  have B2:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},a)\<in>R"
-    by (meson A0 B0 B0b tmp_inf_lemma)
-  have B3:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},b)\<in>R"
-    by (smt (verit) A0 B0b B1 insert_commute tmp_inf_lemma)
-  obtain ab1 where P1A3:"ab1 \<in> F1 \<and> (ab1,a1)\<in>R \<and> (ab1,b1)\<in>R"
-    by (meson A1 B0 B1 is_filter_def converseD is_dirE1)
-  obtain ab2 where P1A4:"ab2 \<in> F2 \<and> (ab2,a2)\<in>R \<and> (ab2, b2)\<in>R"
-    by (metis A2 B0 B1 is_filter_def converseD is_dirE1)
-  obtain C0:"a1 \<in> X" and C1:"b1 \<in>X" and C2:"a2 \<in> X" and C3:"b2 \<in> X" and C4:"ab1 \<in> X" and C5:"ab2 \<in> X"
-    by (metis A1 A2 B0b P1A3 P1A4 filterD21)
-  obtain C6:"ab1 \<in> lbd R X {a1,b1}" and C7:"ab2 \<in> lbd R X {a2,b2}"
-    by (simp add: C4 C5 P1A3 P1A4 ubd_mem_doubleI)
-  have P1B10:"(ab1,Inf R X {a1, b1})\<in>R"
-    by (meson A0 B0b C6 ant converseD is_supE3 lattD31)
-  have P1B11:"(ab2,Inf R X {a2, b2})\<in>R"
-     by (meson A0 B0b C7 ant converseD is_supE3 lattD31)
-  have P1B1:"(ab1,Inf R X {a1, b1})\<in>R \<and> (ab2,Inf R X {a2, b2})\<in>R"
-    by (simp add: P1B10 P1B11)
-  have P1B2:"Inf R X {a1, b1} \<in> F1 \<and> Inf R X {a2, b2} \<in> F2"
-    using A0 A1 A2 B0 B1 ant filter_finf_closed1 latt_iff by fastforce
-  have P1B3:"Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}} \<in> (binary_filter_sup R X F1 F2)"
-    by (meson A0 A1 A2 P1B2 ant filterD21 filter_bsup_mem_iff is_supE1 lattD31 ref reflD1)
-  show "(\<exists>c \<in> (binary_filter_sup R X F1 F2).  (c,a)\<in>R \<and>  (c, b)\<in>R)"
-    using B2 B3 P1B3 by blast
-qed
-         
-lemma filters_on_lattice_bsup2b:
-  "\<lbrakk>is_lattice R X; is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> is_dir (binary_filter_sup R X F1 F2) (converse R)"
-  by (simp add: filters_on_lattice_bsup2a is_dirI1)
-
-lemma filters_on_lattice_bsup3:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow> (binary_filter_sup R X F1 F2) \<noteq> {}"
-  by (metis is_filter_def filters_on_lattice_bsup04 ne_subset_ne)
-
-lemma filters_on_lattice_bsup4:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow> (binary_filter_sup R X F1 F2) \<in> filters_on R X"
-  by (metis is_filter_def filter_bsup_mem_iff filters_on_iff filters_on_lattice_bsup1b filters_on_lattice_bsup2b filters_on_lattice_bsup3 subsetI)
-
-lemma filters_on_lattice_bsup5:
-  "\<lbrakk>is_lattice R X; is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> (binary_filter_sup R X F1 F2) \<in> ubd (pwr X) (filters_on R X) {F1, F2}"
-  by (meson filterD2 filters_on_iff filters_on_lattice_bsup03 filters_on_lattice_bsup04 filters_on_lattice_bsup4 pwr_memI ubd_mem_double)
-
-lemma filters_on_lattice_bsup6:
-  assumes A0:"is_lattice R X" and A1:"is_filter R X  F1" and A2:"is_filter R X F2" and A3:"G \<in> (ubd (pwr X)  (filters_on R X) {F1, F2})"
-  shows "(binary_filter_sup R X F1 F2) \<subseteq> G" (is "?L \<subseteq> ?R")
-proof
-  fix x assume A4:"x \<in> ?L"
-  obtain a1 a2  where B0:"a1 \<in> F1 \<and> a2 \<in> F2 \<and> (Inf R X {a1, a2},x)\<in>R"
-    using A4 binary_filter_sup_obtains by blast
-  have B1:"a1 \<in> G \<and> a2 \<in> G"
-    by (meson A3 B0 pwr_mem_iff subset_iff ubd_mem_doubleE1 ubd_mem_doubleE2)
-  have B2:"Inf R X {a1, a2} \<in> G"
-    by (metis A0 A3 B1 ant filter_finf_closed1 filters_on_iff latt_iff ubdD2)
-  have B3:"is_filter R X  G "
-    by (meson A3 filters_on_iff ubdD2)
-  show "x \<in> G"
-    by (meson A4 B0 B2 B3 filterD4 filter_bsup_mem_iff ord_cl_memI1)
-qed
-
-lemma filters_on_lattice_bsup7:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow> is_sup (pwr X) (filters_on R X) {F1, F2} (binary_filter_sup R X F1 F2) "
-  by (meson filters_on_lattice_bsup5 filters_on_lattice_bsup6 is_supI5 pwr_mem_iff ubd_mem_doubleE1)
-
-lemma filters_on_lattice_bsup8:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) {F1, F2} = (binary_filter_sup R X F1 F2)"
-  by (simp add: filters_is_clr1 filters_on_lattice_bsup7 powrel6 sup_equality)
-
-lemma filters_on_lattice_bsup0:
-  "\<lbrakk>is_lattice R X; is_filter R X  F1; is_filter R X  F2\<rbrakk> \<Longrightarrow> (filter_closure R X (F1 \<union> F2)) = Sup (pwr X) (filters_on R X) {F1, F2}"
-  using filters_on_lattice_sup_semilattice1b sup_equality
-  by (metis ant filters_is_clr1 powrel6 ref trn)
-
-lemma filters_on_lattice_bsup1:
-  "\<lbrakk>is_lattice R X;  is_filter R X  F1; is_filter R X  F2; z \<in> Sup (pwr X) (filters_on R X) {F1, F2}\<rbrakk> \<Longrightarrow>(\<exists>Fx \<subseteq>(F1 \<union> F2). finite Fx \<and> Fx \<noteq> {} \<and> (Inf R X Fx,z)\<in>R)"
-  by (metis filterD1 filter_closure_obtains filters_on_lattice_bsup0 sup_bot.eq_neutr_iff)
-
-lemma filters_on_lattice_bsup2:
-  assumes A0:"is_lattice R X" and A1:"is_filter R X F1" and A2:"is_filter R X F2" and
-          A3:"z \<in> Sup (pwr X) (filters_on R X) {F1, F2}"
-  shows "(\<exists>f1 \<in>F1. \<exists>f2 \<in> F2. (Inf R X {f1, f2},z)\<in>R)"
-  by (metis A0 A1 A2 A3 filter_bsup_mem_iff filters_on_lattice_bsup8)
   
 lemma lattice_filters_distr:
   assumes A0:"distributive_lattice R X"  and A1:"antisym R X" and A2:"refl R X" and A3:"trans R X"
@@ -3336,62 +3434,74 @@ proof-
           by (simp add: A1 A2 A3 A4 A5 A6 B01 lattice_filters_isl7 lattice_filters_isl8)
         obtain B3:"z \<in> ?sfg" and B4:"z \<in> ?sfh" using B2 A7 by blast 
         then obtain x1 y where B5:"x1 \<in> f" and B6:" y \<in> g"  and B7:"(Inf R X {x1, y},z)\<in>R"
-          by (metis A1 A2 A3 A4 A5 B01 B3 filters_on_iff filters_on_lattice_bsup2)
-        obtain x2 t where B5:"x2 \<in> f \<and> t \<in> h \<and> (Inf R X {x2, t} ,z)\<in>R"
-          by (metis A1 A2 A3 A4 A6 B01 B3 filters_on_iff filters_on_lattice_bsup2)
-        have B450:"x1 \<in> X \<and> y \<in> X \<and> x2 \<in> X \<and> t \<in> X"
-          by (meson A4 A5 A6 B4 B5 filterD21 filters_on_iff)
-        have B6:"Sup R X {x1, Inf R X {x2, t}} \<in> f"
-          by (meson A1 A4 B01 B4 B450 filter_bsup_memI1 filters_on_iff is_supE1 lattD31 lattD42)
-        have B7:"Sup R X {y, x2} \<in> f"
-          by (meson A1 A2 A3 A4 B01 B450 B5 filter_on_lattice_sup01 filters_on_iff)
-        have B8:"Sup R X {y, t} \<in> g"
-          by (meson A1 A2 A3 A5 B01 B4 B450 filters_on_iff lattice_filter_memI)
-        have B9:"Sup R X {y, t} \<in> h"
-          by (metis A1 A2 A3 A6 B01 B450 B5 filter_on_lattice_sup01 filters_on_iff)
-        have B10:"Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}} \<in> f"
-          by (metis A1 A4 B01 B6 B7 filter_finf_closed1 filters_on_iff latt_iff)
-        have B11:"Inf R X {Sup R X {y, x2}, Sup R X {y, t}} = Sup R X {y, Inf R X {x2, t}}"
-          by (simp add: B450 assms distr_latticeD1)
-        have B12:"Inf R X {Sup R X {x1, Inf R X {x2, t}}, Inf R X {Sup R X {y, x2}, Sup R X {y, t}}} =
-                  Inf R X {Sup R X {x1, Inf R X {x2, t}},  Sup R X {y, Inf R X {x2, t}}}"
-          by (simp add: B11)
-        have B13:"... = Sup R X {Inf R X {x2, t}, Inf R X {x1, y}}"
-          by (smt (verit, ccfv_threshold) A0 A1 B01 B450 distr_latticeD2 insert_commute is_supE1 lattD31)
-        have B14:"... = Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}"
-          by (simp add: insert_commute)
-        have B15:"Sup R X {Inf R X {x1, y}, Inf R X {x2, t}} = Inf R X {Sup R X {x1, Inf R X {x2, t}}, Inf R X {Sup R X {y, x2}, Sup R X {y, t}}} "
-          using B11 B13 B14 by presburger
-        have B16:"... =  Inf R X {Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}}, Sup R X {y, t}}"
-          by (metis A1 A3 B01 B450 binf_assoc2d is_supE1 lattD31 latt_iff ssupD4)
-        obtain C0:"Inf R X {x1, y} \<in> X" and C1:"Inf R X {x2, t} \<in> X" and C2:"(Inf R X {x1, y},z)\<in>R" and 
-               C3:"(Inf R X {x2,t},z)\<in>R"
-          by (meson A1 B01 B4 B450 B5 is_supE1 lattD31)
-        have B17:"(Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}, z)\<in>R"
-          using leq_sup[of X R "Inf R X {x1, y}" "Inf R X {x2, t}" z]
-          by (meson A1 A2 A3 A4 A5 B01 B02 B3 C0 C1 C2 C3 filterD21 filters_is_clr1 filters_on_iff lattD42 powrel6 ssupD4)
-        have B18:"(Inf R X {Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}}, Sup R X {y, t}},z)\<in>R"
-          using B11 B13 B14 B16 B17 by presburger
+          by (metis A1 A2 A3 A4 A5 B01 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
+        obtain x2 t where B8:"x2 \<in> f" and B9:"t \<in> h" and B10:"(Inf R X {x2,t},z)\<in>R"
+          by (metis A1 A2 A3 A4 A6 B01 B4 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
+        then obtain B11:"x1 \<in> X" and B12:"y \<in> X" and B13:"x2 \<in> X" and B14:"t \<in> X"
+          by (meson A4 A5 A6 B5 B6 filters_on_iff is_filterD1 subsetD)
+        then obtain B15:"Sup R X {x1,Inf R X {x2,t}}\<in>f"
+          by (meson A1 A3 A4 B01 B5 bsup_ge1 filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssupD4)
+        then obtain B16:"Sup R X {y,x2}\<in>f"
+          by (meson A1 A3 A4 B01 B12 B13 B8 bsup_ge2 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
+        then obtain B17:"Sup R X {y,t} \<in> g"
+          by (meson A1 A3 A5 B01 B12 B14 B6 bsup_ge1 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
+        then obtain B18:"Sup R X {y, t} \<in> h"
+          by (meson A1 A3 A6 B01 B12 B14 B9 bsup_ge2 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
         have B19:"Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}} \<in> f"
-          by (simp add: B10)
-        have B20:"Sup R X {y, t} \<in> Inf ?R ?F {g, h}"
-          by (simp add: A1 A2 A3 A5 A6 B01 B8 B9 filters_lattice_inf_op)
-        have B21:"z \<in> binary_filter_sup R X f ?igh"
-          by (meson A1 A2 A3 A4 A5 B02 B18 B19 B20 B3 filterD21 filter_bsup_mem_iff filters_is_clr1 filters_on_iff lattD42 powrel6 ssupD4)
-        have B22:" binary_filter_sup R X f ?igh = Sup ?R ?F {f, ?igh}"
-          by (metis A1 A2 A3 A4 A5 A6 B01 filters_lattice_inf filters_lattice_inf_op filters_on_iff filters_on_lattice_bsup8 is_supE1)
-        show "z \<in> Sup ?R ?F {f, ?igh}"
-          using B21 B22 by blast
-   qed
-   have B23:"Inf ?R ?F {?sfg, ?sfh} \<subseteq> X"  by (meson A4 A5 A6 B02 distrib_sup_le filters_is_clr1 powrel6 powrel7 pwr_mem_iff)
-   have B24:"Sup ?R ?F {f, ?igh} \<subseteq> X"  by (meson A4 A5 A6 B02 B23 distrib_sup_le dual_order.trans filters_is_clr1 powrel6 powrel7 pwr_memD)
-   show "(Inf ?R ?F {?sfg, ?sfh}, Sup ?R ?F {f, ?igh}) \<in> ?R" by (simp add: B24 D0 pwr_mem_iff) 
-  qed
-  have P:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
-    using B1
-    by blast
-  show ?thesis
-    by (smt (verit) B02 B1 distrib_sup_le distributive_lattice_def filters_is_clr1 powrel6 powrel7 powrel8 subset_antisym)
+          using A1 A4 B01 B15 B16 filter_inf_closed2 filters_on_iff lattD4 by fastforce
+        have B20:"Inf R X {Sup R X {y, x2}, Sup R X {y, t}} = Sup R X {y, Inf R X {x2, t}}"
+          by (simp add: A0 B12 B13 B14 distr_latticeD1)
+        then obtain B21:
+        "Inf R X {Sup R X {x1, Inf R X {x2, t}}, Inf R X {Sup R X {y, x2}, Sup R X {y, t}}} =  
+                        Inf R X {Sup R X {x1, Inf R X {x2, t}},  Sup R X {y, Inf R X {x2, t}}}"
+          by simp
+        have B22:"... = Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}"
+          by (metis A0 A1 B01 B11 B12 B13 B14 distr_latticeD2 is_supD1 lattD31)
+        obtain B23:"Inf R X {x1,y}\<in>X" and B24:"Inf R X {x2,t}\<in>X" and B25:"Inf R X {x2,t}\<in>X" and 
+               B26:"Sup R X {y,x2}\<in>X" and B27:"Sup R X {y,t}\<in>X"
+               by (meson A1 B01 B11 B12 B13 B14 is_supD1 lattD31 lattD42 ssupD4)
+        have B28:"Sup R X {Inf R X {x1, y}, Inf R X {x2, t}} = 
+                  Inf R X {Sup R X {x1, Inf R X {x2, t}}, Inf R X {Sup R X {y, x2}, Sup R X {y, t}}} "
+                  by (simp add: B22 B21)
+        have B29:"... =  Inf R X {Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}}, Sup R X {y, t}}"
+          using binf_assoc2 latt_iff ssupD4 A1 A3 B01 B11 B25 B26 B27 by metis
+        obtain B30:"(Inf R X {x1, y},z)\<in>R" and B31:"(Inf R X {x2,t},z)\<in>R" and B32:"z \<in> X"
+          by (metis A1 A2 A3 A4 A6 B01 B10 B4 B7 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
+        have B33:"(Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}, z)\<in>R"
+          by (simp add: A1 A2 A3 B01 B23 B25 B31 B32 B7 leq_sup) 
+        have B34:"(Inf R X {Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}}, Sup R X {y, t}},z)\<in>R"
+          using B21 B22 B29 B33 by presburger
+        have B35:"Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}} \<in> f"
+          using B19 by blast
+        have B36:"Sup R X {y, t} \<in> Inf ?R ?F {g, h}"
+          by (simp add: A1 A2 A3 A5 A6 B01 B17 B18 lattice_filters_isl7)
+        have B37:"z \<in> binary_filter_sup R X f ?igh"
+          by (meson B32 B34 B35 B36 filter_bsup_memI1)
+        have B38:" binary_filter_sup R X f ?igh = Sup ?R ?F {f, ?igh}"
+          by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filters_on_iff is_supD1 lattice_filters_isl1 lattice_filters_isl7)
+        then show "z \<in> Sup ?R ?F {f, ?igh}"
+          using B37 by presburger 
+       qed
+      have B39:"Inf ?R ?F {?sfg, ?sfh} \<subseteq> X"
+        by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup7 filters_on_iff inf.coboundedI1 is_filterD1 lattice_filters_isl7)
+      have B40:"Sup ?R ?F {f, ?igh} \<subseteq> X"
+        by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup6 filters_on_iff lattice_filters_isl0 lattice_filters_isl7)  
+      show "(Inf ?R ?F {?sfg, ?sfh}, Sup ?R ?F {f, ?igh}) \<in> ?R"
+        by (simp add: B40 D0 pwr_memI) 
+    qed
+    have P:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
+      using B1 by blast
+    show "distributive_lattice ?R ?F"
+    proof(rule distr_latticeI1)
+      show "ord ?R ?F"
+        by (meson PowI filters_on_iff is_filterD1 powrel6 powrel7 subsetI)
+      show "refl ?R ?F"
+        by (simp add: filters_on_iff is_filterD1 pwr_memI refl_def)
+      show " is_lattice ?R ?F"
+        using B02 by blast
+      show "\<And>x y z. \<lbrakk>x \<in> ?F; y \<in> ?F; z \<in> ?F\<rbrakk> \<Longrightarrow>  (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
+        using P by blast
+    qed
 qed
 (*
 TODO:  the converse: first prove some lemmas about sublattices and inheritance then specify
@@ -3420,9 +3530,17 @@ lemma sup_primeI1:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; Sup R X {a, b} \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A)) \<Longrightarrow> sup_prime R X A"
   by (simp add:sup_prime_def)
 
+lemma sup_primeI2:
+  "(\<And>a b. \<lbrakk>a \<in> X;b \<in> X; Sup R X {a, b} \<in> A;  a \<notin> A\<rbrakk> \<Longrightarrow> b \<in> A) \<Longrightarrow> sup_prime R X A"
+  using sup_prime_def by blast
+
 lemma inf_primeI1:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; Inf R X {a, b} \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A)) \<Longrightarrow> inf_prime R X A"
   by (simp add:sup_prime_def Sup_def)
+
+lemma inf_primeI2:
+  "(\<And>a b. \<lbrakk>a \<in> X;b \<in> X; Inf R X {a, b} \<in> A;  a \<notin> A\<rbrakk> \<Longrightarrow> b \<in> A) \<Longrightarrow> inf_prime R X A"
+  by (meson inf_primeI1)
 
 lemma elem_sup_primeD1:
   "\<lbrakk>elem_sup_prime R X x; a \<in> X; b \<in> X; (x, Sup R X {a, b})\<in>R\<rbrakk> \<Longrightarrow> ((x, a)\<in>R \<or> (x, b)\<in>R)"
@@ -3441,20 +3559,26 @@ lemma elem_inf_primeI1:
   by (simp add:elem_sup_prime_def Sup_def)
 
 lemma elem_sup_primeE1:
-  "\<lbrakk>x \<in> X; elem_sup_prime R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lorc R X x)"
-  by (metis elem_sup_prime_def lorcD12 lorcI1 sup_prime_def)       
+  "\<lbrakk>x \<in> X; elem_sup_prime R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X x)"
+  by (metis elem_sup_prime_def lcroD1 lcroI1 sup_prime_def)       
 
 lemma elem_inf_primeE1:
-  "\<lbrakk>x \<in> X; elem_inf_prime R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc (converse R) X x)"
+  "\<lbrakk>x \<in> X; elem_inf_prime R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc R X x)"
   by (simp add: elem_sup_primeE1)
 
 lemma elem_sup_primeI2:
-  "\<lbrakk>x \<in> X;sup_prime R X  (lorc R X x);refl R X; trans R X; antisym R X; is_sup_semilattice R X\<rbrakk> \<Longrightarrow> elem_sup_prime R X x"
-  by (metis elem_sup_prime_def lorcD12 lorcI1 ssupD4 sup_prime_def)
+  assumes A0:"x\<in>X" and A1:"sup_prime R X (lcro R X x)" and A2:"pord R X" and A3:"is_sup_semilattice R X"
+  shows "elem_sup_prime R X x "
+  proof(rule elem_sup_primeI1)
+    fix a b assume A4:"a \<in> X" and A5:"b \<in> X" and A6:"(x, Sup R X {a, b})\<in>R" 
+    show "(x, a) \<in> R \<or> (x, b) \<in> R"
+    by (metis A1 A2 A3 A4 A5 A6 is_supD1 lcroD1 lcroI1 ssupD3 sup_primeD1)
+qed
 
 lemma elem_inf_primeI2:
-  "\<lbrakk>x \<in> X; inf_prime R X (lorc (converse R) X x);refl R X; trans R X; antisym R X; is_inf_semilattice R X\<rbrakk> \<Longrightarrow> elem_inf_prime R X x"
-  by (simp add: elem_sup_primeI2 is_sup_semilattice_def refl_def)
+  assumes A0:"x\<in>X" and A1:"inf_prime R X (lorc R X x)" and A2:"pord R X" and A3:"is_inf_semilattice R X"
+  shows "elem_inf_prime R X x"
+  by (simp add: A0 A1 A2 A3 elem_sup_primeI2 is_sup_semilattice_def refl_iff)
 
 lemma fin_sup_irrD1:
   "\<lbrakk>fin_sup_irr R X x; a \<in> X; b \<in> X; x=Sup R X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
@@ -3473,36 +3597,44 @@ lemma fin_inf_irrI1:
   by (simp add: fin_sup_irr_def Sup_def)
 
 lemma fin_sup_irrE1:
-  "\<lbrakk>antisym R X; trans R X; refl R X; distributive_lattice R X; x \<in> X; elem_sup_prime R X x\<rbrakk> \<Longrightarrow> fin_sup_irr R X x"
-  by (metis antisym_onD binary_supD31 binary_supD32 distributive_lattice_def elem_sup_prime_def fin_sup_irr_def lattD42 reflD1 ssupD3)
+  assumes A0:"pord R X" and A1:"distributive_lattice R X" and A2:"x\<in>X" and A3:"elem_sup_prime R X x"
+  shows "fin_sup_irr R X x"
+proof(rule fin_sup_irrI1)
+  fix a b assume A4:"a\<in>X" and A5:"b\<in>X"  and A6:"x = Sup R X {a, b}" 
+  show "x = a \<or> x = b"
+  by (metis A0 A1 A2 A3 A4 A5 A6 antisym_onD bsup_ge1 bsup_ge2 distr_latticeD5 elem_sup_prime_def latt_iff)
+qed
 
 
 lemma fin_inf_irrE1:
-  "\<lbrakk>antisym R X; trans R X; refl R X;distributive_lattice R X; x \<in> X; elem_inf_prime R X x\<rbrakk> \<Longrightarrow> fin_inf_irr R X x"
-  by (smt (verit, del_insts) bsup_ge1 bsup_ge2 distr_latticeD5 elem_inf_primeD1 fin_inf_irrI1 lattD42 lattice_absorb12 lattice_absorb13 refl_def)
+  assumes A0:"pord R X" and A1:"distributive_lattice R X" and A2:"x\<in>X" and A3:"elem_inf_prime R X x"
+  shows "fin_inf_irr R X x"
+proof(rule fin_inf_irrI1)
+  fix a b assume A4:"a\<in>X" and A5:"b\<in>X"  and A6:"x = Inf R X {a, b}" 
+  show "x = a \<or> x = b"
+  by (metis A0 A1 A2 A3 A4 A5 A6 antisym_onD binf_le1 binf_le2 distr_latticeD5 elem_inf_primeD1 latt_iff reflD2)
+qed
+
 
 
 lemma elem_sup_primeI3:
-  assumes A0:"distributive_lattice R X" and A1:"x \<in> X" and A2: "fin_sup_irr R X x" and A3:"antisym R X" and
-          A4:"trans R X" and A5:"refl R X"
+  assumes A0:"distributive_lattice R X" and A1:"x \<in> X" and A2: "fin_sup_irr R X x" and A3:"pord R X"
   shows "elem_sup_prime R X x"
-proof-
-  have B0:"\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (x,Sup R X {a, b})\<in>R\<rbrakk> \<Longrightarrow> ((x,a)\<in>R \<or> (x, b)\<in>R)"
-  proof-
-    fix a b assume P0:"a \<in> X" and P1:"b \<in> X" and P2:"(x,Sup R X {a,b})\<in>R"
+proof(rule elem_sup_primeI1)
+    fix a b assume A4:"a \<in> X" and A5:"b \<in> X" and A6:"(x, Sup R X {a, b})\<in>R" 
+    obtain B0:"Sup R X {a, b} \<in> X"
+      by (meson A0 A3 A4 A5 distr_latticeD5 is_supD1 lattD32)
     have B1:"x = Inf R X {x, Sup R X {a, b}}"
-      using A0 A1 P0 P1 P2 distributive_lattice_def 
-      by (metis A3 A5 antisym_on_converse binary_supI2 converseI is_supE1 lattD31 lattD32 reflD1 sup_equality)
+      by (metis A0 A1 A3 A6 B0 distr_latticeD5 latt_ge_iff1 lattice_absorb2 reflD2)
     have B2:"... = Sup R X {Inf R X {x, a}, Inf R X {x, b}}"
-      by (simp add: A0 A1 A3 A4 A5 P0 P1 distr_latticeD3)
+      by (simp add: A0 A1 A3 A4 A5 distr_latticeD3)
     have B3:"x = Inf R X {x, a} \<or> x = Inf R X {x, b}"
-      by (metis A0 A1 A2 A3 B1 B2 P0 P1 distr_latticeD5 fin_sup_irr_def is_supE1 lattD31)
-    show "(x,a)\<in>R \<or> (x, b)\<in>R"
-      by (metis A0 A1 A3 B3 P0 P1 binary_supD32 converse.simps distributive_lattice_def lattD31)
-  qed
-  show ?thesis
-    by (simp add: B0 elem_sup_primeI1)
+      by (metis A0 A1 A2 A3 A4 A5 B1 B2 distr_latticeD5 fin_sup_irr_def is_supD1 lattD31)
+    show "(x, a) \<in> R \<or> (x, b) \<in> R"
+      by (metis A0 A1 A3 A4 A5 B3 binf_le2 distr_latticeD5 latt_iff)
 qed
+
+
 
 lemma lattice_dualization:
   "\<lbrakk>is_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> (\<And>R X. \<lbrakk>is_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> P R X) \<Longrightarrow> P (converse R) X "
@@ -3542,68 +3674,88 @@ lemma elem_inf_primeI3:
   shows "elem_inf_prime R X x"  
   using elem_sup_primeI3
   by (metis A0 A1 A2 A3 A4 A5 antisym_on_converse distributive_lattice_dualization trans_on_converse)
-lemma sup_prime_iff:
-  "\<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X; x \<in> X\<rbrakk> \<Longrightarrow> (elem_sup_prime R X x \<longleftrightarrow> fin_sup_irr R X x)"
-  using elem_sup_primeI3 fin_sup_irrE1 by auto
-lemma inf_prime_iff:
-  "\<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X; x \<in> X\<rbrakk> \<Longrightarrow> (elem_inf_prime R X x \<longleftrightarrow> fin_inf_irr R X x)"
-  using elem_inf_primeI3 fin_inf_irrE1 by auto
 
+lemma sup_prime_iff:
+  "\<lbrakk>distributive_lattice R X; pord R X; x \<in> X\<rbrakk> \<Longrightarrow> (elem_sup_prime R X x \<longleftrightarrow> fin_sup_irr R X x)"
+  by (metis elem_sup_primeI3 fin_sup_irrE1)
+
+lemma inf_prime_iff:
+  "\<lbrakk>distributive_lattice R X; pord R X; x \<in> X\<rbrakk> \<Longrightarrow> (elem_inf_prime R X x \<longleftrightarrow> fin_inf_irr R X x)"
+  by (metis elem_inf_primeI3 fin_inf_irrE1)
 
 lemma fin_sup_irrI2:
-  "\<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X;x \<in> X;  sup_prime R X (lorc R X x)\<rbrakk> \<Longrightarrow> fin_sup_irr R X x"
+  "\<lbrakk>distributive_lattice R X;pord R X;x \<in> X;  sup_prime R X (lcro R X x)\<rbrakk> \<Longrightarrow> fin_sup_irr R X x"
   by (simp add: distributive_lattice_def elem_sup_primeI2 fin_sup_irrE1 lattD42)
   
 lemma fin_inf_irrI2:
-  "\<lbrakk>distributive_lattice R X; x \<in> X;  antisym R X; refl R X; trans R X;inf_prime R X (lorc (converse R) X x)\<rbrakk> \<Longrightarrow> fin_inf_irr R X x"
+  "\<lbrakk>distributive_lattice R X; x \<in> X;  antisym R X; refl R X; trans R X;inf_prime R X (lorc R X x)\<rbrakk> \<Longrightarrow> fin_inf_irr R X x"
   by (simp add: distributive_lattice_dualization fin_sup_irrI2)
 
 lemma sup_primeI4:
-  "\<lbrakk>distributive_lattice R X; x \<in> X;  antisym R X; refl R X; trans R X;fin_sup_irr R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lorc R X x)"
+  "\<lbrakk>distributive_lattice R X; x \<in> X; pord R X;fin_sup_irr R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X x)"
   by (simp add: elem_sup_primeE1 elem_sup_primeI3)
 
   lemma inf_primeI4:
-  "\<lbrakk>distributive_lattice R X; x \<in> X;  antisym R X; refl R X; trans R X;fin_inf_irr R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc (converse R) X x)"
+  "\<lbrakk>distributive_lattice R X; x \<in> X;  pord R X;fin_inf_irr R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc R X x)"
   by (simp add: elem_inf_primeE1 elem_inf_primeI3)
 
 lemma sup_prime_pfilterD1:
-  "\<lbrakk>sup_prime R X A; is_pfilter R X A; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup R X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
+  "\<lbrakk>sup_prime R X A; is_pfilter R X A;  pord R X\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup R X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
   by (simp add: sup_prime_def)
 
-lemma sup_prime_pfilterD2:
-  "\<lbrakk>is_lattice R X;  antisym R X; refl R X; trans R X;sup_prime R X A; is_pfilter R X A\<rbrakk> \<Longrightarrow> (\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> A \<or> b \<in> A)\<rbrakk> \<Longrightarrow> (Sup R X {a, b}) \<in> A)"
-  using filter_on_lattice_sup01 is_pfilterD1 lattice_filter_memI  by metis 
-lemma sup_prime_pfilterD3:
-  "\<lbrakk>is_lattice R X;  antisym R X; refl R X; trans R X;sup_prime R X F; is_pfilter R X F\<rbrakk> \<Longrightarrow> (\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))"
-  by(auto simp add:sup_prime_def,meson filterD21 filters_on_lattice_inf02 in_mono)
+lemma sup_prime_pfilterD:
+  assumes lat:"is_lattice R X" and por:"pord R X" and spp:"sup_prime R X F" and pfil:"is_pfilter R X F"
+  shows sup_prime_pfilterD2:"\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> F \<or> b \<in> F)\<rbrakk> \<Longrightarrow> (Sup R X {a, b}) \<in> F" and
+        sup_prime_pfilterD3:"\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F)" and
+        sup_prime_pfilterD4:"\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2;  F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> (F1 \<subseteq> F) \<or> (F2 \<subseteq> F)"
+proof-
+  show P0:"(\<And>a b.  \<lbrakk>a \<in> X; b \<in> X; (a \<in> F \<or> b \<in> F)\<rbrakk> \<Longrightarrow> (Sup R X {a, b}) \<in> F)"
+    by (meson bsup_ge1 bsup_ge2 is_filterD1 is_ord_clE1 is_pfilterD1 lat lattD42 pfil por ssupD4)
+  show P1:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; \<not>(F1 \<subseteq> F); \<not>(F2 \<subseteq> F)\<rbrakk> \<Longrightarrow> \<not>(F1 \<inter> F2 \<subseteq> F))" 
+  proof-
+    fix F1 F2 assume fil1:"is_filter R X F1" and fil2:"is_filter R X F2" and nf1:"\<not>(F1\<subseteq>F)" and nf2:"\<not>(F2 \<subseteq> F)"
+    show "\<not>(F1 \<inter> F2 \<subseteq> F)"
+    proof-
+      obtain f1 f2 where A0:"f1 \<in> F1" and A1:"f1 \<notin> F" and A2:"f2 \<in> F2" and A3:"f2 \<notin> F"
+        using nf1 nf2 by blast
+      obtain B0:"f1 \<in> X" and B1:"f2 \<in> X"
+        using A0 A2 fil1 fil2 is_filterD1 by blast
+      obtain B2:"Sup R X {f1,f2}\<in> F1" and B3:"Sup R X {f1,f2}\<in>F2"
+        by (meson A0 A2 B0 B1 bsup_ge1 bsup_ge2 fil1 fil2 is_filterD1 is_ord_clE1 lat lattD42 por ssupD4)
+      then obtain B4:"Sup R X {f1,f2}\<in> F1 \<inter> F2" by blast
+      obtain B5:"Sup R X {f1,f2}\<notin> F"
+        by (meson A1 A3 B0 B1 spp sup_primeD1)
+      then show "\<not>(F1 \<inter> F2 \<subseteq> F)" using B4 by auto
+    qed
+  qed
+  show P2:"\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2;  F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> (F1 \<subseteq> F) \<or> (F2 \<subseteq> F)"
+    using P1 by blast
+qed
 
-lemma sup_prime_pfilterD4:
-  "\<lbrakk>is_lattice R X;  antisym R X; refl R X; trans R X;sup_prime R X F; is_pfilter R X F; is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F"
-  using sup_prime_pfilterD3 by blast
 
 lemma lorc_sup_filter_subset:
-  "\<lbrakk>is_lattice R X;  antisym R X; refl R X; trans R X; (\<And>F1 F2. \<lbrakk> is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F); is_filter R X F\<rbrakk> \<Longrightarrow>(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (Sup R X {a, b}) \<in> F\<rbrakk>\<Longrightarrow> (a \<in> F \<or> b \<in> F))"
+  assumes lat:"is_lattice R X" and por:"pord R X"  and fil:"is_filter R X F" and
+          spp:"(\<And>F1 F2. \<lbrakk> is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"
+  shows "\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (Sup R X {a, b}) \<in> F\<rbrakk>\<Longrightarrow> (a \<in> F \<or> b \<in> F)" 
 proof-
-  assume A0:"is_lattice R X" and A1:"antisym R X"  and
-         A2:"refl R X" and
-         A3:"trans R X"and
-         A4:"(\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)" and
-         A5:"is_filter R X F" 
-  show "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X; (Sup R X {a, b}) \<in> F\<rbrakk>\<Longrightarrow> (a \<in> F \<or> b \<in> F))"
-  proof-
     fix a b assume A6:"a \<in> X" and A7:"b \<in> X" and A8:"(Sup R X {a, b}) \<in> F" 
-    let ?F1="(lorc R X a)" let ?F2="(lorc R X b)"
+    let ?F1="(lcro R X a)" let ?F2="(lcro R X b)"
     have B1:"?F1 \<inter> ?F2 \<subseteq> F" 
     proof
       fix x assume A9: "x \<in> ?F1 \<inter> ?F2"
-      then obtain B10:"(a, x) \<in> R" and B11:"(b, x) \<in> R" by (simp add:lorc_mem_iff1)
-      then obtain B11:"(Sup R X {a, b}, x) \<in> R"  by (metis A0 A1 A2 A3 A6 A7 A9 IntD1 leq_sup lorcD11) 
-      then show "x \<in> F" using A5 A8 A9 filter_memI lorc_mem_iff2 by fastforce
+      then obtain B10:"(a, x) \<in> R" and B11:"(b, x) \<in> R"
+        by (simp add: lcro_eq_upbd ubd_singleton_mem)
+      then obtain B11:"(Sup R X {a, b}, x) \<in> R"
+        by (metis A6 A7 A9 IntD1 bsup_ge3 lat lattD42 lcroD1 por)  
+      then show "x \<in> F"
+      by (metis A8 A9 Int_iff fil is_filterD1 is_ord_clE1 lcroD1) 
     qed
-    obtain B2:"is_filter R X  ?F1" and B3:"is_filter R X ?F2"     by (simp add: A1 A2 A3 A6 A7 lorc_filter)
-    then obtain B4:"?F1 \<subseteq> F \<or> ?F2 \<subseteq> F"   by (simp add: A4 B1)
-    then show "(a \<in> F \<or> b \<in> F)"  by (meson A2 A6 A7 in_mono lorc_memI1)
-  qed
+    obtain B2:"is_filter R X  ?F1" and B3:"is_filter R X ?F2"
+      by (simp add: A6 A7 lcro_filter por)   
+    then obtain B4:"?F1 \<subseteq> F \<or> ?F2 \<subseteq> F"
+      by (simp add: B1 spp)  
+    then show "(a \<in> F \<or> b \<in> F)"
+      by (meson A6 A7 lcro_memI1 por subsetD)
 qed
 
 
@@ -3622,165 +3774,197 @@ lemma primefilterD1:
   by (simp add: sup_prime_def)
 
 lemma element_filter:
-  assumes A0:"is_lattice R X" and A1:"is_filter R X F" and A2:"a \<in> X" and A3:"refl R X" and
-          A4:"trans R X" and A5:"antisym R X"    
+  assumes A0:"is_lattice R X" and A1:"is_filter R X F" and A2:"a \<in> X" and A3:"pord R X"
   defines "G \<equiv> {x \<in> X. \<exists>y \<in> F. (Inf R X {a, y}, x)\<in>R}"
   shows "is_filter R X G"
-proof-
-  have B0:"G \<subseteq> X" by (simp add: G_def)
-  have B1:"\<And>x1 x2. \<lbrakk>x1 \<in> G; x2 \<in> G\<rbrakk> \<Longrightarrow> Inf R X {x1, x2} \<in> G"
+proof(rule is_filterI1)
+  show P0:"G \<noteq> {}"
   proof-
-    fix x1 x2 assume A6:"x1 \<in> G" and A7:"x2 \<in> G" 
-    obtain B30:"x1 \<in> X" and B31:"x2 \<in> X"   using A6 A7 B0 by blast
-    obtain y1 y2 where B20:"y1 \<in> F" and B21:"(Inf R X {a, y1}, x1)\<in>R" and
-                       B22:"y2 \<in> F" and B23:"(Inf R X {a, y2}, x2)\<in>R"  using A6 A7 G_def by blast
-    obtain B32:"y1 \<in> X" and B33:"y2 \<in> X"      by (metis A1 B20 B22 filterD21)
-    have B3:"Inf R X {y1, y2} \<in> F"  by (meson A0 A1 A5 B20 B22 B32 B33 filter_finf_closed lattD31)
-    obtain B34:"Inf R X {x1, x2} \<in> X" and B35:"Inf R X {a, y1} \<in> X" and B36:"Inf R X {a, y2} \<in> X"   using A2 B30 B31 B32 B33 A0   by (simp add: A5 filter_finf_closed1 filters_max0 latt_iff)
-    have B4:"(Inf R X {Inf R X {a, y1}, Inf R X {a, y2}},Inf R X {x1, x2})\<in>R"
-      using B34 B35 B36 B21 B23 A0  by (meson A5 B30 B31 assms(5) converseD converseI lattD31 sup_ge5 trans_on_converse)
-    have B5:"Inf R X {Inf R X {a, y1}, Inf R X {a, y2}}  = Inf R X {a, Inf R X {y1, y2}}"
-     using inf_semilattice_finf_props5[of R X a y1 y2] A0 B30 lattD41[of R X]  using A2 A3 A4 A5 B32 B33 by fastforce
-    have B6:"(Inf R X {Inf R X {y1, y2}, a},Inf R X {x1, x2})\<in>R"
-      by (metis B4 B5 insert_commute)
-    have B7:"\<exists>y \<in> F. (Inf R X {a, y},Inf R X {x1, x2})\<in>R"
-      using B3 B4 B5 by auto
-    show "Inf R X {x1, x2} \<in> G"
-      using B34 B7 G_def by blast
-  qed
-  have B6:"\<And>x g. \<lbrakk>g \<in> G; x \<in> X; (g, x)\<in>R\<rbrakk> \<Longrightarrow> x \<in> G"
-  proof-
-     fix x g assume A8:"g \<in> G" and A9:"x \<in> X" and A10:"(g,x)\<in>R"
-     obtain y where B60:"y \<in> F" and B61:"(Inf R X {a, y}, g)\<in>R"  using A8 G_def by blast 
-     also obtain B61:"g \<in> X"  and B62:"Inf R X {a, y} \<in> X"  by (meson A0 A1 A2 A5 A8 B0 B60 filterD21 in_mono is_supE1 lattD31) 
-     then have B60:"(Inf R X {a, y}, x) \<in> R" using B61 B62 A4 A9  by (simp add: A10 calculation(2) trans_onD)
-     then show "x \<in> G"
-       using A9 G_def calculation(1) by blast
-  qed
-  
-  have B7:"G \<noteq> {}"
-  proof-
-    obtain f where B70:"f \<in> F"  using A1 filter_ex_elem by blast
-    have B71:"(Inf R X {a, f}, a) \<in>R"
-      by (meson A0 A1 A2 A5 B70 converseD filterD21 insertI1 is_supD1121 lattD31)
+    obtain f where B70:"f \<in> F"
+      using A1 is_filterD1 by fastforce 
+    then obtain B71:"f \<in> X"
+      using A1 is_filterD1 by blast
+    then obtain B71:"(Inf R X {a, f}, a) \<in>R"
+      using A0 A2 A3 binf_le1 lattD31 by fastforce
     then have "a \<in> G"
       using A2 B70 G_def by blast
     then show ?thesis by auto
   qed
-  have B8:"\<And>a b. \<lbrakk>a \<in> G; b \<in> G\<rbrakk> \<Longrightarrow>  (\<exists>c\<in>G. (c,a)\<in>R \<and> (c,b)\<in>R)"
-  proof-
-    fix a b assume A4:" a \<in> G" and A5:"b \<in>G"
-    obtain B90:"Inf R X {a,b}\<in>G" and B91:"(Inf R X {a,b}, a)\<in>R" and B92:"(Inf R X {a,b}, b)\<in>R"
-      by (meson A0 A3 A4 A5 B0 B1 assms(5) assms(6) lattD5 latt_ge_iff2 lattice_absorb1 lattice_absorb14 reflD1 subsetD)
-    show "\<exists>c\<in>G. (c,a)\<in>R \<and> (c,b)\<in>R"
-      using B90 B91 B92 by blast
+  show P1:"G \<subseteq> X"
+    using G_def by fastforce
+  show P2:"is_dir G (dual R)"
+  proof(rule is_dirI1)
+    fix x1 x2 assume A4:"x1 \<in> G" and A5:"x2 \<in> G"
+    obtain B30:"x1 \<in> X" and B31:"x2 \<in> X"
+      using A4 A5 P1 by blast 
+    obtain y1 y2 where B20:"y1 \<in> F" and B21:"(Inf R X {a, y1}, x1)\<in>R" and
+                       B22:"y2 \<in> F" and B23:"(Inf R X {a, y2}, x2)\<in>R"
+                       using A4 A5 G_def by blast 
+    obtain B32:"y1 \<in> X" and B33:"y2 \<in> X"
+      using A1 B20 B22 is_filterD1 by blast    
+    have B3:"Inf R X {y1, y2} \<in> F"
+      using A0 A1 A3 B20 B22 B33 filter_inf_closed2 lattD21 by fastforce  
+    obtain B34:"Inf R X {x1, x2} \<in> X" and B35:"Inf R X {a, y1} \<in> X" and 
+           B36:"Inf R X {a, y2} \<in> X" and B36b:"Inf R X {y1,y2} \<in> X"
+      by (meson A0 A2 A3 B30 B31 B32 B33 is_supD1 lattD31)  
+    have B4:"(Inf R X {Inf R X {a, y1}, Inf R X {a, y2}},Inf R X {x1, x2})\<in>R"
+      by (metis A0 A3 B21 B23 B30 B31 B35 B36 inf_iso latt_iff)
+    have B5:"Inf R X {Inf R X {a, y1}, Inf R X {a, y2}} = Inf R X {a,y1, a,y2}"
+      using semilattice_assoc_inf[of X R a y1 a y2] A0 A2 A3 B32 B33 by (simp add:latt_iff) 
+    have B6:"... = Inf R X {y1, y2,a}"
+      by (simp add: insert_commute)
+    have B7:"... = Inf R X {Inf R X {y1, y2}, a}"
+      using binf_assoc[of X R y1 y2 a] A0 A2 A3 B32 B33 by (simp add:latt_iff) 
+    have B8:"... = Inf R X {a, Inf R X {y1,y2}} "
+      by (simp add: insert_commute)
+    then obtain B9:"Inf R X {Inf R X {a, y1}, Inf R X {a, y2}}  = Inf R X {a, Inf R X {y1, y2}}"
+      by (simp add: B5 B6 B7) 
+    have B10:"(Inf R X {Inf R X {y1, y2}, a},Inf R X {x1, x2})\<in>R"
+      using B4 B5 B6 B7 by force
+    have B11:"\<exists>y \<in> F. (Inf R X {a, y},Inf R X {x1, x2})\<in>R"
+      using B10 B3 B8 by auto
+    have B12:"Inf R X {x1, x2} \<in> G"
+      using B11 B34 G_def by blast
+    then show "\<exists>c\<in>G. (x1, c) \<in> dual R \<and> (x2, c) \<in> dual R"
+      by (metis A0 A3 B30 B31 binf_le1 binf_le2 converse_iff latt_iff)
   qed
-  have B10:"is_dir G (converse R)"
-    by (simp add: B8 is_dirI1)
-  have B11:"is_ord_cl X F R"
-    by (simp add: A1 filterD4)
-  show ?thesis
-    by (simp add: B0 B10 B6 B7 filterI1 is_ord_clI1)
-qed  
-
+  show "is_ord_cl X G R"
+  proof(rule is_ord_clI1)
+     fix x g assume A8:"g \<in> G" and A9:"x \<in> X" and A10:"(g,x)\<in>R"
+     obtain y where B60:"y \<in> F" and B61:"(Inf R X {a, y}, g)\<in>R"  
+        using A8 G_def by blast 
+     obtain B62:"g \<in> X"  and B62:"Inf R X {a, y} \<in> X"
+        by (metis A0 A1 A2 A3 A8 B60 P1 dual_lattice Sup_def antisym_on_converse is_filterD1 lattD42 ssupD4 subsetD)
+     then have B63:"(Inf R X {a, y}, x) \<in> R"
+        by (meson A10 A3 A9 B61 trans_onD)
+     then show "x \<in> G"
+      using A9 B60 G_def by blast
+  qed
+qed
 lemma primefilterI1:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X; is_pfilter R X A; (\<forall>a b. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup R X {a, b}) \<in> A)) \<rbrakk> \<Longrightarrow> sup_prime R X A"
+  "\<lbrakk>is_lattice R X;pord R X; is_pfilter R X A; (\<forall>a b. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup R X {a, b}) \<in> A)) \<rbrakk> \<Longrightarrow> sup_prime R X A"
   by (simp add: sup_prime_def)
 
 lemma primefilter_iff1:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X\<rbrakk> \<Longrightarrow>
+  "\<lbrakk>is_lattice R X; pord R X\<rbrakk> \<Longrightarrow>
    ( sup_prime R X A \<and> is_pfilter R X A) \<longleftrightarrow> (is_pfilter R X A \<and>  (\<forall>a \<in> X. \<forall>b \<in> X. (a \<in> A \<or> b \<in> A) \<longleftrightarrow> ((Sup R X {a, b}) \<in> A)))"
   by (metis sup_primeD1 sup_primeI1 sup_prime_pfilterD2)
 
 lemma prime_filter_iff2:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X\<rbrakk> \<Longrightarrow>
+  "\<lbrakk>is_lattice R X; pord R X\<rbrakk> \<Longrightarrow>
     (sup_prime R X F \<and> is_pfilter R X F)  \<longleftrightarrow>  (is_pfilter R X F \<and> (\<forall>F1 F2. is_filter R X  F1 \<and> is_filter R X  F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis sup_prime_pfilterD3 sup_prime_pfilterI2)
+
 lemma prime_filter_fin_irr1:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X; sup_prime R X F; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; G \<inter> H = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
+  "\<lbrakk>is_lattice R X; pord R X; sup_prime R X F; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; G \<inter> H = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
   by (meson filters_on_iff inf_le1 inf_le2 order_refl subset_antisym sup_prime_pfilterD4)
+
 lemma prime_filter_fin_irr2:
-  "\<lbrakk>is_lattice R X; sup_prime R X F; refl R X; trans R X; antisym R X; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; Inf (pwr X) (filters_on R X) {G, H} = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
-  by (simp add: filters_lattice_inf_op prime_filter_fin_irr1)
+  "\<lbrakk>is_lattice R X; sup_prime R X F; pord R X; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; Inf (pwr X) (filters_on R X) {G, H} = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
+  by (simp add: lattice_filters_isl7 prime_filter_fin_irr1)
 
 lemma prime_filter_irr3:
-  "\<lbrakk>is_lattice R X; sup_prime R X F;refl R X; trans R X; antisym R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> fin_inf_irr (pwr X) (filters_on R X) F"
+  "\<lbrakk>is_lattice R X; sup_prime R X F;pord R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> fin_inf_irr (pwr X) (filters_on R X) F"
   by (metis fin_sup_irr_def prime_filter_fin_irr2 Sup_def)
 
-
 lemma proper_principal_prime:
-  "\<lbrakk>is_pfilter R X (lorc R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow> sup_prime R X (lorc R X a)"
-  by (metis lorcD12 lorcI1 sup_prime_def)
+  "\<lbrakk>is_pfilter R X (lcro R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X a)"
+  by (metis lcroD1 lcroI1 sup_prime_def)
 
 lemma proper_principal_prime2:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X;is_pfilter R X (lorc R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; a = Sup R X {x, y}\<rbrakk> \<Longrightarrow> a =x \<or> a=y)"
-  by (metis ge_sup1 ge_sup2 ge_sup_iff lattD32 lattD42 refl_def ssupD4)
+  "\<lbrakk>is_lattice R X;pord R X;is_pfilter R X (lorc R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; a = Sup R X {x, y}\<rbrakk> \<Longrightarrow> a =x \<or> a=y)"
+  by (metis antisym_onD bsup_ge1 bsup_ge2 lattD42 ssupD4)
 
 lemma proper_principal_fin_irr:
-  "\<lbrakk>is_lattice R X; refl R X; trans R X; antisym R X;is_pfilter R X (lorc R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow>fin_inf_irr (pwr X) (filters_on R X) (lorc R X a)"
+  "\<lbrakk>is_lattice R X; pord R X;is_pfilter R X (lcro R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow>fin_inf_irr (pwr X) (filters_on R X) (lcro R X a)"
   by (simp add: prime_filter_irr3 proper_principal_prime)
 
 lemma fin_irr_filter_prime:
-  "\<lbrakk>distributive_lattice R X;is_pfilter R X F;refl R X; trans R X; antisym R X; fin_inf_irr (pwr X) (filters_on R X) F\<rbrakk> \<Longrightarrow> inf_prime R X F"
-  by (metis distr_latticeD5 filter_on_lattice_sup01 inf_primeI1 is_pfilterD1 lattice_absorb1 reflD1)
+  assumes dis:"distributive_lattice R X" and por:"pord R X" and pfil:"is_pfilter R X F" and
+          fii:"fin_inf_irr (pwr X) (filters_on R X) F"
+  shows "inf_prime R X F"
+proof(rule inf_primeI1)
+  fix a b assume A0:"a\<in>X" and A1:"b\<in>X" and A2:"Inf R X {a, b} \<in> F"
+  obtain lat:"is_lattice R X" using distr_latticeD5 dis by blast
+  obtain glb:"is_inf R X {a,b}(Inf R X {a, b})" using A0 A1 por lat lattD31[of X R a b] by auto
+  show "a \<in> F \<or> b \<in> F" by (meson A0 A2 converse_iff glb insertCI is_filterD1 is_ord_clE1 is_pfilterD1 is_supD1 pfil)
+qed
 
 lemma distr_lattice_maximal_prime:
-  assumes A0:"distributive_lattice R X" and A1:"refl R X" and A2:"trans R X" and A3:"antisym R X" and
-          A4:"is_maximal (pwr X) (pfilters_on R X) F"
+  assumes dis:"distributive_lattice R X" and por:"pord R X" and ult:"is_maximal (pwr X) (pfilters_on R X) F"
   shows "sup_prime R X F"
-proof-
-  have B00:"is_lattice R X"   using A0 distributive_lattice_def by blast
-  have B0:"is_pfilter R X F"   by (meson A4 maximalD1 pfilters_memD0) 
-  have P:"\<And>a b. \<lbrakk>a \<in> X;b \<in> X; Sup R X {a, b} \<in> F;  a \<notin> F\<rbrakk> \<Longrightarrow> b \<in> F"
-  proof-
-    fix a b assume B0A0:"a \<in> X" and B0A1:"b \<in> X" and B0A2:"Sup R X {a,b}\<in>F" and B0A3:"a \<notin>F"
-    let ?sab="Sup R X {a,b}"
-    let ?Fa="binary_filter_sup R X F (lorc R X a)"
-    have B1:"a \<in> ?Fa - F"   by (simp add: A1 A2 A3 B0 B00 B0A0 B0A3 filters_on_lattice_bsup02 is_pfilterD1 lorc_filter lorc_memI1)
-    then have B2:"F \<subset> ?Fa"   by (metis A1 A2 A3 B0 B00 B0A0 B0A3 DiffD1 filters_on_lattice_bsup03 is_pfilterD1 lorc_filter order_less_le)
-    have B3:"?Fa \<notin> pfilters_on R X" using A4 B2 maximal_pfiltersD1 by blast
-    have B4:"?Fa \<in> filters_on R X"   by (simp add: A1 A2 A3 B0 B00 B0A0 filters_on_lattice_bsup4 is_pfilterD1 lorc_filter)
-    have B5:"?Fa = X" by (metis B3 B4 filters_on_iff is_pfilter_def pfilters_memI)
-    have B6:"b \<in> ?Fa"  by (simp add: B0A1 B5)
-    obtain f c where B70:"f \<in>F" and B71:"c \<in> (lorc R X a)" and B72:"(Inf R X {f, c}, b)\<in>R" by (meson A1 A2 A3 B6 binary_filter_sup_obtains)
-    let ?ifc="Inf R X {f, c}" let ?sbf="Sup R X {b,f}" let ?sbc="Sup R X {b,c}"
-    obtain B73:"f \<in> X" and B74:"c \<in> X"     by (metis B2 B5 B70 B71 lorc_mem_iff2 psubsetD) 
-    obtain B75:"?ifc \<in> X" and B76:"Sup R X {b, f} \<in> X" and B77:"Sup R X {b, c} \<in> X"
-      by (meson A3 B00 B0A1 B73 B74 is_supE1 lattD31 lattD42 ssupD4)
-    have B8:"b = Sup R X {b, ?ifc}"
-      by (metis A1 A3 B00 B0A1 B72 B73 B74 ge_sup2 is_supE1 lattD31 reflD1)
-    have B9:"... = Inf R X {?sbf, ?sbc}"
-      by (simp add: A0 B0A1 B73 B74 distr_latticeD1)
-    let ?i_sbf_sbc="Inf R X {Sup R X {b, f}, Sup R X {b, c}}" let ?sba="Sup R X {b, a}"
-    have B90:"?i_sbf_sbc \<in> X"  using B0A1 B8 B9 by auto
-    have B10:"?sbf \<in> F \<and> ?sbc \<in> (lorc R X a) \<and> b = ?i_sbf_sbc"  by (metis A1 A2 A3 B0 B00 B0A0 B0A1 B70 B71 B8 B9 filter_on_lattice_sup01 lorc_filter pfilter_on_lattice_sup01)
-    have B11:"(a, ?sbc) \<in> R"
-      by (meson B10 lorcD12)
-    have B110:"b \<in> X \<and> ?sbf \<in> X \<and> ?sbc \<in> X \<and> c \<in> X \<and> a \<in> X"
-      by (simp add: B0A0 B0A1 B74 B76 B77)
-    let ?s_b_sbf=" Sup R X {b, ?sbf}" let ?s_b_sbc="Sup R X {b, ?sbc}"
-    obtain D0:"?s_b_sbf \<in> X" and D1:"?s_b_sbc \<in> X" and B2:"?sba \<in> X"
-      by (simp add: A3 B00 B110 lattD42 ssupD4)
-    have B111:"(?sbf, ?s_b_sbf)\<in>R"
-      by (meson A3 B00 B110 binary_supD32 is_supE1 lattD32)
-    have B112:"(?sba,?s_b_sbc) \<in>R"
-      by (metis A1 A2 A3 B00 B11 B110 binary_supD31 ge_sup1 lattD32 leq_sup refl_def)
-    have B12:"b = Sup R X {b, Inf R X {?sbf, ?sbc}}"
-      by (metis A1 A3 B0A1 B8 B9 bsup_idem1 reflD1)
-    have B13:"... = Inf R X {?s_b_sbf, ?s_b_sbc}"
-      by (simp add: A0 B0A1 B76 B77 distr_latticeD1)
-    have B14:"(Inf R X {?sbf, ?sba}, Inf R X {?s_b_sbf, ?s_b_sbc}) \<in>R"
-      by (meson A2 A3 B00 B111 B112 B2 B76 D0 D1 converseD converseI lattD31 sup_ge5 trans_on_converse)    
-    have B15:"Inf R X {?sbf, ?sba} \<in> F"
-      by (metis A3 B0 B00 B0A2 B10 \<open>\<And>thesis::bool. (\<lbrakk>(f::'a::type) \<in> (X::'a::type set); (c::'a::type) \<in> X\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> doubleton_eq_iff emptyE filter_finf_closed1 is_pfilterD1 lattD31)
-    have B16:"(Inf R X {?sbf, ?sba}, b)\<in>R"
-      using B12 B13 B14 by presburger
-    show "b \<in> F"
-      by (meson B0 B110 B15 B16 filter_memI is_pfilterD1)
-  qed
-  show ?thesis
-    by (meson P sup_primeI1)
+proof(rule sup_primeI2)
+  fix a b assume A0:"a \<in> X" and A1:"b\<in>X" and A2:"Sup R X {a, b} \<in> F" and  A3:"a \<notin> F"
+  then obtain A4:"Sup R X {a,b}\<in>X" and A5:"lcro R X a \<in> filters_on R X" and A6:"F \<in> pfilters_on R X"
+    by (meson dis distr_latticeD5 filters_on_iff is_supD1 lattD32 lcro_filter maximalD1 por ult)
+  then obtain A7:"is_filter R X F" and A8:"is_filter R X(lcro R X a)"
+    by (simp add: filters_on_iff is_pfilterD1 pfilters_on_iff)
+  obtain A9:"is_lattice R X"
+    by (simp add: dis distr_latticeD5)
+  have dpor:"pord (dual R) X"
+    by (simp add: por refl_dualI)
+  let ?sab="Sup R X {a,b}" let ?Fa="binary_filter_sup R X F (lcro R X a)" let ?upa="lcro R X a"
+  obtain A10:"lcro R X a \<subseteq> ?Fa" and A11:"F \<subseteq> ?Fa" and A12:"is_filter R X ?Fa"
+      using  por A7 A8 A9 filter_on_lattice_bsup2b[of X R F ?upa] filter_on_lattice_bsup2a[of X R F ?upa] 
+            filter_on_lattice_bsup7[of X R F ?upa] by fastforce 
+  obtain B1:"a \<in> ?Fa - F"
+    by (meson A0 A10 A3 DiffI lcro_memI1 por subsetD)
+  then obtain B2:"F \<subset> ?Fa"
+    using A11 by blast 
+  then obtain B3:"?Fa \<notin> pfilters_on R X"
+    by (metis A7 A8 A9 filter_on_lattice_bsup6 maximalD2 por psubset_eq pwr_memI ult) 
+  obtain B4:"?Fa \<in> filters_on R X" and B5:"?Fa = X" and  B6:"b \<in> ?Fa"
+    by (metis A1 A12 B3 filters_on_iff is_pfilter_def pfilters_on_iff) 
+  obtain f c where A13:"f \<in>F" and A14:"c \<in> ?upa" and A15:"(Inf R X {f, c}, b)\<in>R"
+    by (meson B6 filter_bsup_memD1)
+  then obtain A16:"f\<in>X" and A17:"c\<in>X"
+    by (metis B2 B5 lcroD1 psubsetD)
+  let ?ifc="Inf R X {f, c}" let ?sbf="Sup R X {b,f}" let ?sbc="Sup R X {b,c}" let ?sba="Sup R X {b, a}" let ?ifa="Inf R X{f,a}"
+  obtain A18:"?ifc\<in>X"  and A19:"?sbf\<in>X" and A20:"?sbc\<in>X" and A21:"?sba\<in>X" and A21b:"?ifa\<in>X"
+    by (meson A0 A1 A16 A17 A9 is_supD1 lattD31 lattD42 por ssupD4)
+  have B8:"b = Sup R X {b, ?ifc}"
+    by (metis A1 A15 A18 A9 latt_ge_iff2 por reflD2)
+  have B9:"... = Inf R X {?sbf, ?sbc}"
+    by (simp add: A1 A16 A17 dis distr_latticeD1)
+  let ?i_sbf_sbc="Inf R X {?sbf,?sbc}"
+  obtain A22:"?i_sbf_sbc \<in> X"
+    using A1 B8 B9 by presburger 
+  obtain B10a:"?sbf \<in>F"
+    by (meson A1 A13 A16 A19 A7 A9 bsup_ge2 is_filterD1 is_ord_clE1 lattD42 por)
+  obtain B10b:"?sbc \<in>?upa"
+    by (meson A0 A1 A14 A20 A9 bsup_ge2 lattD42 lcroD1 lcroI1 por trans_onD)
+  obtain B10c:"b=?i_sbf_sbc"
+    using B8 B9 by presburger
+  have B11:"(a, ?sbc) \<in> R"
+    by (meson B10b lcroD1)
+  let ?s_b_sbf=" Sup R X {b, ?sbf}" let ?s_b_sbc="Sup R X {b, ?sbc}"
+  obtain A23:"?s_b_sbf \<in> X" and A24:"?s_b_sbc \<in> X"
+    by (meson A1 A19 A20 A9 latt_iff por ssupD4) 
+  have B12:"(?sbf, ?s_b_sbf)\<in>R"
+    by (simp add: A1 A19 A9 bsup_ge2 lattD42 por)
+  have B13:"(?sba,?s_b_sbc) \<in>R"
+    by (meson A0 A1 A20 A9 B11 lattD42 por reflD2 sup_iso)
+  have B14:"b = Sup R X {b, ?i_sbf_sbc}"
+    using A1 B10c por sup_singleton2 by fastforce
+  have B15:"... = Inf R X {?s_b_sbf, ?s_b_sbc}"
+    by (simp add: A1 A19 A20 dis distr_latticeD1)
+  let ?ib="Inf R X {?s_b_sbf, ?s_b_sbc}"
+  obtain A25:"b=?ib"
+    using B14 B15 by presburger
+  let ?i_sbf_sba="Inf R X {?sbf, ?sba}"
+  have A26:"?i_sbf_sba \<in>X" using A19 A21 A9 por is_supD1 by (metis lattD31)
+  have B16:"?i_sbf_sba=Sup R X {b,?ifa}"
+    by (simp add: A0 A1 A16 dis distr_latticeD1)
+  have B17:"(Inf R X {?sbf, ?sba}, Inf R X {?s_b_sbf, ?s_b_sbc}) \<in>R"
+    by (metis A1 A17 A25 A9 B13 B14 B8 B9 \<open>\<And>thesis::bool. (\<lbrakk>PosetsRel2.Inf (R::('a::type \<times> 'a::type) set) (X::'a::type set) {f::'a::type, c::'a::type} \<in> X; PosetsRel2.Sup R X {b::'a::type, f} \<in> X; PosetsRel2.Sup R X {b, c} \<in> X; PosetsRel2.Sup R X {b, a::'a::type} \<in> X; PosetsRel2.Inf R X {f, a} \<in> X\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> bsup_assoc2 inf_iso latt_iff por refl_def)
+  have B18:"Inf R X {?sbf, ?sba} \<in> F"
+    by (smt (verit, del_insts) A2 A7 A9 B10a filter_inf_closed2 insert_commute latt_iff por)
+  have B19:"(Inf R X {?sbf, ?sba}, b)\<in>R"
+    using A25 B17 by presburger
+  then show "b \<in> F"
+    by (meson A1 A7 B18 is_filterD1 is_ord_clE1)
 qed
+
 
 
 lemma sinfD4:
