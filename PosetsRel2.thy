@@ -5108,6 +5108,7 @@ proof-
   have B6:"(Inf R X ?A,Inf R X A)\<in>R"   
     by (simp add: A0 A1 A2 B2 inf_anti1) 
   have B7:"(Inf R X ?A, m)\<in>R"
+    by (smt (verit) A0 A1 A2 Pow_ne_iff \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> converseD inf_anti1 inf_equality is_supD1 mem_Collect_eq subsetD subsetI)
   show "is_inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} m"
     by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 B5 B7 antisym_onD cinfD4 clatD2 clatD32)
 qed
@@ -5132,22 +5133,36 @@ lemma mirred_temp1:
 proof-
   let ?Q="{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
   have B0:"?Q \<subseteq> X" by simp
-  obtain j where B1:"is_sup R X D j" by (meson A0 A12 A13 A9 B0 clatD21 dual_order.trans)
-  have B2:"j \<in> X" using B1 is_supE1 by fastforce 
-  have B3:"\<forall>d. d \<in> D \<longrightarrow> (a,d)\<in>R"   using A9 by blast
-  have B4:"a \<in> lbd R X D"  by (simp add: A2 B3 ubdI)
-  have B5:"(a, j)\<in>R"  by (smt (verit, ccfv_threshold) A11 A13 A2 A9 B1 B2 is_supE2 mem_Collect_eq ne_subset_ne subset_iff trans_on_def ub_def)
+  obtain j where B1:"is_sup R X D j" 
+    by (meson A0 A12 A13 A9 B0 clatD21 dual_order.trans)
+  have B2:"j \<in> X"
+    by (meson B1 is_supD1) 
+  have B3:"\<forall>d. d \<in> D \<longrightarrow> (a,d)\<in>R"   
+    using A9 by blast
+  have B4:"a \<in> lbd R X D"  
+    by (simp add: A2 B3 ubdI)
+  have B5:"(a, j)\<in>R"
+    by (meson A11 A13 A2 A9 B0 B1 B3 bot.extremum_uniqueI is_supD1 subset_eq trans_onD) 
   have B6:"\<not> ((k,j)\<in>R)"
   proof(rule ccontr)
-    assume P0:"\<not>(\<not> ((k,j)\<in>R))" obtain P1:"(k,j)\<in>R"  using P0 by auto
-    have B7:"(k,Sup R X D)\<in>R"   using B1 P1 sup_equality A12 by fastforce
-    have B8:"D \<in> Pow_ne X" by (meson A11 A9 B0 pow_neI subset_trans)
-    have B9:"is_sup_semilattice R X"    by (simp add: A0 clatD1 csup_fsup)
-    obtain d where B10:"d \<in> D \<and> (k,d)\<in>R" using ccompact0   using A10 A5 B7 B8 B9    by (metis A12 A13 A14)
-    show False   using A9 B10 by blast
+    assume P0:"\<not>(\<not> ((k,j)\<in>R))" 
+    obtain P1:"(k,j)\<in>R"  
+      using P0 by auto
+    have B7:"(k,Sup R X D)\<in>R"   
+        using B1 P1 sup_equality A12 by fastforce
+    have B8:"D \<in> Pow_ne X"
+      using A11 A9 by blast 
+    have B9:"is_sup_semilattice R X"   
+       by (simp add: A0 clatD1 csup_fsup)
+    obtain d where B10:"d \<in> D \<and> (k,d)\<in>R"
+      by (meson A10 A12 A13 A14 A5 B7 B8 B9 compactD3)
+    show False   
+      using A9 B10 by blast
   qed
-  have B11:"j \<in> ?Q"   by (simp add: B2 B5 B6)
-  show "Sup R X D \<in> ?Q"using B1 B11 sup_equality using A12 by fastforce
+  have B11:"j \<in> ?Q"   
+    by (simp add: B2 B5 B6)
+  show "Sup R X D \<in> ?Q" 
+    using B1 B11 sup_equality using A12 by fastforce
 qed
 
 lemma mirred_temp2b:
@@ -5176,23 +5191,31 @@ proof-
     show "\<exists>u\<in> ?Q. \<forall>q\<in>C. (q, u)\<in>R"
       proof(cases "C = {}")
         case True
-        then show ?thesis  using A2 A7   using A10 reflE1 by force
+        then show ?thesis  
+          using A2 A7 A10 reflE1 by force
       next
         case False
         have B3:"C \<noteq> {}"   by (simp add: False)
         have B4:"\<And>x y. x \<in> C \<and> y \<in> C \<longrightarrow> (\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"
         proof
           fix x y assume A10:"x \<in> C \<and>  y \<in> C"
-          have B1:"(x, y) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q \<or> (y, x) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q" using Chains_def[of " relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q"] A8 A10 by auto
-          have B2:"(x, y)\<in>R \<or> (y, x)\<in>R" using B1  relation_of_def[of "((\<lambda>x y. (x, y) \<in> R))" "?Q"] by blast
-          show "(\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"  using A10 B2    by (meson B0 assms(11) reflE1 subset_iff) 
+          have B1:"(x, y) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q \<or> (y, x) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q" 
+            using Chains_def[of " relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q"] A8 A10 by auto
+          have B2:"(x, y)\<in>R \<or> (y, x)\<in>R" 
+              using B1 relation_of_def[of "((\<lambda>x y. (x, y) \<in> R))" "?Q"] by blast
+          show "(\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"  
+            using A10 B2 by (meson B0 assms(11) reflE1 subset_iff) 
         qed
-        have B5:"is_dir C R" by (simp add: B4 is_dirI1)
-        have B6:"C \<subseteq> ?Q"    using A8 Chains_relation_of by blast
-        have B7:"Sup R X C \<in> ?Q" using A0 A1 A2 A3 A4 A5 A6 A7 B3 B5 B6  mirred_temp1[of R X a b k C]     using A10 A9 assms(9) by fastforce 
+        have B5:"is_dir C R" 
+          by (simp add: B4 is_dirI1)
+        have B6:"C \<subseteq> ?Q"   
+           using A8 Chains_relation_of by blast
+        have B7:"Sup R X C \<in> ?Q"
+           using A0 A1 A2 A3 A4 A5 A6 A7 B3 B5 B6  mirred_temp1[of R X a b k C]  A10 A9 assms(9) by fastforce 
         have B8:"\<forall>c  \<in> C. (c, Sup R X C)\<in>R"
-          by (meson A0 A9 B0 False assms(9) clatD41 is_supD1121)  
-        then show ?thesis    using B7 by blast 
+          by (meson A0 A9 B0 False assms(9) clatD41 is_supD1)  
+        then show ?thesis   
+           using B7 by blast 
     qed
   qed
 qed
