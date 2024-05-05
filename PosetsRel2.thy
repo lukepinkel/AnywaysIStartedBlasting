@@ -5237,20 +5237,30 @@ lemma mirred_temp2c:
 proof(rule ccontr)
   let ?Q="{q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}"
   assume P:"\<not>\<not>(meet_reducible R X m)"
-  obtain P1:"meet_reducible R X m"  using P by auto
+  obtain P1:"meet_reducible R X m"  
+    using P by auto
   have B0:"\<And>x. x \<in> X \<and> (m, x)\<in>R \<and> (m \<noteq> x) \<longrightarrow> (k,x)\<in>R"
   proof
     fix x assume A9: "x \<in> X \<and> (m, x)\<in>R \<and> (m \<noteq> x)"
-    have B01:"x \<notin> ?Q" using A8 A9 nless_le by blast 
-    have B02:"(a, x) \<in> R"  using A8 A9  by (metis (mono_tags, lifting) A10 A2 mem_Collect_eq trans_onD) 
-    show "(k,x)\<in>R" using A9 B01 B02 by blast
+    have B01:"x \<notin> ?Q" 
+      using A8 A9 nless_le by blast 
+    have B02:"(a, x) \<in> R"  
+       using A8 A9  by (metis (mono_tags, lifting) A10 A2 mem_Collect_eq trans_onD) 
+    show "(k,x)\<in>R" 
+       using A9 B01 B02 by blast
   qed
-  have B1:"m=Inf R X {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)}"  using A0 A8 P meet_reduction2  A10 A11 A9 by fastforce 
-  have B2:"k \<in> lbd R X {x \<in> X.(m,x)\<in>R \<and> (m \<noteq> x)}"   by (metis (mono_tags, lifting) A5 B0 compactD2 converseI mem_Collect_eq ubdI) 
-  obtain B20:"m \<in> X"   using A8 by blast 
-  obtain B21:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"  by (simp add: A0 A10 A11 A9 B20 P1 meet_reduction3)
-  have B3:"(k, m)\<in>R"  using B2 B21 is_supE3 by fastforce 
-  show False  using A8 B3 by blast
+  have B1:"m=Inf R X {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)}"  
+      using A0 A8 P meet_reduction2  A10 A11 A9 by fastforce 
+  have B2:"k \<in> lbd R X {x \<in> X.(m,x)\<in>R \<and> (m \<noteq> x)}"   
+      by (metis (mono_tags, lifting) A5 B0 compactD2 converseI mem_Collect_eq ubdI) 
+  obtain B20:"m \<in> X"   
+     using A8 by blast 
+  obtain B21:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m" 
+       by (simp add: A0 A10 A11 A9 B20 P1 meet_reduction3)
+  have B3:"(k, m)\<in>R"
+    by (meson B2 B21 converseD is_supD2)  
+  show False 
+     using A8 B3 by blast
 qed
 
 lemma mirred_temp2d:
@@ -5264,11 +5274,16 @@ lemma mirred_temp2d:
           A7:"refl R X" 
   obtains m where "m \<in> X" "meet_irr R X m" "(a, m)\<in>R" "\<not> ((b, m)\<in>R)"
 proof-
-  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)"  using A0 A1 A2 A3 A4 compactly_generated_meets by (metis A5 A6 A7)
-  have B0b:"is_compact R X k" using B0 compact_elements_mem_iff1   by fastforce
-  obtain m where B3:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> (\<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of R X a b k]  A5 A6 A7 by blast
-  have B4:"\<not>(meet_reducible R X m)" using mirred_temp2c[of R X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3 A5 A6 A7 by blast
-  show ?thesis  using B1 B3 B4   by (metis (mono_tags, lifting) A3 A6 B0b compactD2 mem_Collect_eq that trans_onD) 
+  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)" 
+     using A0 A1 A2 A3 A4 compactly_generated_meets by (metis A5 A6 A7)
+  have B0b:"is_compact R X k" 
+    using B0 compact_elements_mem_iff1   by fastforce
+  obtain m where B3:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> (\<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" 
+    using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of R X a b k]  A5 A6 A7 by blast
+  have B4:"\<not>(meet_reducible R X m)" 
+    using mirred_temp2c[of R X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3 A5 A6 A7 by blast
+  show ?thesis  using B1 B3 B4  
+     by (metis (mono_tags, lifting) A3 A6 B0b compactD2 mem_Collect_eq that trans_onD) 
 qed
 
 lemma mirred_temp3:
@@ -5281,27 +5296,37 @@ lemma mirred_temp3:
   shows "a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
 proof-
   let ?M="{m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}" 
-  obtain top where top:"is_greatest R X top" using A0 clatD1 csupD3 by blast
-  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}" by (metis (no_types, lifting) A2 A3 empty_iff greatestD11 greatestD14 mem_Collect_eq mredD2 subsetI top) 
-  obtain b where idef:"is_inf R X ?M b"  using A0 B0 clatD22  A3 A4 by blast 
-  have B4:"(a, b)\<in>R"  using A2 idef is_supE4 ub_def   by (metis (no_types, lifting) converseD converseI mem_Collect_eq) 
+  obtain top where top:"is_greatest R X top"
+     using A0 clatD1 csupD3 by blast
+  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}" 
+    by (metis (no_types, lifting) A2 A3 empty_iff greatestD  mem_Collect_eq mredD2 subsetI top) 
+  obtain b where idef:"is_inf R X ?M b"  
+    using A0 B0 clatD22  A3 A4 by blast 
+  have B4:"(a, b)\<in>R"
+    using A2 idef is_supD1 by force 
   have B5: "\<not>((a,b)\<in>R \<and> a \<noteq> b)"
   proof(rule ccontr)
-    assume B5dneg:"\<not> \<not> ((a,b)\<in>R \<and> a \<noteq> b)" obtain B5neg:"(a,b)\<in>R \<and> a \<noteq> b"  using B5dneg by auto
-    obtain m where B50:"m \<in> X" and B51:"meet_irr R X m" and  B52:"(a, m)\<in>R" and B53:"\<not> ((b, m)\<in>R)"   by (meson A0 A1 A2 A3 A4 A5 B5neg antisym_onD idef is_supE1 mirred_temp2d) 
-    have B54:"m \<in> ?M"   by (simp add: B50 B51 B52)
-    have B55:"(b, m)\<in>R"   using B54 idef is_supD1121 by fastforce 
+    assume B5dneg:"\<not> \<not> ((a,b)\<in>R \<and> a \<noteq> b)" obtain B5neg:"(a,b)\<in>R \<and> a \<noteq> b"  
+      using B5dneg by auto
+    obtain m where B50:"m \<in> X" and B51:"meet_irr R X m" and  B52:"(a, m)\<in>R" and B53:"\<not> ((b, m)\<in>R)"   
+      by (meson A0 A1 A2 A3 A4 A5 B5neg antisym_onD idef is_supD1 mirred_temp2d) 
+    have B54:"m \<in> ?M"   
+      by (simp add: B50 B51 B52)
+    have B55:"(b, m)\<in>R"   
+      using B54 idef is_supD1 by fastforce 
     show False
       using B53 B55 by auto
   qed
-  have "a = b"  using B4 B5 nless_le by blast
-  show ?thesis  using A3 B4 B5 idef inf_equality by fastforce
+  have "a = b"  
+    using B4 B5 nless_le by blast
+  show ?thesis  
+    using A3 B4 B5 idef inf_equality by fastforce
 qed
 
 lemma lattice_equality_sup:
   assumes A0:"is_lattice R X" and A1:" antisym R X"  and A2:"trans R X" and A3:"refl R X" and A4:"F \<subseteq>X" and A5:"finite F" and A6:"F \<noteq> {}" and A7:"Sup R X F = s"
   shows "is_sup R X F s"
-  using A0 A1 A2 A4 A5 A6 A7 bsup_finite2 lattD4 by blast
+  by (metis A0 A1 A2 A4 A5 A6 A7 Fpow_ne_iff lattD42 sup_semilattice_fsup)
 
 lemma lattice_equality_inf:
   assumes A0:"is_lattice R X" and A1:" antisym R X"  and A2:"trans R X" and A3:"refl R X" and A4:"F \<subseteq>X" and A5:"finite F" and A6:"F \<noteq> {}" and A7:"Inf R X F = i"
@@ -5315,18 +5340,25 @@ proof-
   have B0:"\<And>a b. a \<in> X \<and> b \<in> X \<and>  m = Inf R X {a, b} \<longrightarrow> m = a \<or> m = b"
   proof
     fix a b assume A6:" a \<in> X \<and> b \<in> X \<and>  m = Inf R X {a, b} "
-    have B1:" {a, b} \<in> Pow_ne X"   by (simp add: A6 pow_ne_iff2)
-    have B10:"{a, b} \<subseteq> X"  using B1 pow_neD1 by blast
-    have B11:"finite {a, b}" by simp
-    have B12:"{a,b} \<noteq> {}" by auto
-    have B2:"is_inf R X {a, b} m" using lattice_equality_inf[of R X "{a,b}" m]   by (simp add: A1 A2 A3 A4 A6)
-    have B3:"m \<in> {a, b}"    by (metis A5 B1 B2 mredI1) 
-    show "m = a \<or> m = b"  using B3 by fastforce
+    have B1:" {a, b} \<in> Pow_ne X"
+      by (simp add: A6)  
+    have B10:"{a, b} \<subseteq> X"  
+      using B1 by blast
+    have B11:"finite {a, b}" 
+      by simp
+    have B12:"{a,b} \<noteq> {}" 
+      by auto
+    have B2:"is_inf R X {a, b} m" 
+      using lattice_equality_inf[of R X "{a,b}" m]   by (simp add: A1 A2 A3 A4 A6)
+    have B3:"m \<in> {a, b}"   
+       by (metis A5 B1 B2 mredI1) 
+    show "m = a \<or> m = b"  
+      using B3 by fastforce
   qed
   show "fin_inf_irr R X m"
     by (meson B0 fin_inf_irrI1)
 qed
-
+(*
 lemma pfilters_metofprimes:
   assumes A0:"distributive_lattice R X" and 
           A1:"is_greatest R X top" and
@@ -5337,12 +5369,18 @@ lemma pfilters_metofprimes:
   obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " and "F = Inf (pwr X) (filters_on R X) M"
 proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have B0:"compactly_generated ?RX ?FX"  using A0 A1 A3 A4 A5  distr_latticeD5 filters_on_lattice_compactgen lattD1 by metis
-  have B1:"is_clattice ?RX ?FX"  using A0 A1 A3 A4 A5  distr_latticeD5 lattice_filters_complete by metis
-  have B2:"F \<in> ?FX" by (simp add: A2 filters_on_iff pfilters_memD1)
-  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (meson filters_is_clr1 powrel3 powrel6 powrel7 refl_def refl_onD subset_iff)
-  have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  by fastforce
-  then show ?thesis  using B3 that by blast
+  have B0:"compactly_generated ?RX ?FX" 
+    using A0 A1 A3 A4 A5  distr_latticeD5 filters_on_lattice_compactgen by metis
+  have B1:"is_clattice ?RX ?FX" 
+     using A0 A1 A3 A4 A5  distr_latticeD5 lattice_filters_complete by metis
+  have B2:"F \<in> ?FX"
+    using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast
+  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
+    using mirred_temp3[of ?RX ?FX F] B0 B1 B2
+  have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  
+    by fastforce
+  then show ?thesis  
+    using B3 that by blast
 qed
 
 lemma sup_prime_pfilterI3:
@@ -5355,17 +5393,25 @@ lemma sup_prime_pfilterI3:
   shows "sup_prime R X F"
 proof-
   let ?R="pwr X" let ?X="filters_on R X" 
-  obtain C1:"antisym ?R ?X" and C2:"refl ?R ?X" and C3:"trans ?R ?X"  by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
-  obtain C4:"F \<in> ?X"  by (simp add: A5 filters_on_iff is_pfilterD1)
-  obtain C5:"distributive_lattice ?R ?X"    by (simp add: A0 A1 A2 A3 lattice_filters_distr)
-  have B0:"elem_inf_prime ?R ?X F" using elem_inf_primeI3[of ?R ?X F] C1 C2 C3 C4 C5 A4 by blast
-  have B1:"(\<And>F1 F2. \<lbrakk>F1 \<in> ?X; F2 \<in> ?X; (Inf ?R ?X {F1, F2}, F)\<in>(pwr X)\<rbrakk> \<Longrightarrow> (F1, F)\<in>?R \<or> (F2, F)\<in>?R)" by (meson B0 elem_inf_primeD1)
-  have B2:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"   by (metis A0 A1 A2 A3 A5 B1 distr_latticeD5 filters_lattice_inf_op filters_on_iff is_pfilterD3 powrel8 pwr_memI) 
-  show ?thesis by (simp add: A0 A1 A2 A3 A5 B2 distr_latticeD5 sup_prime_pfilterI2) 
+  obtain C1:"antisym ?R ?X" and C2:"refl ?R ?X" and C3:"trans ?R ?X"  
+    by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
+  obtain C4:"F \<in> ?X"  
+    by (simp add: A5 filters_on_iff is_pfilterD1)
+  obtain C5:"distributive_lattice ?R ?X"    
+    by (simp add: A0 A1 A2 A3 lattice_filters_distr)
+  have B0:"elem_inf_prime ?R ?X F" 
+    using elem_inf_primeI3[of ?R ?X F] C1 C2 C3 C4 C5 A4 by blast
+  have B1:"(\<And>F1 F2. \<lbrakk>F1 \<in> ?X; F2 \<in> ?X; (Inf ?R ?X {F1, F2}, F)\<in>(pwr X)\<rbrakk> \<Longrightarrow> (F1, F)\<in>?R \<or> (F2, F)\<in>?R)" 
+    by (meson B0 elem_inf_primeD1)
+  have B2:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"  
+    by (metis A0 A1 A2 A3 A5 B1 distr_latticeD5 filters_lattice_inf_op filters_on_iff is_pfilterD3 powrel8 pwr_memI) 
+  show ?thesis 
+    by (simp add: A0 A1 A2 A3 A5 B2 distr_latticeD5 sup_prime_pfilterI2) 
 qed
 
 lemma prime_filter_irr3_converse:
-  "\<lbrakk>distributive_lattice R X; antisym R X; trans R X; refl R X; fin_inf_irr (pwr X) (filters_on R X) F; is_pfilter R X F\<rbrakk> \<Longrightarrow> sup_prime R X F"  by (simp add: is_pfilterI1 sup_prime_pfilterI3)
+  "\<lbrakk>distributive_lattice R X; antisym R X; trans R X; refl R X; fin_inf_irr (pwr X) (filters_on R X) F; is_pfilter R X F\<rbrakk> \<Longrightarrow> sup_prime R X F"  
+  by (simp add: is_pfilterI1 sup_prime_pfilterI3)
 
 
 lemma pfilters_metofprimes2:
@@ -5378,12 +5424,18 @@ lemma pfilters_metofprimes2:
   obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> sup_prime R X Fm " and "F = Inf (pwr X) (filters_on R X) M"
 proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have B0:"compactly_generated ?RX ?FX"   using A0 A1 A3 A4 A5 distr_latticeD5 filters_on_lattice_compactgen lattD1 by metis
-  obtain C1:"antisym ?RX ?FX" and C2:"refl ?RX ?FX" and C3:"trans ?RX ?FX"  by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
-  obtain C4:"distributive_lattice ?RX ?FX"  by (simp add: A0 A3 A4 A5 lattice_filters_distr)
-  have B1:"is_clattice ?RX ?FX"  using A0 A1 A3 A4 A5 distr_latticeD5 lattice_filters_complete by metis
-  have B2:"F \<in> ?FX" by (simp add: A2 filters_on_iff pfilters_memD1)
-  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (meson filters_is_clr1 powrel3 powrel6 powrel7 refl_def refl_onD subset_iff)
+  have B0:"compactly_generated ?RX ?FX"  
+     using A0 A1 A3 A4 A5 distr_latticeD5 filters_on_lattice_compactgen lattD1 by metis
+  obtain C1:"antisym ?RX ?FX" and C2:"refl ?RX ?FX" and C3:"trans ?RX ?FX"  
+    by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
+  obtain C4:"distributive_lattice ?RX ?FX"  
+    by (simp add: A0 A3 A4 A5 lattice_filters_distr)
+  have B1:"is_clattice ?RX ?FX"  
+    using A0 A1 A3 A4 A5 distr_latticeD5 lattice_filters_complete by metis
+  have B2:"F \<in> ?FX" 
+    by (simp add: A2 filters_on_iff pfilters_memD1)
+  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
+    using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (meson filters_is_clr1 powrel3 powrel6 powrel7 refl_def refl_onD subset_iff)
   have B4:"\<And>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX} \<Longrightarrow> Fm \<in> ?FX \<and> sup_prime R X Fm " 
   proof-
     fix Fm assume A6:"Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and>(F, Fm)\<in>?RX}" 
@@ -5582,5 +5634,5 @@ lemma principal_ufilter_sets:
   by (simp add: lorc_mem_iff1 pwr_mem_iff)
 
 unused_thms
-
+*)
 end
