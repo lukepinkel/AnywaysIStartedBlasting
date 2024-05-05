@@ -4921,7 +4921,7 @@ qed
 
 lemma mredD3:
   "\<lbrakk>m \<in> X; antisym R X; refl R X; trans R X; is_clattice R X;  \<not>(is_greatest R X m)\<rbrakk> \<Longrightarrow> {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} \<noteq> {}"
-  by (smt (verit, del_insts) clatD21 empty_iff greatestD11 greatestD14 mem_Collect_eq subset_refl sup_max_eq2) 
+  using clatD41 is_supD1 sup_maxI1 by fastforce
 
 lemma mredD4:
   assumes A0:"is_clattice R X" and A1:"m \<in> X" and A2:"\<not>(is_greatest R X m)" and A3:"\<not>((m, Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}) \<in> R \<and> m \<noteq> Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x})" and
@@ -4929,33 +4929,40 @@ lemma mredD4:
   shows "meet_reducible R X m"
 proof-
   let ?A="{x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
-  obtain B0:"?A \<subseteq> X" and B1:"?A \<noteq> {}"by (metis (no_types, lifting) A0 A1 A2 A4 A5 A6 Collect_empty_eq mem_Collect_eq mredD3 subsetI) 
-  have B2:"(m, Inf R X ?A)\<in>R"  by (metis (no_types, lifting) A0 A1 A4 A5 B0 B1 cinfD62 clatD2 converseI mem_Collect_eq ub_iff1)  
-  have B3:"m = Inf R X ?A"    using A3 B2 by blast  
-  have B4:"?A \<in> Pow_ne X"  using B1 pow_ne_iff2 by blast
+  obtain B0:"?A \<subseteq> X" and B1:"?A \<noteq> {}" 
+    by (metis (no_types, lifting) A0 A1 A2 A4 A5 A6 Collect_empty_eq mem_Collect_eq mredD3 subsetI) 
+  have B2:"(m, Inf R X ?A)\<in>R"
+    by (metis (no_types, lifting) A0 A1 A4 A5 B0 B1 cinfD61 clatD2 converseI mem_Collect_eq ubdI) 
+  have B3:"m = Inf R X ?A"   
+     using A3 B2 by blast  
+  have B4:"?A \<in> Pow_ne X"
+    using B1 by blast  
   have B5:"m \<notin> ?A"  by simp
-  have B6:"is_inf R X ?A m"   by (metis (no_types, lifting) A0 A4 A5 B0 B1 B3 cinfD4 clatD2) 
-  show "meet_reducible R X m"  using B4 B6 mredI1 by fastforce 
+  have B6:"is_inf R X ?A m"   
+    by (metis (no_types, lifting) A0 A4 A5 B0 B1 B3 cinfD4 clatD2) 
+  show "meet_reducible R X m"
+    by (meson B4 B5 B6 mredI1)  
 qed
 
 lemma filter_compl1:
   "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}"
-  using is_pfilterD3 is_pfilter_def by fastforce
+  using is_filterD1 is_pfilter_def by fastforce
 
 lemma filter_compl2: 
   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)"
-  by (metis Diff_disjoint inf.idem inf.orderE is_pfilterD3 pfilter_on_lattice_inf4b)
+  by (metis Diff_Diff_Int Diff_cancel PosetsRel2.is_filter_def inf_absorb2 is_pfilterD1)
 lemma pfilter_compl3: 
   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; x \<in> (X-F); y \<in> X; (y, x)\<in>R\<rbrakk> \<Longrightarrow>y \<in> (X-F)"
-  by (metis Diff_iff filter_memI is_pfilter_def)
+  by (metis Diff_iff is_filterD1 is_ord_clE1 is_pfilterD1)
 
 lemma pfilter_compl4:
    "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (dual R)"
-  by (simp add: filterD4 is_ord_cl_comp1 is_pfilter_def)
+   by (meson converseD is_ord_cl_def pfilter_compl3)
 
 lemma prime_filter_compl5:
    "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> (X-F)"
    by (metis Diff_iff  l_sup_closed primefilterD1)
+
 lemma prime_filter_compl6:
    "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F\<rbrakk> \<Longrightarrow> is_dir (X-F) R"
   by (meson Diff_subset is_dirI4 lattD42 prime_filter_compl5)
@@ -4964,10 +4971,6 @@ lemma prime_filter_compl6:
 lemma prime_filter_compl7: 
   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  
   by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
-
-lemma prime_filter_compl8: 
-  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> is_ideal R X (X-F)" 
-   by (meson Diff_subset is_filter_def filter_compl1 idealI1 is_ord_cl_comp1 is_pfilterD1 prime_filter_compl6)
 
 lemma prime_filter_compl9:"\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> inf_prime R X (X-F)" 
   by (meson inf_primeI1 prime_filter_compl7)
