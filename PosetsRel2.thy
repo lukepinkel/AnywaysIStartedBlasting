@@ -4288,6 +4288,18 @@ lemma finite_ind_in:
   by (simp add: image_subsetI inf_semilattice_finf)
 
 lemma finite_ind_fil:
+  assumes por:"pord R X" and ind1:"finite I" and ind2:"I \<noteq> {}" and top:"is_greatest R X m" and 
+          fil:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X (f i))"
+  shows finite_ind_fil1:"is_inf_semilattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))" and
+        finite_ind_fil2:"is_lattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))" 
+proof-
+  show "is_inf_semilattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
+  proof-
+    assume isl:"is_inf_semilatticeR X"
+    show "is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I)"
+      using filters_inf_semilattice_inf
+
+lemma finite_ind_fil:
   "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X; finite I; I \<noteq> {}; is_greatest R X top; (\<forall>i. i \<in> I \<longrightarrow> is_filter R X  (f i))\<rbrakk> \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
   by (simp add: filters_inf_semilattice_inf filters_on_iff image_subsetI pow_neI)
 
