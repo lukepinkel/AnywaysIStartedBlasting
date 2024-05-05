@@ -4856,7 +4856,7 @@ proof
   show "y \<in> ?R"  using finite_ind_fil11[of R X top I f]  A1 A2 A3 A4 A5 A6 A7 B0 B5 by blast
 qed
 
-lemma finite_ind_fil15:
+lemma finite_ind_fil16:
   fixes f::"'b \<Rightarrow> 'a set" and I::"'b set"
   assumes A0:"distributive_lattice R X" and
           A1:"is_greatest R X top" and
@@ -4867,8 +4867,7 @@ lemma finite_ind_fil15:
           A6:"antisym R X" and 
           A7:"trans R X" 
   shows "Sup (pwr X) (filters_on R X) (f`I) = {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf R X (x` I) = y}"
-  using finite_ind_fil13[of R X top I f] finite_ind_fil14[of R X top I f]
-  using A0 A1 A2 A3 A4 A5 A6 A7 by fastforce 
+  using finite_ind_fil14[of R X top I f] finite_ind_fil15[of R X top I f] A0 A1 A2 A3 A4 A5 A6 A7 by fastforce 
 
 
 lemma maximalI2:
@@ -4877,11 +4876,11 @@ lemma maximalI2:
 
 lemma maximalI3:
   "\<lbrakk>antisym R X;A \<subseteq> X;is_greatest R A x\<rbrakk> \<Longrightarrow> is_maximal R A x"
-  by (simp add: antisym_onD greatest_iff in_mono is_maximal_def)
+  by (meson antisym_onD antisym_on_subset greatestD is_maximal_def)
 
 lemma mredI1:
   "\<lbrakk>A \<in> Pow_ne X; x \<notin> A; is_inf R X A x\<rbrakk> \<Longrightarrow> meet_reducible R X x"
-  using meet_reducible_def by fastforce 
+  by (meson meet_reducible_def)
 
 lemma mredI2:
   "\<exists>A \<in> Pow_ne X. x \<notin> A \<and> is_inf R X A x \<Longrightarrow> meet_reducible R X x"
@@ -4895,22 +4894,25 @@ lemma mredD2:
   "\<lbrakk>antisym R X; meet_reducible R X x\<rbrakk> \<Longrightarrow> \<not>(is_greatest R X x)"
 proof-
   assume A0:"antisym R X" and A1:" meet_reducible R X x"
-  obtain A where B0:"A \<in> Pow_ne X" and B1:"x \<notin> A" and B2:"is_inf R X A x"  by (meson A1 mredD1) 
-  have B3:"A \<subseteq> X"  by (simp add: B0 pow_neD1)
-  obtain a where B4:"a \<in> A"  using B0 pow_ne_bot by fastforce  
+  obtain A where B0:"A \<in> Pow_ne X" and B1:"x \<notin> A" and B2:"is_inf R X A x" 
+     by (meson A1 mredD1) 
+  have B3:"A \<subseteq> X"
+    using B0 by blast  
+  obtain a where B4:"a \<in> A"  
+    using B0 by fastforce  
   have B3:"(x, a) \<in> R \<and> x \<noteq> a"
-    using B1 B2 B4 is_supD1121 by fastforce  
+    using B1 B2 B4 is_supD1 by fastforce  
   show "\<not>(is_greatest R X x)" 
   proof(rule ccontr)
    assume A1:"\<not>(\<not>(is_greatest R X x))" then obtain B30:"is_greatest R X x" by simp
   then have B31:"(a, x) \<in> R"
-    by (meson B0 B4 greatestD12 in_mono pow_neD1 ubE)
+    by (meson B0 B4 Pow_ne_iff greatestD subsetD)
   have B32:"a \<in> X"
-    by (meson B0 B4 in_mono pow_neD1)
+    using B0 B4 by blast
   have B33:"(x, a) \<in>R"
     by (simp add: B3)
   then have B34:"a = x"
-    by (meson A0 B2 B31 B32 antisym_onD is_supE1)
+    by (meson A0 B30 B32 antisym_onD greatestD)
   then show False
     using B3 by auto
   qed
