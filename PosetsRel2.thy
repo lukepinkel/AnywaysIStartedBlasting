@@ -4830,7 +4830,7 @@ proof
 qed
 
 
-lemma finite_ind_fil14:
+lemma finite_ind_fil15:
   fixes f::"'b \<Rightarrow> 'a set" and I::"'b set"
   assumes A0:"distributive_lattice R X" and
           A1:"is_greatest R X top" and
@@ -4842,14 +4842,18 @@ lemma finite_ind_fil14:
           A7:"trans R X"
   shows "{y \<in> X. \<exists>(x::'b \<Rightarrow> 'a). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> Inf R X (x` I) = y} \<subseteq> Sup (pwr X) (filters_on R X) (f`I) " (is "?L \<subseteq> ?R")
 proof
-  fix y assume A2:"y \<in> ?L"
-  have B0:"is_lattice R X" by (simp add: A0 distr_latticeD5)
-  have B1:"y \<in> X"  using A2 by blast
-  obtain x1 where B3:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf R X (x1` I) =y" using A2 by blast
-  have B4:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> (Inf R X (x1` I), y)\<in>R"  using A5 B1 B3 reflE1 by auto  
-  have B5:"y \<in> {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> (Inf R X (x` I), y)\<in>R}"    using B1 B4 by blast 
-  show "y \<in> ?R"  using finite_ind_fil10[of R X top I f]
-    using A1 A3 A4 A5 A6 A7 B0 B5 assms(3) by blast 
+  fix y assume A8:"y \<in> ?L"
+  have B0:"is_lattice R X" 
+    by (simp add: A0 distr_latticeD5)
+  have B1:"y \<in> X"  
+    using A8 by blast
+  obtain x1 where B3:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> Inf R X (x1` I) =y" 
+    using A8 by blast
+  have B4:"(\<forall>i. i \<in> I \<longrightarrow> (x1 i) \<in> (f i)) \<and> (Inf R X (x1` I), y)\<in>R"  
+    using A5 B1 B3 reflE1 by auto  
+  have B5:"y \<in> {y \<in> X. \<exists>(x::'b \<Rightarrow> 'a). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> (Inf R X (x` I), y)\<in>R}"   
+     using B1 B4 by blast 
+  show "y \<in> ?R"  using finite_ind_fil11[of R X top I f]  A1 A2 A3 A4 A5 A6 A7 B0 B5 by blast
 qed
 
 lemma finite_ind_fil15:
