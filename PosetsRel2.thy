@@ -2185,7 +2185,8 @@ qed
 lemma filters_on_inf_semilattice1:
   assumes por:"pord R X" and lat:"is_inf_semilattice R X"
   shows semilat_filters_isl0:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) A (filter_closure R X (\<Union>A))" and
-         semilat_filters_isl1:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>F. is_sup (pwr X) (filters_on R X) A F)"
+        semilat_filters_isl1:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>F. is_sup (pwr X) (filters_on R X) A F)" and
+        semilat_filters_isl2:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> Sup (pwr X) (filters_on R X) A= (filter_closure R X (\<Union>A))"  
 proof-
   show P0:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) A (filter_closure R X (\<Union>A))"
   proof-
@@ -2246,6 +2247,8 @@ proof-
   qed
   show P1:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>S. is_sup (pwr X) (filters_on R X) EF S)"
     using P0 by auto
+  show P2:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> Sup (pwr X) (filters_on R X) A= (filter_closure R X (\<Union>A))"
+    by (simp add: P0 antisym_on_def powrel8 subset_antisym sup_equality)  
 qed
 
   
@@ -4526,45 +4529,7 @@ proof-
   finally show ?thesis by blast
 qed
 
-
-
-
-
-lemma filter_closure_of_filters4_ne:
-  "\<lbrakk>pord R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}; G \<in> ubd (pwr X) (filters_on R X) A\<rbrakk> \<Longrightarrow> (filter_closure R X (\<Union>A)) \<subseteq> G"
-  by (metis PowI Pow_empty filterD1 filter_cl_least2a filter_pow_memD filters_is_clr1 filters_on_iff insertI1 is_supE3 powrel9 pwr_mem_iff subset_Pow_Union subset_singletonD ubdD2 ubd_iso2b)
-
-
-lemma filter_closure_of_filters5_ne:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup (pwr X) (filters_on R X) A  (filter_closure R X (\<Union>A))"
-  by (smt (verit, del_insts) filter_closure_of_filters3_ne filter_closure_of_filters4_ne filters_is_clr1 in_mono is_supI5 powsimp1 pwr_memI ubd_sub)
-
-lemma filter_closure_of_filters6_ne:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) A= (filter_closure R X (\<Union>A))"
-  by (simp add: filter_closure_of_filters5_ne filters_is_clr1 powrel6 sup_equality)
-
-lemma filter_closure_of_filters7:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; is_greatest R X top\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) A = (filter_closure R X (\<Union>A))"
-  by (simp add: filter_closure_of_filters5 filters_is_clr1 powrel6 sup_equality)
-
-
-lemma filter_closure_of_filters8:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X;A \<subseteq> filters_on R X; is_greatest R X top\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) A = (filter_closure R X (\<Union>A))"
-  by (simp add: filter_closure_of_filters7 latt_iff)
-
-lemma filter_closure_of_filters8_ne:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X;A \<subseteq> filters_on R X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup (pwr X)(filters_on R X) A= (filter_closure R X (\<Union>A))"
-  by (simp add: filter_closure_of_filters6_ne lattD41)
-
-lemma filter_closure_of_filters9:
-  "\<lbrakk>refl R X; antisym R X; trans R X;distributive_lattice R X;A \<subseteq> filters_on R X; is_greatest R X top\<rbrakk> \<Longrightarrow> Sup(pwr X) (filters_on R X) A = (filter_closure R X (\<Union>A))"
-  by (simp add: distr_latticeD5 filter_closure_of_filters8)
-
-lemma filter_closure_of_filters9_ne:
-  "\<lbrakk>refl R X; antisym R X; trans R X;distributive_lattice R X;A \<subseteq> filters_on R X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) A= (filter_closure R X (\<Union>A))"
-  by (simp add: distr_latticeD5 filter_closure_of_filters8_ne)
-
-lemma finite_ind_fil7:
+lemma finite_ind_fil8:
   fixes f::"'b \<Rightarrow> 'a set" and I::"'b set"
   assumes A0:"is_lattice R X" and
           A1:"is_greatest R X top" and 
@@ -4576,17 +4541,34 @@ lemma finite_ind_fil7:
   shows "Sup (pwr X) (filters_on R X) (f`I) = {x \<in> X. \<exists>F \<in> Fpow_ne (\<Union>(f`I)). (Inf R X F, x)\<in>R}"
 proof-
   let ?A="\<Union>(f`I)"
-  have B0:"?A \<noteq> {}"    using A2 A3 filterD1 by fastforce
-  have B1:"filter_closure R X (?A) = {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R} " using B0 by(rule filter_closure_ne_simp)
-  have B2:"... = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}"  using fpow_ne_iff2 using fpow_ne_iff2 by(fastforce)
-  have B3:"filter_closure R X (?A) = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}" using B1 B2 by auto
-  show ?thesis using filter_closure_of_filters8   by (metis (no_types, lifting) A0 A1 A3 A4 A5 A6 B3 filters_on_iff image_subset_iff)
+  have B0:"?A \<noteq> {}"   
+    using A2 A3 is_filterD1 by fastforce
+  have B1:"is_inf_semilattice R X"
+    using A0 latt_iff by auto
+  have B2:"f`I \<in> Pow_ne (filters_on R X)"
+    by (simp add: A2 A3 filters_on_iff image_subsetI)
+  have B3:"Sup (pwr X) (filters_on R X) (f`I) = filter_closure R X (?A)"
+    using A4 A5 A6 B1 B2 semilat_filters_isl2 by auto
+  also have B4:"... = {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R} " 
+      unfolding filter_closure using B0 by (simp add: filter_closure_def)
+  also have B3:"... = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}"  
+      by blast
+  finally show ?thesis
+   by blast 
 qed
-lemma inf_comp:
-  "\<lbrakk>refl R X; antisym R X; trans R X;A1 \<subseteq>X; A2 \<subseteq> X;is_inf R X A1 i1; is_inf R X A2 i2; (\<And>a2. a2 \<in> A2 \<longrightarrow> (\<exists>a1 \<in> A1. (a1, a2)\<in>R)) \<rbrakk> \<Longrightarrow> (i1, i2)\<in>R"
-  by (smt (z3) converse_iff greatestD2 is_supD1 is_supD32 subset_eq trans_onD ubdI ubd_mem_iff3)
 
-lemma finite_ind_fil8:
+lemma inf_comp:
+  assumes por:"pord R X" and sub1:"A1 \<subseteq> X" and sub2:"A2 \<subseteq> X" and gbl1:"is_inf R X A1 i1" and
+          glc2:"is_inf R X A2 i2" and sbd:"\<And>a2. a2 \<in> A2 \<Longrightarrow> (\<exists>a1 \<in> A1. (a1,a2)\<in>R)"
+  shows "(i1,i2)\<in>R"
+proof-
+  have B0:"\<And>a2. a2 \<in> A2 \<Longrightarrow> (i1,a2)\<in>R"
+    by (meson converse_iff gbl1 is_supD1 por sbd sub1 sub2 subsetD trans_onD)
+  then show ?thesis
+  by (meson converseD converseI gbl1 glc2 is_supD1)
+qed
+
+lemma finite_ind_fil9:
   fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and
           A1:"is_greatest R X top" and
@@ -4600,7 +4582,6 @@ lemma finite_ind_fil8:
           A9:"antisym R X" and 
           A10:"trans R X"
   shows "\<exists>(x::'b \<Rightarrow> 'a). (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)) \<and> (Inf R X (x` I), y)\<in>R"
-
 proof-
   define G where "G = {(i, z)|z i. z \<in> F \<and> (z \<in> f i)}"
   have B0:"\<And>i. i \<in> I \<longrightarrow>  G``{i} \<noteq> {}  \<longrightarrow> G``{i} \<subseteq> F"
@@ -4631,41 +4612,46 @@ proof-
     qed
   qed
   define x where "x = (\<lambda>i. if G``{i} \<noteq> {} then Inf R X (G``{i}) else SOME z. z \<in> (f i))"
-  have B2:"\<And>i. i \<in> I \<longrightarrow> (x i) \<in> (f i)"
-  proof
+  have B2:"\<And>i. i \<in> I \<Longrightarrow> (x i) \<in> (f i)"
+  proof-
     fix i assume A6:"i \<in> I"
     show "x i \<in> f i"
     proof(cases " G``{i} \<noteq> {}")
       case True
       have B3:"x i =  Inf R X (G``{i})"  by (simp add: True x_def)
       have B4:"G``{i} \<subseteq> (f i)"   using A6 P by blast
-      have B5:"finite (G``{i})"    by (meson A6 B0 True assms(6) fpow_neD4 infinite_super)
-      have B6:" Inf R X (G``{i}) \<in> (f i)"  using A6 B4 B5 True assms(1) assms(5) filter_finf_closed3 lattD41
-        using A10 A9 by blast
-      then show ?thesis  by (simp add: B3)
+      have B5:"finite (G``{i})" by (meson A5 A6 B0 Fpow_ne_iff True finite_subset)  
+      have B6:" Inf R X (G``{i}) \<in> (f i)"
+        by (metis A0 A10 A4 A6 A9 B4 B5 True filter_inf_closed3 latt_iff)  
+      then show ?thesis  
+        by (simp add: B3)
     next
       case False
-      then show ?thesis  by (metis A6 assms(5) ex_in_conv filterD1 someI2_ex x_def)
+      then show ?thesis  by (metis A6 assms(5) ex_in_conv is_filterD1 someI2_ex x_def)
     qed
   qed
-  have B7:"\<And>z. z \<in> F \<longrightarrow> (\<exists>w \<in> (x` I). (w, z)\<in>R)"
-  proof
+  have B7:"\<And>z. z \<in> F \<Longrightarrow> (\<exists>w \<in> (x` I). (w, z)\<in>R)"
+  proof-
     fix z assume A7:"z \<in> F"
-    obtain i where B8:"i \<in> I \<and> z \<in> (f i)"  by (metis A7 UN_E assms(6) fpow_neD1 in_mono)
+    obtain i where B8:"i \<in> I \<and> z \<in> (f i)"
+      using A5 A7 by blast  
     have B9:"G``{i} \<noteq> {}" using A7 B8 by(auto simp add:G_def)
     have B10:"x i =  Inf R X (G``{i})" by (simp add: B9 x_def)
     have B11:"z \<in> G``{i}" by (simp add: A7 B8 G_def)
-    have B12:"finite (G``{i}) \<and> (G``{i}) \<subseteq> X"   by (meson B0 B8 B9 P assms(5) assms(6) filterD21 fpow_neD4 infinite_super subsetI)
-    have B13:"(Inf R X (G``{i}), z)\<in>R" using B11 B12 assms(1)  by (metis A10 A8 A9 B9 Sup_def antisym_on_converse converseD is_supD1121 l_fininf sup_equality)
+    have B12:"finite (G``{i}) \<and> (G``{i}) \<subseteq> X"
+      by (meson A4 A5 B0 B8 B9 Fpow_ne_iff P finite_subset is_filterD1 subsetD subsetI)  
+    have B13:"(Inf R X (G``{i}), z)\<in>R"
+      by (metis A0 A10 A8 A9 B11 B12 B9 converse_iff inf_equality is_supD3 l_fininf)
     show " (\<exists>w \<in> (x` I). (w, z)\<in>R)"
       by (metis B10 B13 B8 imageI)
   qed
   have B14:"finite (x` I) \<and> (x` I) \<subseteq> X"
-    using B2 assms(3) assms(5) filterD21 by fastforce 
-  have B15:"\<And>i. i \<in> I \<longrightarrow> (f i) \<subseteq> X"
-    using A4 filterD2 by blast  
+    using B2 assms(3) assms(5) is_filterD1 by fastforce 
+  have B15:"\<And>i. i \<in> I \<Longrightarrow> (f i) \<subseteq> X"
+    using A4 is_filterD1 by blast  
   have B16:"\<Union>(f`I) \<subseteq> X"   by (simp add: B15 UN_least)
-  have B17:"finite F \<and> F \<subseteq> X" by (metis B16 assms(6) fpow_neD4 subset_trans)
+  have B17:"finite F \<and> F \<subseteq> X"
+    using A5 B16 by blast 
   have B18:"(Inf R X (x` I), Inf R X F)\<in>R"
     apply(rule_tac ?X="X" and ?A1.0="x` I" and ?A2.0="F" in inf_comp)
     apply (simp add: A8)
@@ -4674,7 +4660,7 @@ proof-
     apply (simp add: B14)
     apply (simp add: B17)
     apply (metis A0 A10 A3 A8 A9 B14 antisym_on_converse image_is_empty is_sup_unique l_fininf the_equality)
-    apply (metis A0 A10 A5 A9 B17 Sup_def antisym_on_converse bsup_finite2 fpow_ne_iff2 is_sup_semilattice_def latt_iff trans_on_converse)
+    apply (metis A0 A1 A10 A8 A9 B17 converse_converse inf_equality2 l_fininf sup_empty)
     using B7 by blast
   have B19:"(Inf R X (x` I), y)\<in>R"
     by (smt (verit, ccfv_SIG) A0 A10 A3 A5 A6 A7 A8 A9 B14 B17 B18 antisym_on_converse fpow_ne_iff2 image_is_empty is_supE1 is_sup_unique l_fininf the_equality trans_onD)
