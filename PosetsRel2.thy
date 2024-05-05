@@ -2180,6 +2180,74 @@ proof-
       using is_filterD1 por top top_filters2 by fastforce
   qed
 qed
+
+
+lemma filters_on_inf_semilattice1:
+  assumes por:"pord R X" and lat:"is_inf_semilattice R X"
+  shows semilat_filters_isl0:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) A (filter_closure R X (\<Union>A))" and
+         semilat_filters_isl1:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>F. is_sup (pwr X) (filters_on R X) A F)"
+proof-
+  show P0:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) A (filter_closure R X (\<Union>A))"
+  proof-
+    fix EF assume A0:"EF \<in> Pow_ne (filters_on R X)" 
+    then obtain A1:"EF \<subseteq> filters_on R X" and A2:"EF \<noteq> {}"
+       by auto
+    then obtain A3:"\<And>F. F \<in> EF \<Longrightarrow> is_filter R X F"
+      using filters_on_iff by auto
+    then obtain A4:"EF \<subseteq> Pow X" and A5:"{} \<notin> EF"
+      by (meson PowI is_filterD1 subsetI)
+    let ?A="\<Union>EF"
+    have B0:"?A \<in> Pow_ne X"
+      using A2 A4 A5 by fastforce
+    let ?S="filter_closure R X ?A"
+    have B1:"is_filter R X ?S"
+    proof(rule is_filterI1)
+      show  P0:"?S \<noteq> {}"
+        by (metis B0 Pow_ne_iff empty_subsetI filter_cl0 por subset_antisym)
+      show P1:"?S \<subseteq> X"
+      proof-
+        obtain "?A \<noteq> {}" 
+          using B0 by blast 
+        then obtain "?S= {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F,  x) \<in> R}"
+          unfolding filter_closure_def  by presburger 
+        then show ?thesis 
+          by blast
+      qed
+      show "is_dir ?S (dual R)"
+        by (meson B0 filter_closure2_ne lat por)
+      show "is_ord_cl X ?S R"
+        by (meson B0 filter_closure1_ne lat por)
+    qed
+    show B2:"is_sup (pwr X) (filters_on R X) EF ?S"
+    proof(rule is_supI1)
+      show "?S \<in> filters_on R X"
+        by (simp add: B1 filters_on_iff)
+      show "\<And>a . a \<in> EF \<Longrightarrow> (a, ?S) \<in> pwr X"
+        by (meson B0 B1 Pow_ne_iff Sup_le_iff filter_cl0 is_filterD1 por pwr_memI)
+      show "\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (?S, b) \<in> pwr X"
+      proof-
+        fix b assume A6:"b \<in> filters_on R X" and A7:"\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X"
+        have C0:"?S \<subseteq> b"
+        proof
+          fix x assume fcmen:"x \<in> ?S" 
+          then obtain Fx where C1:"Fx \<subseteq>  (\<Union>EF)" and C2:"finite Fx" and C3:"Fx \<noteq> {}" and  C4:"(Inf R X Fx,x)\<in>R"
+            by (metis B0 Pow_ne_iff filter_closure_memD1)
+          then obtain C5:"Fx \<subseteq> b" and B6:"Fx \<subseteq> X"
+            by (metis A7 Sup_le_iff dual_order.trans pwr_memD)
+          obtain C6:"Inf R X Fx \<in> b"
+            using A6 C2 C3 C5 filter_inf_closed3 filters_on_iff lat por by blast
+          then show "x \<in> b"
+            by (meson A6 B1 C4 fcmen filters_on_iff is_filterD1 is_ord_clE1 subsetD)
+        qed
+        then show " (?S, b) \<in> pwr X"
+          by (meson A6 filters_on_iff is_filterD1 pwr_memI)
+      qed
+    qed
+  qed
+  show P1:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>S. is_sup (pwr X) (filters_on R X) EF S)"
+    using P0 by auto
+qed
+
   
 lemma filter_cl1:
   assumes por:"pord R X" and sem:"semitop R X top" and asub:"A \<subseteq> X"
@@ -4463,7 +4531,7 @@ qed
 
 
 lemma filter_closure_of_filters4_ne:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}; G \<in> ubd (pwr X) (filters_on R X) A\<rbrakk> \<Longrightarrow> (filter_closure R X (\<Union>A)) \<subseteq> G"
+  "\<lbrakk>pord R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}; G \<in> ubd (pwr X) (filters_on R X) A\<rbrakk> \<Longrightarrow> (filter_closure R X (\<Union>A)) \<subseteq> G"
   by (metis PowI Pow_empty filterD1 filter_cl_least2a filter_pow_memD filters_is_clr1 filters_on_iff insertI1 is_supE3 powrel9 pwr_mem_iff subset_Pow_Union subset_singletonD ubdD2 ubd_iso2b)
 
 
