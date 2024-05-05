@@ -4965,12 +4965,12 @@ lemma prime_filter_compl5:
 
 lemma prime_filter_compl6:
    "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F\<rbrakk> \<Longrightarrow> is_dir (X-F) R"
-  by (meson Diff_subset is_dirI4 lattD42 prime_filter_compl5)
+   by (smt (verit) DiffD1 DiffD2 DiffI Diff_eq_empty_iff bsup_ge1 bsup_ge2 diff_shunt_var is_dirI1 is_pfilterD1 lattD42 ssupD4 sup_prime_def)
 
 
 lemma prime_filter_compl7: 
-  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"  
-  by (metis Diff_iff filter_finf_closed1 is_pfilterD1 lattD41) 
+  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"
+  by (metis DiffD2 DiffI filter_inf_closed1 is_pfilterD1 lattD31)  
 
 lemma prime_filter_compl9:"\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> inf_prime R X (X-F)" 
   by (meson inf_primeI1 prime_filter_compl7)
@@ -4987,9 +4987,12 @@ lemma prime_filter_on_lattice:
           A8:"F=Inf (pwr X) (filters_on R X) {a, b}"
   shows "F = a \<or> F =b"
 proof-
-  have B0:"F=a \<inter> b"  by (metis A0 A1 A2 A3 A6 A7 A8 Sup_def antisym_on_converse filters_is_clr1 filters_lattice_inf powrel6 sup_equality) 
-  have B1:"a \<subseteq> F \<or> b \<subseteq> F" using B0 A0 A1 A2 A3 A4 B0 A5 A6 A7 sup_prime_pfilterD4[of R X F a b] filters_on_iff by auto
-  have B2:"\<not>(a \<subseteq> F) \<longrightarrow> b = F" using B0 B1 by blast
+  have B0:"F=a \<inter> b"
+    by (simp add: A0 A1 A2 A3 A6 A7 A8 lattice_filters_isl7) 
+  have B1:"a \<subseteq> F \<or> b \<subseteq> F" 
+    using B0 A0 A1 A2 A3 A4 B0 A5 A6 A7 sup_prime_pfilterD4[of R X F a b] filters_on_iff by auto
+  have B2:"\<not>(a \<subseteq> F) \<longrightarrow> b = F" 
+    using B0 B1 by blast
   show ?thesis
     using B0 B2 by blast
 qed
@@ -5006,13 +5009,20 @@ proof-
   let ?K=" compact_elements R X"
   let ?Kd="{k \<in> ?K. (k, x)\<in>R}"
   obtain Kx where A6:"Kx \<in> Pow ?K" and A7:"is_sup R X Kx x" by (meson A1 A2 compactly_generatedD1)
-  have B0:"?K \<subseteq> X"   by (simp add: compact_elements_sub)
-  have B1:"?Kd \<subseteq> X" using B0 by blast
-  have B2:"Kx \<subseteq> ?Kd" using A6 A7 is_supD1121 by fastforce
-  have B3:"(Sup R X ?Kd, Sup R X Kx)\<in>R"   by (metis (no_types, lifting) A0 A2 A3 A7 A4 B1 clatD21 is_supE4 mem_Collect_eq sup_equality ubdI ubd_mem_iff) 
-  have B4:" Sup R X Kx = x"   by (simp add: A3 A7 sup_equality) 
-  have B6:"(x, Sup R X ?Kd)\<in>R"   using A0 A3 A4 B1 B2 B4 sup_iso1 by blast 
-  show ?thesis using B3 B4 B6 by (metis (no_types, lifting) A0 A2 A3 A4 B1 B2 antisym_onD bot.extremum_uniqueI clatD31)
+  have B0:"?K \<subseteq> X" 
+     by (simp add: compact_elements_sub)
+  have B1:"?Kd \<subseteq> X" 
+    using B0 by blast
+  have B2:"Kx \<subseteq> ?Kd" 
+      using A6 A7 is_supD1 by fastforce
+  have B3:"(Sup R X ?Kd, Sup R X Kx)\<in>R"
+    by (metis (no_types, lifting) A0 A3 A4 A7 B1 CollectD clatD21 is_supD1 sup_equality) 
+  have B4:" Sup R X Kx = x"   
+    by (simp add: A3 A7 sup_equality) 
+  have B6:"(x, Sup R X ?Kd)\<in>R"  
+     using A0 A3 A4 B1 B2 B4 sup_iso1 by blast 
+  show ?thesis 
+    using B3 B4 B6 by (metis (no_types, lifting) A0 A2 A3 A4 B1 B2 antisym_onD bot.extremum_uniqueI clatD31)
 qed
 
 lemma compactly_generated_meets:
@@ -5025,7 +5035,7 @@ lemma compactly_generated_meets:
           A6:"trans R X" and
           A7:"refl R X"
   shows "\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
-  by (meson A1 A2 A3 A4 PowD compactly_generatedD1 is_supD1121 is_supE4 subset_iff ub_def)
+  by (meson A1 A2 A3 A4 PowD compactly_generatedD1 is_supD1 subset_iff)
 
 lemma meet_reduction1:
   assumes A0:"is_clattice R X" and
@@ -5035,7 +5045,7 @@ lemma meet_reduction1:
           A4:"m \<in> X" and
           A5:"meet_reducible R X m"
   shows " m \<in> lbd R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
-   using A4 ubd_mem_iff2 by fastforce 
+  using A4 ubdI by fastforce
 
 
 lemma meet_reduction2:
@@ -5052,15 +5062,20 @@ proof-
     by (metis A5 meet_reducible_def) 
   obtain B3:"\<And>x. x \<in> A \<Longrightarrow> (m, x)\<in>R \<and> m \<noteq> x"
   proof
-    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  using A6 B1 B2 is_supD1121 by fastforce
+    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  
+      using A6 B1 B2 is_supD1  by fastforce
   qed
-  obtain B2:"A \<subseteq> ?A"  using B0 \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto 
+  obtain B2:"A \<subseteq> ?A"
+  using B0 Ball_Collect \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> by auto 
   have B3:"?A \<subseteq> X"  by simp
-  have B4:"?A \<noteq> {}"   by (metis B0 B2 bot.extremum_uniqueI pow_ne_iff2) 
-  have B5:"(m, Inf R X ?A)\<in>R"   by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD62 clatD2 converseI mem_Collect_eq ubI)
-  have B6:"(Inf R X ?A,Inf R X A)\<in>R"   by (simp add: A0 A1 A2 B2 inf_anti1) 
+  have B4:"?A \<noteq> {}"
+    using B0 B2 by force  
+  have B5:"(m, Inf R X ?A)\<in>R"
+    by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD61 clatD2 converseI mem_Collect_eq ubdI)   
+  have B6:"(Inf R X ?A,Inf R X A)\<in>R"  
+     by (simp add: A0 A1 A2 B2 inf_anti1) 
   have B7:"(Inf R X ?A, m)\<in>R"
-    by (smt (verit) A0 A1 A2 Sup_def \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> antisym_on_converse converse_iff inf_anti1 is_supD1121 mem_Collect_eq pow_neD1 subset_iff sup_equality)
+    by (smt (verit, del_insts) A0 A1 A2 B3 B4 Pow_ne_iff \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> cinfD4 clatD2 converse_iff is_supD1 mem_Collect_eq subsetD)
   show "m=Inf R X ?A"
     by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 B5 B7 antisym_onD clatD32)
 qed
@@ -5079,15 +5094,20 @@ proof-
     by (metis A5 meet_reducible_def) 
   obtain B3:"\<And>x. x \<in> A \<Longrightarrow> (m, x)\<in>R \<and> m \<noteq> x"
   proof
-    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  using A6 B1 B2 is_supD1121 by fastforce
+    fix x assume A6:"x \<in> A"  show "(m, x)\<in>R \<and> m \<noteq> x"  
+    using A6 B1 B2 is_supD1 by fastforce
   qed
-  obtain B2:"A \<subseteq> ?A"  using B0 \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> pow_neD1 by auto 
-  have B3:"?A \<subseteq> X"  by simp
-  have B4:"?A \<noteq> {}"   by (metis B0 B2 bot.extremum_uniqueI pow_ne_iff2) 
-  have B5:"(m, Inf R X ?A)\<in>R"   by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD62 clatD2 converseI mem_Collect_eq ubI)
-  have B6:"(Inf R X ?A,Inf R X A)\<in>R"   by (simp add: A0 A1 A2 B2 inf_anti1) 
+  obtain B2:"A \<subseteq> ?A"
+    using B0 Ball_Collect \<open>\<And>thesis::bool. ((\<And>x::'a::type. x \<in> (A::'a::type set) \<Longrightarrow> (m::'a::type, x) \<in> (R::('a::type \<times> 'a::type) set) \<and> m \<noteq> x) \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> by auto  
+  have B3:"?A \<subseteq> X" 
+     by simp
+  have B4:"?A \<noteq> {}"
+    using B0 B2 by force
+  have B5:"(m, Inf R X ?A)\<in>R"
+    by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 cinfD61 clatD2 converseI mem_Collect_eq ubdI) 
+  have B6:"(Inf R X ?A,Inf R X A)\<in>R"   
+    by (simp add: A0 A1 A2 B2 inf_anti1) 
   have B7:"(Inf R X ?A, m)\<in>R"
-    by (smt (verit) A0 A1 A2 Sup_def \<open>\<And>thesis::bool. (\<And>A::'a::type set. \<lbrakk>A \<in> Pow_ne (X::'a::type set); (m::'a::type) \<notin> A; is_inf (R::('a::type \<times> 'a::type) set) X A m\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> antisym_on_converse converse_iff inf_anti1 is_supD1121 mem_Collect_eq pow_neD1 subset_iff sup_equality)
   show "is_inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} m"
     by (metis (no_types, lifting) A0 A1 A2 A4 B3 B4 B5 B7 antisym_onD cinfD4 clatD2 clatD32)
 qed
