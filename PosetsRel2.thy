@@ -4650,7 +4650,7 @@ proof-
   have B15:"\<And>i. i \<in> I \<Longrightarrow> (f i) \<subseteq> X"
     using A4 is_filterD1 by blast  
   have B16:"\<Union>(f`I) \<subseteq> X"   by (simp add: B15 UN_least)
-  have B17:"finite F \<and> F \<subseteq> X"
+  have B17:"finite F \<and> F \<subseteq> X \<and> F \<noteq> {}"
     using A5 B16 by blast 
   have B18:"(Inf R X (x` I), Inf R X F)\<in>R"
     apply(rule_tac ?X="X" and ?A1.0="x` I" and ?A2.0="F" in inf_comp)
@@ -4660,12 +4660,16 @@ proof-
     apply (simp add: B14)
     apply (simp add: B17)
     apply (metis A0 A10 A3 A8 A9 B14 antisym_on_converse image_is_empty is_sup_unique l_fininf the_equality)
-    apply (metis A0 A1 A10 A8 A9 B17 converse_converse inf_equality2 l_fininf sup_empty)
+    apply (metis A0 A10 A8 A9 B17 inf_equality2 l_fininf)
     using B7 by blast
-  have B19:"(Inf R X (x` I), y)\<in>R"
-    by (smt (verit, ccfv_SIG) A0 A10 A3 A5 A6 A7 A8 A9 B14 B17 B18 antisym_on_converse fpow_ne_iff2 image_is_empty is_supE1 is_sup_unique l_fininf the_equality trans_onD)
+  have B19:"Inf R X (x` I) \<in> X"
+    by (metis A0 A10 A3 A8 A9 B14 image_is_empty inf_equality is_supD1 l_fininf)
+  have B20:" Inf R X F \<in> X"
+    by (meson A0 A10 A8 A9 B17 inf_equality2 is_supD1 l_fininf)
+  have B21:"(Inf R X (x` I), y)\<in>R"
+    by (meson A10 A6 A7 B18 B19 B20 trans_onD)
   show ?thesis
-    using B19 B2 by blast
+    using B2 B21 by blast
 qed
 
 
