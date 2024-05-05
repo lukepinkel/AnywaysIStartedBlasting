@@ -4428,6 +4428,7 @@ proof
       using A0 A1 A2 A3 A4 A5 A6 A7 sup_equality by fastforce
   qed
 qed
+
 lemma exp_lattice_filter_inf:
  fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and 
@@ -4439,9 +4440,27 @@ lemma exp_lattice_filter_inf:
           A6:"antisym R X" and 
           A7:"trans R X"
   shows "Inf (pwr X) (filters_on R X) (f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-  using A0 A1 A2 A3 A4 A5 A6 A7 finite_ind_fil_lattice[of R X I top f] finite_ind_fil6[of R X top I f]
-  by (metis (mono_tags, lifting) Sup_def antisym_on_converse filters_is_clr1 powrel6 sup_equality)
-        
+proof-
+  let ?F1="\<Inter>(f`I)" let ?F2=" {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
+  have B0:"?F1 = ?F2" using finite_ind_fil7[of R X top I] assms by presburger
+  have B1:"is_inf (pwr X) (filters_on R X) (f`I) ?F1" by (metis A0 A1 A2 A3 A4 A5 A6 A7 finite_ind_fil2)
+  then obtain B2:"is_inf (pwr X)  (filters_on R X) (f`I) ?F2"
+    by (simp add: B0)
+  have B3:"is_clattice (pwr X) (filters_on R X)"
+    by (meson A0 A1 A5 A6 A7 lattice_filters_complete)
+  have B4:"(f`I) \<subseteq>(filters_on R X) "
+    by (simp add: A4 filters_on_iff image_subsetI)
+  have B5:"antisym (pwr X) (filters_on R X)"
+    by (simp add: antisym_on_def powrel8 set_eq_subset)
+  have B6:"Inf (pwr X) (filters_on R X) (f`I) = ?F1" 
+    using B1 B5 inf_equality[of "pwr X" "filters_on R X" " (f`I)" ?F1] by fastforce
+  also have B7:"... = ?F2" using B0 by blast
+  finally show ?thesis by blast
+qed
+
+
+
+
 
 lemma filter_closure_of_filters4_ne:
   "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X;A \<subseteq> filters_on R X; A \<noteq> {}; G \<in> ubd (pwr X) (filters_on R X) A\<rbrakk> \<Longrightarrow> (filter_closure R X (\<Union>A)) \<subseteq> G"
