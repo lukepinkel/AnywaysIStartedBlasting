@@ -4293,21 +4293,20 @@ lemma finite_ind_fil:
   shows finite_ind_fil1:"is_inf_semilattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))" and
         finite_ind_fil2:"is_lattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))" 
 proof-
-  show "is_inf_semilattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
+  show P0:"is_inf_semilattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
   proof-
-    assume isl:"is_inf_semilatticeR X"
-    show "is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I)"
-      using filters_inf_semilattice_inf
+    assume isl:"is_inf_semilattice R X"
+    obtain "(f`I) \<in> Pow_ne (filters_on R X)"
+      by (simp add: fil filters_on_iff image_subsetI ind2)
+    then show "is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
+      using isl por top filters_inf_semilattice_inf[of X R m "f`I"] by blast
+  qed
+  show P1:"is_lattice R X \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
+  by (simp add: P0 latt_iff)
+qed 
 
-lemma finite_ind_fil:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X; finite I; I \<noteq> {}; is_greatest R X top; (\<forall>i. i \<in> I \<longrightarrow> is_filter R X  (f i))\<rbrakk> \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
-  by (simp add: filters_inf_semilattice_inf filters_on_iff image_subsetI pow_neI)
 
-lemma finite_ind_fil_lattice:
-   "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; finite I; I \<noteq> {}; is_greatest R X top; (\<forall>i. i \<in> I \<longrightarrow> is_filter R X  (f i))\<rbrakk> \<Longrightarrow> is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
-  by (simp add: finite_ind_fil lattD41)
-
-lemma finite_ind_fil2:
+lemma finite_ind_fil3:
   fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and
           A1: "is_greatest R X top" and 
@@ -4316,24 +4315,26 @@ lemma finite_ind_fil2:
           A4:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
           A5:"(\<And>i. i \<in> I \<Longrightarrow> (x i) \<in> (f i))" and
           A6:"is_sup R X (x` I) s" and 
-          A7:"refl R X" and 
-          A8:"antisym R X" and 
-          A9:"trans R X"
+          A7:"pord R X"
   shows "s \<in> (\<Inter>(f` I))"
 proof-
-  have B0:"\<And>i. i \<in> I \<longrightarrow> s \<in> f i"
-    proof
-      fix i assume A10:"i \<in> I"
-      have B1:"(x i) \<in> (f i)" by (simp add: A5 A10)
-      have B2:"(x i) \<in> (x` I)"   by (simp add: A10) 
-      have B5:"s \<in> X"    by (meson A6 is_supE1) 
-      have B6:"(x i, s)\<in>R" by (meson A6 B2 is_supD1121)  
-      show "s \<in> f i"     by (meson A10 A4 B1 B5 B6 filter_memI) 
+  have B0:"\<And>i. i \<in> I \<Longrightarrow> s \<in> f i"
+  proof-
+    fix i assume A10:"i \<in> I"
+    obtain B0:"(x i) \<in> (f i)" and B1:"(x i) \<in> (x` I)" and B2:"is_filter R X (f i)"
+      by (simp add: A10 A4 A5)
+    obtain B3:"is_ord_cl X (f i) R"
+      by (simp add: B2 is_filterD1)
+    obtain B4:"s \<in> X"  by (meson A6 is_supD1) 
+    obtain B5:"(x i, s)\<in>R" by (meson A6 B1 is_supD1)
+    show "s \<in> f i"
+      by (meson B0 B3 B4 B5 is_ord_clE1)  
   qed
-  show "s \<in>  (\<Inter>(f` I))"   using B0 by blast
+  show "s \<in>  (\<Inter>(f` I))"   
+    using B0 by blast
 qed
 
-lemma finite_ind_fil3:
+lemma finite_ind_fil4:
   fixes f::"'b \<Rightarrow> 'a set"  and I::"'b set"
   assumes A0:"is_lattice R X" and
           A1:"is_greatest R X top" and 
@@ -4348,16 +4349,21 @@ lemma finite_ind_fil3:
 proof-
   define x where "x = (\<lambda>(i::'b). s)"
   have B0:"is_sup R X (x` I) s"
-    apply(rule is_supI7)
-    apply (metis A3 A4 A5 InterD equals0I filterD21 imageI)
-    apply (simp add: ub_imageI x_def)
-    apply (metis A4 A5 A6 INT_iff filterD21 reflD2 ub_imageI)
-    using A3 ubE x_def by fastforce
-  have B1:" (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))"  using A5 x_def by blast
-  show ?thesis  using B0 B1 by auto
+  proof(rule is_supI1)
+    show P0:"s \<in> X"
+      using A2 A3 A4 A5 is_filterD1 by fastforce
+    show "\<And>a. a \<in> x ` I \<Longrightarrow> (a, s) \<in> R"
+      using A6 P0 refl_def x_def by fastforce
+    show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> x ` I \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (s, b) \<in> R"
+      using A3 x_def by blast
+  qed
+  have B1:" (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))"  
+    using A5 x_def by blast
+  show ?thesis 
+     using B0 B1 by auto
 qed
 
-lemma finite_ind_fil4:
+lemma finite_ind_fil5:
   fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and 
           A1:"is_greatest R X top" and
@@ -4373,13 +4379,15 @@ proof-
   let ?F="(x` I)" let ?s="Sup R X (x` I)"
   have B0:"finite ?F"
     by (simp add: A2)
-  have B1:"?F \<subseteq> X"   by (meson A4 A5 filterD21 image_subsetI)
-  have B2:"is_sup R X ?F ?s"   by (simp add: A0 A3 A7 A8 B0 B1 bsup_finite2 lattD42)
-  then show ?thesis 
-  using A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil2[of R X top I f x ?s] by blast
+  have B1:"?F \<subseteq> X"
+    by (meson A4 A5 image_subset_iff is_filterD1 subsetD)      
+  have B2:"is_sup R X ?F ?s"
+    by (simp add: A0 A3 A6 A7 A8 B0 B1 l_finsup sup_equality2)  
+  then show ?thesis
+    by (metis A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil3) 
 qed
 
-lemma finite_ind_fil5:
+lemma finite_ind_fil6:
   fixes f::"'b \<Rightarrow> 'a set"  and I::"'b set"
   assumes A0:"is_lattice R X" and 
           A1:"is_greatest R X top" and
@@ -4391,9 +4399,9 @@ lemma finite_ind_fil5:
           A7:"antisym R X" and 
           A8:"trans R X"
   shows "s \<in> {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-  by (auto, metis A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil3 sup_equality)
+  by (auto, metis A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil4 sup_equality)
 
-lemma finite_ind_fil6:
+lemma finite_ind_fil7:
   fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and 
           A1:"is_greatest R X top" and 
@@ -4403,11 +4411,23 @@ lemma finite_ind_fil6:
           A5:"refl R X" and 
           A6:"antisym R X" and 
           A7:"trans R X"
-  shows "\<Inter>(f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-  apply(auto)
-  apply (smt (verit, best) A0 A1 A2 A3 A4 A5 A6 A7 INT_iff finite_ind_fil3 sup_equality)
-  by (smt (verit) A0 A1 A2 A3 A4 A5 A6 A7 INT_E finite_ind_fil4)
-
+  shows "\<Inter>(f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}" (is "?LHS=?RHS")
+proof
+  show "?LHS \<subseteq> ?RHS"
+  proof
+    fix a assume "a \<in> ?LHS"
+    then show "a \<in> ?RHS" 
+    using finite_ind_fil4[of R X top I f a] A0 A1 A2 A3 A4 A5 A6 A7 sup_equality by fastforce 
+  qed
+  next
+  show "?RHS \<subseteq> ?LHS"
+  proof
+    fix a assume "a \<in> ?RHS"
+    then obtain x where "\<And>i. i \<in> I \<Longrightarrow> (x i) \<in> (f i)" and "a=Sup R X (x` I)" by blast
+    then show "a \<in> ?LHS" using finite_ind_fil5[of R X top I f x] 
+      using A0 A1 A2 A3 A4 A5 A6 A7 sup_equality by fastforce
+  qed
+qed
 lemma exp_lattice_filter_inf:
  fixes f::"'b \<Rightarrow> 'a set" and x::"'b \<Rightarrow> 'a" and I::"'b set"
   assumes A0:"is_lattice R X" and 
