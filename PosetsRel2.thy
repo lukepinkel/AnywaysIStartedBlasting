@@ -1632,9 +1632,10 @@ lemma clr_equality:
   assumes A0:"antisym R X" and A1:"clr R X C" and A2:"is_least R (ubd R  C {x}) c"
   shows " cl_from_clr R C x = c"
 proof-
-  obtain B0:"(ubd R  C {x}) \<subseteq> X" and B1:"c \<in> X"  by (meson A1 A2 clrD1 greatestD subsetD subset_trans ubd_sub)
+  obtain B0:"(ubd R  C {x}) \<subseteq> X" and B1:"c \<in> X" 
+   by (meson A1 A2 clrD1 greatestD subsetD subset_trans ubd_sub)
   then show "cl_from_clr R C x = c" 
-    unfolding cl_from_clr_def  Least_def using A0 A1 A2 greatest_equality3
+    unfolding cl_from_clr_def Least_def using A0 A1 A2 greatest_equality3
     by (metis Greatest_def antisym_on_converse antisym_on_subset)
 qed
 
@@ -1646,17 +1647,21 @@ proof
   show B0:"(cl_from_clr R C)`X  \<subseteq> C"
   proof
     fix y assume L:"y \<in> (cl_from_clr R C)`X"
-    then obtain x where "x \<in> X" and "is_least R (ubd R C {x}) y"   using A1 A2 clrD1 clr_equality by fastforce
-    then show "y \<in> C" by (meson greatestD ubdD1)
+    then obtain x where "x \<in> X" and "is_least R (ubd R C {x}) y"  
+      using A1 A2 clrD1 clr_equality by fastforce
+    then show "y \<in> C" 
+      by (meson greatestD ubdD1)
   qed
   next
   show B1:"C \<subseteq> (cl_from_clr R C)`X"
   proof
     fix y assume B10:"y \<in> C"
-    then obtain "is_least R (ubd R C {y}) y"  by (metis A0 greatestI2 is_sup_def reflE1 singletonD singletonI sup_maxE1)
-    also obtain "y \<in> X"  using A2 B10 clrD1 by blast
+    then obtain "is_least R (ubd R C {y}) y"  
+      by (metis A0 greatestI2 is_sup_def reflE1 singletonD singletonI sup_maxE1)
+    also obtain "y \<in> X"  
+      using A2 B10 clrD1 by blast
     then show "y \<in> (cl_from_clr R C)`X"
-    by (metis A1 A2 calculation clr_equality rev_image_eqI)
+      by (metis A1 A2 calculation clr_equality rev_image_eqI)
   qed
 qed
   
@@ -5358,30 +5363,34 @@ proof-
   show "fin_inf_irr R X m"
     by (meson B0 fin_inf_irrI1)
 qed
-(*
+
 lemma pfilters_metofprimes:
   assumes A0:"distributive_lattice R X" and 
           A1:"is_greatest R X top" and
           A2:"F \<in> pfilters_on R X" and
-          A3:"antisym R X" and
-          A4:"trans R X" and
-          A5:"refl R X" 
-  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " and "F = Inf (pwr X) (filters_on R X) M"
+          por:"pord R X"
+  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " 
+                  and "F = Inf (pwr X) (filters_on R X) M"
 proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have B0:"compactly_generated ?RX ?FX" 
-    using A0 A1 A3 A4 A5  distr_latticeD5 filters_on_lattice_compactgen by metis
-  have B1:"is_clattice ?RX ?FX" 
-     using A0 A1 A3 A4 A5  distr_latticeD5 lattice_filters_complete by metis
+  have lat:"is_lattice ?RX ?FX"
+   by (simp add: A0 distr_lattice_filters por)
+  have B0:"compactly_generated ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por) 
+  have B1:"is_clattice ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por) 
   have B2:"F \<in> ?FX"
     using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast
   have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
-    using mirred_temp3[of ?RX ?FX F] B0 B1 B2
+    using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (metis PowI filters_on_def is_filterD1 mem_Collect_eq powrel6 powrel7 pwr_memI refl_def subsetI)
   have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  
     by fastforce
   then show ?thesis  
     using B3 that by blast
 qed
+
+
+(*
 
 lemma sup_prime_pfilterI3:
   assumes A0:"distributive_lattice R X" and 
