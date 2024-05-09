@@ -1212,11 +1212,11 @@ qed
 
 
 lemma distr_latticeI1:
-  "\<lbrakk>ord R X; refl R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
+  "\<lbrakk>pord R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
   by(simp add:distributive_lattice_def distribD3)
 
 lemma distr_latticeI2:
-  "\<lbrakk>ord R X; refl R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
+  "\<lbrakk>pord R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
   by(simp add:distributive_lattice_def distI3)
 
 
@@ -1229,17 +1229,55 @@ lemma distr_latticeD2:
   by (simp add: distributive_lattice_def insert_commute)
  
 lemma distr_latticeD3:
-  "\<lbrakk>ord R X; refl R X; distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+  "\<lbrakk>pord R X; distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
   using distribD2 distributive_lattice_def by fastforce
  
 lemma distr_latticeD4:
-  "\<lbrakk>ord R X; refl R X; distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf R X {Sup R X {y, z}, x} = Sup R X {Inf R X {y, x}, Inf R X {z, x}}"
+  "\<lbrakk>pord R X; distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf R X {Sup R X {y, z}, x} = Sup R X {Inf R X {y, x}, Inf R X {z, x}}"
   by (simp add: distr_latticeD3 insert_commute)
-
 
 lemma distr_latticeD5:
   "distributive_lattice R X \<Longrightarrow> is_lattice R X" 
   by (simp add: distributive_lattice_def)
+
+lemma distributive_lattice_dual:
+  assumes por:"pord R X"
+  shows "distributive_lattice R X  \<Longrightarrow> distributive_lattice (dual R) X"
+proof-
+  assume lhs:"distributive_lattice R X" 
+  show "distributive_lattice (dual R) X"
+  proof(rule distr_latticeI1)
+    show "pord (dual R) X"
+      by (simp add: por refl_iff)
+    show "is_lattice (dual R) X"
+      using dual_lattice distr_latticeD5 lhs by blast
+    show " \<And>x y z. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> (Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}}, Sup (dual R) X {x, Inf (dual R) X {y, z}}) \<in> dual R"
+    proof-
+      fix x y z assume x0:"x \<in> X" and y0:"y \<in> X" and z0:"z \<in> X"
+      have B0:"Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}} = Sup R X {Inf R X {x,y}, Inf R X {x,z}}"
+        by (simp add: Sup_def)
+      have B1:"Sup (dual R) X {x, Inf (dual R) X {y, z}} = Inf R X {x, Sup R X {y,z}}"
+        by (simp add: Sup_def)
+      have B2:"(Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R"
+        using por x0 y0 z0 distrib_inf_le[of X R x y z] distr_latticeD3[of X R x y z] lhs distr_latticeD5[of R X] by fastforce 
+      then show "(Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}}, Sup (dual R) X {x, Inf (dual R) X {y, z}}) \<in> dual R"
+        using B0 B1 by force
+    qed
+  qed
+qed
+
+lemma dist_lattice_dual:
+  assumes por:"pord R X"
+  shows "distributive_lattice R X  \<longleftrightarrow> distributive_lattice (dual R) X" (is "?lhs \<longleftrightarrow>?rhs")
+proof
+  assume lhs:?lhs 
+  show ?rhs
+  using distributive_lattice_dual lhs por by blast
+next
+  assume rhs:?rhs then obtain "pord (dual R) X"
+    by (simp add: por refl_iff)
+  then show ?lhs using distributive_lattice_dual[of X "dual R"]   by (simp add: rhs)
+qed
 
 lemma distrib_I3:
   "\<lbrakk>ord R X;distributive_lattice R X;refl R X;x\<in>X;y\<in>X;z\<in>X ;Inf R X {x, z} = Inf R X {y, z}; Sup R X {x, z}=Sup R X {y, z}\<rbrakk> \<Longrightarrow> x=y"
@@ -3663,29 +3701,14 @@ proof-
       using B1 by blast
     show "distributive_lattice ?R ?F"
     proof(rule distr_latticeI1)
-      show "ord ?R ?F"
-        by (meson PowI filters_on_iff is_filterD1 powrel6 powrel7 subsetI)
-      show "refl ?R ?F"
-        by (simp add: filters_on_iff is_filterD1 pwr_memI refl_def)
+      show "pord ?R ?F"
+        by (meson PowI filters_on_iff is_filterD1 powrel6 powrel7 pwr_memI refl_def subsetI)
       show " is_lattice ?R ?F"
         using B02 by blast
       show "\<And>x y z. \<lbrakk>x \<in> ?F; y \<in> ?F; z \<in> ?F\<rbrakk> \<Longrightarrow>  (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
         using P by blast
     qed
 qed
-(*
-TODO:  the converse: first prove some lemmas about sublattices and inheritance then specify
-       using the principal embedding.  Or just use the latter straight off the bat.
-*)
-
-(*
-                   (y \<or> x2) \<and> (y \<or> t) = y \<or> (x2 \<and> t)
-
-(x1 \<or> (x2 \<and> t)) \<and> (y \<or> x2) \<and> (y \<or> t) = (x1 \<or> (x2 \<and> t)) \<and> (y \<or> (x2 \<and> t))
-
-= (x2 \<and> t) \<or> (x1 \<and> y)
-
-*)
 
 
 lemma sup_primeD1:
@@ -3817,30 +3840,17 @@ qed
 
 
 lemma lattice_dualization:
-  "\<lbrakk>is_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> (\<And>R X. \<lbrakk>is_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> P R X) \<Longrightarrow> P (converse R) X "
-  proof-
-    assume A0:"is_lattice R X" and A1:"antisym R X" and A2:"refl R X" and A3:"trans R X" and A4:"(\<And>R X. \<lbrakk>is_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> P R X)"
-    have B0:"is_lattice (converse R) X"
-      by (metis A0 converse_converse lattD1 lattD21 lattD22 lattI1)
-    also obtain  B1:"antisym (converse R) X" and B2:"refl (converse R) X" and B3:"trans (converse R) X"
-      by (meson A1 A2 A3 antisym_on_converse converseI refl_def trans_on_converse)
-    then show "P (converse R) X"
-      using A4 calculation by blast
-qed
-
+  assumes lat:"is_lattice R X" and por:"pord R X" and
+          lem:"(\<And>R X. \<lbrakk>is_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
+  shows "P (converse R) X"
+  using dual_lattice lat lem por refl_dualI by fastforce
 
 lemma distributive_lattice_dualization:
-  "\<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> (\<And>R X. \<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> P R X) \<Longrightarrow> P (converse R) X "
-  proof-
-    assume A0:"distributive_lattice R X" and A1:"antisym R X" and A2:"refl R X" and A3:"trans R X" and A4:"(\<And>R X. \<lbrakk>distributive_lattice R X; antisym R X; refl R X; trans R X\<rbrakk> \<Longrightarrow> P R X)"
-    have B0:"is_lattice R X"  by (simp add: A0 distr_latticeD5)
-    then have B1:"is_lattice (converse R) X"    by (simp add: A1 A2 A3 lattice_dualization)
-    also have B2:"distributive_lattice (converse R) X"  by (smt (verit, best) A0 A1 A2 A3 Sup_def calculation converse_converse distr_latticeD3 distributive_lattice_def)
-    obtain B3:"antisym (converse R) X" and B4:"refl (converse R) X" and B5:"trans (converse R) X"
-      by (meson A1 A2 A3 antisym_on_converse converseI refl_def trans_on_converse)
-    then show "P (converse R) X"
-      using A4 B2 by blast
-qed
+  assumes lat:"distributive_lattice R X" and por:"pord R X" and
+          lem:"(\<And>R X. \<lbrakk>distributive_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
+  shows "P (converse R) X"
+  by (simp add: distributive_lattice_dual lat lem por refl_dualI)
+
 
 lemma fin_irr_dualization:
   "\<lbrakk>fin_inf_irr R X x; antisym R X; trans R X; refl R X\<rbrakk> \<Longrightarrow> (\<And>R X x. \<lbrakk>fin_sup_irr R X x; antisym R X; trans R X; refl R X\<rbrakk> \<Longrightarrow> P R) \<Longrightarrow> P (converse R) "
@@ -7151,6 +7161,5 @@ proof-
 qed
 
 
-unused_thms
 
 end
