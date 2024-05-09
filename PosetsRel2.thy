@@ -5473,29 +5473,29 @@ proof-
 qed
 
 
-
-(*
-
-
 section FilterOfSets
 
 lemma setfilters0:
   "is_filter (pwr X) (Pow X) EF \<Longrightarrow> F \<in> EF \<Longrightarrow> F \<subseteq> X"
-  using filterD2 by blast
+  using is_filterD1 by blast
 
 lemma setfilters1:
   assumes A0:"is_filter (pwr X) (Pow X) EF" and A1:"F1 \<in> EF" and A2:"F2 \<in> EF"
   shows "F1 \<inter> F2 \<in> EF"
 proof-
-  have B0:"is_inf (pwr X) (Pow X) {F1, F2} (F1 \<inter> F2)" by (meson A0 A1 A2 PowI binf_powrrel setfilters0)
-  then show "(F1 \<inter> F2) \<in> EF"   by (meson A0 A1 A2 filter_finf_closed)
+  obtain A3:"F1 \<in> Pow X" and A4:"F2 \<in> Pow X"
+    using A0 A1 A2 is_filterD1 by blast
+  have B0:"is_inf (pwr X) (Pow X) {F1, F2} (F1 \<inter> F2)"
+    by (metis A3 A4 Inf_insert Inter_empty empty_subsetI inf_top.right_neutral insert_not_empty insert_subsetI powrel4b)
+  then show "(F1 \<inter> F2) \<in> EF"
+    by (meson A0 A1 A2 filter_inf_closed1) 
 qed
        
 
 lemma setfilters2:
   assumes A0:"is_filter (pwr X) (Pow X) EF" and A1:"A \<in> EF" and A2:"B \<in> Pow X" and A3:"A \<subseteq> B"
   shows "B \<in> EF"
-  by (meson A0 A1 A2 A3 PowD filter_memI pwr_mem_iff)
+  by (meson A0 A1 A2 A3 PowD is_filterD1 is_ord_clE1 pwr_memI)
 
 lemma setfilters3:
   "is_pfilter (pwr X) (Pow X) EF \<longleftrightarrow> (is_filter (pwr X) (Pow X) EF) \<and> (EF \<noteq> (Pow X))"
@@ -5509,58 +5509,66 @@ lemma pfilter_sets:
           A3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
           A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)" 
   shows "is_pfilter (pwr X) (Pow X) F "
-  apply(rule is_pfilterI1)
-  apply(rule filterI1, simp add:A1, simp add:A0)
-  proof-
-  show "is_dir F (dual (pwr X))"
-    apply(rule is_dirI1)
-    proof-
-        fix A B assume "A \<in> F" "B \<in> F"
-        then obtain "A \<inter> B \<in> F \<and> A \<inter> B \<subseteq> A \<and>  A \<inter> B \<subseteq> B" using A3[of A B] by simp
-        then show "\<exists>c\<in>F.  (A, c) \<in> dual (pwr X) \<and> (B, c) \<in> dual (pwr X)"
-          by (meson A0 \<open>(A::'a::type set) \<in> (F::'a::type set set)\<close> \<open>(B::'a::type set) \<in> (F::'a::type set set)\<close> converse_iff powsimp1 pwr_mem_iff)
+  proof(rule is_pfilterI1)
+  show "is_filter (pwr X) (Pow X) F"
+  proof(rule is_filterI1)
+    show "F \<noteq> {}"
+      by (simp add: A1)
+    show  "F \<subseteq> Pow X"
+      by (simp add: A0)
+    show "is_dir F (dual (pwr X))"
+    proof(rule is_dirI1)
+      fix a b assume "a \<in> F" and "b \<in> F" 
+      then show "\<exists>c \<in> F. (a,c)\<in>(dual (pwr X)) \<and> (b,c)\<in>(dual (pwr X))"
+        by (meson A0 A3 PowD converseI in_mono inf.cobounded1 inf.cobounded2 pwr_mem_iff)
     qed
-  show "is_ord_cl (Pow X) F (pwr X)"   using A4 is_ord_clI1 by (metis powrel8) 
-  show "Pow X \<noteq> F"   using A2 by auto
+    show "is_ord_cl (Pow X) F (pwr X)"
+      by (meson A4 is_ord_clI1 powrel8)
+  qed
+  show "Pow X \<noteq> F"
+    using A2 by auto 
 qed
 
 lemma sets_pfilter:
   assumes "is_pfilter (pwr X) (Pow X) F"
-  shows A1:"F \<noteq> {}" and
-        A2:"F \<noteq> Pow X" and
-        A3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
-        A4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)"
-  using assms filterD1 is_pfilterD1 apply auto[1]
-  using assms is_pfilter_def apply blast 
-  proof-
-    show "\<And>(A::'a set) B::'a set. A \<in> F \<Longrightarrow> B \<in> F \<Longrightarrow> A \<inter> B \<in> F"
-  proof-
-      have B0: "is_dir F (dual (pwr X))"  using assms filterD3 is_pfilter_def by blast
-      fix A B assume "A \<in> F" "B \<in> F"
-      then have B1:"\<exists>c\<in>F.  (A, c) \<in> dual (pwr X) \<and> (B, c) \<in> dual (pwr X)"  using B0 is_dirE1[of F "pwr X" A B]  by (meson is_dirE1)
-      then obtain C where "C \<in> F" "C \<subseteq> A" "C \<subseteq> B"   by (metis converse.simps pwr_memD) 
-      then have B2:"C \<in> F \<and> C \<subseteq> A \<inter> B" by blast
-      also have B3:"A \<inter> B \<in> Pow X"
-        by (meson Pow_iff \<open>(A::'a::type set) \<in> (F::'a::type set set)\<close> assms in_mono inf.coboundedI1 is_pfilterD3)
-      then show "A \<inter> B \<in> F"
-        using \<open>(A::'a::type set) \<in> (F::'a::type set set)\<close> \<open>(B::'a::type set) \<in> (F::'a::type set set)\<close> assms is_pfilterD1 setfilters1 by blast  
-    qed
-    show "\<And>(A::'a set) B::'a set. A \<in> F \<Longrightarrow> B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> B \<in> F"
-      using assms  is_pfilterD1  by (metis setfilters2) 
-  show "F \<noteq> Pow X"  using assms is_pfilter_def by blast
+  shows sets_pfilter1:"F \<noteq> {}" and
+        sets_pfilter2:"F \<noteq> Pow X" and
+        sets_pfilter3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)" and
+        sets_pfilter4:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)" and
+        sets_pfilter5:"{} \<notin> F"
+proof-
+  show P0:"F \<noteq> {}"
+    using assms is_filterD1 is_pfilterD1 by blast
+  show P1:"F \<noteq> Pow X"
+    using assms is_pfilterD2 by blast
+  show P2:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)"
+    using assms is_pfilterD1 setfilters1 by blast 
+  show P3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)"
+    using assms is_pfilterD1 setfilters2 by blast
+  show "{} \<notin> F"
+  proof(rule ccontr)
+    assume "\<not>({} \<notin> F)" then obtain contr:"{} \<in> F" by simp
+    then obtain sub1:"F \<subseteq> Pow X" and sub2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<in> F"
+      by (metis PowD Pow_bottom assms is_filterD1 is_pfilterD1 setfilters2)
+    then obtain sub3:"F=Pow X" 
+      by blast
+    then show False
+      by (simp add: P1)
+  qed
 qed
+
  
 lemma pfilter_sets_comp:
   assumes A0:"is_pfilter (pwr X) (Pow X) F" and A1:"(X-A) \<in> F"
   shows "A \<notin> F"
 proof(rule ccontr)
-  assume "\<not>(A \<notin> F)"
-  then have  "A \<in> F" by simp
-  then have "(X-A) \<inter> A \<in> F"  using A0 A3 is_pfilterI1 local.A1 by blast
-  then have "{} \<in> F"  by (simp add: Int_commute)
-  then have "F=Pow X"
-    by (meson A0 empty_subsetI filterD2 is_pfilterD1 setfilters2 subset_antisym subset_iff)
-  then show False using A0   by (simp add: is_pfilter_def)
+  assume "\<not>(A \<notin> F)" then have  "A \<in> F" by simp
+  then have "(X-A) \<inter> A \<in> F"
+    using A0 A1 sets_pfilter3 by blast 
+  then have "{} \<in> F"  
+    by (simp add: Int_commute)
+  then show False
+    using A0 sets_pfilter5 by blast
 qed
     
 lemma pfilters_sets_comp2:
@@ -5573,12 +5581,12 @@ lemma pfilters_sets_comp3:
 
 
 lemma principal_filter_sets:
-  "x \<in> X \<Longrightarrow> is_filter (pwr X) (Pow X) (lorc (pwr X) (Pow X) {x})"
-  by (meson Pow_iff empty_subsetI insert_subsetI lorc_filter powrel1 powrel2 pwr_memI reflI1 subset_refl)
+  "x \<in> X \<Longrightarrow> is_filter (pwr X) (Pow X) (lcro (pwr X) (Pow X) {x})"
+  by (simp add: lcro_filter powrel1 powrel2 pwr_memI refl_def)
 
 lemma principal_pfilter_sets:
-  "x \<in> X \<Longrightarrow> is_pfilter (pwr X) (Pow X) (lorc (pwr X) (Pow X) {x})"
-  by (metis Pow_bottom empty_not_insert empty_subsetI equalityI is_pfilterI1 lorcD12 principal_filter_sets pwr_mem_iff)
+  "x \<in> X \<Longrightarrow> is_pfilter (pwr X) (Pow X) (lcro (pwr X) (Pow X) {x})"
+  by (metis Pow_bottom empty_iff insert_subset lcroD1 powrel8 principal_filter_sets setfilters3)
 
 
 lemma pmb_filters2:
@@ -5587,19 +5595,28 @@ lemma pmb_filters2:
   shows "is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) F"
 proof-
   let ?X="Pow X" let ?R="(pwr X)"
-  have B0:"F \<in> pfilters_on ?R ?X"  using A0 is_pfilter_def  by (simp add: pfilters_memI)
+  have B0:"F \<in> pfilters_on ?R ?X"
+    by (simp add: A0 pfilters_on_iff) 
   have B1:"\<And>G. \<lbrakk>G \<in> filters_on ?R ?X;  F \<subset> G \<rbrakk> \<Longrightarrow> G = ?X"
   proof-
     fix G assume A2:"G \<in> filters_on ?R ?X" and A3:"F \<subset> G"
-    obtain z where B10: "z \<in> G - F"  using A3 by auto
-    have B11:"z \<notin> F" using B10 by blast 
-    have B12:"X-z \<in> F"  by (meson A1 A2 B10 Diff_iff filterD21 filters_on_iff)
-    have B13:"X-z \<in> G \<and> z \<in> G"  using A3 B10 B12 by blast
-    have B14:"is_filter ?R ?X G"   using A2 filters_on_iff by auto
-    show "G=?X"  using B13 B14    using is_pfilterI1 pfilters_sets_comp2 by blast 
+    obtain z where B10: "z \<in> G - F"  
+      using A3 by auto
+    have B11:"z \<notin> F" 
+      using B10 by blast 
+    have B12:"X-z \<in> F"
+      by (meson A1 A2 B10 B11 DiffD1 filters_on_iff in_mono is_filterD1) 
+    have B13:"X-z \<in> G \<and> z \<in> G"  
+      using A3 B10 B12 by blast
+    have B14:"is_filter ?R ?X G"  
+       using A2 filters_on_iff by auto
+    show "G=?X"  
+      using B13 B14  is_pfilterI1 pfilters_sets_comp2 by blast 
   qed
-  have B2:"\<And>G. \<lbrakk>G \<in> pfilters_on ?R ?X;  F \<subseteq> G \<rbrakk> \<Longrightarrow> G = F" using B1   by (metis filters_on_iff is_pfilter_def pfilters_memD0 psubsetI)
-  show ?thesis  by (metis B0 B2 maximal_pfiltersI1)
+  have B2:"\<And>G. \<lbrakk>G \<in> pfilters_on ?R ?X;  F \<subseteq> G \<rbrakk> \<Longrightarrow> G = F"
+    by (metis B1 filters_on_iff is_pfilterD1 is_pfilterD2 pfilters_on_iff psubsetI)
+  show ?thesis
+    by (simp add: B0 B2 maximalI1 powrel8)
 qed
 
 lemma finer_proper_filter:
@@ -5611,45 +5628,63 @@ proof-
   show "is_pfilter ?R ?X H"
   proof(rule is_pfilterI1)
     show "is_filter ?R ?X H"
-    apply(rule filterI1)
-      using A0 H_def filterD1 is_pfilterD1 local.A1 apply fastforce
-      using H_def  apply blast
+    proof(rule is_filterI1)
+      show P0:"H \<noteq> {}"
+        using A0 H_def is_filterD1 is_pfilterD1 by fastforce
+      show P1:"H \<subseteq> Pow X"
+        using H_def by blast
+      show P2:"is_dir H (dual (pwr X))"
       proof(rule is_dirI1)
-        show "\<And>(a::'a set) b::'a set. a \<in> H \<Longrightarrow> b \<in> H \<Longrightarrow> \<exists>c::'a set\<in>H. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
-        proof-
-          fix a b assume A3:"a \<in> H" and A4:"b \<in> H"
-          obtain aB bB where B0:"aB \<in> F" and B1:"bB \<in> F" and B2:"A \<inter> aB \<subseteq> a" and B3:"A \<inter> bB \<subseteq> b"  using H_def local.A3 local.A4 by auto
-          obtain B4:"aB \<inter> bB \<in> F"  using A0 B0 B1 A3 by (simp add: Posets21.A3) 
-          obtain B5:"A \<inter> aB \<inter> bB \<in> H"    using B2 B4 H_def local.A3 by blast
-          also have B6:"A \<inter> aB \<inter> bB \<subseteq> a \<and> A \<inter> aB \<inter> bB \<subseteq> b"    using B2 B3 by blast
-          then show " \<exists>c::'a set\<in>H. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"   using calculation
-            by (metis (no_types, lifting) H_def PowD converse_iff local.A3 local.A4 mem_Collect_eq pwr_memI)
+        fix a b assume A3:"a \<in> H" and A4:"b \<in> H"
+        obtain aB bB where B0:"aB \<in> F" and B1:"bB \<in> F" and B2:"A \<inter> aB \<subseteq> a" and B3:"A \<inter> bB \<subseteq> b"
+          using A3 A4 H_def by auto 
+        obtain B4:"aB \<inter> bB \<in> F"
+          using A0 B0 B1 sets_pfilter3 by blast 
+        obtain B5:"A \<inter> aB \<inter> bB \<in> H"
+          using A4 B3 B4 H_def inf.absorb_iff2 by fastforce 
+        also have B6:"A \<inter> aB \<inter> bB \<subseteq> a \<and> A \<inter> aB \<inter> bB \<subseteq> b"  
+          using B2 B3 by blast
+        then show " \<exists>c\<in>H. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
+          by (meson A3 A4 P1 PowD calculation converseI pwr_memI subset_eq)  
         qed
-        show "is_ord_cl (Pow X) H (pwr X)"
-        apply(rule is_ord_clI1) using H_def inf.absorb_iff2 powrel8 by fastforce 
+      show "is_ord_cl (Pow X) H (pwr X)"
+      proof(rule is_ord_clI1)
+        fix a b assume B0:"a \<in>H" and B1:"b \<in> Pow X" and B2:"(a,b)\<in>pwr X"
+        then obtain aB where B3:"aB \<in> F" and B4:"A \<inter> aB \<subseteq> a" using H_def by blast
+        then obtain B5:"A \<inter> aB \<subseteq> b"
+          using B2 powrel8 by fastforce
+        then show "b \<in> H"
+          using B1 B3 H_def by blast
       qed
-  show "Pow X \<noteq> H"
+    qed
+    show "Pow X \<noteq> H"
     proof-
-      have B7:"{} \<notin> H"   by (simp add: H_def Int_commute local.A2)
+      have B7:"{} \<notin> H"   
+        by (simp add: H_def Int_commute local.A2)
       then show ?thesis by blast
-     qed
+    qed
   qed
   show "F \<subseteq> H"
   proof
     fix f assume A4:"f \<in> F"
     have B8:"X \<in> F"
-      by (meson A0 Pow_top is_pfilterD1 is_pfilterD3 local.A4 powsimp1 setfilters2) 
-    also have B9:"X \<inter> f \<subseteq> f" by simp
-    then show "f \<in> H"  using A0 H_def is_pfilterD3 local.A4 by force
+      using A0 A4 pfilters_sets_comp3 by auto
+    also have B9:"X \<inter> f \<subseteq> f" 
+      by simp
+    then show "f \<in> H"
+      using A0 A4 H_def is_pfilterD1 setfilters0 by fastforce 
   qed
 qed
 
 lemma principal_ufilter_sets:
-  "x \<in> X \<Longrightarrow> is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) (lorc (pwr X) (Pow X) {x})"
-  apply(rule pmb_filters2)
-  apply (simp add: principal_pfilter_sets)
-  by (simp add: lorc_mem_iff1 pwr_mem_iff)
+  "x \<in> X \<Longrightarrow> is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) (lcro (pwr X) (Pow X) {x})"
+proof(rule pmb_filters2)
+    show " x \<in> X \<Longrightarrow> is_pfilter (pwr X) (Pow X) (lcro (pwr X) (Pow X) {x})"
+      by (simp add: principal_pfilter_sets)
+    show "\<And>xa. x \<in> X \<Longrightarrow> xa \<in> Pow X \<Longrightarrow> (xa \<in> lcro (pwr X) (Pow X) {x} \<or> X - xa \<in> lcro (pwr X) (Pow X) {x}) \<and> \<not> (xa \<in> lcro (pwr X) (Pow X) {x} \<and> X - xa \<in> lcro (pwr X) (Pow X) {x})"
+      by (simp add: lcro_def pwr_mem_iff)
+qed
 
 unused_thms
-*)
+
 end
