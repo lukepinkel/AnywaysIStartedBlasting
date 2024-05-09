@@ -5364,7 +5364,7 @@ proof-
     by (meson B0 fin_inf_irrI1)
 qed
 
-lemma pfilters_metofprimes:
+lemma pfilter_meet_of_primes:
   assumes A0:"distributive_lattice R X" and 
           A1:"is_greatest R X top" and
           A2:"F \<in> pfilters_on R X" and
@@ -5373,8 +5373,6 @@ lemma pfilters_metofprimes:
                   and "F = Inf (pwr X) (filters_on R X) M"
 proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have lat:"is_lattice ?RX ?FX"
-   by (simp add: A0 distr_lattice_filters por)
   have B0:"compactly_generated ?RX ?FX"
     by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por) 
   have B1:"is_clattice ?RX ?FX"
@@ -5390,32 +5388,29 @@ proof-
 qed
 
 
-(*
 
 lemma sup_prime_pfilterI3:
   assumes A0:"distributive_lattice R X" and 
-          A1:"antisym R X" and 
-          A2:"trans R X" and 
-          A3:"refl R X" and
-          A4:"fin_inf_irr (pwr X) (filters_on R X) F" and 
-          A5:"is_pfilter R X F"
+          A1:"pord R X" and
+          A2:"fin_inf_irr (pwr X) (filters_on R X) F" and 
+          A3:"is_pfilter R X F"
   shows "sup_prime R X F"
 proof-
   let ?R="pwr X" let ?X="filters_on R X" 
-  obtain C1:"antisym ?R ?X" and C2:"refl ?R ?X" and C3:"trans ?R ?X"  
-    by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
-  obtain C4:"F \<in> ?X"  
-    by (simp add: A5 filters_on_iff is_pfilterD1)
+  obtain C1:"antisym ?R ?X" and C2:"refl ?R ?X" and C3:"trans ?R ?X"
+    by (meson PowI filters_on_iff is_filterD1 powrel3 powrel6 powrel7 reflI1 refl_onD subsetI)  
+  obtain C4:"F \<in> ?X"
+    by (simp add: A3 filters_on_iff is_pfilterD1)  
   obtain C5:"distributive_lattice ?R ?X"    
     by (simp add: A0 A1 A2 A3 lattice_filters_distr)
-  have B0:"elem_inf_prime ?R ?X F" 
-    using elem_inf_primeI3[of ?R ?X F] C1 C2 C3 C4 C5 A4 by blast
+  have B0:"elem_inf_prime ?R ?X F"
+    by (simp add: A2 C1 C2 C3 C4 C5 elem_inf_primeI3) 
   have B1:"(\<And>F1 F2. \<lbrakk>F1 \<in> ?X; F2 \<in> ?X; (Inf ?R ?X {F1, F2}, F)\<in>(pwr X)\<rbrakk> \<Longrightarrow> (F1, F)\<in>?R \<or> (F2, F)\<in>?R)" 
     by (meson B0 elem_inf_primeD1)
-  have B2:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"  
-    by (metis A0 A1 A2 A3 A5 B1 distr_latticeD5 filters_lattice_inf_op filters_on_iff is_pfilterD3 powrel8 pwr_memI) 
-  show ?thesis 
-    by (simp add: A0 A1 A2 A3 A5 B2 distr_latticeD5 sup_prime_pfilterI2) 
+  have B2:"(\<And>F1 F2. \<lbrakk>is_filter R X  F1; is_filter R X  F2; F1 \<inter> F2 \<subseteq> F\<rbrakk> \<Longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F)"
+    by (metis A0 A1 B1 C2 C4 distr_latticeD5 filters_on_iff lattice_filters_isl7 pwr_mem_iff reflD2)  
+  show ?thesis
+    by (simp add: A0 A1 A3 B2 distr_latticeD5 sup_prime_pfilterI2) 
 qed
 
 lemma prime_filter_irr3_converse:
@@ -5423,50 +5418,63 @@ lemma prime_filter_irr3_converse:
   by (simp add: is_pfilterI1 sup_prime_pfilterI3)
 
 
-lemma pfilters_metofprimes2:
+lemma pfilters_meet_of_primes2:
   assumes A0:"distributive_lattice R X" and
           A1:"is_greatest R X top" and
           A2:"F \<in> pfilters_on R X" and
-          A3:"antisym R X" and 
-          A4:"trans R X" and 
-          A5:"refl R X"
-  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> sup_prime R X Fm " and "F = Inf (pwr X) (filters_on R X) M"
+          por:"pord R X"
+  obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> sup_prime R X Fm " and 
+                  "F = Inf (pwr X) (filters_on R X) M"
 proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have B0:"compactly_generated ?RX ?FX"  
-     using A0 A1 A3 A4 A5 distr_latticeD5 filters_on_lattice_compactgen lattD1 by metis
-  obtain C1:"antisym ?RX ?FX" and C2:"refl ?RX ?FX" and C3:"trans ?RX ?FX"  
-    by (meson filters_is_clr1 powrel6 powrel7 powsimp1 pwr_mem_iff reflI1 subset_refl)
-  obtain C4:"distributive_lattice ?RX ?FX"  
-    by (simp add: A0 A3 A4 A5 lattice_filters_distr)
-  have B1:"is_clattice ?RX ?FX"  
-    using A0 A1 A3 A4 A5 distr_latticeD5 lattice_filters_complete by metis
-  have B2:"F \<in> ?FX" 
-    by (simp add: A2 filters_on_iff pfilters_memD1)
-  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
-    using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (meson filters_is_clr1 powrel3 powrel6 powrel7 refl_def refl_onD subset_iff)
+  have B0:"compactly_generated ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por)  
+  obtain C1:"antisym ?RX ?FX" and C2:"refl ?RX ?FX" and C3:"trans ?RX ?FX"
+    by (meson PowI antisym_on_def filters_on_iff is_filterD1 powrel3 powrel7 powrel8 refl_def refl_on_def subsetI subset_antisym)  
+  obtain C4:"distributive_lattice ?RX ?FX"
+    by (simp add: A0 lattice_filters_distr por)  
+  have B1:"is_clattice ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por)  
+  have B2:"F \<in> ?FX"
+    using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast 
+  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}"
+    by (simp add: B0 B1 B2 C1 C2 C3 mirred_temp3) 
   have B4:"\<And>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX} \<Longrightarrow> Fm \<in> ?FX \<and> sup_prime R X Fm " 
   proof-
     fix Fm assume A6:"Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and>(F, Fm)\<in>?RX}" 
-    have B40:"Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm"  using A6 by blast
-    have B41:"fin_inf_irr ?RX ?FX Fm" using A0 B40 distr_lattice_filters meet_irr_imp_fmeet_irr[of Fm ?FX ?RX] A4 A5 C1 C2 C3 A3 by blast
+    have B40:"Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm"  
+      using A6 by blast
+    have B41:"fin_inf_irr ?RX ?FX Fm"
+      by (simp add: B1 B40 C1 C2 C3 clat_lattice meet_irr_imp_fmeet_irr)
     have B43:"is_greatest ?RX ?FX X"  
     proof-
-      have B430:"X \<in> ?FX"    by (metis A0 distr_latticeD5 filters_is_clr1b lattD41)
-      have B431:"X \<in> ubd ?RX ?FX ?FX"   by (meson B430 C2 pwr_mem_iff reflD2 ubdI)
-      show ?thesis   by (simp add: B431 is_greatest_def)
+      have B430:"X \<in> ?FX"
+        by (metis A0 CollectI bot_filters1 distr_latticeD5 filters_on_def lattD41)   
+      have B431:"X \<in> ubd ?RX ?FX ?FX"  
+         by (meson B430 C2 pwr_mem_iff reflD2 ubdI)
+      show ?thesis   
+        by (simp add: B431 is_greatest_def)
     qed
     have B44:"sup_prime R X Fm"
     proof(cases "is_pfilter R X Fm")
-      case True then show ?thesis using A0 B40 B41 filters_on_iff prime_filter_irr3_converse sup_prime_def A3 A4 A5 by blast
+      case True then show ?thesis
+        by (simp add: A0 B41 por sup_prime_pfilterI3)
     next
-      case False obtain B45:"Fm = X"  using B40 False filters_on_iff    using is_pfilter_def by blast 
-      then show ?thesis using sup_primeI1   by metis
+      case False obtain B45:"Fm = X"
+        using B40 False filters_on_iff is_pfilter_def by blast 
+      then show ?thesis
+        by (simp add: sup_primeI1) 
     qed
-    show "Fm \<in> ?FX \<and> sup_prime R X Fm"  by (simp add: B40 B44)
+    show "Fm \<in> ?FX \<and> sup_prime R X Fm" 
+       by (simp add: B40 B44)
   qed
-  then show ?thesis  using B3 that by blast
+  then show ?thesis  
+    using B3 that by blast
 qed
+
+
+
+(*
 
 
 section FilterOfSets
