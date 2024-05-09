@@ -6423,20 +6423,23 @@ proof-
     using A2 is_filterD1 by blast  
   have B13:"{lcro R X x|x. x \<in> F} \<subseteq> {k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X} "
     using B12 B8 by auto
-  have B14:"{lorc R X x|x. x \<in> F} = {k \<in>{lorc R X x|x. x \<in> X}. (k,F)\<in>pwr X}" using B11 B13 by blast
-  have B15:"F= Sup (filters_on R X) {k \<in>{lorc R X x|x. x \<in> X}. (k,F)\<in>pwr X}"  using B2 B5 by presburger
-  also have B16:"... = Sup (filters_on R X)  {(lorc f X)|f. f \<in>F}" using B14 by auto
+  have B14:"{lcro R X x|x. x \<in> F} = {k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X}" 
+    using B11 B13 by auto
+  have B15:"F= Sup (pwr X) (filters_on R X) {k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X}" 
+     using B2 B5 by presburger
+  also have B16:"... = Sup (pwr X )(filters_on R X)  {(lcro R X f)|f. f \<in>F}"
+     using B14 by auto
   finally show ?thesis
-  by simp
+    by simp
 qed
 
 lemma filter_on_set_ne:
   "\<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> {} \<notin> \<F>"
-  using pfilters_onE sets_pfilter_emp by blast
+  by (simp add: pfilters_on_iff sets_pfilter5)
 
 lemma filter_mem_mesh:
   "\<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); A \<in> \<F>\<rbrakk> \<Longrightarrow> {A}#\<F>"
-  unfolding mesh_def  using filter_on_set_ne pfilters_onE sets_pfilter_dir by fastforce
+  by (meson dual_order.refl mesh_def mesh_singleI pfilter_mesh1)
 
   
 definition ClN::"('a \<times> 'a set) set \<Rightarrow> 'a set \<Rightarrow> ('a set \<times> 'a) set" where
