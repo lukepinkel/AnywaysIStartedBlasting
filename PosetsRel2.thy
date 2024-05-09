@@ -6395,22 +6395,36 @@ proof-
    then obtain "is_filter R X f"
     by (meson compact_element_memD2 filters_on_iff) 
    then obtain x where "lcro R X x = f"  using A0 A1 principal_filters_compact
-    using \<open>(f::'a::order set) \<in> compact_elements (filters_on (X::'a::order set))\<close> compact_elements_mem_iff1 filters_on_iff lattD1 by blast
-    then show  "f \<in> {lorc R X x|x. x \<in> X}"
-    using A0 A1 \<open>(f::'a::order set) \<in> compact_elements (filters_on (X::'a::order set))\<close> \<open>Posets27.is_filter (X::'a::order set) (f::'a::order set)\<close> compact_element_memD1 filters_onI lattD1 principal_filters_compact by fastforce
+    by (metis A3 C0 compact_element_memD1 compact_element_memD2 lattD1)
+  then show  "f \<in> {lcro R X x|x. x \<in> X}"
+    using A0 A1 A3 C0 compact_element_memD1 compact_element_memD2 lattD1 principal_filters_compact by fastforce
   qed
-  have B4:"\<And>f.  f \<in> {lorc R X x|x. x \<in> X} \<Longrightarrow> f \<in> compact_elements (filters_on R X) "
-     using A0 A1 principal_filters_compact[of X top]  compact_elements_mem_iff1 lorc_filter2 by fastforce
-  have B5:" {lorc R X x|x. x \<in> X} =  compact_elements (filters_on R X)"  using B3 B4 by blast
-  have B7:"\<And>z. \<lbrakk>z \<in> X; lorc z X \<le> F\<rbrakk> \<Longrightarrow> z \<in> F" by (simp add: in_mono lorc_memI1)  
-  have B8:"\<And>z. \<lbrakk>z \<in> X; z \<in> F\<rbrakk> \<Longrightarrow> lorc z X \<le> F "  using A2 is_filterE1 is_ord_clE lorcD12 lorc_subset1 by fastforce
-  have B9:"{lorc R X x|x. x \<in> X}  \<subseteq> Pow X" using lorcD1 by blast
-  have B10:"{k \<in>{lorc R X x|x. x \<in> X}. k \<le> F}  \<subseteq> Pow X"   using B9 by blast
-  have B11:"{k \<in>{lorc R X x|x. x \<in> X}. k \<le> F} \<subseteq> {lorc R X x|x. x \<in> F}" using  B7 B8 B9 B10 by(auto) 
-  have B12:"F \<subseteq> X"  by (simp add: A2 is_filterE1)
-  have B13:" {lorc R X x|x. x \<in> F} \<subseteq> {k \<in>{lorc R X x|x. x \<in> X}. k \<le> F} " using B7 B8 B9 B10 B12  by fastforce
-  have B14:"{lorc R X x|x. x \<in> F} = {k \<in>{lorc R X x|x. x \<in> X}. k \<le> F}" using B11 B13 by blast
-  have B15:"F= Sup (filters_on R X) {k \<in>{lorc R X x|x. x \<in> X}. k \<le> F}"  using B2 B5 by presburger
+  have B4:"\<And>f.  f \<in> {lcro R X x|x. x \<in> X} \<Longrightarrow> f \<in> compact_elements(pwr X) (filters_on R X) "
+     using A0 A1 principal_filters_compact[of R X top]  compact_elements_mem_iff1 A3 filters_on_def lcro_filter by fastforce 
+  have B5:" {lcro R X x|x. x \<in> X} =  compact_elements (pwr X  )(filters_on R X)" 
+    using B3 B4 by blast
+  have B7:"\<And>z. \<lbrakk>z \<in> X; (lcro R X z, F)\<in>pwr X\<rbrakk> \<Longrightarrow> z \<in> F"
+    by (meson A3 in_mono lcro_memI1 powrel8)
+  have B7b:"\<And>z. \<lbrakk>z \<in> X; lcro R X z \<subseteq> F\<rbrakk> \<Longrightarrow> z \<in> F"
+    by (simp add: A3 lcro_memI1 subsetD)
+  have B8:"\<And>z. \<lbrakk>z \<in> X; z \<in> F\<rbrakk> \<Longrightarrow> (lcro R X z, F)\<in>pwr X "
+    by (meson A2 is_filterD1 is_ord_clE1 lcroD1 pwr_mem_iff subsetI)
+  have B8b:"\<And>z. \<lbrakk>z \<in>X; z \<in> F\<rbrakk>\<Longrightarrow>lcro R X z \<subseteq> F"
+    using B8 powrel8 by blast
+  have B9:"{lcro R X x|x. x \<in> X}  \<subseteq> Pow X"
+    using lcroD1 by fastforce
+  have B10:"{k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X}  \<subseteq> Pow X"
+    using pwr_memD by fastforce
+  have B10b:"{k \<in>{lcro R X x|x. x \<in> X}. k \<subseteq> F} \<subseteq> Pow X"
+    using B9 by blast
+  have B11:"{k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X} \<subseteq> {lcro R X x|x. x \<in> F}"
+    using B7 by blast
+  have B12:"F \<subseteq> X"
+    using A2 is_filterD1 by blast  
+  have B13:"{lcro R X x|x. x \<in> F} \<subseteq> {k \<in>{lcro R X x|x. x \<in> X}. (k,F)\<in>pwr X} "
+    using B12 B8 by auto
+  have B14:"{lorc R X x|x. x \<in> F} = {k \<in>{lorc R X x|x. x \<in> X}. (k,F)\<in>pwr X}" using B11 B13 by blast
+  have B15:"F= Sup (filters_on R X) {k \<in>{lorc R X x|x. x \<in> X}. (k,F)\<in>pwr X}"  using B2 B5 by presburger
   also have B16:"... = Sup (filters_on R X)  {(lorc f X)|f. f \<in>F}" using B14 by auto
   finally show ?thesis
   by simp
