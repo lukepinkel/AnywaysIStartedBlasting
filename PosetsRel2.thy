@@ -583,7 +583,6 @@ lemma inf_equality2:
   using inf_equality by fastforce
 
 
-
 lemma sup_exI:
   "\<lbrakk>antisym_on X R; A \<subseteq> X; (\<exists>s. is_sup R X A s); (\<And>s. is_sup R X A s \<Longrightarrow> P s)\<rbrakk> \<Longrightarrow> P (Sup R X A)"
   using sup_equality  by metis
@@ -4055,6 +4054,7 @@ proof-
 qed
 
 section SpecialElements
+subsection Primality
 
 lemma sup_primeD1:
   "\<lbrakk>sup_prime R X A; a \<in> X; b \<in> X; Sup R X {a, b} \<in> A\<rbrakk> \<Longrightarrow> a \<in> A \<or> b \<in> A"
