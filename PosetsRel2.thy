@@ -757,6 +757,76 @@ lemma binf_finite:
   by (metis A0 A1 A2 A3 A4 A5 Sup_def antisym_on_converse bsup_finite trans_on_converse)
 
 
+lemma assoc_sup:
+  assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
+          sab:"is_sup R X {a, b} s" and  tcd:"is_sup R X {c, d} t"
+  shows assoc_sup1:"\<And>x. x \<in> ubd R X {s, t} \<Longrightarrow>  x \<in> ubd R X {a, b, c, d}" and
+        assoc_sup2:"\<And>x. x \<in> ubd R X {a, b, c, d} \<Longrightarrow> x \<in> ubd R X {s, t}" and
+        assoc_sup3:"ubd R X {s, t} =  ubd R X {a, b, c, d}" and
+        assoc_sup4:"\<And>r. is_sup R X {a, b, c, d} r \<Longrightarrow> is_sup R X  {s, t} r" and
+        assoc_sup5:"\<And>r. is_sup R X  {s, t} r \<Longrightarrow>  is_sup R X {a, b, c, d} r"
+proof-
+  show P0:"\<And>x. x \<in> ubd R X {s, t} \<Longrightarrow>  x \<in> ubd R X {a, b, c, d}" 
+  proof-
+    fix x assume xst:"x \<in> ubd R X {s,t}" then obtain xx:"x \<in> X" and sx:"s \<in> X" and tx:"t \<in> X"
+      by (meson is_supD1 sab tcd ubdD1)
+    then obtain asr:"(a,s)\<in>R" and bsr:"(b,s)\<in>R" and ctr:"(c,t)\<in>R" and dtr:"(d,t)\<in>R"
+      by (meson insertCI is_supD1 sab tcd)
+    then obtain axr:"(a,x)\<in>R" and bxr:"(b,x)\<in>R" and cxr:"(c,x)\<in>R" and dxr:"(d,x)\<in>R"
+      by (meson ax bx cx dx insertCI por sx trans_onD tx ubdD1 xst)
+    then show "x \<in> ubd R X {a, b, c, d}" unfolding ubd_def using xx by(auto)
+  qed
+  show P1:"\<And>x. x \<in> ubd R X {a, b, c, d} \<Longrightarrow> x \<in> ubd R X {s, t}"
+  proof-
+    fix x assume xabcd:"x \<in> ubd R X {a,b,c,d}" then obtain xx:"x \<in> X" and sx:"s \<in> X" and tx:"t \<in> X"
+      by (meson is_supD1 sab tcd ubdD1)
+    then obtain asr:"(a,s)\<in>R" and bsr:"(b,s)\<in>R" and ctr:"(c,t)\<in>R" and dtr:"(d,t)\<in>R"
+      by (meson insertCI is_supD1 sab tcd)
+    then obtain axr:"(a,x)\<in>R" and bxr:"(b,x)\<in>R" and cxr:"(c,x)\<in>R" and dxr:"(d,x)\<in>R"
+      by (meson insertCI ubdD1 xabcd)
+    then show "x \<in> ubd R X {s,t}" unfolding ubd_def
+      using is_supD1 sab tcd xx by fastforce
+  qed
+  show P2:"ubd R X {s, t} =  ubd R X {a, b, c, d}" 
+    using P0 P1 by blast 
+  show P3:"\<And>r. is_sup R X {a, b, c, d} r \<Longrightarrow> is_sup R X  {s, t} r" 
+  proof-
+    fix r assume rabcd:"is_sup R X {a,b,c,d} r"  
+    then show "is_sup R X  {s, t} r"
+      using P2 Upper_eq_sup_eq2 by fastforce
+  qed
+  show P4:"\<And>r. is_sup R X  {s, t} r \<Longrightarrow> is_sup R X {a, b, c, d} r" 
+  proof-
+    fix r assume rabcd:"is_sup R X {s,t} r"  
+    then show "is_sup R X  {a,b,c,d} r"
+      using P2 Upper_eq_sup_eq2 by fastforce
+  qed
+qed
+
+lemma assoc_inf:
+  assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
+          sab:"is_inf R X {a, b} s" and  tcd:"is_inf R X {c, d} t"
+  shows assoc_inf1:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}" and
+        assoc_inf2:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}" and
+        assoc_inf3:"lbd R X {s, t} =  lbd R X {a, b, c, d}" and
+        assoc_inf4:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r" and
+        assoc_inf5:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
+proof-
+ have rpor:"pord (dual R) X"
+  by (simp add: por refl_dualI)
+ show P0:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}"
+  by (meson assoc_sup1 ax bx cx dx rpor sab tcd)
+ show P1:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}"
+  using assoc_sup2 ax bx cx dx rpor sab tcd by metis  
+ show P2:"lbd R X {s, t} =  lbd R X {a, b, c, d}" 
+  using assoc_sup3 ax bx cx dx rpor sab tcd by metis  
+ show P3:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r"
+   using assoc_sup4 ax bx cx dx rpor sab tcd by metis  
+ show P4:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
+  using assoc_sup5 ax bx cx dx rpor sab tcd by metis  
+qed
+
+
 
 subsection Duality
 
@@ -1035,6 +1105,35 @@ lemma finite_inf_closed2:
           A7:"trans R X"
   shows "Inf R X E \<in> A"
   using finite_sup_closed2[of A "dual R" X E]  by (simp add: A0 A1 A2 A3 A4 A5 A6 A7 Sup_def is_sup_semilattice_def)
+
+
+
+
+lemma semilattice_assoc_sup:
+  assumes por:"pord R X" and sem:"is_sup_semilattice R X" and
+          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
+  shows "Sup R X {Sup R X {a,b}, Sup R X {c,d}} = Sup R X {a,b,c,d}"
+proof(rule sup_equality)
+  show "antisym R X" using por by auto
+  obtain B0:"is_sup R X {a, b} (Sup R X {a,b})" and B1:"is_sup R X {a,b,c,d} (Sup R X {a,b,c,d})"
+    by (simp add: ax bx cx dx por sem sup_semilattice_fsup)
+  show " is_sup R X {Sup R X {a, b}, Sup R X {c, d}} (Sup R X {a, b, c, d})"
+    by (metis B1 assoc_sup4 ax bx cx dx por sem ssupD3) 
+qed
+
+
+
+lemma semilattice_assoc_inf:
+  assumes por:"pord R X" and sem:"is_inf_semilattice R X" and
+          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
+  shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
+proof(rule inf_equality)
+  show "antisym R X" using por by auto
+  obtain B0:"is_inf R X {a, b} (Inf R X {a,b})" and B1:"is_inf R X {a,b,c,d} (Inf R X {a,b,c,d})"
+    by (simp add: ax bx cx dx por sem inf_semilattice_finf)
+  show "is_inf R X {Inf R X {a, b}, Inf R X {c, d}} (Inf R X {a, b, c, d})"
+  by (metis (no_types, opaque_lifting) B1 antisym_on_converse assoc_sup4 ax bx cx dx inf_equality por refl_dualI sem trans_on_converse)
+qed
 
 subsection Lattices
 
@@ -1399,103 +1498,6 @@ lemma pow_is_clattice2:
 lemma pow_is_clattice:
   "is_clattice (pwr X) (Pow X)"
   by (meson Pow_not_empty is_clattice_def powrel5)
-
-
-
-lemma assoc_sup:
-  assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
-          sab:"is_sup R X {a, b} s" and  tcd:"is_sup R X {c, d} t"
-  shows assoc_sup1:"\<And>x. x \<in> ubd R X {s, t} \<Longrightarrow>  x \<in> ubd R X {a, b, c, d}" and
-        assoc_sup2:"\<And>x. x \<in> ubd R X {a, b, c, d} \<Longrightarrow> x \<in> ubd R X {s, t}" and
-        assoc_sup3:"ubd R X {s, t} =  ubd R X {a, b, c, d}" and
-        assoc_sup4:"\<And>r. is_sup R X {a, b, c, d} r \<Longrightarrow> is_sup R X  {s, t} r" and
-        assoc_sup5:"\<And>r. is_sup R X  {s, t} r \<Longrightarrow>  is_sup R X {a, b, c, d} r"
-proof-
-  show P0:"\<And>x. x \<in> ubd R X {s, t} \<Longrightarrow>  x \<in> ubd R X {a, b, c, d}" 
-  proof-
-    fix x assume xst:"x \<in> ubd R X {s,t}" then obtain xx:"x \<in> X" and sx:"s \<in> X" and tx:"t \<in> X"
-      by (meson is_supD1 sab tcd ubdD1)
-    then obtain asr:"(a,s)\<in>R" and bsr:"(b,s)\<in>R" and ctr:"(c,t)\<in>R" and dtr:"(d,t)\<in>R"
-      by (meson insertCI is_supD1 sab tcd)
-    then obtain axr:"(a,x)\<in>R" and bxr:"(b,x)\<in>R" and cxr:"(c,x)\<in>R" and dxr:"(d,x)\<in>R"
-      by (meson ax bx cx dx insertCI por sx trans_onD tx ubdD1 xst)
-    then show "x \<in> ubd R X {a, b, c, d}" unfolding ubd_def using xx by(auto)
-  qed
-  show P1:"\<And>x. x \<in> ubd R X {a, b, c, d} \<Longrightarrow> x \<in> ubd R X {s, t}"
-  proof-
-    fix x assume xabcd:"x \<in> ubd R X {a,b,c,d}" then obtain xx:"x \<in> X" and sx:"s \<in> X" and tx:"t \<in> X"
-      by (meson is_supD1 sab tcd ubdD1)
-    then obtain asr:"(a,s)\<in>R" and bsr:"(b,s)\<in>R" and ctr:"(c,t)\<in>R" and dtr:"(d,t)\<in>R"
-      by (meson insertCI is_supD1 sab tcd)
-    then obtain axr:"(a,x)\<in>R" and bxr:"(b,x)\<in>R" and cxr:"(c,x)\<in>R" and dxr:"(d,x)\<in>R"
-      by (meson insertCI ubdD1 xabcd)
-    then show "x \<in> ubd R X {s,t}" unfolding ubd_def
-      using is_supD1 sab tcd xx by fastforce
-  qed
-  show P2:"ubd R X {s, t} =  ubd R X {a, b, c, d}" 
-    using P0 P1 by blast 
-  show P3:"\<And>r. is_sup R X {a, b, c, d} r \<Longrightarrow> is_sup R X  {s, t} r" 
-  proof-
-    fix r assume rabcd:"is_sup R X {a,b,c,d} r"  
-    then show "is_sup R X  {s, t} r"
-      using P2 Upper_eq_sup_eq2 by fastforce
-  qed
-  show P4:"\<And>r. is_sup R X  {s, t} r \<Longrightarrow> is_sup R X {a, b, c, d} r" 
-  proof-
-    fix r assume rabcd:"is_sup R X {s,t} r"  
-    then show "is_sup R X  {a,b,c,d} r"
-      using P2 Upper_eq_sup_eq2 by fastforce
-  qed
-qed
-
-lemma assoc_inf:
-  assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
-          sab:"is_inf R X {a, b} s" and  tcd:"is_inf R X {c, d} t"
-  shows assoc_inf1:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}" and
-        assoc_inf2:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}" and
-        assoc_inf3:"lbd R X {s, t} =  lbd R X {a, b, c, d}" and
-        assoc_inf4:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r" and
-        assoc_inf5:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
-proof-
- have rpor:"pord (dual R) X"
-  by (simp add: por refl_dualI)
- show P0:"\<And>x. x \<in> lbd R X {s, t} \<Longrightarrow>  x \<in> lbd R X {a, b, c, d}"
-  by (meson assoc_sup1 ax bx cx dx rpor sab tcd)
- show P1:"\<And>x. x \<in> lbd R X {a, b, c, d} \<Longrightarrow> x \<in> lbd R X {s, t}"
-  using assoc_sup2 ax bx cx dx rpor sab tcd by metis  
- show P2:"lbd R X {s, t} =  lbd R X {a, b, c, d}" 
-  using assoc_sup3 ax bx cx dx rpor sab tcd by metis  
- show P3:"\<And>r. is_inf R X {a, b, c, d} r \<Longrightarrow> is_inf R X  {s, t} r"
-   using assoc_sup4 ax bx cx dx rpor sab tcd by metis  
- show P4:"\<And>r. is_inf R X  {s, t} r \<Longrightarrow>  is_inf R X {a, b, c, d} r"
-  using assoc_sup5 ax bx cx dx rpor sab tcd by metis  
-qed
-
-lemma semilattice_assoc_sup:
-  assumes por:"pord R X" and sem:"is_sup_semilattice R X" and
-          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
-  shows "Sup R X {Sup R X {a,b}, Sup R X {c,d}} = Sup R X {a,b,c,d}"
-proof(rule sup_equality)
-  show "antisym R X" using por by auto
-  obtain B0:"is_sup R X {a, b} (Sup R X {a,b})" and B1:"is_sup R X {a,b,c,d} (Sup R X {a,b,c,d})"
-    by (simp add: ax bx cx dx por sem sup_semilattice_fsup)
-  show " is_sup R X {Sup R X {a, b}, Sup R X {c, d}} (Sup R X {a, b, c, d})"
-    by (metis B1 assoc_sup4 ax bx cx dx por sem ssupD3) 
-qed
-
-
-
-lemma semilattice_assoc_inf:
-  assumes por:"pord R X" and sem:"is_inf_semilattice R X" and
-          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
-  shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
-proof(rule inf_equality)
-  show "antisym R X" using por by auto
-  obtain B0:"is_inf R X {a, b} (Inf R X {a,b})" and B1:"is_inf R X {a,b,c,d} (Inf R X {a,b,c,d})"
-    by (simp add: ax bx cx dx por sem inf_semilattice_finf)
-  show "is_inf R X {Inf R X {a, b}, Inf R X {c, d}} (Inf R X {a, b, c, d})"
-  by (metis (no_types, opaque_lifting) B1 antisym_on_converse assoc_sup4 ax bx cx dx inf_equality por refl_dualI sem trans_on_converse)
-qed
 
 section Functions
 subsection Isotonicity
@@ -1991,7 +1993,7 @@ proof-
 qed
 
 subsection Filters
-subsection DefinitionAndBasicProps
+subsubsection DefinitionAndBasicProps
 
 lemma is_filterI1:
   "\<lbrakk>F \<noteq> {}; F \<subseteq> X; is_dir F (dual R); is_ord_cl X F R\<rbrakk> \<Longrightarrow> is_filter R X F"
@@ -2043,7 +2045,7 @@ lemma filter_inf_closed3:
   "\<lbrakk>antisym R X; trans R X; is_inf_semilattice R X; is_filter R X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf R X A \<in> F"
   by (simp add: filter_inf_closed2 finite_inf_closed2 is_filterD1)
 
-section SetOfFilters
+subsection SetOfFilters
 
 lemma filters_on_iff:
   "F \<in> filters_on R X \<longleftrightarrow> is_filter R X F"
@@ -2068,6 +2070,8 @@ lemma is_pfilterI1:
 lemma is_pfilterI2:
   "\<lbrakk>is_least R X bot; bot \<notin> A; is_filter R X A\<rbrakk> \<Longrightarrow> is_pfilter R X A"
   by (metis greatestD is_pfilterI1)
+
+subsubsection FiltersClosureRange
 
 lemma filter_inter:
   assumes A0:"is_inf_semilattice R X" and 
@@ -2115,6 +2119,7 @@ proof(rule moore_clI3)
     using A0 A1 A2 filter_inter2[of X R top] by blast
 qed
 
+subsubsection FilterClosure
 
 lemma filter_closure_memI1:
   "\<lbrakk>x \<in> X;  (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R)\<rbrakk> \<Longrightarrow> x \<in> filter_closure R X A"
@@ -2652,8 +2657,14 @@ proof-
   qed
 qed
 
+lemma distr_lattice_filters:
+  "\<lbrakk>pord R X ;distributive_lattice R X\<rbrakk> \<Longrightarrow> is_lattice (pwr X) (filters_on R X)"
+  by (simp add: distributive_lattice_def latt_iff lattice_filters_isl2 lattice_filters_isl6)
 
 
+
+
+subsubsection FiltersAndDirectedUnions
 
 lemma lattice_filter_dunion1:
   "\<lbrakk>antisym R X;trans R X; refl R X;is_lattice R X; D \<noteq> {}; D \<subseteq> filters_on R X; is_dir D (pwr X)\<rbrakk> \<Longrightarrow> \<Union>D \<noteq> {} "
@@ -2746,6 +2757,7 @@ proof(rule is_supI1)
     by (metis Inf_greatest Inter_subset converse.cases converseI mem1 pwr_memD pwr_memI)
 qed
 
+subsection PrincipalFilters
 
 lemma lcroI1:
   "y \<in> X \<Longrightarrow> (a, y)\<in>R \<Longrightarrow> y \<in> lcro R X a" 
@@ -2848,7 +2860,8 @@ proof-
     using B2 powrel8 by blast
 qed
     
-
+subsection Compactness
+subsubsection BasicLemmas
 
 lemma compactI:
   "\<lbrakk>c \<in> X; (\<And>A. \<lbrakk>A \<in> Pow_ne X; (c, Sup R X A) \<in> R\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> (c,Sup R X A0) \<in> R))\<rbrakk> \<Longrightarrow> is_compact R X c"  
@@ -2961,6 +2974,8 @@ proof-
     by (meson B10 B11 B3 B6 B9 Fpow_ne_iff cmp compactD2 is_supD1 por sem sup_semilattice_fsup trans_onD)
   then show ?thesis using B1 by blast
 qed
+
+subsubsection FiniteSupClosure
 
 definition fne_sup_cl::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow>  'a set" where
   "fne_sup_cl R X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x}"
@@ -3100,7 +3115,9 @@ proof-
     qed
   qed
 qed
-    
+
+
+
 lemma ccompact1:
   assumes por:"pord R X" and sem:"is_csup_semilattice R X" and cmem:"c \<in> X" 
           and dir:"(\<And>A. \<lbrakk>A \<in> Pow_ne X; (c, Sup R X A) \<in> R; is_dir A R\<rbrakk> \<Longrightarrow> (\<exists>a \<in> A. (c, a) \<in> R))"
@@ -3145,6 +3162,7 @@ proof(rule compactI)
   qed
 qed
 
+subsubsection CompactnessAndClosureRanges
 
 lemma dir_set_closure_subset:
   assumes A0:"clr (pwr X) (Pow X) C" and
@@ -3454,10 +3472,7 @@ lemma leq_sup:
   "\<lbrakk>pord R X; is_lattice R X; x \<in> X; y \<in>X; z \<in> X;(x, z)\<in>R; (y,z)\<in>R\<rbrakk> \<Longrightarrow> (Sup R X {x, y}, z) \<in>R"
   by (simp add: bsup_ge3 lattD42)
 
-lemma distr_lattice_filters:
-  "\<lbrakk>pord R X ;distributive_lattice R X\<rbrakk> \<Longrightarrow> is_lattice (pwr X) (filters_on R X)"
-  by (simp add: distributive_lattice_def latt_iff lattice_filters_isl2 lattice_filters_isl6)
-
+subsection BinaryFilterSup
 
 lemma filter_bsup_memD1:
   "x \<in> binary_filter_sup R X A B \<Longrightarrow>  (x \<in> X \<and> (\<exists>a \<in> A. \<exists>b \<in> B. (Inf R X {a, b}, x)\<in>R))"
@@ -3710,6 +3725,7 @@ proof-
     qed
 qed
 
+section PrimeElements
 
 lemma sup_primeD1:
   "\<lbrakk>sup_prime R X A; a \<in> X; b \<in> X; Sup R X {a, b} \<in> A\<rbrakk> \<Longrightarrow> a \<in> A \<or> b \<in> A"
