@@ -2785,31 +2785,29 @@ proof-
     using A1b A1c by force
   obtain B0d:"Inf R X F \<in> X"
     by (metis A0 A1a A1b A1c bot_filters1 filter_inf_closed3 latt_iff por) 
-  have B0:"\<And>f. f \<in> F \<Longrightarrow> (lcro R X f) \<subseteq> (lcro R X (Inf R X F))" 
+  have B0:"\<And>f. f \<in> F \<Longrightarrow> (lcro R X f) \<subseteq> (lcro R X (Inf R X F))"
+    by (smt (verit) A0 A1a A1b A1c B0d binf_finite converseD is_supD3 lattD31 lcro_dual_iso2 por subsetD) 
+  then have B1:" (lcro R X (Inf R X F)) \<in> ubd (pwr X) (filters_on R X) ?A"
+    by (smt (verit) B0d filters_on_iff is_filterD1 lcro_filter mem_Collect_eq por pwr_memI ubdI)
+  then have B2:"(Sup (pwr X) (filters_on R X) ?A, lcro R X (Inf R X F))\<in>pwr X"
+    by (metis (no_types, lifting) A0 B0a B0c antisym_on_def is_supD2 lattice_filters_isl4 order_antisym_conv por powrel8 sup_equality)
+  have B3:"\<And>G. G \<in> ubd (pwr X) (filters_on R X) ?A \<Longrightarrow>  lcro R X (Inf R X F) \<subseteq> G"
   proof-
-    fix f assume C0:"f \<in> F" 
-    then obtain C1:"f \<in> X"
-      using A1a by blast
-    then obtain C2: "(Inf R X F, f)\<in>R"
-      by (smt (verit, best) A0 A1 C0 converseD inf_semilattice_finf is_supD1 latt_iff por)
-    show "(lcro R X f) \<subseteq> (lcro R X (Inf R X F))"
-    proof
-      fix x assume C1:"x \<in> lcro R X f"
-      then obtain
-      show "x \<in> (lcro R X (Inf R X F))"
-  then have B1:" ([(Inf X F))\<^sub>X) \<in> ubd (filters_on X) ?A"  by (smt (verit, best) A0 A1 inf_semilattice_finf is_infE1 lattD41 lorc_filter2 mem_Collect_eq ubd_mem_iff3)
-  then have B2:"Sup (filters_on X) ?A\<le> [(Inf X F))\<^sub>X" by (metis (no_types, lifting) A0 B0a B0c csupD61 filters_on_lattice_csup)  
-  have B3:"\<And>G. G \<in> ubd (filters_on X) ?A \<Longrightarrow> ([(Inf X F))\<^sub>X) \<subseteq> G"
-  proof-
-    fix G assume B30:"G \<in> ubd (filters_on X) ?A" then obtain B31:"\<forall>f. f \<in> F \<longrightarrow> f \<in> G"  by (metis (mono_tags, lifting) A1a in_mono lorc_memI1 mem_Collect_eq ubd_mem_iff2)
+    fix G assume B30:"G \<in> ubd (pwr X) (filters_on R X) ?A" 
+    then obtain B31:"\<And>f. f \<in> F \<Longrightarrow> f \<in> G"
+      by (smt (verit) A1a lcro_memI1 mem_Collect_eq por pwr_mem_iff subsetD ubdD1)  
     then obtain B32:"F \<subseteq> G" and B33:"finite F" and B34:"F \<noteq> {}" using A1b A1c by blast
-    then obtain B34:"Inf X F \<in> G"   using A0 B30 filter_finf_closed3 filters_onE lattD41 ubdD2 by blast 
-    from B30 have B35:"is_filter X G" unfolding ubd_def filters_on_def by(auto)
-    then obtain B36:"is_ord_cl X G (\<le>)" using is_filterE1 by(auto)
-    then show "([(Inf X F))\<^sub>X) \<subseteq> G" using B34 B36 by (metis is_ord_clE lorcD11 lorcD12 subsetI)
+    then obtain B34:"Inf R X F \<in> G"
+      by (smt (verit) A0 B30 filter_inf_closed3 filters_on_iff latt_iff por subsetD ubd_sub)  
+    from B30 have B35:"is_filter R X G" unfolding ubd_def filters_on_def by auto
+    then obtain B36:"is_ord_cl X G R" using is_filterD1 by auto
+    then show "lcro R X (Inf R X F) \<subseteq> G"
+      by (meson B34 is_ord_clE1 lcroD1 subsetI)
   qed
-  then have "([(Inf X F))\<^sub>X) \<le> Sup (filters_on X) ?A"   using B1 is_supI5 sup_equality by blast
-  then show ?thesis using B2 by simp
+  then have "(lcro R X (Inf R X F), Sup (pwr X) (filters_on R X) ?A)\<in>pwr X"
+    by (smt (verit, best) A0 B0a B0c antisym_on_def dual_order.eq_iff is_supD1 lattice_filters_isl4 por pwr_memD pwr_memI sup_equality ubdI)
+  then show ?thesis
+    using B2 powrel8 by blast
 qed
     
 
@@ -5680,13 +5678,15 @@ proof-
       using B34 by force
     have B41:"A0 =  {lcro R X f|f. f \<in>  (S`A0)}"
       using B39 B40 by blast 
-    obtain B42:"lcro R X (Inf R X (S`A0)) = Sup (pwr X) (filters_on R X) A0" unfolding S_def using lorc_inter2[of X "(S`A0)"] B41
-    by (metis (no_types, lifting) A0 B0 B31 B35 B36 S_def fpow_ne_iff2 image_cong image_is_empty subset_trans)
-    then show " (\<exists>x \<in> X.  lorc R X x = F )"
-    using B0 B32 B37 B38 by blast
+    have B41b:"(S`A0) \<in> Fpow_ne X"
+      using B0 B31 B35 by auto
+    obtain B42:"lcro R X (Inf R X (S`A0)) = Sup (pwr X) (filters_on R X) A0" 
+      using A0 B41 B41b por lcro_inter2[of R X "(S`A0)"] S_def by presburger
+    then show " (\<exists>x \<in> X.  lcro R X x = F )"
+      by (metis B0 B32 B37 B38 powrel8 subsetD subset_antisym)
   qed
   then show ?thesis
-  using B4 by blast
+    using B7 by blast
 qed 
 
 
