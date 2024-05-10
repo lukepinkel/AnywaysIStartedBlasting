@@ -1887,8 +1887,10 @@ next
   case (insert x F)
   obtain P0:"x \<in> X" and P1:"F \<subseteq> X" and P2:"finite F" and P3:"F \<noteq> {}"
     using insert.hyps(1,2) insert.prems(1) by blast
-  have L:"is_lattice R X"  
-    by (simp add: A5 distr_latticeD5) 
+  obtain lat:"is_lattice R X" and dor:"pord (dual R) X"
+    by (simp add: A5 A6 distr_latticeD5 refl_iff)
+  obtain ssl:"is_sup_semilattice R X" and isl:"is_inf_semilattice R X"
+    by (simp add: lat lattD4)
   let ?ba="{Inf R X {b, a} |a. a \<in> F}" and ?xba="{Inf R X {b, a}|a. a \<in> (insert x F)}"
   let ?s="Sup R X F" and ?sba="Sup R X ?ba" and ?sxba="Sup R X ?xba"
   have P4:"?ba \<subseteq> X" 
@@ -1896,18 +1898,27 @@ next
     fix z assume "z \<in> ?ba" 
     then obtain a where "a \<in> F" and "z=Inf R X {b,a}" 
       by blast
+    also obtain "a \<in> X"
+      using P1 calculation by auto
     then show "z \<in> X" 
-      using A0 A6 L P1 antisym_on_converse[of X R] lattD4[of R X] 
-            ssl_ex_sup5[of X "dual R"] subset_eq by blast
+      using A0 P1 dor isl ssl_ex_sup5[of X "dual R"] calculation by blast
   qed
   have P5:"?xba \<subseteq> X" 
   proof
-    fix z assume "z \<in> ?xba" then obtain a where "a \<in> (insert x F)" and "z=Inf R X {b,a}" by blast
-    then show "z \<in> X" by (meson A0 A6 L in_mono insert.prems(1) l_inf_closed)
+    fix z assume "z \<in> ?xba" 
+    then obtain a where "a \<in> (insert x F)" and "z=Inf R X {b,a}" 
+      by blast
+    also obtain "a \<in> X"
+      using calculation(1) insert.prems(1) by auto
+    then show "z \<in> X"
+      using A0 calculation dor isl ssl_ex_sup5[of X "dual R"] by blast
   qed
-  have P6:"finite ?ba" using P2 by force
-  have P7:"finite ?xba"  by (simp add: insert.hyps(1))
-  have P8:"?xba = {Inf R X {b, x}} \<union> ?ba" by (auto)
+  have P6:"finite ?ba"
+    using P2 by force
+  have P7:"finite ?xba"  
+    by (simp add: insert.hyps(1))
+  have P8:"?xba = {Inf R X {b, x}} \<union> ?ba" 
+    by auto
   have P9:"Inf R X {b, x} \<in> X"
     using P5 by blast
   have P10:"?ba \<noteq> {}"  
@@ -1915,9 +1926,9 @@ next
   have P11:"?xba \<noteq> {}" 
      using P3 by blast
   have P12:"?sba \<in> X"
-    by (metis (no_types, lifting) A6 Fpow_ne_iff L P10 P4 P6 is_supD1 lattD42 sup_semilattice_fsup) 
+    using A6 Fpow_neI1 P10 P4 P6 ssl ssl_fin_sup6 by fastforce
   have P13:"?sxba \<in> X"
-    by (metis (no_types, lifting) A6 Fpow_ne_iff L P11 P5 P7 is_supD1 lattD42 sup_semilattice_fsup) 
+    using A6 P11 P5 P7 ssl ssl_fin_sup6[of X R ?xba] Fpow_neI1[of ?xba X] by blast 
   have P14:"(Sup R X {?sba, (Inf R X {b, x})}) \<in> X"
     by (simp add: A6 L P12 P9 l_sup_closed) 
   have B0:"Inf R X {b, ?s} = ?sba"  
