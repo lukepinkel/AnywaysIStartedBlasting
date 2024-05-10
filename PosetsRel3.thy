@@ -1523,18 +1523,21 @@ proof-
   proof-
     fix x y assume "x \<in>X" and "y \<in> X"
     then show " (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x"
-      using bsup_or converseI dsl lat lattD6 por ssl_ex_sup6 dor
+      using  isl lat lattD6[of X R x y] por binf_or1[of X R x y] by blast
+  qed
   show P4:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Inf R X {x,y} =y" 
-  show P3:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
+    by (simp add: P3 insert_commute)
+  show P5:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
   proof-
     fix x y assume x1:"x \<in> X" and y1:"y \<in> X"
     obtain ixy:"(x,Sup R X {x,y})\<in>R"  and s1:"Sup R X {x,y}\<in>X"
       by (simp add: por ssl ssl_ex_sup0a ssl_ex_sup5 x1 y1)
     obtain lt1:"(x,Inf R X {x, Sup R X {x, y}})\<in>(dual R)"
-      by (metis Sup_def dor dsl s1 ssl_ex_sup0a x1)
-    obtain lt2:""
+      by (meson dor dsl s1 ssl_ex_sup0a x1)
+    obtain lt2:"(Inf R X {x, Sup R X {x,y}},x)\<in>(dual R)"
+      using P3 ixy lt1 s1 x1 by auto
     then show "Inf R X {x, Sup R X {x, y}} =x"
-      by (simp add: P1 x1)
+      using P3 ixy s1 x1 by blast
   qed
 qed
 
