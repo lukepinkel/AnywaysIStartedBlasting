@@ -965,24 +965,28 @@ proof-
 qed
 
 lemma sup_finite:
-  assumes A0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b \<in> X. is_sup R  X {a1, a2} b" and 
+  assumes A0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b. is_sup R  X {a1, a2} b" and 
           A1:"finite A" and
           A2:"A \<noteq> {}" and
           A3:"A \<subseteq> X" and
           A4:"trans R X"
-  shows "\<exists>b \<in> X. is_sup R X A b"
+  shows "\<exists>b. is_sup R X A b"
   using A1 A2 A3 
 proof (induct A rule: finite_ne_induct)
   case (singleton x) 
   then show ?case using A0 by force
 next
   case (insert x F)
-  obtain s1 where B0:"s1 \<in> X" and B1:"is_sup R X F s1" and B2:"x \<in> X" and B3:"F \<subseteq> X"
+  obtain s1 where B1:"is_sup R X F s1" and B2:"x \<in> X" and B3:"F \<subseteq> X"
     using insert.hyps(4) insert.prems by blast
-  obtain s2 where B4:"s2 \<in> X" and B5:"is_sup R X {s1, x} s2"
+  obtain B0:"s1 \<in> X" 
+    using B1 is_supD4[of R X F s1] by blast
+  obtain s2 where B5:"is_sup R X {s1, x} s2"
     using A0 B0 B2 by blast
+  obtain B4:"s2 \<in> X"
+    using B5 is_supD4[of R X " {s1, x}" s2] by blast
   then have B6:"is_sup R X (insert x F) s2" 
-    using sup_insert[of s1 X R F s2 x] A4 B0 B1 insert.prems by blast
+    using sup_insert[of s1 X R F s2 x] A4 B0 B1 B5 insert.prems by simp
   then show ?case
     using B4 by auto
 qed
@@ -1206,55 +1210,50 @@ lemma sup_iso:
   using assms by (simp add:  bsup_ge1 bsup_le1 bsup_le2 ssl_ex_sup5)
 
 
-lemma bsup_assoc:
-  assumes A0:"ord R X" and A1:"is_sup_semilattice R X" and A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X"
-  shows "Sup R X {Sup R X {x, y}, z} =Sup R X {x, y, z}"
-proof-
-  let ?sxy="Sup R X {x,y}" let ?sxy_z="Sup R X {?sxy, z}"
-  obtain B0:"?sxy \<in> X" and  B1:"?sxy_z \<in> X"  by (simp add: A0 A1 A2 A3 A4 ssupD4)
-  obtain B2:"(z,?sxy_z)\<in>R" and B3:"(?sxy,?sxy_z)\<in>R" by (meson A0 A1 A4 B0 insertCI is_supD3 ssupD3)
-  obtain B4:"(x,?sxy)\<in>R" and B5:"(y,?sxy)\<in>R"  by (meson A0 A1 A2 A3 insertCI is_supD1 ssupD3)
-  then obtain B6:"(x,?sxy_z)\<in>R" and B7:"(y,?sxy_z)\<in>R" by (simp add: A0 A1 A2 A3 A4 B0 le_supI1) 
-  have "is_sup R X {x,y,z} ?sxy_z"
-  proof(rule is_supI1)
-    show B8:"?sxy_z \<in> X" by(simp add:B1)
-    show "\<And>a. a \<in> {x, y, z} \<Longrightarrow> (a, ?sxy_z) \<in> R"  using B2 B6 B7 by fastforce
-    show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> {x, y, z} \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (?sxy_z, b) \<in> R"  by (simp add: A0 A1 A2 A3 A4 B0 bsup_ge3) 
-  qed
-  then show ?thesis  by (simp add: A0 sup_equality)
-qed
-
-
-lemma binf_assoc:
-  assumes A0:"ord R X" and A1:"is_inf_semilattice R X" and A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X"
-  shows "Inf R X {Inf R X {x, y}, z} =Inf R X {x, y, z}"
-  using bsup_assoc[of X "dual R" x y z]  by (simp add: A0 A1 A2 A3 A4 Sup_def is_sup_semilattice_def)
- 
 lemma bsup_assoc2:
   assumes A0:"ord R X" and A1:"is_sup_semilattice R X" and A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X"
   shows "Sup R X {Sup R X {x, y}, z} =Sup R X {x, Sup R X {y, z}}"
 proof-
-  obtain B0:"Sup R X {Sup R X {x, y}, z} = Sup R X {x,y,z}" by (simp add: A0 A1 A2 A3 A4 bsup_assoc)
-  also obtain B1:"Sup R X {x, Sup R X {y,z}} = Sup R X {x,y,z}" by (metis A0 A1 A2 A3 A4 bsup_assoc doubleton_eq_iff) 
-  then show ?thesis by (simp add: calculation)
+  have B0:"Sup R X {Sup R X {x, y}, z} = Sup R X {x,y,z}"
+    by (simp add: A0 A1 A2 A3 A4 bsup_as1) 
+  also have B1:"... = Sup R X {Sup R X {y,z}, x}"
+    by (simp add: A0 A1 A2 A3 A4 bsup_as3)
+  also have B2:"...  = Sup R X {x, Sup R X {y,z}}"
+    by (simp add: insert_commute)
+  finally show ?thesis
+    by simp 
 qed
 
+lemma sup_semilattice_fin_sup:
+  assumes ord:"ord R X" and 
+          ssl:"is_sup_semilattice R X" and
+          fne:"A \<in> Fpow_ne X"
+  shows ssl_fin_sup0:"\<exists>s. is_sup R X A s" and
+        ssl_fin_sup1:"\<And>x. x \<in>A \<Longrightarrow> (x,Sup R X A)\<in>R" and
+        ssl_fin_sup2:"Sup R X A \<in> ubd R X A" and
+        ssl_fin_sup3:"\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> (x,z)\<in>R) \<Longrightarrow> (Sup R X A, z)\<in>R" and
+        ssl_fin_sup4:"\<And>z. z \<in> ubd R X A \<Longrightarrow> (Sup R X A,z)\<in>R" and
+        ssl_fin_sup5:"is_least R (ubd R X A) (Sup R X A)" and
+        ssl_fin_sup6:"Sup R X A \<in> X"
+proof-
+  obtain apow:"A \<subseteq> X" and afin:"finite A" and ane:"A \<noteq> {}"
+    using fne unfolding Fpow_ne_def Fpow_def by auto
+  then show P0:"\<exists>s. is_sup R X A s"
+    using ord ssl sup_finite[of X R A] by (simp add: is_sup_semilattice_def)
+  show P1:"\<And>x. x \<in>A \<Longrightarrow> (x,Sup R X A)\<in>R"
+    by (simp add: P0 ex_sup0 ord)
+  show P2:"Sup R X A \<in> ubd R X A"
+    by (simp add: P0 ex_sup1 ord)
+  show P3:"\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> (x,z)\<in>R) \<Longrightarrow> (Sup R X A, z)\<in>R"
+    by (simp add: P0 ex_sup2 ord) 
+  show P4:"\<And>z. z \<in> ubd R X A \<Longrightarrow> (Sup R X A,z)\<in>R"
+    by (simp add: P0 ex_sup3 ord) 
+  show P5:"is_least R (ubd R X A) (Sup R X A)"
+    by (simp add: P0 ex_sup4 ord) 
+  show P6:"Sup R X A \<in> X"
+    by (simp add: P0 ex_sup5 ord)
+qed
 
-lemma binf_assoc2:
-  "\<lbrakk>ord R X; is_inf_semilattice R X;a \<in> X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Inf R X {Inf R X {a, b}, c} =Inf R X {a, Inf R X {b, c}}"
-  using bsup_assoc2[of X "dual R" a b c] by (simp add: Sup_def is_sup_semilattice_def)
-
-lemma sup_semilattice_fsup:
-  "\<lbrakk>ord R X;is_sup_semilattice R X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_sup R X A (Sup R X A)"
-  by (simp add: bsup_finite ssupD3)
-
-lemma inf_semilattice_finf:
-  "\<lbrakk>ord R X;is_inf_semilattice R X; A \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> is_inf R X A (Inf R X A)"
-  by (metis Fpow_ne_iff antisym_on_converse inf_equality2 is_sup_semilattice_def sup_semilattice_fsup trans_on_converse)
-
-lemma fsupI:
-  "\<lbrakk>ord R X; is_sup_semilattice R X; (\<And>s E. is_sup R X E s \<Longrightarrow> P s); F \<in> Fpow_ne X\<rbrakk> \<Longrightarrow> P (Sup R X F)"
-  using sup_semilattice_fsup by blast
 
 lemma finite_sup_closed2:
   assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>  Sup R X {a1, a2} \<in> A" and 
@@ -1268,15 +1267,33 @@ lemma finite_sup_closed2:
   shows "Sup R X E \<in> A"
   using A1 A2 A3 A4 A5
 proof (induct E rule: finite_ne_induct)
-  case (singleton x)  then show ?case    using A0 by fastforce
+  case (singleton x) 
+  then show ?case    
+    using A0 by fastforce
 next
   case (insert x F)
-  obtain B0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b \<in> X. is_sup R  X {a1, a2} b" and B1:"E \<subseteq> X"  by (metis A3 A4 A5 A6 ssupD3 ssupD4 subset_trans) 
-  then obtain s where B2:"is_sup R X F s"  by (metis A4 A5 A6 A7 Fpow_ne_iff dual_order.trans insert.hyps(1) insert.hyps(2) insert.prems(1) insert_subset sup_semilattice_fsup)
-  then obtain B3:"s \<in> A" and B4:"x \<in> A" by (metis A4 A5 A6 insert.hyps(4) insert.prems(1) insert_subset sup_equality)
-  then obtain t where B5:"is_sup R X {x, s} t" by (meson A4 A5 ssupD2 subset_eq) 
-  then obtain "is_sup R X (insert x F) t"  by (metis A4 A6 A7 B2 doubleton_eq_iff dual_order.trans insert.prems(1) is_supD1 sup_insert)
-  then show ?case by (metis A0 A6 B3 B4 B5 sup_equality)
+  obtain B0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b. is_sup R  X {a1, a2} b"
+    by (simp add: A5 sup_semilattice_ex1)
+  obtain B1:"F \<subseteq> X" and B2:"finite F" and B3:"F \<noteq> {}"
+    using A4 insert.hyps(1) insert.hyps(2) insert.prems(1) by blast
+  obtain B4:"F \<in> Fpow_ne X"
+    by (simp add: B1 B2 B3 Fpow_ne_iff)
+  obtain B5:"(insert x F) \<subseteq> X"
+    using A4 insert.prems(1) by blast
+  obtain s where B6:"is_sup R X F s"
+    using A5 A6 A7 B4 ssl_fin_sup0 by blast  
+  obtain B7:"s \<in> A" and B8:"x \<in> A" and B9:"s \<in> X"
+    using B6 A4 A5 A6 insert.hyps(4) insert.prems(1) sup_equality by fastforce 
+  obtain t where B10:"is_sup R X {s, x} t" 
+    using B7 B8 A4 A5 in_mono sup_semilattice_ex1[of R X s x] by auto
+  obtain B11:"t \<in> X"
+    using B10 is_supD4[of R X "{s,x}" t] by blast
+  obtain B12:"is_sup R X (insert x F) t"
+    using B9 B6 B11 B10 A7 B5 sup_insert[of s X R F t x] by blast
+  obtain B13:"t \<in> A"
+    using A0 A6 B7 B8 B10 sup_equality by fastforce
+  then show ?case
+    using A6 B12 sup_equality by force
 qed
 
 lemma finite_inf_closed2:
