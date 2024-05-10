@@ -1009,6 +1009,17 @@ proof-
   qed
 qed
 
+lemma sup_insert2:
+  assumes A0:"s1 \<in> X" and A1:"is_sup R X F s1" and A2:"s2 \<in> X" and A3:"is_sup R X {s1, x} s2" and
+          A4:"trans R X" and A6:"F \<subseteq> X" and A7:"x \<in> X"
+  shows "is_sup R X (insert x F) s2"
+proof-
+  obtain "insert x F \<subseteq> X"
+    by (simp add: A6 A7) 
+  then show ?thesis 
+    using A0 A1 A2 A3 A4 sup_insert[of s1 X R F s2 x] by simp
+qed
+
 lemma sup_finite:
   assumes A0:"\<And>a1 a2. a1 \<in> X \<Longrightarrow> a2 \<in> X \<Longrightarrow> \<exists>b. is_sup R  X {a1, a2} b" and 
           A1:"finite A" and
@@ -1754,53 +1765,53 @@ proof-
    qed
 qed
 
-
-
-lemma l_sup_closed:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> X" 
-  by (simp add: lattD42 ssupD4) 
-
-lemma l_inf_closed:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, y} \<in> X" by (simp add: lattD41 sinfD4)
-
-lemma l_finsup:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s"
-  by (meson Fpow_ne_iff lattD42 sup_semilattice_fsup) 
-
-lemma l_fininf:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_lattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s" 
-   by (simp add: l_finsup  lattice_dualization) 
-
-lemma s_finsup:
-  "\<lbrakk>refl R X; antisym R X; trans R X;is_sup_semilattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s"
-  by (meson Fpow_ne_iff sup_semilattice_fsup)
- 
-lemma s_fininf:"\<lbrakk>refl R X; antisym R X; trans R X;is_inf_semilattice R X; A \<subseteq> X; finite A; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s"
-  by (metis inf_finite is_supD1) 
-
 lemma sup_insertE1:
   "\<And>a. is_sup R X A m \<Longrightarrow> (x, m) \<in> R \<Longrightarrow> a \<in> insert x A \<Longrightarrow> (a, m) \<in> R"
   using is_supD1 by fastforce
 
-lemma sup_insert2:
-  "\<lbrakk>is_sup R X A m; (x, m)\<in>R\<rbrakk> \<Longrightarrow> is_sup R X (insert x A) m"
-  by(rule is_supI1, simp add: is_supD1,auto elim: sup_insertE1, simp add:is_supD1)
+lemma sup_insert3:
+  assumes iss:"is_sup R X A m" and xlm:"(x,m)\<in>R"
+  shows "is_sup R X (insert x A) m"
+proof(rule is_supI3)
+  show "m \<in> X"
+    using iss is_supD1[of R X A m] by simp
+  show "\<And>a. a \<in> insert x A \<Longrightarrow> (a, m) \<in> R"
+  proof-
+    fix a assume "a \<in> insert x A" 
+    then show "(a,m)\<in>R"
+      using is_supD3 iss xlm by fastforce
+  qed
+  show"\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (m, b) \<in> R"
+  proof-
+    fix b assume bix:"b\<in>X" and bbd:" (\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R)"
+    then show "(m,b)\<in>R" 
+      using iss is_supD1[of R X A m] by force
+  qed
+qed
 
-lemma sup_insert62:
+lemma sup_insert4:
   assumes A0:"is_sup R X A s1" and A1:"is_sup R X {s1,x} s2" and A2:"trans R X" and A3:"A \<subseteq> X"
   shows "s2 \<in> ubd R X A"
-proof(rule ubdI)
-  show "s2 \<in> X"
+proof(rule ubdI1)
+  show P0:"s2 \<in> X"
     using A1 is_supD1 by fastforce
   show "\<And>a. a \<in> A \<Longrightarrow> (a, s2) \<in> R"
-    by (meson A0 A1 A2 A3 insertCI is_supD1 subsetD trans_onD)
+  proof-
+    fix a assume aix:"a\<in>A"
+    obtain "(a,s1)\<in>R" and "(s1,s2)\<in>R"
+      using A0 A1 aix is_supD3 by fastforce
+    also obtain "a\<in>X" and "s1\<in>X" and "s2\<in>X"
+      using A0 A3 P0 aix is_supD1[of R X A s1] subsetD[of A X s1] by blast
+    then show "(a, s2) \<in> R"
+      using A2 calculation trans_onD[of X R a s1 s2] by blast
+  qed
 qed
 
 
-lemma sup_insert9:
+lemma sup_insert5:
   assumes A0:"is_sup R X A s1" and A1:"is_sup R X {s1,x} s2" and A2:"trans R X" and A3:"A \<subseteq> X"
   shows "s2 \<in> (ubd R X (insert x A))"
-proof(rule ubdI)
+proof(rule ubdI1)
   show "s2 \<in> X"
     using A1 is_supD1 by fastforce
   show "\<And>a. a \<in> (insert x A) \<Longrightarrow> (a, s2) \<in> R"
@@ -1811,38 +1822,32 @@ proof(rule ubdI)
     case True then show ?thesis
       using A1 is_supD1 by fastforce
     next
-    case False then obtain A5:"a \<in> A" using A4 by blast then show ?thesis
-      by (meson A0 A1 A2 A3 sup_insert62 ubdD1) 
-  qed
+    case False then obtain A5:"a \<in> A" 
+        using A4 by blast 
+    then show ?thesis
+      using A0 A1 A2 A3 sup_insert4[of R X A s1 x s2] ubdD2[of s2 R X A a] by blast
+    qed
   qed
 qed
-
-
-lemma inf_insert9:
-   "\<lbrakk>trans R Y;A \<subseteq> Y;is_inf R Y A s1; is_inf R Y {s1, x} s2\<rbrakk> \<Longrightarrow>  s2 \<in> (lbd R Y (insert x A))" 
-   by (simp add: sup_insert9) 
 
 
 lemma sup_ubd:
   assumes A0:"is_sup R X A s1" and A1:"is_sup R X {s1,x} s2" and A2:"trans R X" and A3:"A \<subseteq> X"
   shows "is_sup R X (insert x A) s2"
-proof(rule is_supI1)
+proof(rule is_supI3)
   show P0:"s2 \<in> X"
     using A1 is_supD1 by fastforce
   show Pq:"\<And>a. a \<in> insert x A \<Longrightarrow> (a, s2) \<in> R"
-    by (meson A0 A1 A2 A3 sup_insert9 ubdD2)
+    by (meson A0 A1 A2 A3 sup_insert5 ubdD2)
   show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (s2, b) \<in> R"
   proof-
     fix b assume A4:"b \<in> X" and A5:"(\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R)"
-    then obtain "\<And>a. a \<in> {s1,x} \<Longrightarrow> (a,b)\<in>R" using A0 is_supD1 by force
+    then obtain "\<And>a. a \<in> {s1,x} \<Longrightarrow> (a,b)\<in>R" 
+      using A0 is_supD1 by force
     then show "(s2,b)\<in>R"
     by (meson A1 A4 is_supD1)
   qed
 qed
-
-lemma inf_lbd: 
-  "\<lbrakk>trans R Y; F \<subseteq> Y;is_inf R Y F s; is_inf R Y {x, s} t\<rbrakk> \<Longrightarrow> is_inf R Y (insert x F) t"
-  by (simp add: insert_commute sup_ubd) 
 
 lemma fsup_insert:
   assumes por:"pord R X"  and lat:"is_lattice R X" and fne:"F \<in> Fpow_ne X" and xmem:"x \<in> X"
