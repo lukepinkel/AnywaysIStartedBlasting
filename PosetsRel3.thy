@@ -1301,7 +1301,7 @@ lemma binf_or:
   assumes por:"pord R X" and
           ssl:"is_inf_semilattice R X"
   shows binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a" and
-        binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
+        binf_or2:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
 proof-
   show P0:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
   proof-
@@ -1312,8 +1312,13 @@ proof-
     then show "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
       by simp
   qed
-  
-   
+  show P1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
+  proof-
+    fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and blt:"(b,a)\<in>R" 
+    then show "Inf R X {a,b} =b"
+      using P0[of b a]  by (simp add: insert_commute) 
+  qed
+qed
 
 lemma sup_iso:
   assumes ord:"ord R X" and
