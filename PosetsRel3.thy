@@ -1118,7 +1118,9 @@ lemma bsup_eqs:
 shows bsup_ge1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X; (a,c)\<in>R;(b,c)\<in>R\<rbrakk>\<Longrightarrow>(Sup R X {a,b},c)\<in>R" and
       bsup_le1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X;(c,a)\<in>R\<rbrakk>\<Longrightarrow>(c,Sup R X{a,b})\<in>R" and
       bsup_le2:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X;(c,b)\<in>R\<rbrakk>\<Longrightarrow>(c,Sup R X{a,b})\<in>R" and 
-      bsup_as1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,b}, c} = Sup R X {a,b,c}"
+      bsup_as1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,b}, c} = Sup R X {a,b,c}" and
+      bsup_as2:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,c}, b} = Sup R X {a,b,c}" and
+      bsup_as3:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {b,c}, a} = Sup R X {a,b,c}"
 proof-   
   show P0:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X; (a,c)\<in>R;(b,c)\<in>R\<rbrakk>\<Longrightarrow>(Sup R X {a,b},c)\<in>R"
   proof-
@@ -1179,6 +1181,18 @@ proof-
         qed
       qed
     qed
+  qed
+  show P4:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,c}, b} = Sup R X {a,b,c}"
+  proof-
+    fix a b c assume aix:"a\<in>X" and  bix:"b\<in>X" and  cix:"c\<in>X" 
+    then show "Sup R X {Sup R X {a,c}, b} = Sup R X {a,b,c}"
+      using P3[of a c b] by(auto simp add:insert_commute)
+  qed
+  show P5:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {b,c}, a} = Sup R X {a,b,c}"
+  proof-
+    fix a b c assume aix:"a\<in>X" and  bix:"b\<in>X" and  cix:"c\<in>X" 
+    then show "Sup R X {Sup R X {b,c}, a} = Sup R X {a,b,c}"
+      using P4[of b a c] by(auto simp add:insert_commute)
   qed
 qed
 
