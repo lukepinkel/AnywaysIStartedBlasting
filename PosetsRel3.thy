@@ -1539,12 +1539,14 @@ lemma distribD1:
           A4:" x \<in> X \<and> y \<in> X \<and> z \<in> X"
   shows "Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
 proof-
-  obtain A5:"is_sup_semilattice R X" and A6:"is_inf_semilattice R X" using A0 lattD4 by blast
-  obtain A7:"Inf R X {y, z} \<in> X" and A8:"Inf R X {x, z} \<in> X" and A9:"Sup R X {x, y} \<in> X"  by (meson A0 A1 A4 A5 is_supD1 lattD31 ssupD4) 
-  have B0:"Sup R X {x, Inf R X {y, z}} = Sup R X {Sup R X {x, Inf R X {x, z}}, Inf R X {y, z}}"  (*x \<or> (x \<and> z) = ((x \<or> (x \<and> z) \<or> (z \<and> y)))*)
-    by (metis A0 A1 A2 A4 lattice_absorb1 reflD1)
-  have B1:"... = Sup R X {x, Sup R X {Inf R X {z, x}, Inf R X {z, y}}}"  (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *)
-  by (metis A1 A4 A5 A7 A8 bsup_assoc2 doubleton_eq_iff)
+  obtain A5:"is_sup_semilattice R X" and A6:"is_inf_semilattice R X" 
+    using A0 lattD4 by blast
+  obtain A7:"Inf R X {y, z} \<in> X" and A8:"Inf R X {x, z} \<in> X" and A9:"Sup R X {x, y} \<in> X"
+    by (simp add: A1 A4 A5 A6 ssl_ex_sup5)  
+  have B0:"Sup R X {x, Inf R X {y, z}} = Sup R X {Sup R X {x, Inf R X {x, z}}, Inf R X {y, z}}"
+    by (simp add: A0 A1 A2 A4 lat_absorb1)  (*x \<or> (x \<and> z) = ((x \<or> (x \<and> z) \<or> (z \<and> y)))*)
+  have B1:"... = Sup R X {x, Sup R X {Inf R X {z, x}, Inf R X {z, y}}}"
+    by (metis A1 A4 A5 A7 A8 bsup_assoc2 doubleton_eq_iff)  (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *) (*also fixme*)
   have B2:"... = Sup R X {x, Inf R X {z, Sup R X {x, y}}}" (*x \<or> (z \<and> (x \<or> y))*)
     by (simp add: A3 A4) 
   have B3:"... = Sup R X {Inf R X {Sup R X {x, y}, x}, Inf R X {Sup R X {x, y}, z}}"  by (metis A0 A1 A2 A4 doubleton_eq_iff lattice_absorb2 reflD2)
