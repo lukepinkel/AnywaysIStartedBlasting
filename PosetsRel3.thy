@@ -43,7 +43,7 @@ definition Sup::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 
   where  "Sup R X A \<equiv> (THE m. is_sup R X A m)"
 
 abbreviation Inf::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a" where  
-  "Inf R X A \<equiv> (THE m. is_sup (converse R) X A m)"
+  "Inf R X A \<equiv> Sup (converse R) X A"
 
 subsection Lattices
 definition is_sup_semilattice::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
@@ -637,6 +637,10 @@ lemma is_supD1:
   "is_sup R X A x \<Longrightarrow> (x \<in> X) \<and> (\<forall>a. a \<in> A \<longrightarrow> (a,x)\<in>R) \<and> (\<forall>b. b \<in> X \<longrightarrow> (\<forall>a. a \<in> A \<longrightarrow> (a,b)\<in>R) \<longrightarrow> (x,b)\<in>R)"
   unfolding is_sup_def is_greatest_def ubd_def by blast
 
+lemma is_infD1:
+  "is_inf R X A x \<Longrightarrow> (x \<in> X) \<and> (\<forall>a. a \<in> A \<longrightarrow> (x,a)\<in>R) \<and> (\<forall>b. b \<in> X \<longrightarrow> (\<forall>a. a \<in> A \<longrightarrow> (b,a)\<in>R) \<longrightarrow> (b,x)\<in>R)"
+  unfolding is_sup_def is_greatest_def ubd_def by blast
+
 lemma is_supD2:
   "\<lbrakk>is_sup R X A x; y \<in> ubd R X A\<rbrakk> \<Longrightarrow> (x, y)\<in>R "
   unfolding is_sup_def is_greatest_def ubd_def by blast
@@ -661,13 +665,25 @@ lemma is_sup_unique:
   "\<lbrakk>antisym R X; is_sup R X A m1;  is_sup R X A m2\<rbrakk> \<Longrightarrow> m1 = m2"
   by (simp add: antisym_onD is_supD1)
 
+lemma is_inf_unique:
+  "\<lbrakk>antisym R X; is_inf R X A m1;  is_inf R X A m2\<rbrakk> \<Longrightarrow> m1 = m2"
+  by (simp add: antisym_onD is_infD1)
+
 lemma is_sup_unique_witness:
   "\<lbrakk>antisym R X; is_sup R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_sup R X A x"
   using is_sup_unique by fastforce
 
+lemma is_inf_unique_witness:
+  "\<lbrakk>antisym R X; is_inf R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_inf R X A x"
+  using is_inf_unique by fastforce
+
 lemma is_sup_unique_ex:
   "\<lbrakk>antisym R X; \<exists>s. is_sup R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_sup R X A x"
   using is_sup_unique_witness by fastforce
+
+lemma is_inf_unique_ex:
+  "\<lbrakk>antisym R X; \<exists>s. is_inf R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_inf R X A x"
+  using is_inf_unique_witness by fastforce
 
 lemma is_sup_iso1:
   "A \<subseteq> B \<Longrightarrow> is_sup R X A ma \<Longrightarrow> is_sup R X B mb \<Longrightarrow> (ma, mb)\<in>R "
@@ -708,6 +724,11 @@ lemma Upper_eq_sup_eq3:
 lemma sup_equality:
   "\<lbrakk>is_sup R X A m; antisym R X\<rbrakk> \<Longrightarrow> Sup R X A = m"
   by (simp add: Sup_def is_sup_unique the_equality) 
+
+
+lemma inf_equality:
+  "\<lbrakk>is_inf R X A m; antisym R X\<rbrakk> \<Longrightarrow> Inf R X A = m"
+  by (simp add: Sup_def is_inf_unique the_equality) 
 
 
 lemma supI:
@@ -1071,15 +1092,30 @@ lemma sup_semilattice_dual:
   "is_sup_semilattice R X \<longleftrightarrow> is_inf_semilattice (dual R ) X"
   by (simp add: is_sup_semilattice_def)
 
+lemma inf_semilattice_dual:
+  "is_inf_semilattice R X \<longleftrightarrow> is_sup_semilattice (dual R) X"
+  by (simp add: is_sup_semilattice_def)
+
 lemma sup_semilattice_ex1:
   assumes ssl:"is_sup_semilattice R X" 
   shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X {x1,x2} s"
   using ssl unfolding is_sup_semilattice_def by simp
 
+lemma inf_semilattice_ex1:
+  assumes isl:"is_inf_semilattice R X" 
+  shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X {x1,x2} s"
+  using isl unfolding is_sup_semilattice_def by simp
+
 lemma sup_semilattice_ex2:
   assumes ssl:"is_sup_semilattice R X" and ant:"antisym R X"
   shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>!s. is_sup R X {x1,x2} s"
   using ant ssl sup_semilattice_ex1[of R X ] is_sup_unique_ex[of X R] by auto 
+
+lemma inf_semilattice_ex2:
+  assumes ssl:"is_inf_semilattice R X" and ant:"antisym R X"
+  shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>!s. is_inf R X {x1,x2} s"
+  using ant ssl inf_semilattice_ex1[of X R ] is_inf_unique_ex[of X R] by auto
+
 
 lemma sup_semilattice_supI:
   assumes A0:"antisym R X" and 
@@ -1230,26 +1266,55 @@ qed
 lemma bsup_or:
   assumes por:"pord R X" and
           ssl:"is_sup_semilattice R X"
-  shows "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = b"
+  shows bsup_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = b" and
+        bsup_or2:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = a" 
 proof-
-  fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and alt:"(a,b)\<in>R"
-  obtain blt:"(b,b)\<in>R" 
-    using bix por reflD2[of R X b] by blast
-  show "Sup R X {a,b} = b"
-  proof(rule sup_equality)
-    show "is_sup R X {a, b} b"
-    proof(rule is_supI3)
-      show "b \<in> X"
-        by (simp add: bix)          
-      show "\<And>x. x \<in> {a, b} \<Longrightarrow> (x, b) \<in> R"
-        using alt blt by auto
-      show "\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> {a, b} \<Longrightarrow> (x, z) \<in> R) \<Longrightarrow> (b, z) \<in> R"
-        by simp
+  show P0:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = b"
+  proof-
+    fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and alt:"(a,b)\<in>R"
+    obtain blt:"(b,b)\<in>R" 
+      using bix por reflD2[of R X b] by blast
+    show "Sup R X {a,b} = b"
+    proof(rule sup_equality)
+      show "is_sup R X {a, b} b"
+      proof(rule is_supI3)
+        show "b \<in> X"
+          by (simp add: bix)          
+        show "\<And>x. x \<in> {a, b} \<Longrightarrow> (x, b) \<in> R"
+          using alt blt by auto
+        show "\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> {a, b} \<Longrightarrow> (x, z) \<in> R) \<Longrightarrow> (b, z) \<in> R"
+          by simp
+      qed
+      show "antisym R X"
+        by (simp add: por)
     qed
-    show "antisym R X"
-      by (simp add: por)
+  qed
+  show P1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = a" 
+  proof-
+    fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and blt:"(b,a)\<in>R" 
+    then show "Sup R X {a,b} = a"
+      using P0[of b a] por ssl ssl_ex_sup6[of X R ] by simp
   qed
 qed
+
+lemma binf_or:
+  assumes por:"pord R X" and
+          ssl:"is_inf_semilattice R X"
+  shows binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a" and
+        binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
+proof-
+  show P0:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
+  proof-
+    obtain dor:"pord (dual R) X" and isl:"is_sup_semilattice (dual R) X"
+      by (simp add: is_sup_semilattice_def por refl_iff ssl)
+    then obtain "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>(dual R)\<rbrakk>\<Longrightarrow> Sup (dual R) X {a,b} = a"
+      by (simp add: bsup_or2)
+    then show "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
+      by simp
+  qed
+  
+   
+
 lemma sup_iso:
   assumes ord:"ord R X" and
           ssl:"is_sup_semilattice R X" and
@@ -1395,7 +1460,7 @@ lemma lattD32:
 
 lemma lattD31:
   "\<lbrakk>antisym R X; is_lattice R X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_inf R X {a, b} (Inf R X {a, b})"
-  by (metis Sup_def antisym_on_converse lattD21 sup_equality)
+  by (metis antisym_on_converse lattD21 sup_equality)
 
 lemma lattD4:
   "is_lattice R X \<Longrightarrow> is_sup_semilattice R X \<and> is_inf_semilattice R X"
@@ -1405,24 +1470,69 @@ lemma lattD5:
   "\<lbrakk>antisym R X; is_lattice R X; x \<in> X; y \<in> X; Sup R X {x, y} = y\<rbrakk> \<Longrightarrow> (x, y)\<in>R"
   by (metis insertCI is_supD1 lattD32)
 
+lemma lattD6:
+  "\<lbrakk>antisym R X; is_lattice R X; x \<in> X; y \<in> X; Inf R X {x, y} = x\<rbrakk> \<Longrightarrow> (x, y)\<in>R"
+  by (metis insertCI is_infD1 lattD31)
+
 lemma latt_iff:
   "is_lattice R X \<longleftrightarrow> (is_inf_semilattice R X) \<and> (is_sup_semilattice R X)"
   by(rule iffI,simp add:lattD4,simp add:lattI2)
 
-
-lemma latt_eqs
-
-lemma latt_ge_iff1:
-  "\<lbrakk>ord R X; is_lattice R X; (y,y)\<in>R;x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> ((x, y)\<in>R \<longleftrightarrow> Sup R X {x, y} = y)"
-  by (metis antisym_on_def bsup_ge2 bsup_ge3 lattD42 lattD5 ssupD4)
-
-lemma latt_ge_iff2:
-  "\<lbrakk>ord R X;is_lattice R X; (x,x)\<in>R;x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> ((y, x)\<in>R \<longleftrightarrow> Sup R X {x, y} = x)"
-  by (simp add: insert_commute latt_ge_iff1)
-
 lemma dual_lattice:
   "is_lattice R X \<longleftrightarrow> is_lattice (dual R) X"
   by (metis converse_converse is_lattice_def)
+
+lemma latt_eqs1:
+  assumes por:"pord R X" and 
+          lat:"is_lattice R X" 
+  shows lat_ge_iff1:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (x,y)\<in>R \<longleftrightarrow> Sup R X {x,y} =y" and
+        lat_ge_iff2:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Sup R X {x,y} =x" and
+        lat_ge_iff3:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x" and
+        lat_ge_iff4:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Inf R X {x,y} =y" and
+        lat_absorb1:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {x, y}} = x" and
+        lat_absorb2:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {x, y}} = x"
+proof-
+  obtain ssl:"is_sup_semilattice R X" and isl:"is_inf_semilattice R X" 
+    using lat latt_iff by fastforce
+  obtain dor:"pord (dual R) X"
+    by (simp add: por refl_iff) 
+  obtain dsl:"is_sup_semilattice (dual R) X"
+    using dual_lattice lat latt_iff by auto
+  show P0:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (x,y)\<in>R \<longleftrightarrow> Sup R X {x,y} =y"
+  proof-
+    fix x y assume "x \<in> X" and "y \<in> X"
+    then show "(x,y)\<in>R \<longleftrightarrow> Sup R X {x,y} =y"
+      using lat lattD5[of X R x y] bsup_or[of X R x y] por latt_iff by blast
+  qed
+  show P1:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Sup R X {x,y} =x"
+    by (simp add: P0 insert_commute)
+  show P2:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {x, y}} =x" 
+  proof-
+    fix x y assume x1:"x \<in> X" and y1:"y \<in> X"
+    obtain ixy:"(Inf R X {x,y},x)\<in>R"  and "Inf R X {x,y}\<in>X"
+      by (meson converseD insertCI is_supD1 lat lattD31 por x1 y1)
+    then show "Sup R X {x, Inf R X {x, y}} =x"
+      by (simp add: P1 x1)
+  qed
+  show P3:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x" 
+  proof-
+    fix x y assume "x \<in>X" and "y \<in> X"
+    then show " (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x"
+      using bsup_or converseI dsl lat lattD6 por ssl_ex_sup6 dor
+  show P4:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Inf R X {x,y} =y" 
+  show P3:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
+  proof-
+    fix x y assume x1:"x \<in> X" and y1:"y \<in> X"
+    obtain ixy:"(x,Sup R X {x,y})\<in>R"  and s1:"Sup R X {x,y}\<in>X"
+      by (simp add: por ssl ssl_ex_sup0a ssl_ex_sup5 x1 y1)
+    obtain lt1:"(x,Inf R X {x, Sup R X {x, y}})\<in>(dual R)"
+      by (metis Sup_def dor dsl s1 ssl_ex_sup0a x1)
+    obtain lt2:""
+    then show "Inf R X {x, Sup R X {x, y}} =x"
+      by (simp add: P1 x1)
+  qed
+qed
+
 
 lemma lattice_absorb1:
   "\<lbrakk>ord R X;is_lattice R X; (x,x)\<in>R;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {x, y}} = x"
