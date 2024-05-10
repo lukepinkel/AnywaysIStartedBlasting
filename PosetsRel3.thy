@@ -943,22 +943,6 @@ proof-
     using B0 B1 by force
 qed
 
-lemma sup_insertI:
-  assumes exs:"\<exists>s. is_sup R X A s" and
-          ant:"antisym R X" and ref:"refl R X" and
-          prp:"\<And>x. is_sup R X (insert b A) x \<Longrightarrow> Q x" and
-          xix:"x \<in>X" and
-          asx:"A \<subseteq> X"
-        shows "Q (Sup R X (insert B A))"
-proof-
-  obtain s where lub:"is_sup R X A s" 
-    using exs by auto
-  obtain P1:"\<And>x. is_sup R X A x \<Longrightarrow> x = s"
-    using lub ant is_sup_unique by fastforce
-  show "Q (Sup R X (insert B A))"
-  proof(unfold Sup_def)
-    show "Q (THE s. is_sup R X A s)"
-      using lub P1 prp theI2[of "\<lambda>x. is_sup R X A x" s Q] by blast
 
          
 lemma sup_insert:
@@ -1167,7 +1151,7 @@ shows bsup_ge1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X; (a,c)\<in>
       bsup_le2:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X;(c,b)\<in>R\<rbrakk>\<Longrightarrow>(c,Sup R X{a,b})\<in>R" and 
       bsup_as1:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,b}, c} = Sup R X {a,b,c}" and
       bsup_as2:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {a,c}, b} = Sup R X {a,b,c}" and
-      bsup_as3:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {b,c}, a} = Sup R X {a,b,c}"
+      bsup_as3:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X\<rbrakk> \<Longrightarrow> Sup R X {Sup R X {b,c}, a} = Sup R X {a,b,c}" 
 proof-   
   show P0:"\<And>a b c. \<lbrakk>a \<in>X; b \<in> X; c \<in> X; (a,c)\<in>R;(b,c)\<in>R\<rbrakk>\<Longrightarrow>(Sup R X {a,b},c)\<in>R"
   proof-
@@ -1243,6 +1227,29 @@ proof-
   qed
 qed
 
+lemma bsup_or:
+  assumes por:"pord R X" and
+          ssl:"is_sup_semilattice R X"
+  shows "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Sup R X {a,b} = b"
+proof-
+  fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and alt:"(a,b)\<in>R"
+  obtain blt:"(b,b)\<in>R" 
+    using bix por reflD2[of R X b] by blast
+  show "Sup R X {a,b} = b"
+  proof(rule sup_equality)
+    show "is_sup R X {a, b} b"
+    proof(rule is_supI3)
+      show "b \<in> X"
+        by (simp add: bix)          
+      show "\<And>x. x \<in> {a, b} \<Longrightarrow> (x, b) \<in> R"
+        using alt blt by auto
+      show "\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> {a, b} \<Longrightarrow> (x, z) \<in> R) \<Longrightarrow> (b, z) \<in> R"
+        by simp
+    qed
+    show "antisym R X"
+      by (simp add: por)
+  qed
+qed
 lemma sup_iso:
   assumes ord:"ord R X" and
           ssl:"is_sup_semilattice R X" and
