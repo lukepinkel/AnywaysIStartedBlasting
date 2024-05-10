@@ -1546,10 +1546,11 @@ proof-
   have B0:"Sup R X {x, Inf R X {y, z}} = Sup R X {Sup R X {x, Inf R X {x, z}}, Inf R X {y, z}}"
     by (simp add: A0 A1 A2 A4 lat_absorb1)  (*x \<or> (x \<and> z) = ((x \<or> (x \<and> z) \<or> (z \<and> y)))*)
   have B1:"... = Sup R X {x, Sup R X {Inf R X {z, x}, Inf R X {z, y}}}"
-    by (metis A1 A4 A5 A7 A8 bsup_assoc2 doubleton_eq_iff)  (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *) (*also fixme*)
+    by (metis A1 A4 A5 A7 A8 bsup_assoc2 doubleton_eq_iff)  (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *) (*also clunky fixme*)
   have B2:"... = Sup R X {x, Inf R X {z, Sup R X {x, y}}}" (*x \<or> (z \<and> (x \<or> y))*)
     by (simp add: A3 A4) 
-  have B3:"... = Sup R X {Inf R X {Sup R X {x, y}, x}, Inf R X {Sup R X {x, y}, z}}"  by (metis A0 A1 A2 A4 doubleton_eq_iff lattice_absorb2 reflD2)
+  have B3:"... = Sup R X {Inf R X {Sup R X {x, y}, x}, Inf R X {Sup R X {x, y}, z}}"
+    by (simp add: A0 A1 A2 A4 insert_commute lat_absorb2) 
   have B4:"... = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
     by (simp add: A3 A4 A9)
   show ?thesis
@@ -1565,7 +1566,7 @@ lemma distribD2:
           A4: "x \<in> X \<and> y \<in> X \<and> z \<in> X"
   shows "Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
   using distribD1[of "dual R" X x y z]
-  by (metis A0 A1 A2 A3 A4 dual_lattice Sup_def antisym_on_converse converse_converse refl_iff trans_on_converse)
+  by (metis A0 A1 A2 A3 A4 dual_lattice antisym_on_converse converse_converse refl_iff trans_on_converse)
 
 
 lemma distribD3:
@@ -1577,10 +1578,14 @@ lemma distribD3:
 proof-
   fix x y z assume A4:"x\<in>X" and A5:"y\<in>X" and A6:"z\<in>X"
   let ?a="Sup R X {x, Inf R X {y, z}}" let ?b="Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
-  obtain A7:"?a\<in>X" and A8:"?b\<in>X"  by (meson A0 A1 A4 A5 A6 is_supD1 lattD31 lattD42 ssupD4) 
-  have B0:"(?a, ?b)\<in>R" by (simp add: A0 A1 A4 A5 A6 distrib_sup_le) 
-  also have B1:"(?b, ?a)\<in>R" by (simp add: A3 A4 A5 A6)
-  then show "?a=?b"  by (meson A1 A7 A8 antisym_onD calculation) 
+  obtain A7:"?a\<in>X" and A8:"?b\<in>X"
+    by (simp add: A0 A1 A4 A5 A6 lattD4 ssl_ex_sup5)
+  have B0:"(?a, ?b)\<in>R" 
+    by (simp add: A0 A1 A4 A5 A6 distrib_sup_le) 
+  also have B1:"(?b, ?a)\<in>R" 
+    by (simp add: A3 A4 A5 A6)
+  then show "?a=?b"  
+    by (meson A1 A7 A8 antisym_onD calculation) 
 qed
 
 lemma distribD4:
@@ -1589,7 +1594,8 @@ lemma distribD4:
           A2:"refl R X" and
           A3:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R"
   shows      "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
-  using distribD3[of "dual R" X]  by (meson A0 A1 A3 distrib_inf_le antisym_onD is_supD1 lattD31 lattD42 ssupD4)
+  using distribD3[of "dual R" X]
+  using A0 A1 A2 A3 PosetsRel3.dual_lattice antisym_on_converse refl_iff trans_on_converse by fastforce 
 
 
 
@@ -1601,7 +1607,7 @@ lemma distI3:
   shows      "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow>  Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
 proof-
   have B0:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
-    by (meson A0 A1 A3 distrib_inf_le antisym_on_def is_supD1 lattD31 lattD42 ssupD4)
+    by (meson A0 A1 A3 PosetsRel3.distrib_inf_le antisym_onD antisym_on_converse lattD4 ssl_ex_sup5)
   then show B1:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}" 
   proof-
      fix x y z assume A4:"x \<in> X" "y \<in> X" "z \<in> X"
@@ -1641,21 +1647,6 @@ lemma distr_latticeD4:
 lemma distr_latticeD5:
   "distributive_lattice R X \<Longrightarrow> is_lattice R X" 
   by (simp add: distributive_lattice_def)
-
-lemma distrib_I3:
-  "\<lbrakk>ord R X;distributive_lattice R X;refl R X;x\<in>X;y\<in>X;z\<in>X ;Inf R X {x, z} = Inf R X {y, z}; Sup R X {x, z}=Sup R X {y, z}\<rbrakk> \<Longrightarrow> x=y"
-proof-
-  assume A0:"ord R X" "distributive_lattice R X" "refl R X" "x\<in>X" "y\<in>X"  "z\<in>X"  " Inf R X {x, z} = Inf R X {y, z}" " Sup R X {x, z}=Sup R X {y, z}"
-  obtain A1:"is_lattice R X" and A2:"(x,x)\<in>R"  by (metis A0(2) A0(3) A0(4) distr_latticeD5 reflE1) 
-  then have B0:"x = Inf R X {x, Sup R X {x, z}}" using A1 A0(1,3,4,6) lattice_absorb2[of X R x z] by simp
-  also have B1:"... = Inf R X {x, Sup R X {y, z}}"  by (simp add: A0(8))
-  also have B2:"... = Sup R X {Inf R X {x, y}, Inf R X {x, z}}" using A0(1-6) distr_latticeD3[of X R x y z] by fastforce
-  also have B3:"... = Sup R X {Inf R X {y, x}, Inf R X {y, z}}"   by (simp add: A0(7) insert_commute) 
-  also have B4:"... = Inf R X {y, Sup R X {x, z}}"   by (simp add: A0(1-6) distr_latticeD3)
-  also have B5:"... = Inf R X {y, Sup R X {y, z}}"   by (simp add: A0(8))
-  also have B6:"... = y"   by (meson A0(1) A0(3) A0(5) A0(6) A1 lattice_absorb2 refl_def)
-  then show "x=y"   by (simp add: calculation)
-qed
 
 subsection LatticeDuals
 
@@ -1714,11 +1705,6 @@ lemma distributive_lattice_dualization:
 
 subsection IndexedExtrema
 
-
-lemma sinfD4:
-  "\<lbrakk>refl R X; antisym R X; trans R X; is_inf_semilattice R X; a \<in> X;  b \<in> X\<rbrakk> \<Longrightarrow> (Inf R X {a, b}) \<in> X"
-  by (metis inf_equality is_supD1)
-
 lemma distr_eq:
   assumes por:"pord R X" and lat:"is_lattice R X"
   shows distr_eq1:"\<And>a1 b. \<lbrakk>a1 \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> Inf R X {b, (Sup R X {a1})} = Sup R X {Inf R X {b, a}|a. a \<in> {a1}}" and
@@ -1736,10 +1722,10 @@ proof-
   proof-
     fix a1 b assume A0:"a1 \<in> X" and A1:"b \<in> X" 
     have B0:"Inf R X {a1} = a1"
-      by (simp add: A0 inf_singleton2 por)  
+      by (simp add: A0 por refl_iff sup_singleton2)
     also have B1:"{Sup R X {b, a}|a. a \<in> {a1}} = {Sup R X {b, a1}}"  by auto
     then show "Sup R X {b, (Inf R X {a1})} = Inf R X {Sup R X {b, a}|a. a \<in> {a1}}"
-      by (simp add: A0 A1 inf_singleton2 lat lattD42 por ssupD4) 
+      by (simp add: A0 A1 lat lattD4 por refl_iff ssl_ex_sup5 sup_singleton2)
   qed
 qed
 
@@ -1752,7 +1738,7 @@ proof-
    proof-
      fix a1 a2 b assume A0:"a1 \<in> X" and A1:"a2 \<in> X" and A2:"b \<in> X"
      obtain B0:"is_lattice R X" and B1:"Sup R X {a1, a2} \<in> X" and B2:"Inf R X {b, a1} \<in> X" and B3:"Inf R X {b, a2}\<in>X"
-        by (meson A0 A1 A2 distributive_lattice_def is_supD1 lat lattD31 lattD42 por ssupD4)
+       by (simp add: A0 A1 A2 distr_latticeD5 lat lattD4 por ssl_ex_sup5)
     obtain B4:"{Inf R X {b, a}|a. a \<in> {a1, a2}} = {Inf R X {b, a1}, Inf R X {b, a2}}" by blast
     then show "Inf R X {b, Sup R X {a1, a2}} = Sup R X {Inf R X {b, a}|a. a \<in> {a1, a2}}"
       by (simp add: A0 A1 A2 distr_latticeD3 lat por)
@@ -1761,7 +1747,7 @@ proof-
    proof-
      fix a1 a2 b assume A0:"a1 \<in> X" and A1:"a2 \<in> X" and A2:"b \<in> X"
      obtain B0:"is_lattice R X" and B1:"Inf R X {a1, a2} \<in> X" and B2:"Sup R X {b, a1} \<in> X" and B3:"Sup R X {b, a2}\<in>X"
-        by (meson A0 A1 A2 distributive_lattice_def is_supD1 lat lattD31 lattD42 por ssupD4)
+
     obtain B4:"{Sup R X {b, a}|a. a \<in> {a1, a2}} = {Sup R X {b, a1}, Sup R X {b, a2}}" by blast
     then show "Sup R X {b, Inf R X {a1, a2}} = Inf R X {Sup R X {b, a}|a. a \<in> {a1, a2}}"
       by (simp add: A0 A1 A2 distr_latticeD1 lat)
