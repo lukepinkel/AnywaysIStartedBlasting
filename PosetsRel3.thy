@@ -1854,44 +1854,51 @@ lemma fsup_insert:
   shows "Sup R X {x, (Sup R X F)} = Sup R X (insert x F)"
 proof-
   let ?Fx="insert x F"
-  obtain fin1:"finite F" and fsub1:"F \<subseteq> X" and fne1:"F \<noteq> {}" using fne unfolding Fpow_ne_def Fpow_def by fastforce
-  obtain fin2:"finite (?Fx)" and fsub2:"?Fx \<subseteq> X" and fne2:"?Fx \<noteq> {}" using fne xmem by force
-  obtain fne3:"?Fx \<in> Fpow_ne X" using fin2 fsub2 by blast
+  obtain fin1:"finite F" and fsub1:"F \<subseteq> X" and fne1:"F \<noteq> {}"
+    using Fpow_neD fne by auto 
+  obtain fin2:"finite (?Fx)" and fsub2:"?Fx \<subseteq> X" and fne2:"?Fx \<noteq> {}"
+    by (simp add: fin1 fsub1 xmem)
+  obtain fne3:"?Fx \<in> Fpow_ne X"
+    using Fpow_neI1 fin2 fsub2 by blast
   obtain B0:"is_sup R X F (Sup R X F)" and B1:" is_sup R X ?Fx (Sup R X ?Fx)"
-    by (meson fne fne3 lat lattD42 por sup_semilattice_fsup)
+    by (simp add: fne fne3 lat lattD4 por ssl_fin_sup7)
   then obtain B2:"is_sup R X ?Fx (Sup R X {x,Sup R X F})"
     by (simp add: fsub1 insert_commute is_supD1 lat lattD32 por sup_ubd xmem)
   then show ?thesis
     by (simp add: por sup_equality)
 qed
 
-lemma finf_insert:
-  "\<lbrakk>pord R X; is_lattice R X; F \<in> Fpow_ne X; x \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, (Inf R X F)} = Inf R X (insert x F)"
-  by (metis Sup_def antisym_on_converse fsup_insert lattice_dualization trans_on_converse) 
-
 lemma distr_finite2:
-  assumes A0:"b \<in> X" and
-          A1: "\<And>a1 a2. \<lbrakk>a1 \<in> X; a2 \<in> X\<rbrakk> \<Longrightarrow> Inf R X {b, (Sup R X {a1, a2})} = Sup R X {Inf R X {b, a}|a. a \<in> {a1, a2}}" and 
-          A2:"finite A" and
-          A3:"A \<noteq> {}" and
-          A4:"A \<subseteq> X" and
-          A5:"distributive_lattice R X" and 
-          A6:"pord R X"         
+  assumes 
+    A0:"b \<in> X" and
+    A1: "\<And>a1 a2. \<lbrakk>a1\<in>X;a2\<in>X\<rbrakk>\<Longrightarrow>Inf R X {b,(Sup R X {a1,a2})}=Sup R X {Inf R X {b,a}|a. a\<in>{a1,a2}}" and 
+    A2:"finite A" and
+    A3:"A \<noteq> {}" and
+    A4:"A \<subseteq> X" and
+    A5:"distributive_lattice R X" and 
+    A6:"pord R X"         
   shows "Inf R X {b, (Sup R X A)} = Sup R X {Inf R X {b, a}|a. a \<in> A}"
   using A2 A3 A4 A1 A0
 proof (induct A rule: finite_ne_induct)
-  case (singleton x) then show ?case using A5 by fastforce 
+  case (singleton x) 
+  then show ?case 
+    using A5 by fastforce 
 next
   case (insert x F)
   obtain P0:"x \<in> X" and P1:"F \<subseteq> X" and P2:"finite F" and P3:"F \<noteq> {}"
     using insert.hyps(1,2) insert.prems(1) by blast
-  have L:"is_lattice R X"  by (simp add: A5 distr_latticeD5) 
-  let ?ba="{Inf R X {b, a} |a::'a. a \<in> F}" and ?xba="{Inf R X {b, a}|a. a \<in> (insert x F)}"
+  have L:"is_lattice R X"  
+    by (simp add: A5 distr_latticeD5) 
+  let ?ba="{Inf R X {b, a} |a. a \<in> F}" and ?xba="{Inf R X {b, a}|a. a \<in> (insert x F)}"
   let ?s="Sup R X F" and ?sba="Sup R X ?ba" and ?sxba="Sup R X ?xba"
   have P4:"?ba \<subseteq> X" 
   proof
-    fix z assume "z \<in> ?ba" then obtain a where "a \<in> F" and "z=Inf R X {b,a}" by blast
-    then show "z \<in> X" by (meson A0 A6 L P1 l_inf_closed subset_eq)
+    fix z assume "z \<in> ?ba" 
+    then obtain a where "a \<in> F" and "z=Inf R X {b,a}" 
+      by blast
+    then show "z \<in> X" 
+      using A0 A6 L P1 antisym_on_converse[of X R] lattD4[of R X] 
+            ssl_ex_sup5[of X "dual R"] subset_eq by blast
   qed
   have P5:"?xba \<subseteq> X" 
   proof
