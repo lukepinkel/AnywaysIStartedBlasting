@@ -316,6 +316,30 @@ lemma Fpow_ne_iff:
   "A \<in> Fpow_ne X \<longleftrightarrow>  A \<subseteq> X \<and> finite A \<and> A \<noteq> {}"
   by(simp add: Fpow_ne_def Fpow_def) 
 
+lemma Pow_neI1:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> A \<in> Pow_ne X"
+  by (simp add:Pow_ne_def)
+
+lemma Pow_neI2:
+  "\<lbrakk>A \<in> Pow X; A \<noteq> {}\<rbrakk> \<Longrightarrow> A \<in> Pow_ne X"
+  by (simp add:Pow_ne_def)
+
+lemma Pow_neD:
+  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq>X \<and> A \<in> Pow X \<and> A \<noteq> {}"
+  by (simp add:Pow_ne_def)
+
+lemma Fpow_neI1:
+  "\<lbrakk>A \<subseteq> X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> A \<in> Fpow_ne X"
+  unfolding Fpow_ne_def Fpow_def by auto
+
+lemma Fpow_neI2:
+  "\<lbrakk>A \<in> Pow X; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> A \<in> Fpow_ne X"
+  unfolding Fpow_ne_def Fpow_def by auto
+
+lemma Fpow_neD:
+  "A \<in> Fpow_ne X \<Longrightarrow> finite A \<and> A \<subseteq>X \<and> A \<in> Pow X \<and> A \<noteq> {}"
+  unfolding Fpow_ne_def Fpow_def by auto
+
 section Reflexivity
 
 lemma reflI1:
@@ -496,7 +520,8 @@ proof
   then show "b \<in> ubd R C {x1}"
     by (simp add: B2 ubd_singleton_mem)  
 qed
-  
+
+section Greatest
 
 lemma is_greatestI1:
   "m \<in> ubd R A A \<Longrightarrow> is_greatest R A m"
@@ -593,6 +618,8 @@ qed
 lemma is_greatest_iso2:
   "A \<subseteq> B \<Longrightarrow> is_greatest R A ma \<Longrightarrow> is_greatest R B mb \<Longrightarrow> (ma, mb)\<in>R"
   by (simp add: is_greatestD1 in_mono)
+
+section Sup
 
 lemma is_supI1:
   "is_least R (ubd R X A) m \<Longrightarrow> is_sup R X A m"
@@ -916,6 +943,22 @@ proof-
     using B0 B1 by force
 qed
 
+lemma sup_insertI:
+  assumes exs:"\<exists>s. is_sup R X A s" and
+          ant:"antisym R X" and ref:"refl R X" and
+          prp:"\<And>x. is_sup R X (insert b A) x \<Longrightarrow> Q x" and
+          xix:"x \<in>X" and
+          asx:"A \<subseteq> X"
+        shows "Q (Sup R X (insert B A))"
+proof-
+  obtain s where lub:"is_sup R X A s" 
+    using exs by auto
+  obtain P1:"\<And>x. is_sup R X A x \<Longrightarrow> x = s"
+    using lub ant is_sup_unique by fastforce
+  show "Q (Sup R X (insert B A))"
+  proof(unfold Sup_def)
+    show "Q (THE s. is_sup R X A s)"
+      using lub P1 prp theI2[of "\<lambda>x. is_sup R X A x" s Q] by blast
 
          
 lemma sup_insert:
@@ -1010,7 +1053,7 @@ lemma inf_if_sup_lb:
   by (simp add: sup_if_inf_ub)
 
 
-subsection MinimaMaxima
+section MinimaMaxima
 
 definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_maximal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> a =x)"
@@ -1038,7 +1081,7 @@ lemma maximalI1:
   "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; (x, a) \<in> R\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_maximal R A x"
   by(simp add:is_maximal_def)
 
-subsection SupSemilattices
+section SupSemilattices
 
 lemma sup_semilattice_dual:
   "is_sup_semilattice R X \<longleftrightarrow> is_inf_semilattice (dual R ) X"
@@ -1317,19 +1360,15 @@ proof(rule sup_equality)
     by (simp add:por)
 qed
 
-subsection Lattices
+section Lattices
 
 lemma lattI1:
-  "\<lbrakk>X \<noteq> {}; (\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  (\<exists>x. is_inf R X {a, b} x) \<and>  (\<exists>x. is_sup R X {a, b} x))\<rbrakk> \<Longrightarrow> is_lattice R X"
+  "\<lbrakk>X \<noteq> {}; (\<And>a b. \<lbrakk>a\<in>X;b\<in>X\<rbrakk>\<Longrightarrow>(\<exists>x. is_inf R X {a,b} x) \<and>  (\<exists>x. is_sup R X {a,b} x))\<rbrakk> \<Longrightarrow> is_lattice R X"
   by (simp add: is_lattice_def)
 
 lemma lattI2:
   "\<lbrakk>is_inf_semilattice R X; is_sup_semilattice R X\<rbrakk> \<Longrightarrow> is_lattice R X"
   by (simp add: is_sup_semilattice_def lattI1)
-
-lemma lattI3:
-  "is_inf_semilattice R X \<and> is_sup_semilattice R X \<Longrightarrow> is_lattice R X"
-  by (simp add: lattI2)
 
 lemma lattD1:
   "is_lattice R X \<Longrightarrow> X \<noteq> {}"
@@ -1351,14 +1390,6 @@ lemma lattD31:
   "\<lbrakk>antisym R X; is_lattice R X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_inf R X {a, b} (Inf R X {a, b})"
   by (metis Sup_def antisym_on_converse lattD21 sup_equality)
 
-lemma lattD41:
-  "is_lattice R X \<Longrightarrow> is_inf_semilattice R X"
-  by (simp add: is_sup_semilattice_def is_lattice_def)
-
-lemma lattD42:
-  "is_lattice R X \<Longrightarrow> is_sup_semilattice R X"
-  by (simp add: is_sup_semilattice_def is_lattice_def)
-
 lemma lattD4:
   "is_lattice R X \<Longrightarrow> is_sup_semilattice R X \<and> is_inf_semilattice R X"
   by (simp add: is_sup_semilattice_def is_lattice_def)
@@ -1369,7 +1400,10 @@ lemma lattD5:
 
 lemma latt_iff:
   "is_lattice R X \<longleftrightarrow> (is_inf_semilattice R X) \<and> (is_sup_semilattice R X)"
-  by(rule iffI,simp add:lattD4,simp add:lattI3)
+  by(rule iffI,simp add:lattD4,simp add:lattI2)
+
+
+lemma latt_eqs
 
 lemma latt_ge_iff1:
   "\<lbrakk>ord R X; is_lattice R X; (y,y)\<in>R;x \<in>X; y \<in> X\<rbrakk> \<Longrightarrow> ((x, y)\<in>R \<longleftrightarrow> Sup R X {x, y} = y)"
@@ -1410,7 +1444,7 @@ lemma distrib_inf_le:
   "\<lbrakk>ord R X;is_lattice R X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (Sup R X {Inf R X {x, y}, Inf R X {x, z}}, Inf R X {x, Sup R X {y, z}}) \<in> R"
   using distrib_sup_le[of X "dual R" x y z] dual_lattice[of R X]  by (simp add: Sup_def)
 
-subsection DistributiveLattices
+section DistributiveLattices
 
 lemma distribD1:
   assumes A0:"is_lattice R X" and
