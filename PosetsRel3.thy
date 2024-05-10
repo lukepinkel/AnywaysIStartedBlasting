@@ -53,10 +53,7 @@ definition is_fsup_closed::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<R
   "is_fsup_closed R X A \<equiv> (\<forall>a1 a2. a1 \<in> A \<and>  a2 \<in> A \<longrightarrow> Sup R X {a1, a2} \<in> A)"
 
 abbreviation is_inf_semilattice::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_inf_semilattice R X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup (converse R) X {a, b} x))"
-
-abbreviation semitop where
-  "semitop R X top \<equiv> is_inf_semilattice R X \<and> is_greatest R X top"
+  "is_inf_semilattice R X \<equiv> is_sup_semilattice (converse R) X"
 
 abbreviation is_finf_closed::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_finf_closed R X A \<equiv> (\<forall>a1 a2. a1 \<in> A \<and>  a2 \<in> A \<longrightarrow> Sup (converse R) X {a1, a2} \<in> A)"
@@ -620,7 +617,7 @@ lemma is_greatest_iso2:
   by (simp add: is_greatestD1 in_mono)
 
 section Sup
-
+subsection Intro
 lemma is_supI1:
   "is_least R (ubd R X A) m \<Longrightarrow> is_sup R X A m"
   by (simp add: is_sup_def)
@@ -632,6 +629,16 @@ lemma is_supI2:
 lemma is_supI3:
   "\<lbrakk>x\<in>X; (\<And>a. a\<in>A \<Longrightarrow> (a,x)\<in>R); (\<And>b. b\<in>X\<Longrightarrow>(\<And>a. a\<in>A \<Longrightarrow>(a,b)\<in>R)\<Longrightarrow> (x,b)\<in>R)\<rbrakk> \<Longrightarrow> is_sup R X A x"
   unfolding is_sup_def is_greatest_def ubd_def by blast
+
+lemma Upper_eq_sup_eq:
+  "ubd R  X A = ubd R  X B \<Longrightarrow> (is_sup R X A s \<longleftrightarrow> is_sup R X B s)"
+  by (simp add: is_sup_def)
+
+lemma Upper_eq_sup_eq2:
+  "\<lbrakk>is_sup R X A s1;  ubd R X A=ubd R X B\<rbrakk> \<Longrightarrow> is_sup R X B s1"
+  by (simp add: is_sup_def)
+
+subsection Destruction
 
 lemma is_supD1:
   "is_sup R X A x \<Longrightarrow> (x \<in> X) \<and> (\<forall>a. a \<in> A \<longrightarrow> (a,x)\<in>R) \<and> (\<forall>b. b \<in> X \<longrightarrow> (\<forall>a. a \<in> A \<longrightarrow> (a,b)\<in>R) \<longrightarrow> (x,b)\<in>R)"
@@ -661,6 +668,8 @@ lemma is_supD6:
   "is_sup R X A s \<Longrightarrow> s \<in> ubd R X A"
   by (simp add: is_greatestD1 is_sup_def)
 
+subsection Uniqueness
+
 lemma is_sup_unique:
   "\<lbrakk>antisym R X; is_sup R X A m1;  is_sup R X A m2\<rbrakk> \<Longrightarrow> m1 = m2"
   by (simp add: antisym_onD is_supD1)
@@ -684,6 +693,16 @@ lemma is_sup_unique_ex:
 lemma is_inf_unique_ex:
   "\<lbrakk>antisym R X; \<exists>s. is_inf R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_inf R X A x"
   using is_inf_unique_witness by fastforce
+
+lemma Upper_eq_sup_eq3:
+  "\<lbrakk>is_sup R X A s1;  is_sup R X B s2;ubd R X A=ubd R X B; antisym R X\<rbrakk> \<Longrightarrow> s1=s2"
+  by(drule_tac ?R="R" and ?X="X" and ?A="A" and ?s1.0="s1" and ?B="B" in Upper_eq_sup_eq2,simp,simp add: is_sup_unique)
+
+lemma sup_equality:
+  "\<lbrakk>is_sup R X A m; antisym R X\<rbrakk> \<Longrightarrow> Sup R X A = m"
+  by (simp add: Sup_def is_sup_unique the_equality) 
+
+subsection IsotonicityAndMaximums
 
 lemma is_sup_iso1:
   "A \<subseteq> B \<Longrightarrow> is_sup R X A ma \<Longrightarrow> is_sup R X B mb \<Longrightarrow> (ma, mb)\<in>R "
@@ -709,26 +728,7 @@ lemma sup_empty:
   "is_sup R X {} i \<longleftrightarrow> (is_least R X i)"
   by (simp add: is_sup_def ubd_empty)
 
-lemma Upper_eq_sup_eq:
-  "ubd R  X A = ubd R  X B \<Longrightarrow> (is_sup R X A s \<longleftrightarrow> is_sup R X B s)"
-  by (simp add: is_sup_def)
-
-lemma Upper_eq_sup_eq2:
-  "\<lbrakk>is_sup R X A s1;  ubd R X A=ubd R X B\<rbrakk> \<Longrightarrow> is_sup R X B s1"
-  by (simp add: is_sup_def)
-
-lemma Upper_eq_sup_eq3:
-  "\<lbrakk>is_sup R X A s1;  is_sup R X B s2;ubd R X A=ubd R X B; antisym R X\<rbrakk> \<Longrightarrow> s1=s2"
-  by(drule_tac ?R="R" and ?X="X" and ?A="A" and ?s1.0="s1" and ?B="B" in Upper_eq_sup_eq2,simp,simp add: is_sup_unique)
-
-lemma sup_equality:
-  "\<lbrakk>is_sup R X A m; antisym R X\<rbrakk> \<Longrightarrow> Sup R X A = m"
-  by (simp add: Sup_def is_sup_unique the_equality) 
-
-
-lemma inf_equality:
-  "\<lbrakk>is_inf R X A m; antisym R X\<rbrakk> \<Longrightarrow> Inf R X A = m"
-  by (simp add: Sup_def is_inf_unique the_equality) 
+subsection PropIntros
 
 
 lemma supI:
@@ -746,7 +746,6 @@ proof-
   qed
 qed
 
-
 lemma ex_supI:
   assumes exs:"\<exists>s. is_sup R X A s" and 
           ant:"antisym R X" and
@@ -759,8 +758,6 @@ proof-
     using ant prp supI[of R X A s] by blast
 qed
   
-
-
 lemma ex_sup:
   assumes ant:"antisym R X" and ex:"\<exists>s. is_sup R X A s"
   shows ex_sup0:"\<And>a. a \<in> A \<Longrightarrow> (a,Sup R X A)\<in>R" and
@@ -1058,6 +1055,10 @@ lemma inf_if_sup_lb:
   by (simp add: sup_if_inf_ub)
 
 
+lemma inf_equality:
+  "\<lbrakk>is_inf R X A m; antisym R X\<rbrakk> \<Longrightarrow> Inf R X A = m"
+  by (simp add: Sup_def is_inf_unique the_equality) 
+
 section MinimaMaxima
 
 definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
@@ -1092,30 +1093,15 @@ lemma sup_semilattice_dual:
   "is_sup_semilattice R X \<longleftrightarrow> is_inf_semilattice (dual R ) X"
   by (simp add: is_sup_semilattice_def)
 
-lemma inf_semilattice_dual:
-  "is_inf_semilattice R X \<longleftrightarrow> is_sup_semilattice (dual R) X"
-  by (simp add: is_sup_semilattice_def)
-
 lemma sup_semilattice_ex1:
   assumes ssl:"is_sup_semilattice R X" 
   shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X {x1,x2} s"
   using ssl unfolding is_sup_semilattice_def by simp
 
-lemma inf_semilattice_ex1:
-  assumes isl:"is_inf_semilattice R X" 
-  shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X {x1,x2} s"
-  using isl unfolding is_sup_semilattice_def by simp
-
 lemma sup_semilattice_ex2:
   assumes ssl:"is_sup_semilattice R X" and ant:"antisym R X"
   shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>!s. is_sup R X {x1,x2} s"
   using ant ssl sup_semilattice_ex1[of R X ] is_sup_unique_ex[of X R] by auto 
-
-lemma inf_semilattice_ex2:
-  assumes ssl:"is_inf_semilattice R X" and ant:"antisym R X"
-  shows "\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>!s. is_inf R X {x1,x2} s"
-  using ant ssl inf_semilattice_ex1[of X R ] is_inf_unique_ex[of X R] by auto
-
 
 lemma sup_semilattice_supI:
   assumes A0:"antisym R X" and 
@@ -1135,6 +1121,16 @@ proof-
       using P0  P1  A2 theI2[of "\<lambda>x. is_sup R X {a,b} x" s Q] by blast
   qed
 qed
+
+
+lemma inf_semilattice_infI:
+  assumes A0:"antisym R X" and 
+          A1:"is_inf_semilattice R X" and 
+          A2:"\<And>s. is_inf R X {a,b} s \<Longrightarrow> Q s" and
+          A3:"a\<in>X" and 
+          A4:"b\<in>X" 
+        shows "Q (Inf R X {a,b})"
+  by (simp add: A0 A1 A2 A3 A4 sup_semilattice_supI)
 
 (*
   there is probably a way to automate this - or at least clean it up maybe with composition
@@ -1294,29 +1290,6 @@ proof-
     fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and blt:"(b,a)\<in>R" 
     then show "Sup R X {a,b} = a"
       using P0[of b a] por ssl ssl_ex_sup6[of X R ] by simp
-  qed
-qed
-
-lemma binf_or:
-  assumes por:"pord R X" and
-          ssl:"is_inf_semilattice R X"
-  shows binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a" and
-        binf_or2:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
-proof-
-  show P0:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
-  proof-
-    obtain dor:"pord (dual R) X" and isl:"is_sup_semilattice (dual R) X"
-      by (simp add: is_sup_semilattice_def por refl_iff ssl)
-    then obtain "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>(dual R)\<rbrakk>\<Longrightarrow> Sup (dual R) X {a,b} = a"
-      by (simp add: bsup_or2)
-    then show "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
-      by simp
-  qed
-  show P1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
-  proof-
-    fix a b  assume aix:"a\<in>X" and  bix:"b\<in>X" and blt:"(b,a)\<in>R" 
-    then show "Inf R X {a,b} =b"
-      using P0[of b a]  by (simp add: insert_commute) 
   qed
 qed
 
@@ -1520,49 +1493,36 @@ proof-
       by (simp add: P1 x1)
   qed
   show P3:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x" 
-  proof-
-    fix x y assume "x \<in>X" and "y \<in> X"
-    then show " (x,y)\<in>R \<longleftrightarrow> Inf R X {x,y} =x"
-      using  isl lat lattD6[of X R x y] por binf_or1[of X R x y] by blast
-  qed
+    using bsup_or2[of X "dual R"] converseI[of _ _ R] dor isl lat lattD6[of X R] por by blast
   show P4:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> (y,x)\<in>R \<longleftrightarrow> Inf R X {x,y} =y" 
     by (simp add: P3 insert_commute)
   show P5:"\<And>x y. \<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
-  proof-
-    fix x y assume x1:"x \<in> X" and y1:"y \<in> X"
-    obtain ixy:"(x,Sup R X {x,y})\<in>R"  and s1:"Sup R X {x,y}\<in>X"
-      by (simp add: por ssl ssl_ex_sup0a ssl_ex_sup5 x1 y1)
-    obtain lt1:"(x,Inf R X {x, Sup R X {x, y}})\<in>(dual R)"
-      by (meson dor dsl s1 ssl_ex_sup0a x1)
-    obtain lt2:"(Inf R X {x, Sup R X {x,y}},x)\<in>(dual R)"
-      using P3 ixy lt1 s1 x1 by auto
-    then show "Inf R X {x, Sup R X {x, y}} =x"
-      using P3 ixy s1 x1 by blast
-  qed
+    using P3 por ssl ssl_ex_sup0a[of X R] ssl_ex_sup5[of X R] by simp
 qed
 
-
-lemma lattice_absorb1:
-  "\<lbrakk>ord R X;is_lattice R X; (x,x)\<in>R;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {x, y}} = x"
-  by (meson converseD insertCI is_supD1 lattD31 latt_ge_iff2)
-
-lemma lattice_absorb2:
-  "\<lbrakk>ord R X; is_lattice R X; (x,x)\<in>R;x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x,Sup R X {x, y}} = x"
-  using lattice_absorb1[of X "dual R" x y] by (metis dual_lattice Sup_def antisym_on_converse converseI converse_converse trans_on_converse)
-       
 lemma distrib_sup_le: 
   assumes A0:"ord R X" and A1:"is_lattice R X" and A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X"
   shows "(Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
 proof-
-  obtain B0:"is_sup_semilattice R X" and B1:"is_inf_semilattice R X"  using A1 lattD4 by blast
-  obtain B2:"Sup R X {x, y} \<in> X" and B3:"Sup R X {x, z} \<in> X" and B4:"Inf R X {y, z} \<in> X" by (meson A0 A1 A2 A3 A4 is_supD1 lattD31 lattD42 ssupD4)
-  then obtain B5:"(x, Sup R X {x, y})\<in>R" and B6:"(x, Sup R X {x, z})\<in>R"  by (meson A0 A1 A2 A3 A4 insertCI is_supD1 lattD32)
-  then obtain B7:"(x, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R" by (simp add: A0 A2 B1 B2 B3 binf_le3) 
-  then obtain B8:"(y, Sup R X {x, y})\<in>R" and B9:"(z, Sup R X {x, z})\<in>R" and B10:" Inf R X {Sup R X {x, y}, Sup R X {x, z}} \<in>X"
-    by (meson A0 A1 A2 A3 A4 B0 insertCI is_supD1 lattD31 ssupD3)
-  then obtain B11:"(Inf R X {y, z}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"  by (simp add: A0 A3 A4 B1 B2 B3 inf_iso)
-  then show "(Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R" 
-    using bsup_ge3[of X R x "Inf R X {y, z}" "Inf R X {Sup R X {x, y}, Sup R X {x, z}}"] A0 A2 B0 B10 B4 B7 by blast 
+  obtain isl:"is_sup_semilattice R X" and ssl:"is_inf_semilattice R X" and dor:"ord (dual R) X"
+    using A0 A1 antisym_on_converse lattD4 trans_on_converse by blast
+  obtain sxy1:"Sup R X {x, y} \<in> X" and sxz1:"Sup R X {x, z} \<in> X"
+    by (simp add: A0 A2 A3 A4 isl ssl_ex_sup5)
+  obtain iyz1:"Inf R X {y, z} \<in> X"
+    using A3 A4 dor ssl ssl_ex_sup5[of X "dual R" y z] by blast
+  obtain xs1:"(x, Sup R X {x, y})\<in>R" and xs2:"(x, Sup R X {x, z})\<in>R"
+    by (simp add: A0 A2 A3 A4 isl ssl_ex_sup0a)
+  obtain ys1:"(y, Sup R X {x, y})\<in>R" and zs1:"(z, Sup R X {x, z})\<in>R"
+    by (simp add: A0 A2 A3 A4 isl ssl_ex_sup0b)
+  obtain xi1:"(x, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
+    using A2 sxy1 sxz1 xs1 xs2 ssl bsup_ge1[of X "dual R" "Sup R X {x,y}" "Sup R X {x,z}" x] 
+          converseD converseI dor by blast
+  obtain B0:" Inf R X {Sup R X {x, y}, Sup R X {x, z}} \<in>X"
+    using dor sxy1 sxz1 ssl ssl_ex_sup5[of X "dual R" "Sup R X {x,y}" "Sup R X {x,z}"] by blast
+  then obtain B1:"(Inf R X {y, z}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
+    using A3 A4 sxz1 sxy1  ys1 zs1 dor ssl sup_iso[of X "dual R"] by auto 
+  then show "(Sup R X {x, Inf R X {y, z}}, Inf R X {Sup R X {x, y}, Sup R X {x, z}})\<in>R"
+    by (simp add: A0 A2 B0 bsup_ge1 isl iyz1 xi1) 
 qed
 
 lemma distrib_inf_le: 
