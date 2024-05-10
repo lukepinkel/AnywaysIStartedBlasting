@@ -1234,7 +1234,8 @@ lemma sup_semilattice_fin_sup:
         ssl_fin_sup3:"\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> (x,z)\<in>R) \<Longrightarrow> (Sup R X A, z)\<in>R" and
         ssl_fin_sup4:"\<And>z. z \<in> ubd R X A \<Longrightarrow> (Sup R X A,z)\<in>R" and
         ssl_fin_sup5:"is_least R (ubd R X A) (Sup R X A)" and
-        ssl_fin_sup6:"Sup R X A \<in> X"
+        ssl_fin_sup6:"Sup R X A \<in> X" and
+        ssl_fin_sup7:"is_sup R X A (Sup R X A)"
 proof-
   obtain apow:"A \<subseteq> X" and afin:"finite A" and ane:"A \<noteq> {}"
     using fne unfolding Fpow_ne_def Fpow_def by auto
@@ -1252,6 +1253,8 @@ proof-
     by (simp add: P0 ex_sup4 ord) 
   show P6:"Sup R X A \<in> X"
     by (simp add: P0 ex_sup5 ord)
+  show P7:"is_sup R X A (Sup R X A)"
+    by (simp add: P5 is_supI1)
 qed
 
 
@@ -1296,19 +1299,6 @@ next
     using A6 B12 sup_equality by force
 qed
 
-lemma finite_inf_closed2:
-  assumes A0: "\<And>a1 a2. a1 \<in> A \<Longrightarrow> a2 \<in> A \<Longrightarrow>  Inf R X {a1, a2} \<in> A" and 
-          A1:"finite E" and
-          A2:"E \<noteq> {}" and
-          A3:"E \<subseteq> A" and
-          A4:"A \<subseteq> X" and
-          A5:"is_inf_semilattice R X" and 
-          A6:"antisym R X" and 
-          A7:"trans R X"
-  shows "Inf R X E \<in> A"
-  using finite_sup_closed2[of A "dual R" X E]  by (simp add: A0 A1 A2 A3 A4 A5 A6 A7 Sup_def is_sup_semilattice_def)
-
-
 
 
 lemma semilattice_assoc_sup:
@@ -1316,25 +1306,15 @@ lemma semilattice_assoc_sup:
           ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
   shows "Sup R X {Sup R X {a,b}, Sup R X {c,d}} = Sup R X {a,b,c,d}"
 proof(rule sup_equality)
-  show "antisym R X" using por by auto
-  obtain B0:"is_sup R X {a, b} (Sup R X {a,b})" and B1:"is_sup R X {a,b,c,d} (Sup R X {a,b,c,d})"
-    by (simp add: ax bx cx dx por sem sup_semilattice_fsup)
-  show " is_sup R X {Sup R X {a, b}, Sup R X {c, d}} (Sup R X {a, b, c, d})"
-    by (metis B1 assoc_sup4 ax bx cx dx por sem ssupD3) 
-qed
-
-
-
-lemma semilattice_assoc_inf:
-  assumes por:"pord R X" and sem:"is_inf_semilattice R X" and
-          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
-  shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
-proof(rule inf_equality)
-  show "antisym R X" using por by auto
-  obtain B0:"is_inf R X {a, b} (Inf R X {a,b})" and B1:"is_inf R X {a,b,c,d} (Inf R X {a,b,c,d})"
-    by (simp add: ax bx cx dx por sem inf_semilattice_finf)
-  show "is_inf R X {Inf R X {a, b}, Inf R X {c, d}} (Inf R X {a, b, c, d})"
-  by (metis (no_types, opaque_lifting) B1 antisym_on_converse assoc_sup4 ax bx cx dx inf_equality por refl_dualI sem trans_on_converse)
+  obtain B0:"{a,b}\<in>Fpow_ne X" and B1:"{c,d}\<in>Fpow_ne X" and B2:"{a,b,c,d}\<in>Fpow_ne X"
+    using Fpow_ne_iff ax bx cx dx by auto
+  obtain B3:"is_sup R X {a, b} (Sup R X {a,b})" and B4:"is_sup R X {c,d}(Sup R X {c,d})" and
+         B5:"is_sup R X {a,b,c,d} (Sup R X {a,b,c,d})"
+    using B0 B1 B2 por sem ssl_fin_sup7[of X R] by blast
+  show "is_sup R X {Sup R X {a, b}, Sup R X {c, d}} (Sup R X {a, b, c, d})"
+    using assoc_sup[of X R a b c d] using por ax bx cx dx B3 B4 B5 by blast
+  show "antisym R X" 
+    by (simp add:por)
 qed
 
 subsection Lattices
