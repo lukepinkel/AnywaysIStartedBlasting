@@ -1930,11 +1930,11 @@ next
   have P13:"?sxba \<in> X"
     using A6 P11 P5 P7 ssl ssl_fin_sup6[of X R ?xba] Fpow_neI1[of ?xba X] by blast 
   have P14:"(Sup R X {?sba, (Inf R X {b, x})}) \<in> X"
-    by (simp add: A6 L P12 P9 l_sup_closed) 
+    by (simp add: A6 P12 P9 ssl ssl_ex_sup5)
   have B0:"Inf R X {b, ?s} = ?sba"  
     using A0 A1 insert.hyps(4) insert.prems(1) by blast
   have B1:"Inf R X {b, (Sup R X {?s, x})} = Sup R X {(Inf R X {b, ?s}), (Inf R X {b, x})}"
-    by (meson A0 A5 A6 Fpow_ne_iff L P0 P1 P2 P3 distr_latticeD3 is_supD1 lattD42 sup_semilattice_fsup)
+    by (simp add: A0 A5 A6 Fpow_neI1 P0 P1 P2 P3 distr_latticeD3 ssl ssl_fin_sup6)
   have B2:"... = Sup R X {(?sba), (Inf R X {b, x})}"  
     using B0 by fastforce
   have B3:"... = Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}" 
@@ -1942,13 +1942,15 @@ next
     have B4:"?ba \<subseteq> ?xba" 
       by blast
     have B5:"is_sup R X ?ba ?sba"
-      by (metis (mono_tags, lifting) A6 Fpow_ne_iff L P10 P4 P6 lattD42 sup_semilattice_fsup) 
-    have B6:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(Inf R X {b, x}), (?sba)} )"
-      by (simp add: A6 L P12 P9 lattD32)  
-    have B7:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(?sba), (Inf R X {b, x})})" 
-      by (metis B6 insert_commute) 
+      using A6 Fpow_neI1 P10 P4 P6 ssl ssl_fin_sup7 by fastforce
+    have B6s:"{Inf R X {b, x}, ?sba}={?sba, Inf R X {b,x}}"
+      by (simp add: doubleton_eq_iff)
+    have B6:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(Inf R X {b, x}), (?sba)})"
+      by (simp add: A6 P12 P9 lat lattD32)
+    have B7:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(?sba), (Inf R X {b, x})})"
+      using B6 B6s by auto 
     have B8:"is_sup R X (insert (Inf R X {b, x}) ?ba) (Sup R X {(?sba), (Inf R X {b, x})})"
-      by (smt (verit, best) A6 B5 B7 P4 insert_commute sup_ubd)  
+      using A6 B5 B6 B6s P12 P14 P4 P9 sup_insert2 by fastforce
     have B9:"insert (Inf R X {b, x}) ?ba =  {Inf R X {b, a}|a. a \<in> (insert x F)}"  
       using B5 B7 sup_ubd by blast
     show "(Sup R X {(?sba), (Inf R X {b, x})}) =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}"
@@ -1959,9 +1961,9 @@ next
   have B11:"Inf R X {b, (Sup R X {?s, x})} = Inf R X {b, (Sup R X (insert x F))}"
   proof-
     have B12:"Sup R X {Sup R X F, x} = Sup R X (insert x F)"
-      by (simp add: A6 L P0 P1 P2 P3 fsup_insert insert_commute) 
+      by (simp add: A6 Fpow_neI1 P0 P1 P2 P3 fsup_insert lat ssl ssl_ex_sup6 ssl_fin_sup6)
     show " Inf R X {b, Sup R X {Sup R X F, x}} = Inf R X {b, Sup R X (insert x F)}" 
-       by (simp add: B12)
+      by (simp add: B12)
   qed
   have B13:"Inf R X {b, (Sup R X (insert x F))} =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}" 
     using B10 B11 by presburger
