@@ -263,6 +263,9 @@ definition ord_embedding::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Ri
 definition ord_isomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
   "ord_isomorphism Rx X Ry Y f \<equiv> ord_embedding Rx X Ry f \<and> f`X=Y"
 
+definition fne_sup_cl::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow>  'a set" where
+  "fne_sup_cl R X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x}"
+
 
 definition mesh::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" (infixl "(#)" 70)
    where "A # B \<equiv> (\<forall>a. \<forall>b. a \<in> A \<longrightarrow> b \<in> B \<longrightarrow> a \<inter> b \<noteq> {})"
@@ -3565,14 +3568,17 @@ proof-
   then obtain B2:"Dx \<subseteq> (lorc R D x)"
     by (meson PowD converse_iff dmem in_mono lcroI1 subsetI) 
   have B3:"is_sup R X (lorc R D x) x" 
-  proof(rule is_supI1)
-      show "x \<in> X" by (simp add: xmem)
-      show "\<And>a. a \<in> lorc R D x \<Longrightarrow> (a, x) \<in> R" using lcroD1 by force
-      show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> lorc R D x \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (x, b) \<in> R"  by (meson B2 is_supD1 subset_iff xsup)
+  proof(rule is_supI3)
+    show "x \<in> X" 
+      by (simp add: xmem)
+    show "\<And>a. a \<in> lorc R D x \<Longrightarrow> (a, x) \<in> R" 
+      using lcroD1 by force
+    show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> lorc R D x \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (x, b) \<in> R"  
+      by (meson B2 is_supD1 subset_iff xsup)
   qed
-  then show "x= Sup R X (lorc R D x)"  by (simp add: ant sup_equality) 
+  then show "x= Sup R X (lorc R D x)"  
+    by (simp add: ant sup_equality) 
 qed
-
 
 lemma join_denseI2:
   "\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_sup R X (lorc R D x) x) \<rbrakk> \<Longrightarrow> join_dense R X D"
@@ -3580,7 +3586,7 @@ lemma join_denseI2:
 
 lemma meet_denseD2:
   "\<lbrakk>antisym R X; meet_dense R X D; D \<subseteq> X\<rbrakk> \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> x = Inf R X (lcro R D x))"
-  by (metis Sup_def antisym_on_converse converse_converse join_denseD2) 
+  by (metis antisym_on_converse converse_converse join_denseD2)
 
 lemma meet_denseI2:
   "\<lbrakk>D \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> is_inf R X (lcro R D x) x) \<rbrakk> \<Longrightarrow> meet_dense R X D"
@@ -3597,11 +3603,14 @@ lemma compactD1:
 proof-
   obtain F where B0:"F \<in> Fpow_ne A" and B1:"(c, Sup R X F) \<in> R" and B2:"A \<subseteq> X"
     by (meson Pow_ne_iff agt amem cmp compactD)
-  then obtain B3:"F \<subseteq> A" and B4:"F \<subseteq> X" and B5:"finite F" and B6:"F \<noteq> {}" by blast
-  have B7:"pord R A" by (meson B2 antisym_on_subset por refl_subset trans_on_subset)
+  then obtain B3:"F \<subseteq> A" and B4:"F \<subseteq> X" and B5:"finite F" and B6:"F \<noteq> {}" 
+    using Fpow_neD by blast
+  have B7:"pord R A" 
+    by (meson B2 antisym_on_subset por refl_subset trans_on_subset)
   then obtain a where B8:"a \<in> A" and B9:"(\<forall>x. x \<in> F \<longrightarrow> (x,a)\<in>R)"
     by (metis B3 B5 B6 dir dir_finite1 is_dir_def)
-  then show ?thesis using B0 B1 by blast
+  then show ?thesis 
+    using B0 B1 by blast
 qed
 
 lemma compactD3:
@@ -3615,21 +3624,18 @@ proof-
   then obtain B4:"A \<subseteq> X" and B5:"A \<noteq> {}" and B6:"a \<in> X" and B7:"pord R A"
     by (metis Pow_ne_iff amem antisym_on_subset por refl_subset subsetD trans_on_subset)
   then obtain B8:"F \<subseteq> A" and B9:"finite F" and B10:"F \<noteq> {}" and B11:"F \<subseteq> X"
-    using B0 by blast
+    using B0 Fpow_neD by blast
   then obtain B12:"a \<in> ubd R X F"
-    by (simp add: B2 B6 ubdI)
+    by (simp add: B2 B6 ubdI1)
   then obtain B13:"(Sup R X F,a)\<in>R"
-    by (meson B10 B11 B9 Fpow_ne_iff is_supD2 por sem sup_semilattice_fsup)
+    by (simp add: B10 B11 B9 Fpow_neI1 por sem ssl_fin_sup4)
   then obtain B14:"(c,a)\<in>R"
-    by (meson B10 B11 B3 B6 B9 Fpow_ne_iff cmp compactD2 is_supD1 por sem sup_semilattice_fsup trans_onD)
-  then show ?thesis using B1 by blast
+    by (meson B10 B11 B3 B6 B9 Fpow_neI1 cmp compactD2 por sem ssl_fin_sup6 trans_onD)
+  then show ?thesis 
+    using B1 by blast
 qed
 
 subsubsection FiniteSupClosure
-
-definition fne_sup_cl::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow>  'a set" where
-  "fne_sup_cl R X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x}"
-
 
 lemma fne_sup_cl_imp1:
    "x \<in> fne_sup_cl R X A \<Longrightarrow> (\<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x)" 
@@ -3677,27 +3683,30 @@ proof-
     qed
   qed
   show P2:"extensive (pwr X) (Pow X) (\<lambda>A. fne_sup_cl R X A)"
-    by (simp add: P0 P1 extensive_def pwr_mem_iff) 
+    by (simp add: P0 P1 extensive_def pwr_memI)
   show P3:"\<And>A B. \<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> fne_sup_cl R X A \<subseteq> fne_sup_cl R X B" 
   proof-
     fix A B assume A0:"A \<subseteq> B" and A1:"B \<subseteq> X" 
-    then obtain B0:"A \<subseteq> X" by simp
+    then obtain B0:"A \<subseteq> X" 
+      by simp
     then show "fne_sup_cl R X A \<subseteq> fne_sup_cl R X B"
-      unfolding fne_sup_cl_def  using A0 Fpow_mono by force
+      unfolding fne_sup_cl_def using A0 Fpow_mono by force
   qed
   show P4:"isotone (pwr X) (Pow X) (pwr X) (\<lambda>A. fne_sup_cl R X A)"
-    by (simp add: P0 P3 isotone_def pwr_mem_iff)
+    by (metis P0 P3 isotone_def pwr_memD pwr_memI)
   show P5:"\<And>A. A \<subseteq> X \<Longrightarrow> fne_sup_cl R X (fne_sup_cl R X A) = fne_sup_cl R X A"
   proof-
     fix A assume sub:"A \<subseteq> X" let ?L1="fne_sup_cl R X A" let ?L2="fne_sup_cl R X ?L1"
     show "?L2 = ?L1"
     proof
-      show "?L1 \<subseteq>?L2"  by (simp add: P0 P1) 
+      show "?L1 \<subseteq>?L2"  
+        by (simp add: P0 P1) 
     next
       show "?L2 \<subseteq> ?L1"
       proof
         fix s assume A0:"s \<in>?L2"
-        obtain E where B0:"E \<in> Fpow ?L1" and B1:"E \<noteq> {}" and B2:"is_sup R X E s"  by (meson A0 fne_sup_cl_imp1) 
+        obtain E where B0:"E \<in> Fpow ?L1" and B1:"E \<noteq> {}" and B2:"is_sup R X E s"  
+          by (meson A0 fne_sup_cl_imp1) 
         define F where "F \<equiv> (\<lambda>x. SOME Fx. Fx \<in> Fpow A \<and> Fx \<noteq> {} \<and> is_sup R X Fx x)"
         have B3:"\<And>x. x \<in> E \<Longrightarrow> (F x) \<in> Fpow A \<and> (F x) \<noteq> {} \<and> is_sup R X (F x) x"
         proof-
@@ -3717,15 +3726,20 @@ proof-
             by (simp add: B3)
           then obtain "(F x) \<subseteq> A"
             by (simp add: Fpow_Pow_finite)
-          then show "(F x) \<subseteq> X"  using sub by auto
+          then show "(F x) \<subseteq> X" 
+             using sub by auto
         qed
         obtain B4:"is_sup R X (id`E) s"  by (simp add: B2)
         then obtain B5:"is_sup R X (\<Union>(F`E)) s" 
           using sup_families1[of E R X F id] sfA0 sfA1 sfA3 por  by blast
-        obtain B7:"finite (\<Union>(F`E))" by (metis B0 B3 Fpow_Pow_finite Int_Collect finite_UN)
-        obtain B8:"(\<Union>(F`E)) \<noteq> {}"  by (simp add: B3 sfA0) 
-        obtain B9:"(\<Union>(F`E)) \<subseteq> A"  using B3 Fpow_subset_Pow by blast
-        then obtain "(\<Union>(F`E)) \<in> Fpow A" by (simp add: B7 Fpow_Pow_finite)  
+        obtain B7:"finite (\<Union>(F`E))" 
+          by (metis B0 B3 Fpow_Pow_finite Int_Collect finite_UN)
+        obtain B8:"(\<Union>(F`E)) \<noteq> {}"  
+          by (simp add: B3 sfA0) 
+        obtain B9:"(\<Union>(F`E)) \<subseteq> A" 
+           using B3 Fpow_subset_Pow by blast
+        then obtain "(\<Union>(F`E)) \<in> Fpow A" 
+          by (simp add: B7 Fpow_Pow_finite)  
         then show "s \<in> ?L1"
           by (meson B5 B8 fne_sup_cl_memI2)
       qed
@@ -3754,7 +3768,7 @@ proof-
         then obtain B8:"Ea \<union> Eb \<subseteq> X" and B9:"finite (Ea \<union> Eb)"
           by (metis Fpow_Pow_finite Int_Collect PowD dual_order.trans sub)
         then obtain c where B10:"is_sup R X (Ea \<union> Eb) c"
-          by (meson B7 Fpow_ne_iff por sem sup_semilattice_fsup)
+          by (meson B7 Fpow_neI1 por sem ssl_fin_sup7)
         then obtain B11:"c \<in>  fne_sup_cl R X A"
           by (meson B6 B7 fne_sup_cl_memI2)
         obtain B12:"(a,c)\<in>R" and B13:"(b,c)\<in>R"
@@ -3800,15 +3814,21 @@ lemma bot_compact:
   assumes por:"pord R X" and bot:"is_least R X m"
   shows "is_compact R X m"
 proof(rule compactI)
-  show "m \<in> X"  using bot greatestD by fastforce 
+  show "m \<in> X"
+    by (meson bot is_greatestD1)  
   show "\<And>A. A \<in> Pow_ne X \<Longrightarrow> (m, Sup R X A) \<in> R \<Longrightarrow> \<exists>F. F \<in> Fpow_ne A \<and> (m, Sup R X F) \<in> R"
   proof-
     fix A assume A0:"A \<in> Pow_ne X" and A1:"(m, Sup R X A)\<in>R"
-    obtain a where B0:"a \<in> A"  using A0 by blast
-    obtain B1:"{a} \<in> Fpow_ne A" and B2:"a \<in> X" using A0 B0 by blast
+    obtain apx:"A \<in> Pow X" 
+      using A0 Pow_neD by blast
+    obtain a where B0:"a \<in> A"
+      using A0 Pow_neD by blast 
+    obtain B1:"{a} \<in> Fpow_ne A" and B2:"a \<in> X"
+      using B0 Fpow_ne_iff apx by blast
     then obtain B3:"(m,Sup R X{a})\<in>R"
-      using bot greatestD por sup_singleton2 by fastforce
-    then show "\<exists>F. F \<in> Fpow_ne A \<and> (m, Sup R X F) \<in> R" using B1 by blast
+      using bot is_greatestD1 por sup_singleton2 by fastforce
+    then show "\<exists>F. F \<in> Fpow_ne A \<and> (m, Sup R X F) \<in> R"
+       using B1 by blast
   qed
 qed
 
@@ -3824,21 +3844,27 @@ lemma dir_set_closure_subset:
   shows "\<exists>a \<in> A. (cl_from_clr (pwr X) C) {x} \<subseteq> a"
 proof-
   let ?R="pwr X" let ?P="Pow X"
-  obtain xmem:"{x}\<in>?P" by (simp add: A3)
-  obtain B0:"antisym ?R ?P" and B1:"refl ?R ?P" and B2:"trans ?R ?P"   by (meson powrel1 powrel2 powrel3 reflI1 refl_onD)
+  obtain xmem:"{x}\<in>?P" 
+    by (simp add: A3)
+  obtain B0:"antisym ?R ?P" and B1:"refl ?R ?P" and B2:"trans ?R ?P"
+    by (simp add: pwr_antisym pwr_refl pwr_trans)  
   let ?f="cl_from_clr ?R C"
   obtain B3:"C \<subseteq> Pow X" and B4:"A \<subseteq> C" and B5:"\<Union>A \<in> C"
     by (metis A0 A2 A4 A6 Pow_ne_iff closure_range_def)
   then obtain B6:"is_sup ?R C A (\<Union>A)" and B7:"Sup ?R C A = \<Union>A"
-    by (simp add: powrel6 powrel9 sup_equality sup_in_subset) 
+    by (meson B0 antisym_on_subset dual_order.trans pwr_ar_sup sup_equality sup_in_subset)
   from A0 A3 B0 B1 B3 obtain B8:"?f {x} \<in> C" and fxmem:"?f {x} \<in> ?P"
     by (metis Int_iff clr_induced_closure_id image_eqI inf.orderE refl_subset xmem)
   from A0 A3 B3 obtain B9:"({x}, ?f {x})\<in>?R"
-    by (metis B0 clrD1 clr_equality greatestD singletonI ubdD1 xmem)
-  then have B10:"{x} \<subseteq> ?f {x}"  using B9 powrel8 by blast 
-  also have B11:"... \<subseteq> \<Union>A"   using A5 B7 by auto 
-  then have B12:"{x} \<subseteq> \<Union>A" using calculation by blast 
-  then obtain a where B13:"a \<in> A" and B14:"x \<in> a" by auto 
+    by (metis B0 clrD1 clr_equality is_supD1 is_sup_def singletonI xmem)
+  then have B10:"{x} \<subseteq> ?f {x}"
+    using pwr_memD by blast 
+  also have B11:"... \<subseteq> \<Union>A"   
+    using A5 B7 by auto 
+  then have B12:"{x} \<subseteq> \<Union>A" 
+    using calculation by blast 
+  then obtain a where B13:"a \<in> A" and B14:"x \<in> a" 
+    by auto 
   then obtain amem:"a \<in> ?P" and amem2:"a \<in> C" and B15:"({x},a)\<in>?R"
     by (meson B3 B4 Pow_iff empty_subsetI insert_subsetI pwr_memI subsetD)
   then obtain B16:"a \<in> ubd ?R C {{x}}"
