@@ -3047,7 +3047,7 @@ lemma filter_cl_eq_cl:
 				sem:"semitop R X top" and 
 				asb:"A \<subseteq> X"
 	shows "filter_closure R X A = (cl_from_clr (pwr X) (filters_on R X)) A"
-	by (metis asb clr_equality filter_cl_lub filters_clr por powrel1 sem top_filters2)
+	by (metis asb clr_equality filter_cl3 filter_cl_lub filters_clr por pwr_antisym sem)
 
 lemma filters_on_lattice_inf_semilattice1:
   assumes por:"pord R X" and lat:"is_lattice R X"
@@ -3066,7 +3066,7 @@ lemma filters_on_lattice_inf_semilattice1:
         lattice_filters_isl12:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> is_sup (pwr X) (filters_on R X) EF (filter_closure R X (\<Union>EF))"
 proof-
  have pwr0:"pord (pwr X) (Pow X)"
-    by (simp add: powrel1 powrel2 pwr_mem_iff refl_def)
+   by (simp add: pwr_antisym pwr_refl pwr_trans)
  have fil0:"pord (pwr X) (filters_on R X)"
    by (meson PowI filters_on_iff is_filterD1 powrel6 powrel7 pwr_memI refl_def subsetI)
  show P0:"\<And>F1 F2. \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk>\<Longrightarrow>is_filter R X (F1 \<inter> F2)"
