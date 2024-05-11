@@ -94,6 +94,9 @@ definition subsemilattice_sup::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set
 definition sublattice::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "sublattice R X A\<equiv> (A \<subseteq> X) \<and> (\<forall>a b. a \<in> A \<and> b \<in> A \<longrightarrow> (\<exists>s \<in> A. is_sup R X {a, b} s) \<and> (\<exists>i \<in> A. is_inf R X {a, b} i))"
 
+abbreviation semitop where
+  "semitop R X top \<equiv> is_inf_semilattice R X \<and> is_greatest R X top"
+
 
 subsection SpecialSets
 definition is_dir::"'a set \<Rightarrow> 'a rel \<Rightarrow> bool" where 
@@ -2875,7 +2878,7 @@ proof-
       by (meson PowI is_filterD1 subsetI)
     let ?A="\<Union>EF"
     have B0:"?A \<in> Pow_ne X"
-      using A2 A4 A5 by fastforce
+      using A2 A4 A5 Pow_ne_iff by fastforce
     let ?S="filter_closure R X ?A"
     have B1:"is_filter R X ?S"
     proof(rule is_filterI1)
@@ -2884,9 +2887,9 @@ proof-
       show P1:"?S \<subseteq> X"
       proof-
         obtain "?A \<noteq> {}" 
-          using B0 by blast 
+          using B0 Pow_ne_iff by blast 
         then obtain "?S= {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F,  x) \<in> R}"
-          unfolding filter_closure_def  by presburger 
+          unfolding filter_closure_def by presburger 
         then show ?thesis 
           by blast
       qed
@@ -2896,7 +2899,7 @@ proof-
         by (meson B0 filter_closure1_ne lat por)
     qed
     show B2:"is_sup (pwr X) (filters_on R X) EF ?S"
-    proof(rule is_supI1)
+    proof(rule is_supI3)
       show "?S \<in> filters_on R X"
         by (simp add: B1 filters_on_iff)
       show "\<And>a . a \<in> EF \<Longrightarrow> (a, ?S) \<in> pwr X"
@@ -2917,27 +2920,27 @@ proof-
             by (meson A6 B1 C4 fcmen filters_on_iff is_filterD1 is_ord_clE1 subsetD)
         qed
         then show " (?S, b) \<in> pwr X"
-          by (meson A6 filters_on_iff is_filterD1 pwr_memI)
+          by (meson A2 A7 all_not_in_conv pwr_memD pwr_memI subset_trans)
       qed
     qed
   qed
   show P1:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<exists>S. is_sup (pwr X) (filters_on R X) EF S)"
     using P0 by auto
   show P2:"\<And>A. A \<in> Pow_ne (filters_on R X) \<Longrightarrow> Sup (pwr X) (filters_on R X) A= (filter_closure R X (\<Union>A))"
-    by (simp add: P0 antisym_on_def powrel8 subset_antisym sup_equality)  
+    by (simp add: P0 antisym_on_def pwr_memD subset_antisym sup_equality)  
 qed
 
   
 lemma filter_cl1:
   assumes por:"pord R X" and sem:"semitop R X top" and asub:"A \<subseteq> X"
   shows "is_ord_cl X (filter_closure R X A) R"
-  using asub por sem filter_closure1_ne[of X R A] filter_closure1_em[of X R top] by fastforce
+  by (metis Pow_neI1 asub filter_closure1_em filter_closure1_ne por sem)
 
 lemma filter_cl2:
   assumes por:"pord R X" and sem:"semitop R X top" and asub:"A \<subseteq> X"
   shows  "is_dir (filter_closure R X A) (converse R)"
-  using asub por sem filter_closure2_ne[of X R A] filter_closure2_em[of X R top] by fastforce
-
+  by (metis Pow_neI1 asub filter_closure2_em filter_closure2_ne por sem)
+ 
 lemma filter_cl_range:
 	assumes ant:"antisym R X" and ref:"refl R X" and top:"is_greatest R X top" and sub:"A \<subseteq> X"
 	shows filter_cl_sp:"(filter_closure R X A) \<subseteq> X" and
@@ -2946,7 +2949,7 @@ proof-
 	show "(filter_closure R X A) \<subseteq> X" 
 	proof(cases "A={}")
 		case True then show ?thesis 	
-			by (metis ant filter_closure_def greatest_equality3 is_filterD1 ref top top_filters2) 
+			by (metis ant filter_closure_def greatest_equalityI2 is_filterD1 ref top top_filters2) 
 	next
 		case False then obtain ne:"A \<noteq> {}" 
 			by simp 
@@ -2984,7 +2987,7 @@ proof-
 	proof(cases "A={}")
 		case True
 		then show ?thesis
-			by (metis Int_insert_right_if1 asb fil filter_closure_def greatest_equality3 inf.absorb_iff2 por sem top_filters1) 
+			by (metis Int_insert_right_if1 asb fil filter_closure_def greatest_equalityI2 inf.absorb_iff2 por sem top_filters1) 
 		next
 		case False then obtain ne:"A \<noteq> {}" 
 			by simp 
@@ -3004,7 +3007,7 @@ proof-
 		qed
 	qed
 	then show "(filter_closure R X A,F)\<in>pwr X"
-		by (meson fil is_filterD1 pwr_memI)
+	  by (meson fil is_filterD1 pwr_memI subset_trans)
 qed
 
 lemma filter_cl_lub:
@@ -3013,11 +3016,11 @@ lemma filter_cl_lub:
 				fil:"is_filter R X F" and 
 				asb:"A \<subseteq> X"
 	shows "is_least (pwr X) (ubd (pwr X) (filters_on R X) {A}) (filter_closure R X A)"
-proof(rule greatestI2)
+proof(rule is_greatestI3)
 	show "filter_closure R X A \<in> ubd (pwr X) (filters_on R X) {A}"
 		by (meson asb filter_cl_ubd por sem)
 	show "\<And>a. a \<in> ubd (pwr X) (filters_on R X) {A} \<Longrightarrow> (a, filter_closure R X A) \<in> dual (pwr X)"
-		by (metis converseI filter_cl_least2 filters_on_iff por pwr_mem_iff sem ubd_singleton_mem)
+	  by (metis converseI filter_cl_least2 filters_on_iff por pwr_memD sem ubd_singleton_mem)
 qed
 
 
@@ -3027,14 +3030,14 @@ lemma filter_closure_of_empty:
 			filter_closure_of_empty2:"(cl_from_clr (pwr X) (filters_on R X)) {} = {top}"
 proof-
 	show "is_least (pwr X) (ubd  (pwr X) (filters_on R X) {{}}) {top}"
-  proof(rule greatestI2)
+  proof(rule is_greatestI3)
 		show "{top} \<in> ubd (pwr X) (filters_on R X) {{}}"
 			by (meson ant empty_subsetI filters_on_iff is_filterD1 pwr_memI ref sem top_filters2 ubd_singleton_mem)
 		show "\<And>a. a \<in> ubd (pwr X) (filters_on R X) {{}} \<Longrightarrow> (a, {top}) \<in> dual (pwr X)"
-		by (metis converseI filters_on_iff insert_subsetI pwr_mem_iff sem top_filters1 ubd_singleton_mem)
+		  by (metis PosetsRel4.is_filter_def converse_iff empty_subsetI filters_on_iff insert_subset pwr_memI sem subset_trans top_filters1 ubdD1)
 	qed
 	then show "(cl_from_clr (pwr X) (filters_on R X)) {} = {top}"
-	by (meson ant clr_equality filters_clr powrel1 sem)
+	  by (meson ant clr_equality filters_clr pwr_antisym sem)
 qed
 
 
