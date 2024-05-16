@@ -4430,6 +4430,10 @@ proof-
   have B1:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}})\<in>(pwr X)"
   proof-
     fix f g h assume A4:"f \<in> ?F" and A5:"g \<in> ?F" and A6:"h \<in> ?F"
+    then obtain A40:"is_filter R X f" and A41:"is_filter R X g" and A42:"is_filter R X h"
+      by (simp add: filters_on_iff)
+    then obtain A43:"f \<in> Pow X" and A44:"g \<in> Pow X" and A45:"h \<in> Pow X"
+      by (simp add: is_filterD1)
     let ?sfg="Sup ?R ?F {f, g}" and ?sfh="Sup ?R ?F {f, h}" and  ?igh="Inf ?R ?F {g, h}"
     have D0:"Inf ?R ?F {?sfg, ?sfh} \<subseteq> Sup ?R ?F {f, ?igh}"
     proof
@@ -4438,21 +4442,22 @@ proof-
           by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup7 filters_on_iff lattice_filters_isl7)
         obtain B3:"z \<in> ?sfg" and B4:"z \<in> ?sfh" 
            using B2 A7 by blast 
-        then obtain x1 y where B5:"x1 \<in> f" and B6:" y \<in> g"  and B7:"(Inf R X {x1, y},z)\<in>R"
+        then obtain x1 y where B5:"x1 \<in> f" and B6:"y \<in> g"  and B7:"(Inf R X {x1, y},z)\<in>R"
           by (metis A1 A2 A3 A4 A5 B01 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
         obtain x2 t where B8:"x2 \<in> f" and B9:"t \<in> h" and B10:"(Inf R X {x2,t},z)\<in>R"
           by (metis A1 A2 A3 A4 A6 B01 B4 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
-        then obtain B11:"x1 \<in> X" and B12:"y \<in> X" and B13:"x2 \<in> X" and B14:"t \<in> X"
-          by (meson A4 A5 A6 B5 B6 filters_on_iff is_filterD1 subsetD)
-        then obtain B15:"Sup R X {x1,Inf R X {x2,t}}\<in>f"
-          using A1 A3 A4 B01 B5 bsup_ge1  filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssl_ex_sup5
-          by (meson A1 A3 A4 B01 B5 bsup_ge1 filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssl_ex_sup5)
-        then obtain B16:"Sup R X {y,x2}\<in>f"
-          by (meson A1 A3 A4 B01 B12 B13 B8 bsup_ge2 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
-        then obtain B17:"Sup R X {y,t} \<in> g"
-          by (meson A1 A3 A5 B01 B12 B14 B6 bsup_ge1 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
-        then obtain B18:"Sup R X {y, t} \<in> h"
-          by (meson A1 A3 A6 B01 B12 B14 B9 bsup_ge2 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
+        obtain B11:"x1 \<in> X" and B12:"y \<in> X" and B13:"x2 \<in> X" and B14:"t \<in> X"
+          using A43 A44 A45 B5 B6 B8 B9 by blast
+        obtain B14b:"(x2, Sup R X {y,x2})\<in>R" and B14c:"(y,Sup R X {y,t})\<in>R" and B14d:"(t,Sup R X {y,t})\<in>R"
+          by (simp add: A1 B03 B12 B13 B14 ssl_ex_sup0a ssl_ex_sup0b)
+        obtain B15:"Sup R X {x1,Inf R X {x2,t}}\<in>f"
+          by (meson A1 A40 B01 B5 B11 B12 B13 B14 antisym_on_converse is_filterD1 is_ord_clE1 lattD4 ssl_ex_sup0a ssl_ex_sup5)
+        obtain B16:"Sup R X {y,x2}\<in>f"
+          by (meson A1 A3 A4 B01 B12 B13 B8 B14b ssl_ex_sup5 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssl_ex_sup0a)
+        obtain B17:"Sup R X {y,t} \<in> g"
+          using B6 B14c A41 by (meson A1 B03 B12 B6 B14c B14 is_filterD1 is_ord_clE1 ssl_ex_sup5)
+        obtain B18:"Sup R X {y,t} \<in> h"
+          using B9 B14d A42 by (meson A1 B03 B12 B14 is_filterD1 is_ord_clE1 ssl_ex_sup5)
         have B19:"Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}} \<in> f"
           using A1 A4 B01 B15 B16 filter_inf_closed2 filters_on_iff lattD4 by fastforce
         have B20:"Inf R X {Sup R X {y, x2}, Sup R X {y, t}} = Sup R X {y, Inf R X {x2, t}}"
@@ -4465,12 +4470,12 @@ proof-
           by (metis A0 A1 B01 B11 B12 B13 B14 distr_latticeD2 is_supD1 lattD31)
         obtain B23:"Inf R X {x1,y}\<in>X" and B24:"Inf R X {x2,t}\<in>X" and B25:"Inf R X {x2,t}\<in>X" and 
                B26:"Sup R X {y,x2}\<in>X" and B27:"Sup R X {y,t}\<in>X"
-               by (meson A1 B01 B11 B12 B13 B14 is_supD1 lattD31 lattD42 ssupD4)
+          by (simp add: A1 B01 B11 B12 B13 B14 lattD4 ssl_ex_sup5)
         have B28:"Sup R X {Inf R X {x1, y}, Inf R X {x2, t}} = 
                   Inf R X {Sup R X {x1, Inf R X {x2, t}}, Inf R X {Sup R X {y, x2}, Sup R X {y, t}}} "
                   by (simp add: B22 B21)
         have B29:"... =  Inf R X {Inf R X {Sup R X {x1, Inf R X {x2, t}}, Sup R X {y, x2}}, Sup R X {y, t}}"
-          using binf_assoc2 latt_iff ssupD4 A1 A3 B01 B11 B25 B26 B27 by metis
+          by (simp add: A1 A3 B01 B11 B25 B26 B27 bsup_assoc2 lattD4 ssl_ex_sup5)
         obtain B30:"(Inf R X {x1, y},z)\<in>R" and B31:"(Inf R X {x2,t},z)\<in>R" and B32:"z \<in> X"
           by (metis A1 A2 A3 A4 A6 B01 B10 B4 B7 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
         have B33:"(Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}, z)\<in>R"
@@ -4493,7 +4498,7 @@ proof-
       have B40:"Sup ?R ?F {f, ?igh} \<subseteq> X"
         by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup6 filters_on_iff lattice_filters_isl0 lattice_filters_isl7)  
       show "(Inf ?R ?F {?sfg, ?sfh}, Sup ?R ?F {f, ?igh}) \<in> ?R"
-        by (simp add: B40 D0 pwr_memI) 
+        by (simp add: B40 D0 pwr_mem_iff)
     qed
     have P:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
       using B1 by blast
@@ -4565,13 +4570,13 @@ lemma elem_sup_primeI2:
   proof(rule elem_sup_primeI1)
     fix a b assume A4:"a \<in> X" and A5:"b \<in> X" and A6:"(x, Sup R X {a, b})\<in>R" 
     show "(x, a) \<in> R \<or> (x, b) \<in> R"
-    by (metis A1 A2 A3 A4 A5 A6 is_supD1 lcroD1 lcroI1 ssupD3 sup_primeD1)
+    by (metis A1 A2 A3 A4 A5 A6 lcroD1 lcroI1 ssl_ex_sup5 sup_primeD1)
 qed
 
 lemma elem_inf_primeI2:
   assumes A0:"x\<in>X" and A1:"inf_prime R X (lorc R X x)" and A2:"pord R X" and A3:"is_inf_semilattice R X"
   shows "elem_inf_prime R X x"
-  by (simp add: A0 A1 A2 A3 elem_sup_primeI2 is_sup_semilattice_def refl_iff)
+  by (simp add: A0 A1 A2 A3 elem_sup_primeI2 refl_iff)
 
 lemma fin_sup_irrD1:
   "\<lbrakk>fin_sup_irr R X x; a \<in> X; b \<in> X; x=Sup R X {a, b}\<rbrakk> \<Longrightarrow> (x = a \<or> x =b)"
