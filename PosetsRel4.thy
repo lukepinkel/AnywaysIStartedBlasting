@@ -422,9 +422,54 @@ lemma pwr_trans_sub:
   "C \<subseteq> Pow X \<Longrightarrow> trans (pwr X) C" 
   using pwr_trans[of X] trans_on_subset[of "Pow X" "pwr X" C] by auto
 
+lemma pwr_mem_iff:
+  "(A, B) \<in> pwr X \<longleftrightarrow> (A \<subseteq> B) \<and> (B \<subseteq> X)"
+  by (meson dual_order.trans pwr_memD pwr_memI)
+
 lemma pwr_refl_sub:
   "C \<subseteq> Pow X \<Longrightarrow> refl(pwr X) C"  
   using pwr_refl[of X] refl_subset by blast
+
+lemma powrel1[intro?]:
+  "antisym_on (Pow X) (pwr X)"  
+  by(auto simp add:antisym_on_def pwr_def)
+
+lemma powrel2[intro?]:
+  "trans_on (Pow X) (pwr X)"  
+  by(auto simp add:trans_on_def pwr_def)
+
+lemma powrel3[intro?]:
+  "refl_on (Pow X) (pwr X)"  
+  by(auto simp add:refl_on_def pwr_def)
+
+lemma powrel4:
+  "A \<subseteq> Pow X \<Longrightarrow> is_inf (pwr X) (Pow X) A (X \<inter>(\<Inter>A))" 
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def converse_def by(auto)
+
+
+lemma powrel5[intro?]:
+  "A \<subseteq> Pow X \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)" 
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by auto
+
+lemma powrel6:
+  "C \<subseteq> Pow X \<Longrightarrow> antisym_on C (pwr X)" 
+   by (meson antisym_on_subset powrel1)
+
+lemma powrel7:
+  "C \<subseteq> Pow X \<Longrightarrow> trans_on C (pwr X)"  
+  by (meson powrel2 trans_on_subset)  
+
+lemma powrel8:
+  "(x, y) \<in> pwr X \<Longrightarrow> x \<subseteq> y"  
+  by (simp add: pwr_def) 
+
+lemma powrel9:
+  "\<lbrakk>A \<subseteq> C; C\<subseteq> Pow X\<rbrakk> \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)"
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto)
+
+lemma powrel4b:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (pwr X) (Pow X) A (\<Inter>A)"
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto,blast)
 
 section Bounds
 
@@ -3874,7 +3919,7 @@ proof-
   then obtain  B17:"?f a = a"
     by (meson A0 B0 B1 B3 amem2 clr_equality is_sup_def powrel6 refl_subset sup_singleton1)
   then obtain B18:"(?f {x},?f a)\<in>?R"
-    by (metis A0 B0 B16 closure_range_def clr_equality converseD greatestD xmem)
+    by (metis A0 B0 B16 closure_range_def clr_equality converseD is_greatestD1 xmem)
   then obtain B19:"(?f {x}, a)\<in>?R" and B20:"?f {x} \<subseteq> a"
     by (simp add: B17 powrel8) 
   then show "(\<exists>a\<in>A. ?f {x} \<subseteq> a)" using B13 by blast  
@@ -3890,7 +3935,7 @@ lemma dir_set_closure_subset2:
           A6:"is_dir A (pwr X)"
   shows "\<exists>a \<in> A. ((cl_from_clr (pwr X) C) {x}, a) \<in> pwr X"
   using dir_set_closure_subset[of X C x A]
-  by (metis A0 A2 A3 A4 A5 A6 Int_iff Pow_iff Pow_ne_iff closure_range_def inf.orderE pwr_mem_iff)
+  by (metis A0 A2 A3 A4 A5 A6 is_dirE1 pwr_memD pwr_memI)
 
 lemma singleton_closure_compact:
   assumes A0:"clr (pwr X) (Pow X) C" and 
@@ -3938,22 +3983,23 @@ proof-
   proof-
     fix x assume "x \<in> E" then obtain "{x}\<in>Pow X" using B3 by force
     then show "{x} \<subseteq> ?f {x}"
-      by (metis A0 clrD1 clr_equality greatestD powrel1 powrel8 ubd_singleton_mem)
+      by (metis A0 clrD1 clr_equality is_greatestD1 powrel1 powrel8 ubd_singleton_mem)
   qed
   have B6:"?f E = E" by (metis A0 A3 cl_is_closure closure_def clrD1 clr_induced_closure_id idempotentD3 por refl_subset)
   have B7:"\<And>x. x \<in> E \<Longrightarrow> ?f {x} \<subseteq> ?f E"
   proof-
     fix x assume B70:"x \<in> E" then obtain B71:"{x}\<in>Pow X" using B3 by force
     have B72:"({x}, E)\<in> pwr X"
-      by (meson B2 B70 Pow_iff empty_subsetI insert_subsetI pwr_memI)
+      by (meson B2 B70 B71 PowD bot.extremum insert_subsetI pwr_memI)
     then obtain B73:"(?f {x}, ?f E)\<in>pwr X"
-      by (metis A0 A3 B6 B71 clrD1 clr_equality converse_iff greatestD por ubd_singleton_mem)
+      by (metis A0 A3 B6 B71 clrD1 clr_equality converse_iff is_greatestD1 por ubd_singleton_mem)
     then show "?f {x} \<subseteq> ?f E"
       using powrel8 by blast
   qed
   have B8:"E \<in> ubd ?R C ?A" 
-  proof(rule ubdI)
-    show B80:"E \<in> C" by (simp add: A3)
+  proof(rule ubdI1)
+    show B80:"E \<in> C" 
+      by (simp add: A3)
     show B81:"\<And>a. a \<in> ?A\<Longrightarrow> (a, E) \<in> pwr X" using B2 B6 B7 pwr_mem_iff by fastforce
   qed
   have B9:"E = (\<Union>x \<in> E. {x})"  by simp
