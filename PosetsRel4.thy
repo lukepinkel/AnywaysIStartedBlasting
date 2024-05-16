@@ -1516,6 +1516,10 @@ lemma latt_iff:
   "is_lattice R X \<longleftrightarrow> (is_inf_semilattice R X) \<and> (is_sup_semilattice R X)"
   by(rule iffI,simp add:lattD4,simp add:lattI2)
 
+lemma lattD42:
+  "is_lattice R X \<Longrightarrow> is_sup_semilattice R X"
+  by (simp add: is_sup_semilattice_def is_lattice_def)
+
 lemma dual_lattice:
   "is_lattice R X \<longleftrightarrow> is_lattice (dual R) X"
   by (metis converse_converse is_lattice_def)
@@ -4417,8 +4421,12 @@ lemma lattice_filters_distr:
   shows "distributive_lattice (pwr X) (filters_on R X)"
 proof-
   let ?F="filters_on R X" let ?R="pwr X"
-  have B01:"is_lattice R X"  using assms distributive_lattice_def by blast
-  have B02:"is_lattice (pwr X) ?F"  by (simp add: assms distr_lattice_filters)
+  have B01:"is_lattice R X" 
+    using assms distributive_lattice_def by blast
+  have B02:"is_lattice (pwr X) ?F" 
+    by (simp add: assms distr_lattice_filters)
+  obtain B03:"is_sup_semilattice R X" and B04:"is_sup_semilattice ?R ?F"
+    by (simp add: B01 B02 lattD4)
   have B1:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}})\<in>(pwr X)"
   proof-
     fix f g h assume A4:"f \<in> ?F" and A5:"g \<in> ?F" and A6:"h \<in> ?F"
@@ -4428,7 +4436,8 @@ proof-
         fix z assume A7:"z \<in> (Inf ?R ?F {?sfg, ?sfh})"
         have B2:"Inf ?R ?F {?sfg, ?sfh} =?sfg \<inter> ?sfh"
           by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup7 filters_on_iff lattice_filters_isl7)
-        obtain B3:"z \<in> ?sfg" and B4:"z \<in> ?sfh" using B2 A7 by blast 
+        obtain B3:"z \<in> ?sfg" and B4:"z \<in> ?sfh" 
+           using B2 A7 by blast 
         then obtain x1 y where B5:"x1 \<in> f" and B6:" y \<in> g"  and B7:"(Inf R X {x1, y},z)\<in>R"
           by (metis A1 A2 A3 A4 A5 B01 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
         obtain x2 t where B8:"x2 \<in> f" and B9:"t \<in> h" and B10:"(Inf R X {x2,t},z)\<in>R"
