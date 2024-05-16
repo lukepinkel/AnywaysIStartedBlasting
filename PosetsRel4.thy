@@ -1462,6 +1462,14 @@ proof(rule sup_equality)
     by (simp add:por)
 qed
 
+
+
+lemma semilattice_assoc_inf:
+  assumes por:"pord R X" and sem:"is_inf_semilattice R X" and
+          ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
+  shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
+  by (simp add: ax bx cx dx por refl_dualI sem semilattice_assoc_sup)
+
 section Lattices
 
 lemma lattI1:
@@ -2115,6 +2123,11 @@ proof-
   then show ?thesis
     by (metis antisym_on_subset ord sup_equality sx sy ysx)
 qed
+
+lemma clatD4:
+  "\<lbrakk>ord R X; is_clattice R X;  A \<subseteq> X\<rbrakk> \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> (Sup R X A, b) \<in> R "
+  by (simp add: clatD21 ex_sup3)
+
     
 lemma is_clatticeI1:
   "\<lbrakk>is_csup_semilattice R X;  is_cinf_semilattice R X\<rbrakk> \<Longrightarrow> is_clattice R X"
@@ -3980,7 +3993,10 @@ proof-
    let ?R="pwr X"  let ?f="cl_from_clr ?R C" let ?A="{y. (\<exists>x \<in> E. y= ?f {x})}"
   obtain por:"pord (pwr X) (Pow X)" and clat:"is_clattice (pwr X) (Pow X)"
     by (simp add: pow_is_clattice powrel1 powrel2 pwr_memI refl_def)
-  then obtain B0:"is_clattice (pwr X) C"  using A0 clr_clattice2 by blast
+  then obtain B0:"is_clattice (pwr X) C"
+    using A0 clr_clattice2 by blast
+  have B0b:"pord ?R C"
+    by (meson A0 clrD1 por pwr_antisym_sub pwr_trans_sub refl_subset)
   have B1:"\<And>x. x \<in> X \<Longrightarrow> is_compact (pwr X) C (?f {x})" 
     by (metis A0 A1 A2 singleton_closure_compact)
   obtain B2:"E \<in> Pow X" 
@@ -3989,19 +4005,24 @@ proof-
     using B2 by blast 
   have B4:"?A \<subseteq> C"
   proof 
-    fix y assume A9:"y \<in> ?A" then obtain x where B40:"x \<in> E" and B41:"y = ?f {x}" by blast
-    then show "y \<in> C"  using B1 B2 compactD2 by fastforce 
+    fix y assume A9:"y \<in> ?A" then obtain x where B40:"x \<in> E" and B41:"y = ?f {x}" 
+       by blast
+    then show "y \<in> C"  
+      using B1 B2 compactD2 by fastforce 
   qed
   have B5:"\<And>x. x \<in> E \<Longrightarrow> {x} \<subseteq> ?f {x}"
   proof-
-    fix x assume "x \<in> E" then obtain "{x}\<in>Pow X" using B3 by force
+    fix x assume "x \<in> E" then obtain "{x}\<in>Pow X" 
+      using B3 by force
     then show "{x} \<subseteq> ?f {x}"
       by (metis A0 clrD1 clr_equality is_greatestD1 powrel1 powrel8 ubd_singleton_mem)
   qed
-  have B6:"?f E = E" by (metis A0 A3 cl_is_closure closure_def clrD1 clr_induced_closure_id idempotentD3 por refl_subset)
+  have B6:"?f E = E" 
+    by (metis A0 A3 cl_is_closure closure_def clrD1 clr_induced_closure_id idempotentD3 por refl_subset)
   have B7:"\<And>x. x \<in> E \<Longrightarrow> ?f {x} \<subseteq> ?f E"
   proof-
-    fix x assume B70:"x \<in> E" then obtain B71:"{x}\<in>Pow X" using B3 by force
+    fix x assume B70:"x \<in> E" then obtain B71:"{x}\<in>Pow X" 
+      using B3 by force
     have B72:"({x}, E)\<in> pwr X"
       by (meson B2 B70 B71 PowD bot.extremum insert_subsetI pwr_memI)
     then obtain B73:"(?f {x}, ?f E)\<in>pwr X"
@@ -4016,6 +4037,15 @@ proof-
     show B81:"\<And>a. a \<in> ?A\<Longrightarrow> (a, E) \<in> pwr X" 
       using B2 B6 B7 pwr_mem_iff by fastforce
   qed
+  have B8b:"Sup ?R C ?A \<in> Pow X"
+  proof-
+    obtain s where "is_sup ?R C ?A s"
+      using B0 B4 is_clattice_def[of ?R C] by blast
+    then show ?thesis
+      using A0 B0b clrD1 is_supD4 sup_equality by fastforce
+  qed
+  have B8c:"(Sup ?R C ?A, E)\<in>pwr X" 
+    using clatD4[of C ?R ?A E] B0b B0 B8 B4 by blast
   have B9:"E = (\<Union>x \<in> E. {x})" 
     by simp
   have B10:"... \<subseteq> (\<Union>x \<in> E. ?f {x})" 
@@ -4025,10 +4055,9 @@ proof-
   have B12:"... = Sup ?R (Pow X) ?A" 
     by (metis (no_types, lifting) A0 B4 clrD1 por powrel9 sup_equality) 
   have B13:"... \<subseteq> Sup ?R C ?A" 
-using sup_iso2[of "Pow X" ?R C]
-    by (metis (no_types, lifting) A0 B0 B4 clat clrD1 por pwr_mem_iff)
+    using sup_iso2[of "Pow X" ?R C] A0 B0 B4 clat clrD1 por pwr_mem_iff by (metis (no_types, lifting))
   have B14:"... \<subseteq> E"
-    by (smt (verit, ccfv_SIG) A0 B10 B11 B2 B4 B8 B9 clrD1 is_supD1 powrel6 powrel8 powrel9 set_eq_subset sup_equality sup_in_subset ubdD1)
+    using B8c powrel8 by auto
   have B15:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> compact_elements ?R C"
     using B1 B2 compact_elements_mem_iff1 by fastforce 
   have B16:"?A \<in> Pow (compact_elements ?R C)"
@@ -4101,7 +4130,7 @@ proof-
         obtain fab8:"Inf R X {a,b}\<in> X" and fab9:"a \<in> X" and fab10:"b \<in> X"
           using fab4 fab5 fab6 fab7 is_filterD1 by blast
         obtain "(Inf R X {a, b}, a)\<in>R" and "(Inf R X {a, b},b)\<in>R"
-          by (metis binf_le1 binf_le2 fab10 fab9 lat latt_iff por) 
+          by (meson antisym_on_converse converse_iff fab10 fab9 lat lattD4 por ssl_ex_sup0a ssl_ex_sup0b)
         then show "\<exists>c\<in>\<Union> D. (a, c) \<in> dual R \<and> (b, c) \<in> dual R"
           using fab1 fab7 by blast 
        qed
@@ -4211,7 +4240,7 @@ qed
 
 lemma leq_sup:
   "\<lbrakk>pord R X; is_lattice R X; x \<in> X; y \<in>X; z \<in> X;(x, z)\<in>R; (y,z)\<in>R\<rbrakk> \<Longrightarrow> (Sup R X {x, y}, z) \<in>R"
-  by (simp add: bsup_ge3 lattD42)
+  by (simp add: bsup_ge1 lattD4)
 
 subsection BinaryFilterSup
 
@@ -4248,9 +4277,10 @@ proof-
     fix a F1 F2 assume A1:"is_filter R X  F1" and A2:"is_filter R X  F2" and A3:"a \<in> F1"
     obtain y where A4:"y \<in> F2"
       using A2 is_filterD1 by fastforce
-    then obtain B0:"y \<in> X" and B1:"a \<in> X"  using A1 A2 A3 is_filterD1 by blast
+    then obtain B0:"y \<in> X" and B1:"a \<in> X"  
+      using A1 A2 A3 is_filterD1 by blast
     then obtain B2:"(Inf R X {a, y}, a)\<in>R"
-      using binf_le1 lat lattD31 por by fastforce
+      by (meson antisym_on_converse converseD lat lattD4 por ssl_ex_sup0a)
     then show "a \<in> binary_filter_sup R X F1 F2"
       by (meson A3 A4 B1 filter_bsup_memI1)
   qed
@@ -4266,7 +4296,8 @@ proof-
      show "is_ord_cl X (binary_filter_sup R X F1 F2) R"
      proof(rule is_ord_clI1)
       fix a b assume a0:"a \<in> (binary_filter_sup R X F1 F2)" and b0:"b \<in> X" and ab0:"(a,b)\<in>R"
-      then obtain a1:"a \<in> X" using filter_bsup_memD1 by force
+      then obtain a1:"a \<in> X" 
+        using filter_bsup_memD1 by force
       obtain x y where x0:"x \<in> F1" and y0:"y \<in> F2" and ixy:"(Inf R X {x, y}, a)\<in>R"
         by (meson a0 filter_bsup_memD1)
       obtain x1:"x \<in> X" and y1:"y \<in> X"
@@ -4289,7 +4320,8 @@ proof-
     show "is_dir ?FC (dual R)"
     proof(rule is_dirI1)
       fix a b assume amem1:"a \<in> ?FC" and bmem1:"b \<in> ?FC"
-      then obtain amem2:"a \<in> X" and bmem2:"b \<in> X" using filter_bsup_memD1 by force
+      then obtain amem2:"a \<in> X" and bmem2:"b \<in> X" 
+        using filter_bsup_memD1 by force
       obtain a1 a2 b1 b2 where B0:"a1 \<in> F1" and B1:"b1 \<in> F1" and B2:"a2 \<in> F2" and B3:"b2 \<in> F2" and 
                                B4:"(Inf R X {a1, a2}, a)\<in>R" and B5:"(Inf R X {b1,b2},b)\<in>R"
          by (meson amem1 bmem1 filter_bsup_memD1)
@@ -4302,17 +4334,17 @@ proof-
       obtain B14:"Inf R X {a1, a2} \<in> X" and B15:"Inf R X {b1, b2}\<in>X"
         by (meson B6 B7 B8 B9 is_supD1 lat lattD31 por)
       have B16:"Inf R X {Inf R X {a1,b1},Inf R X {a2,b2}} =  Inf R X {a1,b1,a2,b2}"
-        by (metis B6 B7 B8 B9 lat latt_iff por semilattice_assoc_inf)
+        by (simp add: B6 B7 B8 B9 lat lattD4 por refl_dualI semilattice_assoc_sup)
       also have B17:"... = Inf R X {a1,a2,b1,b2}"
         by (simp add: insert_commute)
       also have B18:"... = Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}"
         by (metis B6 B7 B8 B9 lat latt_iff por semilattice_assoc_inf)
       obtain B19:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},a)\<in>R "
-        by (metis B14 B15 B4 le_infI1 amem2 lat latt_iff por)
+        by (meson B14 B15 B4 amem2 antisym_on_converse converseD lat lattD4 por ssl_ex_sup0a ssl_ex_sup5 trans_onD)
       then obtain B20:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},a)\<in>R"
         using B16 B17 B18 by presburger
       obtain B21:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},b)\<in>R "
-        by (metis B14 B15 B5 le_infI2 bmem2 lat latt_iff por)
+        by (meson B14 B15 B5 antisym_on_converse bmem2 converseD lat lattD4 por ssl_ex_sup0b ssl_ex_sup5 trans_onD)
       then obtain B22:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},b)\<in>R"
         using B16 B17 B18 by presburger
       have B23:"Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}} \<in> (binary_filter_sup R X F1 F2)"
@@ -4344,7 +4376,7 @@ proof-
   proof-
     fix F1 F2 assume fil1:"is_filter R X F1" and fil2:"is_filter R X F2" let ?FC="binary_filter_sup R X F1 F2"
     show "?FC \<in>ubd (pwr X) (filters_on R X) {F1, F2}"
-    proof(rule ubdI)
+    proof(rule ubdI1)
       show "?FC \<in> filters_on R X"
         by (simp add: P6 fil1 fil2 filters_on_iff)
       show "\<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, ?FC) \<in> pwr X"
@@ -4364,17 +4396,17 @@ proof-
       obtain a1 a2 where B0:"a1 \<in> F1" and B1:"a2 \<in> F2" and B2:"(Inf R X {a1, a2},x)\<in>R"
         by (meson A4 filter_bsup_memD1)
       then obtain B3:"a1 \<in> G" and B4:"a2 \<in> G"
-        by (metis gubd insertCI insert_Diff insert_subset powrel8 ubdD1)
+        by (metis gubd insertCI insert_Diff insert_subset powrel8 ubdD2)
       then obtain B4:"Inf R X {a1, a2} \<in> G"
         by (metis fil0 filter_inf_closed2 lat latt_iff por)
       show "x \<in> G"
         by (meson A4 B2 B4 fil0 filter_bsup_memD1 is_filterD1 is_ord_clE1)
     qed
     then show "(?FC,G)\<in>(pwr X)"
-      by (meson fil0 is_filterD1 pwr_memI)
+      by (meson fil0 is_filterD1 pwr_mem_iff)
   qed
   show P9:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk>  \<Longrightarrow> is_sup (pwr X) (filters_on R X) {F1, F2} (binary_filter_sup R X F1 F2)"
-    by (meson P7 P8 converseI filters_on_iff greatestI2 is_sup_def subsetD ubd_sub)
+    by (meson P7 P8 converseI filters_on_iff is_greatestI3 is_supI1 subsetD ubd_space)
   show P10:"\<And>F1 F2.  \<lbrakk>is_filter R X F1; is_filter R X F2\<rbrakk> \<Longrightarrow> Sup (pwr X) (filters_on R X) {F1, F2} = (binary_filter_sup R X F1 F2)"
   by (simp add: P9 antisym_on_def pwr_mem_iff subset_antisym sup_equality)
 qed
@@ -4395,7 +4427,7 @@ proof-
     proof
         fix z assume A7:"z \<in> (Inf ?R ?F {?sfg, ?sfh})"
         have B2:"Inf ?R ?F {?sfg, ?sfh} =?sfg \<inter> ?sfh"
-          by (simp add: A1 A2 A3 A4 A5 A6 B01 lattice_filters_isl7 lattice_filters_isl8)
+          by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filter_on_lattice_bsup7 filters_on_iff lattice_filters_isl7)
         obtain B3:"z \<in> ?sfg" and B4:"z \<in> ?sfh" using B2 A7 by blast 
         then obtain x1 y where B5:"x1 \<in> f" and B6:" y \<in> g"  and B7:"(Inf R X {x1, y},z)\<in>R"
           by (metis A1 A2 A3 A4 A5 B01 filter_bsup_memD1 filter_on_lattice_bsup11 filters_on_iff)
