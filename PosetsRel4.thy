@@ -4445,7 +4445,8 @@ proof-
         then obtain B11:"x1 \<in> X" and B12:"y \<in> X" and B13:"x2 \<in> X" and B14:"t \<in> X"
           by (meson A4 A5 A6 B5 B6 filters_on_iff is_filterD1 subsetD)
         then obtain B15:"Sup R X {x1,Inf R X {x2,t}}\<in>f"
-          by (meson A1 A3 A4 B01 B5 bsup_ge1 filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssupD4)
+          using A1 A3 A4 B01 B5 bsup_ge1  filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssl_ex_sup5
+          by (meson A1 A3 A4 B01 B5 bsup_ge1 filters_on_iff is_filterD1 is_ord_clD1 is_supD1 lattD31 lattD42 ssl_ex_sup5)
         then obtain B16:"Sup R X {y,x2}\<in>f"
           by (meson A1 A3 A4 B01 B12 B13 B8 bsup_ge2 filters_on_iff is_filterD1 is_ord_clE1 lattD42 ssupD4)
         then obtain B17:"Sup R X {y,t} \<in> g"
