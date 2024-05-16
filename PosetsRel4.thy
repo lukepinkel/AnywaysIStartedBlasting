@@ -2103,6 +2103,19 @@ lemma sup_iso1:
   "\<lbrakk>ord R X;is_clattice R X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (Sup R X A, Sup R X B)\<in>R"
   by (metis clatD21 dual_order.trans is_sup_iso1 sup_equality)
 
+lemma sup_iso2:
+  assumes ord:"ord R X" and clx:"is_clattice R X" and cly:"is_clattice R Y" and
+          asy:"A \<subseteq> Y" and ysx:"Y \<subseteq> X" and yne:"Y \<noteq> {}"
+  shows "(Sup R X A, Sup R Y A)\<in>R"
+proof-
+  obtain sxa sya where sx:"is_sup R X A sxa" and sy:"is_sup R Y A sya"
+    using clx cly is_clattice_def[of R X]  is_clattice_def[of R Y] order_trans[of A Y X] asy ysx by presburger
+  then obtain "(sxa, sya)\<in>R"
+    using asy ysx is_sup_iso2[of A Y X R sya sxa] by simp
+  then show ?thesis
+    by (metis antisym_on_subset ord sup_equality sx sy ysx)
+qed
+    
 lemma is_clatticeI1:
   "\<lbrakk>is_csup_semilattice R X;  is_cinf_semilattice R X\<rbrakk> \<Longrightarrow> is_clattice R X"
   by (metis is_cinf_semilattice_def is_clattice_def is_csup_semilattice_def sup_if_inf_ub ubd_empty verit_comp_simplify(2))
@@ -4000,13 +4013,19 @@ proof-
   proof(rule ubdI1)
     show B80:"E \<in> C" 
       by (simp add: A3)
-    show B81:"\<And>a. a \<in> ?A\<Longrightarrow> (a, E) \<in> pwr X" using B2 B6 B7 pwr_mem_iff by fastforce
+    show B81:"\<And>a. a \<in> ?A\<Longrightarrow> (a, E) \<in> pwr X" 
+      using B2 B6 B7 pwr_mem_iff by fastforce
   qed
-  have B9:"E = (\<Union>x \<in> E. {x})"  by simp
-  have B10:"... \<subseteq> (\<Union>x \<in> E. ?f {x})" using B5 by blast
-  have B11:"... = (\<Union>?A)"  by blast
-  have B12:"... = Sup ?R (Pow X) ?A" by (metis (no_types, lifting) A0 B4 clrD1 por powrel9 sup_equality) 
-  have B13:"... \<subseteq> Sup ?R C ?A" using sup_iso2[of "Pow X" ?R C]
+  have B9:"E = (\<Union>x \<in> E. {x})" 
+    by simp
+  have B10:"... \<subseteq> (\<Union>x \<in> E. ?f {x})" 
+    using B5 by blast
+  have B11:"... = (\<Union>?A)" 
+    by blast
+  have B12:"... = Sup ?R (Pow X) ?A" 
+    by (metis (no_types, lifting) A0 B4 clrD1 por powrel9 sup_equality) 
+  have B13:"... \<subseteq> Sup ?R C ?A" 
+using sup_iso2[of "Pow X" ?R C]
     by (metis (no_types, lifting) A0 B0 B4 clat clrD1 por pwr_mem_iff)
   have B14:"... \<subseteq> E"
     by (smt (verit, ccfv_SIG) A0 B10 B11 B2 B4 B8 B9 clrD1 is_supD1 powrel6 powrel8 powrel9 set_eq_subset sup_equality sup_in_subset ubdD1)
