@@ -4935,9 +4935,9 @@ proof(rule sup_primeI2)
     by (meson B10b lcroD1)
   let ?s_b_sbf=" Sup R X {b, ?sbf}" let ?s_b_sbc="Sup R X {b, ?sbc}"
   obtain A23:"?s_b_sbf \<in> X" and A24:"?s_b_sbc \<in> X"
-    by (meson A1 A19 A20 A9 latt_iff por ssupD4) 
+    using A1 A19 A20 A9 latt_iff por by (simp add: lattD4 ssl_ex_sup5)
   have B12:"(?sbf, ?s_b_sbf)\<in>R"
-    by (simp add: A1 A19 A9 bsup_ge2 lattD42 por)
+    using A1 A19 A9 lattD42 por by (metis ssl_ex_sup0b)
   have B13:"(?sba,?s_b_sbc) \<in>R"
     by (meson A0 A1 A20 A9 B11 lattD42 por reflD2 sup_iso)
   have B14:"b = Sup R X {b, ?i_sbf_sbc}"
@@ -4974,7 +4974,7 @@ proof-
   proof-
     assume isl:"is_inf_semilattice R X"
     obtain "(f`I) \<in> Pow_ne (filters_on R X)"
-      by (simp add: fil filters_on_iff image_subsetI ind2)
+      by (simp add: Pow_neI1 fil filters_on_iff image_subset_iff ind2)
     then show "is_inf (pwr X) (filters_on R X) (f`I) (\<Inter>(f`I))"
       using isl por top filters_inf_semilattice_inf[of X R m "f`I"] by blast
   qed
@@ -5026,7 +5026,7 @@ lemma finite_ind_fil4:
 proof-
   define x where "x = (\<lambda>(i::'b). s)"
   have B0:"is_sup R X (x` I) s"
-  proof(rule is_supI1)
+  proof(rule is_supI3)
     show P0:"s \<in> X"
       using A2 A3 A4 A5 is_filterD1 by fastforce
     show "\<And>a. a \<in> x ` I \<Longrightarrow> (a, s) \<in> R"
@@ -5059,7 +5059,7 @@ proof-
   have B1:"?F \<subseteq> X"
     by (meson A4 A5 image_subset_iff is_filterD1 subsetD)      
   have B2:"is_sup R X ?F ?s"
-    by (simp add: A0 A3 A6 A7 A8 B0 B1 l_finsup sup_equality2)  
+    by (simp add: A0 A3 A7 A8 B0 B1 Fpow_ne_iff lattD4 ssl_fin_sup7)
   then show ?thesis
     by (metis A0 A1 A2 A3 A4 A5 A6 A7 A8 finite_ind_fil3) 
 qed
@@ -5152,13 +5152,13 @@ proof-
   have B1:"is_inf_semilattice R X"
     using A0 latt_iff by auto
   have B2:"f`I \<in> Pow_ne (filters_on R X)"
-    by (simp add: A2 A3 filters_on_iff image_subsetI)
+    by (simp add: A2 A3 Pow_ne_iff filters_on_iff image_subset_iff)
   have B3:"Sup (pwr X) (filters_on R X) (f`I) = filter_closure R X (?A)"
     using A4 A5 A6 B1 B2 semilat_filters_isl2 by auto
   also have B4:"... = {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R} " 
       unfolding filter_closure using B0 by (simp add: filter_closure_def)
-  also have B3:"... = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}"  
-      by blast
+  also have B3:"... = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}"
+    by (metis (no_types, opaque_lifting) Fpow_ne_iff)  
   finally show ?thesis
    by blast 
 qed
@@ -5240,7 +5240,7 @@ proof-
   proof-
     fix z assume A7:"z \<in> F"
     obtain i where B8:"i \<in> I \<and> z \<in> (f i)"
-      using A5 A7 by blast  
+      using A5 A7 by (smt (verit, del_insts) Fpow_ne_iff UnionE bex_imageD insert_absorb insert_subset) 
     have B9:"G``{i} \<noteq> {}" using A7 B8 by(auto simp add:G_def)
     have B10:"x i =  Inf R X (G``{i})" by (simp add: B9 x_def)
     have B11:"z \<in> G``{i}" by (simp add: A7 B8 G_def)
