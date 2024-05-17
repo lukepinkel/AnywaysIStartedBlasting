@@ -7260,23 +7260,49 @@ lemma Nhoods_to_Adh1c:
   unfolding NAdh_def mesh_def using assms by(simp add:mesh_def)
 
 lemma Nhoods_to_Adh1d: 
-  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (pwr X) (Pow X)" and A2:"Adh \<noteq> {}"
+  assumes A0:"x \<in> X" and 
+          A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (pwr X) (Pow X)" and 
+          A2:"Adh \<noteq> {}"
   shows "\<And>E.  \<lbrakk>E \<in> Pow X; E \<notin> (NAdh Adh X)``{x}\<rbrakk> \<Longrightarrow> E \<notin>  \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
-  unfolding NAdh_def grill_def mesh_def using assms by(auto, smt (verit, ccfv_SIG) mem_Collect_eq)
+proof-
+  fix E assume A3:"E \<in> Pow X" and A4:"E \<notin> (NAdh Adh X)``{x}"
+  then show "E\<notin>  \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
+    unfolding NAdh_def grill_def mesh_def using assms  by blast
+qed
+
+lemma contrapos_sub:
+  assumes A0:"A \<subseteq> X" and A1:"B \<subseteq> X" and A2:"\<And>x. \<lbrakk>x \<in> X;x \<notin> B\<rbrakk> \<Longrightarrow> x \<notin> A"
+  shows "A \<subseteq> B"
+  using A0 A2 by blast
 
 lemma Nhoods_to_Adh1: 
-  assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in>pfilters_on (pwr X) (Pow X)" and A2:"Adh \<noteq> {}" and A3:"(converse Adh)``{x} \<noteq> {}"
+  assumes A0:"x \<in> X" and 
+          A1:"\<And>x \<E>. (\<E>, x) \<in> Adh \<Longrightarrow> x \<in> X \<and> \<E> \<in>pfilters_on (pwr X) (Pow X)" and 
+          A2:"Adh \<noteq> {}" and 
+          A3:"(converse Adh)``{x} \<noteq> {}"
   shows "(NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}" (is "?L = ?R")
 proof
   show "?L \<subseteq> ?R" using assms Nhoods_to_Adh1a[of x X Adh] by auto
 next
   show "?R \<subseteq> ?L"
   proof-
-    from assms obtain B0:"{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh} \<noteq> {}" by blast
-    from assms B0 grill_space obtain B1:"{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh} \<subseteq> (Pow (Pow X))"  by blast
-    then obtain B2:"(\<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}) \<subseteq> (Pow X)" using B0 by auto
-    also obtain B3:"(NAdh Adh X)``{x} \<subseteq> Pow X" unfolding NAdh_def using assms by auto
-    then show ?thesis using B2 Nhoods_to_Adh1d[of x X Adh] assms   by (meson subset_eq)
+    obtain B0:"{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh} \<noteq> {}" 
+      using A3 by blast 
+    obtain B1:"{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh} \<subseteq> (Pow (Pow X))"
+      using grill_space by blast 
+    obtain B2:"?R \<subseteq> Pow X"
+      using B0 B1 by auto
+    obtain B3:"?L \<subseteq> Pow X" 
+      unfolding NAdh_def by blast
+    show ?thesis
+    proof(rule contrapos_sub)
+      show "?R \<subseteq> Pow X"
+        using B2 by blast
+      show "?L \<subseteq> Pow X"
+        using B3 by auto
+      show "\<And>z. \<lbrakk>z \<in> Pow X; z \<notin>?L\<rbrakk>\<Longrightarrow>z \<notin> ?R"
+        using A0 A1 A2 Nhoods_to_Adh1d[of x X Adh] by presburger
+    qed
   qed
 qed
  
@@ -7290,7 +7316,8 @@ lemma Nhoods_to_Lim1:
   assumes A0:"x \<in> X" and A1:"\<And>x \<E>. (\<E>, x) \<in>Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> pfilters_on (pwr X) (Pow X)" and A2:"Lim \<noteq> {}" and A3:"(converse Lim)``{x} \<noteq> {}"
   shows "(NLim Lim X)``{x} = (\<Inter>{\<E>. (\<E>, x) \<in> Lim})" (is "?L = ?R")
 proof 
-  show "?L \<subseteq> ?R" unfolding NLim_def using assms by(auto)
+  show "?L \<subseteq> ?R" 
+    unfolding NLim_def using assms by(auto)
 next
   show "?R \<subseteq> ?L" 
   proof-
@@ -7523,7 +7550,8 @@ proof-
     have B0:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
     proof-
       assume negr:"\<not>(?R)"
-      then obtain B1:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)" using upcl amem by blast
+      then obtain B1:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)" 
+        using upcl amem by blast
       then obtain B2:"{(X-A)}#(N``{x}) "
         by (smt (verit, best) Diff_Int2 Diff_Int_distrib2 Diff_eq_empty_iff Image_singleton_iff Int_absorb1 PowD is_nh mesh_singleI) 
       then have B3:"(lcro (pwr X) (Pow X) (X-A))#(N``{x})"
