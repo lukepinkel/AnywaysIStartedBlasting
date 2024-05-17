@@ -72,6 +72,13 @@ definition Sup::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 
 abbreviation Inf::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a" where  
   "Inf R X A \<equiv> (THE m. is_sup (converse R) X A m)"
 
+definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_maximal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> a =x)"
+
+definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
+
+
 subsection Lattices
 definition is_sup_semilattice::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_sup_semilattice R X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup R X {a, b} x))"
@@ -288,9 +295,63 @@ definition mesh::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" (infix
 definition grill::"'a set set \<Rightarrow> 'a set set \<Rightarrow> 'a set set" 
   where "grill PX A \<equiv> {E \<in> PX. {E}#A}"
 
+definition pwr where "pwr X \<equiv> {(A, B). A \<subseteq> X \<and> B \<subseteq> X \<and> A \<subseteq> B}"
 
-section Bounds
-subsection UpperBoundsPredicate
+lemma pwr_memI:
+  "A \<subseteq> B \<Longrightarrow> B \<subseteq> X \<Longrightarrow> (A, B) \<in> pwr X"
+  by (simp add: pwr_def) 
+
+lemma pwr_memD:
+  "(A, B) \<in> pwr X \<Longrightarrow> A \<subseteq> B \<and> B \<subseteq> X"
+  by (simp add: pwr_def) 
+
+lemma pwr_mem_iff:
+  "(A, B) \<in> pwr X \<longleftrightarrow> (A \<subseteq> B) \<and> (B \<subseteq> X)"
+  by(rule iffI, simp add:pwr_memD, simp add:pwr_memI)
+
+lemma powrel1[intro?]:
+  "antisym_on (Pow X) (pwr X)"  
+  by(auto simp add:antisym_on_def pwr_def)
+
+lemma powrel2[intro?]:
+  "trans_on (Pow X) (pwr X)"  
+  by(auto simp add:trans_on_def pwr_def)
+
+lemma powrel3[intro?]:
+  "refl_on (Pow X) (pwr X)"  
+  by(auto simp add:refl_on_def pwr_def)
+
+lemma powrel4:
+  "A \<subseteq> Pow X \<Longrightarrow> is_inf (pwr X) (Pow X) A (X \<inter>(\<Inter>A))" 
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def converse_def by(auto)
+
+
+lemma powrel5[intro?]:
+  "A \<subseteq> Pow X \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)" 
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by auto
+
+lemma powrel6:
+  "C \<subseteq> Pow X \<Longrightarrow> antisym_on C (pwr X)" 
+   by (meson antisym_on_subset powrel1)
+
+lemma powrel7:
+  "C \<subseteq> Pow X \<Longrightarrow> trans_on C (pwr X)"  
+  by (meson powrel2 trans_on_subset)  
+
+lemma powrel8:
+  "(x, y) \<in> pwr X \<Longrightarrow> x \<subseteq> y"  
+  by (simp add: pwr_def) 
+
+lemma powrel9:
+  "\<lbrakk>A \<subseteq> C; C\<subseteq> Pow X\<rbrakk> \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)"
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto)
+
+lemma powrel4b:
+  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (pwr X) (Pow X) A (\<Inter>A)"
+  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto,blast)
+
+
+section UpperBoundsPredicate
 
 
 lemma reflI1:
@@ -350,7 +411,7 @@ lemma refl_un:
   by(rule reflI1, auto dest: reflD2)
 
 
-subsection UpperBoundsSet
+section UpperBoundsSet
 
 lemma ubdI:
   "\<lbrakk>b \<in> X;(\<And>a. a \<in> A \<Longrightarrow> (a, b)\<in>R)\<rbrakk> \<Longrightarrow> b \<in> ubd R X A"
@@ -368,6 +429,40 @@ lemma ubd_sub:
   "ubd R  X A \<subseteq> X"
    by(simp add:ubd_def)
 
+lemma ubd_snd_anti:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> ubd R X B \<subseteq> ubd R X A"
+  unfolding ubd_def by auto
+
+lemma ubd_fst_iso:
+  "\<lbrakk>Y \<subseteq> X\<rbrakk> \<Longrightarrow> ubd R Y A \<subseteq> ubd R X A"
+  unfolding ubd_def by auto
+
+lemma ubd_snd_anti1:
+  assumes ab:"(A,B)\<in>pwr X" and bx:"(B,X)\<in>pwr X"
+  shows "(ubd R X B, ubd R X A)\<in>pwr X"
+proof-
+  obtain "A \<subseteq> B" and "B \<subseteq> X"
+    using ab pwr_memD by blast
+  then obtain "ubd R X B \<subseteq> ubd R X A"
+    by (simp add: ubd_snd_anti)
+  then show "(ubd R X B, ubd R X A)\<in>pwr X"
+    by (simp add: pwr_memI ubd_sub)
+qed
+
+lemma ubd_fst_iso1:
+  assumes yx:"(Y,X)\<in>pwr X" 
+  shows " (ubd R Y A,ubd R X A)\<in>pwr X"
+proof-
+  obtain sub:"Y \<subseteq> X"
+    using pwr_memD yx by blast 
+  then obtain "ubd R Y A \<subseteq> ubd R X A" and "ubd R X A \<subseteq> X"
+    by (simp add: ubd_fst_iso ubd_sub)
+  also obtain "ubd R Y A \<subseteq> X"
+    unfolding ubd_def using sub by blast
+  then show "(ubd R Y A, ubd R X A)\<in>pwr X"
+    by (simp add: calculation(1) calculation(2) pwr_memI)
+qed
+
 lemma ubd_ant1:
   "A \<subseteq> B \<Longrightarrow> ubd R X B \<subseteq> ubd R X A"
   by (simp add: subset_eq ubd_def)
@@ -384,24 +479,24 @@ lemma ubd_singleton:
   "ubd R X {x} = {b \<in> X. (x, b) \<in> R}"
   by (simp add: ubd_def)
 
-
 lemma ubd_singleton_mem:
   "b \<in> ubd R X {x} \<longleftrightarrow> b \<in> X \<and> (x, b) \<in> R"
   by (simp add: ubd_def)
-
 
 lemma ubd_iso3:
   assumes A0:"x1 \<in>X" and A1:"x2 \<in> X" and A2:"(x1,x2)\<in>R" and A3:"trans R X" and A4:"C \<subseteq> X"
   shows "ubd R C {x2} \<subseteq> ubd R C {x1}"
 proof
   fix b assume A5:"b \<in> ubd R C {x2}" 
-  then obtain B0:"(x2,b)\<in>R" by (simp add: ubd_singleton_mem)
-  then obtain B2:"(x1,b)\<in>R"  by (meson A0 A1 A2 A3 A4 A5 in_mono trans_onD ubd_singleton_mem) 
-  then show "b \<in> ubd R C {x1}" by (meson A5 ubd_singleton_mem) 
+  obtain B0:"(x2,b)\<in>R" and B1:"b \<in> X" and B2:"b \<in> C"
+    using A4 A5 ubd_singleton_mem by fastforce
+  then obtain B3:"(x1,b)\<in>R" 
+    using A0 A1 A2 A3 trans_onD[of X R x1 x2 b] by blast
+  then show "b \<in> ubd R C {x1}"
+    by (simp add: B2 ubd_singleton_mem)  
 qed
     
-
-subsection Composition
+section BoundsComposition
 
 lemma lubd_comp1:
   "A \<subseteq> X \<Longrightarrow> A \<subseteq> lbd R X (ubd R X A)"
@@ -451,9 +546,7 @@ lemma ulbd_comp3b:
   "((\<lambda>E. ubd R  X E) \<circ> (\<lambda>E. lbd R X E)) A  = ((\<lambda>E. ubd R  X E) \<circ> (\<lambda>E. lbd R X E) \<circ> (\<lambda>E. ubd R  X E) \<circ> (\<lambda>E. lbd R X E)) A"
   using ulbd_comp3 by force
 
-
-section AbsoluteExtrema
-subsection GreatestPredicate
+section GreatestPredicate
 
 lemma greatestI1:
   "m \<in> ubd R A A \<Longrightarrow> is_greatest R A m" 
@@ -475,7 +568,7 @@ lemma is_greatest_iso2:
   "A \<subseteq> B \<Longrightarrow> is_greatest R A ma \<Longrightarrow> is_greatest R B mb \<Longrightarrow> (ma, mb)\<in>R"
   by (simp add: greatestD in_mono)
 
-subsection GreatestOperator
+section GreatestOperator
 
 lemma greatest_equality1:
   "\<lbrakk>antisym_on A R; (\<And>a. a \<in> A \<Longrightarrow> (a, m)\<in>R); m \<in> A\<rbrakk> \<Longrightarrow> Greatest R A = m"
@@ -489,8 +582,7 @@ lemma greatest_equality3:
   "\<lbrakk>antisym_on A R; is_greatest R A m\<rbrakk> \<Longrightarrow> Greatest R A = m"
   by (simp add: Greatest_def greatestI2 greatest_unique the_equality) 
 
-section Extrema
-subsection Suprema
+section Suprema
 
 lemma is_supI1:
   "\<lbrakk>x \<in> X; (\<And>a. a \<in> A \<Longrightarrow> (a, x) \<in> R); (\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (a, b) \<in> R)\<Longrightarrow> (x, b) \<in> R)\<rbrakk> \<Longrightarrow> is_sup R X A x"
@@ -826,8 +918,7 @@ proof-
 qed
 
 
-
-subsection Duality
+section ExtremaDuality
 
 lemma sup_imp_inf_ub:
   "is_sup R X A s \<Longrightarrow>  is_inf R X (ubd R X A) s"
@@ -846,79 +937,7 @@ lemma inf_if_sup_lb:
   by (simp add: sup_if_inf_ub)
 
 
-subsection Misc
-definition pwr where "pwr X \<equiv> {(A, B). A \<subseteq> X \<and> B \<subseteq> X \<and> A \<subseteq> B}"
-
-lemma pwr_memI:
-  "A \<subseteq> B \<Longrightarrow> B \<subseteq> X \<Longrightarrow> (A, B) \<in> pwr X"
-  by (simp add: pwr_def) 
-
-lemma pwr_memD:
-  "(A, B) \<in> pwr X \<Longrightarrow> A \<subseteq> B \<and> B \<subseteq> X"
-  by (simp add: pwr_def) 
-
-lemma pwr_mem_iff:
-  "(A, B) \<in> pwr X \<longleftrightarrow> (A \<subseteq> B) \<and> (B \<subseteq> X)"
-  by(rule iffI, simp add:pwr_memD, simp add:pwr_memI)
-
-lemma powrel1[intro?]:
-  "antisym_on (Pow X) (pwr X)"  
-  by(auto simp add:antisym_on_def pwr_def)
-
-lemma powrel2[intro?]:
-  "trans_on (Pow X) (pwr X)"  
-  by(auto simp add:trans_on_def pwr_def)
-
-lemma powrel3[intro?]:
-  "refl_on (Pow X) (pwr X)"  
-  by(auto simp add:refl_on_def pwr_def)
-
-lemma powrel4:
-  "A \<subseteq> Pow X \<Longrightarrow> is_inf (pwr X) (Pow X) A (X \<inter>(\<Inter>A))" 
-  unfolding is_sup_def is_greatest_def ubd_def pwr_def converse_def by(auto)
-
-
-lemma powrel5[intro?]:
-  "A \<subseteq> Pow X \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)" 
-  unfolding is_sup_def is_greatest_def ubd_def pwr_def by auto
-
-lemma powrel6:
-  "C \<subseteq> Pow X \<Longrightarrow> antisym_on C (pwr X)" 
-   by (meson antisym_on_subset powrel1)
-
-lemma powrel7:
-  "C \<subseteq> Pow X \<Longrightarrow> trans_on C (pwr X)"  
-  by (meson powrel2 trans_on_subset)  
-
-lemma powrel8:
-  "(x, y) \<in> pwr X \<Longrightarrow> x \<subseteq> y"  
-  by (simp add: pwr_def) 
-
-lemma powrel9:
-  "\<lbrakk>A \<subseteq> C; C\<subseteq> Pow X\<rbrakk> \<Longrightarrow> is_sup (pwr X) (Pow X) A (\<Union>A)"
-  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto)
-
-lemma powrel4b:
-  "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (pwr X) (Pow X) A (\<Inter>A)"
-  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto,blast)
-
-lemma uni_sup_fam:
-  "\<lbrakk>S \<subseteq> Pow X; A \<subseteq> S; \<Union>A \<in> S\<rbrakk> \<Longrightarrow> is_sup (pwr (\<Union>S)) S A (\<Union>A) "
-  by (meson powrel9 subset_Pow_Union sup_in_subset)
-
-lemma uni_inf_fam:
-  "\<lbrakk>S \<subseteq> Pow X; A \<subseteq> S; \<Inter>A \<in> S\<rbrakk> \<Longrightarrow> is_inf (pwr (\<Union>S)) S A (\<Inter>A) "
-  by (metis Union_upper inf.absorb_iff2 le_supE powrel4 subset_Pow_Union subset_Un_eq sup_in_subset)
-
-
-
-subsection MinimaMaxima
-
-definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_maximal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> a =x)"
-
-definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
+section MinimaMaxima
 
 lemma maximalD1:
   "is_maximal R A x \<Longrightarrow> x \<in> A"
