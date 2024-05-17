@@ -8,7 +8,7 @@ no_notation List.list.Nil ("[]")
 no_notation Cons (infixr "#" 65) 
 hide_type list
 hide_const rev Sup Inf trans refl Greatest
-declare [[show_consts, show_results]]
+declare [[show_consts, show_results, show_types]]
 
 
 section Definitions
@@ -7550,10 +7550,19 @@ proof-
     have B0:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
     proof-
       assume negr:"\<not>(?R)"
-      then obtain B1:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)" 
-        using upcl amem by blast
-      then obtain B2:"{(X-A)}#(N``{x}) "
-        by (smt (verit, best) Diff_Int2 Diff_Int_distrib2 Diff_eq_empty_iff Image_singleton_iff Int_absorb1 PowD is_nh mesh_singleI) 
+      obtain B1:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)" 
+        using upcl amem negr by blast
+      have B2:"{(X-A)}#(N``{x})"
+      proof-
+        have B20:"\<And>B. B \<in> N``{x} \<Longrightarrow> B \<inter> (X-A) \<noteq> {}"
+        proof-
+          fix B assume "B \<in> N``{x}"
+          then show "B \<inter> (X-A) \<noteq> {}"
+            by (metis B1 Diff_Diff_Int Diff_empty Image_singleton_iff Int_Diff Pow_iff inf.absorb_iff1 is_nh)
+        qed
+        then show ?thesis
+          by (metis Int_commute mesh_singleI)
+      qed
       then have B3:"(lcro (pwr X) (Pow X) (X-A))#(N``{x})"
         unfolding mesh_def lcro_def  using powrel8 by fastforce 
       have B4:"\<not>((lcro (pwr X) (Pow X) (X-A))#{A})"
