@@ -660,11 +660,11 @@ lemma is_supI3:
   "\<lbrakk>x\<in>X; (\<And>a. a\<in>A \<Longrightarrow> (a,x)\<in>R); (\<And>b. b\<in>X\<Longrightarrow>(\<And>a. a\<in>A \<Longrightarrow>(a,b)\<in>R)\<Longrightarrow> (x,b)\<in>R)\<rbrakk> \<Longrightarrow> is_sup R X A x"
   unfolding is_sup_def is_greatest_def ubd_def by blast
 
-lemma Upper_eq_sup_eq:
+lemma upper_eq_sup_eq:
   "ubd R  X A = ubd R  X B \<Longrightarrow> (is_sup R X A s \<longleftrightarrow> is_sup R X B s)"
   by (simp add: is_sup_def)
 
-lemma Upper_eq_sup_eq2:
+lemma upper_eq_sup_eq2:
   "\<lbrakk>is_sup R X A s1;  ubd R X A=ubd R X B\<rbrakk> \<Longrightarrow> is_sup R X B s1"
   by (simp add: is_sup_def)
 
@@ -698,6 +698,7 @@ lemma is_supD6:
   "is_sup R X A s \<Longrightarrow> s \<in> ubd R X A"
   by (simp add: is_greatestD1 is_sup_def)
 
+
 subsection Uniqueness
 
 lemma is_sup_unique:
@@ -724,9 +725,9 @@ lemma is_inf_unique_ex:
   "\<lbrakk>antisym R X; \<exists>s. is_inf R X A s\<rbrakk> \<Longrightarrow> \<exists>!x. is_inf R X A x"
   using is_inf_unique_witness by fastforce
 
-lemma Upper_eq_sup_eq3:
+lemma upper_eq_sup_eq3:
   "\<lbrakk>is_sup R X A s1;  is_sup R X B s2;ubd R X A=ubd R X B; antisym R X\<rbrakk> \<Longrightarrow> s1=s2"
-  by(drule_tac ?R="R" and ?X="X" and ?A="A" and ?s1.0="s1" and ?B="B" in Upper_eq_sup_eq2,simp,simp add: is_sup_unique)
+  by(drule_tac ?R="R" and ?X="X" and ?A="A" and ?s1.0="s1" and ?B="B" in upper_eq_sup_eq2,simp,simp add: is_sup_unique)
 
 lemma sup_equality:
   "\<lbrakk>is_sup R X A m; antisym R X\<rbrakk> \<Longrightarrow> Sup R X A = m"
@@ -812,10 +813,10 @@ proof-
 qed
 
 
-lemma Upper_eq_sup_eq4:
+lemma upper_eq_sup_eq4:
   assumes ant:"antisym R X" and ex1:"\<exists>s1. is_sup R X A1 s1" and ubd_eq:"ubd R X A1 = ubd R X A2"
   shows "Sup R X A1 = Sup R X A2"
-  using ant ex1 sup_equality[of R X] ubd_eq Upper_eq_sup_eq2[of R X A1 _ A2] by blast
+  using ant ex1 sup_equality[of R X] ubd_eq upper_eq_sup_eq2[of R X A1 _ A2] by blast
 
 lemma sup_singleton:
   assumes A0:"antisym R X" and A1:"refl R X" and A2:"x \<in> X"
@@ -834,7 +835,7 @@ lemma sup_families1:
           A2:"trans R X" and 
           A3:"\<forall>i. i \<in> I \<longrightarrow> A i \<subseteq> X"
   shows "is_sup R X (\<Union>(A`I)) t \<longleftrightarrow> is_sup R X (s`I) t"
-proof(rule Upper_eq_sup_eq)
+proof(rule upper_eq_sup_eq)
   show "ubd R X (\<Union> (A ` I)) = ubd R X (s ` I)" (is "?L = ?R")
   proof
     show "?L \<subseteq> ?R"
@@ -898,7 +899,7 @@ lemma sup_families:
           nemp:"A \<noteq> {}" and 
           sups:"(\<And>Ai. Ai \<in> A \<Longrightarrow> \<exists>si. is_sup R X Ai si)"
   shows "(is_sup R X ((\<lambda>Ai. Sup R X Ai)`A) s) \<longleftrightarrow> (is_sup R X (\<Union>A) s)" 
-proof(rule Upper_eq_sup_eq)
+proof(rule upper_eq_sup_eq)
   show "ubd R X (Sup R X ` A) = ubd R X (\<Union> A)" (is "?L = ?R")
   proof
     show "?L \<subseteq> ?R"
@@ -1077,6 +1078,57 @@ next
     using B4 by auto
 qed
 
+
+
+lemma infI:
+  assumes lub:"is_inf R X A s" and 
+          ant:"antisym R X" and
+          prp:"\<And>x. is_inf R X A x \<Longrightarrow> Q x"
+  shows "Q (Inf R X A)"
+  using ant lub prp sup_equality by fastforce
+
+lemma ex_infI:
+  assumes exs:"\<exists>s. is_inf R X A s" and 
+          ant:"antisym R X" and
+          prp:"\<And>x. is_inf R X A x \<Longrightarrow> Q x"
+        shows "Q (Inf R X A)"
+  using ant exs prp sup_equality by fastforce
+
+lemma ex_inf:
+  assumes ant:"antisym R X" and ex:"\<exists>s. is_inf R X A s"
+  shows ex_inf0:"\<And>a. a \<in> A \<Longrightarrow> (Inf R X A,a)\<in>R" and
+        ex_inf1:"Inf R X A \<in> lbd R X A" and
+        ex_inf2:"(\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (b,a)\<in>R) \<Longrightarrow> (b,Inf R X A)\<in>R)" and
+        ex_inf3:"\<And>b. b \<in> lbd R X A \<Longrightarrow> (b,Inf R X A)\<in>R" and
+        ex_inf4:"is_greatest R (lbd R X A) (Inf R X A)" and
+        ex_inf5:"Inf R X A \<in> X"
+proof-
+  show P0:"\<And>a. a \<in> A \<Longrightarrow> (Inf R X A,a)\<in>R"
+    using ant ex is_supD3 sup_equality by fastforce
+  show P1:"Inf R X A \<in> lbd R X A"
+    by (simp add: ant ex ex_sup1) 
+  show P2:"(\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (b,a)\<in>R) \<Longrightarrow> (b,Inf R X A)\<in>R)"
+    using ant ex is_supD5[of "dual R" X A] ex_supI[of "dual R" X A] by auto
+  show P3:"\<And>b. b \<in> lbd R X A \<Longrightarrow> (b,Inf R X A)\<in>R"
+    using P2 ubdD1[of _ "dual R" X A] ubdD2[of _ "dual R" X A] by blast
+  show P4:"is_greatest R (lbd R X A) (Inf R X A)" 
+    using ant ex is_sup_def sup_equality by fastforce
+  show P5:"Inf R X A \<in> X"
+    using P1 ubdD1[of _ "dual R" X A] by blast
+qed
+
+
+lemma inf_singleton:
+  assumes A0:"antisym R X" and A1:"refl R X" and A2:"x \<in> X"
+  shows inf_singleton1:"is_inf R X {x} x" and
+        inf_singleton2:"Inf R X {x} = x" 
+proof-
+  show "is_inf R X {x} x"
+    using A1 A2 is_supI3 reflD2 by fastforce 
+  then show "Inf R X {x} = x" 
+     by (simp add: A0 sup_equality) 
+qed      
+
 subsection Duality
 
 lemma sup_imp_inf_ub:
@@ -1094,7 +1146,6 @@ lemma inf_imp_sup_lb:
 lemma inf_if_sup_lb:
   "A \<subseteq> X \<Longrightarrow> is_sup R X (lbd R X A) s \<Longrightarrow>  is_inf R X A s"
   by (simp add: sup_if_inf_ub)
-
 
 lemma inf_equality:
   "\<lbrakk>is_inf R X A m; antisym R X\<rbrakk> \<Longrightarrow> Inf R X A = m"
@@ -1247,7 +1298,7 @@ proof-
     obtain sx:"Sup R X {a,b}\<in> X"
       by (simp add: aix bix ord ssl ssl_ex_sup5)
     show "Sup R X {Sup R X {a,b}, c} = Sup R X {a,b,c}"
-    proof(rule Upper_eq_sup_eq4)
+    proof(rule upper_eq_sup_eq4)
       show "antisym R X"
         by (simp add: ord)
       show "\<exists>s1. is_sup R X {Sup R X {a, b}, c} s1"
@@ -1602,6 +1653,25 @@ lemma distrib_inf_le:
   "\<lbrakk>ord R X;is_lattice R X; x \<in>X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (Sup R X {Inf R X {x, y}, Inf R X {x, z}}, Inf R X {x, Sup R X {y, z}}) \<in> R"
   using distrib_sup_le[of X "dual R" x y z] dual_lattice[of R X]  by (simp add: Sup_def)
 
+
+lemma lattice_dualization:
+  assumes lat:"is_lattice R X" and por:"pord R X" and
+          lem:"(\<And>R X. \<lbrakk>is_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
+  shows "P (converse R) X"
+  using dual_lattice lat lem por refl_dualI by fastforce
+
+lemma lattice_fext:
+  assumes ord:"ord R X" and lat:"is_lattice R X" and sub:"A \<subseteq> X" and 
+          fin:"finite A" and nem:"A \<noteq> {}"
+ shows l_finsup:"\<exists>s. is_sup R X A s" and
+       l_fininf:"\<exists>s. is_inf R X A s"
+proof-
+  show P0:"\<exists>s. is_sup R X A s"
+    by (simp add:assms Fpow_neI1 lattD42 ssl_fin_sup0)
+  show P1:"\<exists>s. is_inf R X A s"
+    by (simp add: Fpow_neI1 fin lat lattD4 nem ord ssl_fin_sup0 sub)
+qed
+
 section DistributiveLattices
 
 lemma distribD1:
@@ -1708,13 +1778,6 @@ proof-
     qed
   qed
 qed
-
-lemma lattice_dualization:
-  assumes lat:"is_lattice R X" and por:"pord R X" and
-          lem:"(\<And>R X. \<lbrakk>is_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
-  shows "P (converse R) X"
-  using dual_lattice lat lem por refl_dualI by fastforce
-
 lemma distributive_lattice_dualization:
   assumes lat:"distributive_lattice R X" and por:"pord R X" and
           lem:"(\<And>R X. \<lbrakk>distributive_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
@@ -2154,8 +2217,7 @@ lemma pow_is_clattice:
   "is_clattice (pwr X) (Pow X)"
   by (meson Pow_not_empty is_clattice_def pwr_ar_sup)
 
-section Functions
-subsection Isotonicity
+section Isotonicity
 
 lemma isotoneI1:
   "(\<And>x1 x2. x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (x1, x2) \<in> Rx \<Longrightarrow> (f x1, f x2) \<in> Ry) \<Longrightarrow> isotone Rx X Ry f" 
@@ -2195,7 +2257,7 @@ lemma isotoneD42:
   "\<lbrakk>isotone R X Ry f; b \<in>lbd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> lbd Ry (f`X) (f`A)"
   using isotoneD41[of "dual R" X "dual Ry" f b] dual_isotone by blast
 
-subsection Extensivity
+section Extensivity
 
 lemma extensiveI1:
   "(\<And>x. x \<in> X \<Longrightarrow> (x, f x) \<in> R) \<Longrightarrow> extensive R X f" 
@@ -2236,7 +2298,7 @@ lemma is_iso_inf:
   using is_iso_sup[of "dual R" X f A x y] dual_isotone[of R X R f]
   by (metis converse.cases is_greatestI3 is_supD3 is_supD4 subset_iff sup_maxE1) 
 
-subsection Idempotency
+section Idempotency
 
 lemma idempotentI1:
   "(\<And>x. x \<in> X \<Longrightarrow> (f (f x) = f x)) \<Longrightarrow> idempotent X f"
@@ -2282,7 +2344,7 @@ lemma idempotentI3:
   "\<lbrakk>antisym R X;extensive R X f;  f`X \<subseteq> X; closure_cond R X f\<rbrakk> \<Longrightarrow> idempotent X f"
   by (simp add: antisym_onD closure_cond_def extensive_def idempotent_def image_subset_iff)
 
-subsection Closures 
+section Closures 
 
 lemma closureI1:
   "\<lbrakk>extensive R X f; idempotent X f; isotone R X R f; (f`X \<subseteq> X)\<rbrakk> \<Longrightarrow> closure R X f"
@@ -2297,7 +2359,7 @@ lemma closureD:
   by (simp add: closure_def)
 
 
-subsection ClosureRanges
+section ClosureRanges
 lemma clrI1:
   "\<lbrakk>C \<noteq> {}; C \<subseteq> X; (\<And>x. x \<in> X \<Longrightarrow> (\<exists>c. is_least R (ubd R C {x}) c)) \<rbrakk> \<Longrightarrow> clr R X C"
   by (simp add:closure_range_def)
@@ -2593,8 +2655,7 @@ proof-
 qed
 
 
-section Subsets
-subsection Directedness
+section Directedness
 
 lemma is_dirI1:
   "(\<And>a b. \<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> (\<exists>c \<in> X.  (a, c) \<in> R \<and>  (b, c) \<in> R)) \<Longrightarrow> is_dir X R"
@@ -2664,7 +2725,7 @@ proof-
   qed
 qed
   
-subsection OrderClosure
+section OrderClosure
 lemma is_ord_clI1:
   "(\<And>a b. \<lbrakk>a \<in> A; b \<in> X; (a,b)\<in>R\<rbrakk> \<Longrightarrow> b \<in> A ) \<Longrightarrow> is_ord_cl X A R"
   by (auto simp add:is_ord_cl_def)
@@ -2690,8 +2751,7 @@ proof-
   qed
 qed
 
-subsection Filters
-subsubsection DefinitionAndBasicProps
+section FiltersDefinitionAndBasicProps
 
 lemma is_filterI1:
   "\<lbrakk>F \<noteq> {}; F \<subseteq> X; is_dir F (dual R); is_ord_cl X F R\<rbrakk> \<Longrightarrow> is_filter R X F"
@@ -2754,7 +2814,7 @@ lemma filter_inf_closed3:
   "\<lbrakk>antisym R X; trans R X; is_inf_semilattice R X; is_filter R X F; A \<subseteq> F; A \<noteq> {}; finite A\<rbrakk> \<Longrightarrow> Inf R X A \<in> F"
   by (simp add: filter_inf_closed2 finite_inf_closed2 is_filterD1)
 
-subsection SetOfFilters
+section SetOfFilters
 
 lemma filters_on_iff:
   "F \<in> filters_on R X \<longleftrightarrow> is_filter R X F"
@@ -2780,7 +2840,7 @@ lemma is_pfilterI2:
   "\<lbrakk>is_least R X bot; bot \<notin> A; is_filter R X A\<rbrakk> \<Longrightarrow> is_pfilter R X A"
   by (metis is_greatestD1 is_pfilterI1)
 
-subsubsection FiltersClosureRange
+section FiltersClosureRange
 
 lemma filter_inter:
   assumes A0:"is_inf_semilattice R X" and 
@@ -2838,7 +2898,7 @@ proof(rule moore_clI3)
     by (metis A0 A1 A2 Pow_iff filter_inter2) 
 qed
 
-subsubsection FilterClosure
+section FilterClosure
 
 lemma filter_closure_memI1:
   "\<lbrakk>x \<in> X;  (\<exists>F. F \<subseteq> A \<and> finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R)\<rbrakk> \<Longrightarrow> x \<in> filter_closure R X A"
@@ -3384,7 +3444,7 @@ lemma distr_lattice_filters:
   by (simp add: distributive_lattice_def latt_iff lattice_filters_isl2 lattice_filters_isl6)
 
 
-subsubsection FiltersAndDirectedUnions
+section FiltersAndDirectedUnions
 
 lemma lattice_filter_dunion1:
   "\<lbrakk>antisym R X;trans R X; refl R X;is_lattice R X; D \<noteq> {}; D \<subseteq> filters_on R X; is_dir D (pwr X)\<rbrakk> \<Longrightarrow> \<Union>D \<noteq> {} "
@@ -3481,7 +3541,7 @@ proof(rule is_supI3)
     by (metis converse_iff ex_in_conv le_Inf_iff mem1 pwr_memD pwr_memI)
 qed
 
-subsection PrincipalFilters
+section PrincipalFilters
 
 lemma lcroI1:
   "y \<in> X \<Longrightarrow> (a, y)\<in>R \<Longrightarrow> y \<in> lcro R X a" 
@@ -3597,8 +3657,7 @@ proof-
     using B2 pwr_memD by blast
 qed
     
-subsection Compactness
-subsubsection BasicLemmas
+section CompactnessBasicLemmas
 
 lemma compactI:
   "\<lbrakk>c \<in> X; (\<And>A. \<lbrakk>A \<in> Pow_ne X; (c, Sup R X A) \<in> R\<rbrakk> \<Longrightarrow> (\<exists>A0. A0 \<in> Fpow_ne A \<and> (c,Sup R X A0) \<in> R))\<rbrakk> \<Longrightarrow> is_compact R X c"  
@@ -3719,7 +3778,7 @@ proof-
     using B1 by blast
 qed
 
-subsubsection FiniteSupClosure
+section FiniteSupClosure
 
 lemma fne_sup_cl_imp1:
    "x \<in> fne_sup_cl R X A \<Longrightarrow> (\<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x)" 
@@ -3916,7 +3975,7 @@ proof(rule compactI)
   qed
 qed
 
-subsubsection CompactnessAndClosureRanges
+section CompactnessAndClosureRanges
 
 lemma dir_set_closure_subset:
   assumes A0:"clr (pwr X) (Pow X) C" and
@@ -4158,8 +4217,8 @@ qed
 
 
 
-subsection UpDwClosure
-subsubsection UpClosure
+
+section UpClosure
 
 
 lemma up_cl_memD1:
@@ -4255,7 +4314,7 @@ lemma leq_sup:
   "\<lbrakk>pord R X; is_lattice R X; x \<in> X; y \<in>X; z \<in> X;(x, z)\<in>R; (y,z)\<in>R\<rbrakk> \<Longrightarrow> (Sup R X {x, y}, z) \<in>R"
   by (simp add: bsup_ge1 lattD4)
 
-subsection BinaryFilterSup
+section BinaryFilterSup
 
 lemma filter_bsup_memD1:
   "x \<in> binary_filter_sup R X A B \<Longrightarrow>  (x \<in> X \<and> (\<exists>a \<in> A. \<exists>b \<in> B. (Inf R X {a, b}, x)\<in>R))"
@@ -4522,8 +4581,7 @@ proof-
     qed
 qed
 
-section SpecialElements
-subsection Primality
+section PrimeElements
 
 lemma sup_primeD1:
   "\<lbrakk>sup_prime R X A; a \<in> X; b \<in> X; Sup R X {a, b} \<in> A\<rbrakk> \<Longrightarrow> a \<in> A \<or> b \<in> A"
@@ -4687,9 +4745,11 @@ lemma sup_primeI4:
   "\<lbrakk>distributive_lattice R X; x \<in> X; pord R X;fin_sup_irr R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X x)"
   by (simp add: elem_sup_primeE1 elem_sup_primeI3)
 
-  lemma inf_primeI4:
-  "\<lbrakk>distributive_lattice R X; x \<in> X;  pord R X;fin_inf_irr R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc R X x)"
-  by (simp add: elem_inf_primeE1 elem_inf_primeI3)
+lemma inf_primeI4:
+"\<lbrakk>distributive_lattice R X; x \<in> X;  pord R X;fin_inf_irr R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc R X x)"
+by (simp add: elem_inf_primeE1 elem_inf_primeI3)
+
+section PrimeFilters
 
 lemma sup_prime_pfilterD1:
   "\<lbrakk>sup_prime R X A; is_pfilter R X A;  pord R X\<rbrakk> \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> X; b \<in> X;  (Sup R X {a, b}) \<in> A\<rbrakk> \<Longrightarrow> (a \<in> A \<or> b \<in> A))"
@@ -5247,7 +5307,7 @@ proof-
     have B12:"finite (G``{i}) \<and> (G``{i}) \<subseteq> X"
       by (meson A4 A5 B0 B8 B9 Fpow_ne_iff P finite_subset is_filterD1 subsetD subsetI)  
     have B13:"(Inf R X (G``{i}), z)\<in>R"
-      by (metis A0 A10 A8 A9 B11 B12 B9 converse_iff inf_equality is_supD3 l_fininf)
+      by (meson A0 A10 A9 B11 B12 B9 Fpow_neI1 antisym_on_converse is_infD1 lattD4 ssl_fin_sup7 trans_on_converse)
     show " (\<exists>w \<in> (x` I). (w, z)\<in>R)"
       by (metis B10 B13 B8 imageI)
   qed
@@ -5257,7 +5317,7 @@ proof-
     using A4 is_filterD1 by blast  
   have B16:"\<Union>(f`I) \<subseteq> X"   by (simp add: B15 UN_least)
   have B17:"finite F \<and> F \<subseteq> X \<and> F \<noteq> {}"
-    using A5 B16 by blast 
+    by (metis A5 B16 Fpow_ne_iff dual_order.trans)
   have B18:"(Inf R X (x` I), Inf R X F)\<in>R"
     apply(rule_tac ?X="X" and ?A1.0="x` I" and ?A2.0="F" in inf_comp)
     apply (simp add: A8)
@@ -5265,13 +5325,13 @@ proof-
     apply (simp add: A10)
     apply (simp add: B14)
     apply (simp add: B17)
-    apply (metis A0 A10 A3 A8 A9 B14 antisym_on_converse image_is_empty is_sup_unique l_fininf the_equality)
-    apply (metis A0 A10 A8 A9 B17 inf_equality2 l_fininf)
+    apply (simp add: A0 A10 A3 A9 B14 Fpow_neI1 lattD4 ssl_fin_sup7)
+    apply (simp add: A0 A10 A9 B17 Fpow_neI1 lattD4 ssl_fin_sup7)
     using B7 by blast
   have B19:"Inf R X (x` I) \<in> X"
-    by (metis A0 A10 A3 A8 A9 B14 image_is_empty inf_equality is_supD1 l_fininf)
+    by (metis A0 A10 A3 A9 B14 image_is_empty inf_equality is_supD1 l_fininf)
   have B20:" Inf R X F \<in> X"
-    by (meson A0 A10 A8 A9 B17 inf_equality2 is_supD1 l_fininf)
+    by (simp add: A0 A10 A9 B17 Fpow_neI1 lattD4 ssl_fin_sup6)
   have B21:"(Inf R X (x` I), y)\<in>R"
     by (meson A10 A6 A7 B18 B19 B20 trans_onD)
   show ?thesis
@@ -5380,15 +5440,15 @@ proof-
   have B03:"finite (x1 ` I)"   
     by (simp add: A3) 
   have B04:"(x1 ` I) \<subseteq> X"
-    by (metis A0 A5 A9 B01 distr_latticeD5 image_subset_iff lattD4 ssupD4 x1_def)  
+    using A0 A5 A9 B01 lattD4 distr_latticeD5 x1_def image_subset_iff by (metis ssl_ex_sup5)
   have B05:"(x1 ` I) \<noteq> {}"  
     using A2 by force
   have B06:"is_lattice R X" 
     by (simp add: A0 distr_latticeD5)
   have B07:"Inf R X (x` I) \<in> X"  
-    by (metis A0 A10 A8 A9 B00 B01 B02 Sup_def antisym_on_converse distr_latticeD5 is_supD1 l_fininf sup_equality)
+    by (metis A0 A10 A9 B00 B01 B02 antisym_on_converse distr_latticeD5 is_supD1 l_fininf sup_equality)
   have B0:"y = Sup R X {y, Inf R X (x` I)}"
-    by (metis A0 A10 A5 A7 A8 A9 B07 distr_latticeD5 latt_ge_iff2 reflD2)   
+    by (metis A10 A5 A7 A8 A9 B06 B07 lat_ge_iff2)
   have B1:"... = Inf R X {Sup R X {y,a}|a.  a \<in> (x` I)}" 
     using fin_distr1[of R X "x`I" "y"] A0 A10 A5 A8 A9 B00 B01 B02 by fastforce
   have B2:"... = Inf R X {Sup R X {y, x i}|i. i \<in> I}"
@@ -5400,8 +5460,15 @@ proof-
   have B5:"Inf R X (x1 ` I) = y"  
     using B0 B1 B2 B3 B4 by presburger
   have B6:"\<And>i. i \<in> I \<Longrightarrow>  (x1 i) \<in> (f i)"
-    by (smt (verit, ccfv_threshold) A10 A4 A5 A6 A9 B06 bsup_ge1 insert_commute is_filterD1 is_ord_clE1 lattD4 ssupD4 subsetD x1_def)  
-  show ?thesis  using B5 B6 by blast
+  proof-
+    fix i assume i0:"i \<in> I"
+    obtain "(x i) \<in> f i" and "(x i, x1 i)\<in>R" and "(x1 i) \<in> X" and "is_filter R X (f i)"
+      by (metis A4 A5 A6 A9 B01 B04 B06 i0 image_subset_iff lattD42 ssl_ex_sup0b x1_def)
+    then show "(x1 i ) \<in> (f i)"
+      by (meson is_filterD1 is_ord_clE1)
+  qed
+  show ?thesis 
+     using B5 B6 by blast
 qed
 
 lemma finite_ind_fil14:
