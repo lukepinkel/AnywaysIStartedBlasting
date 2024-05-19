@@ -1608,8 +1608,6 @@ lemma distribD4:
   using distribD3[of "dual R" X]
   using A0 A1 A2 A3 PosetsRel3.dual_lattice antisym_on_converse refl_iff trans_on_converse by fastforce 
 
-
-
 lemma distI3:
   assumes A0:"is_lattice R X" and
           A1:"ord R X" and 
@@ -1626,9 +1624,6 @@ proof-
       by(simp add: A0 A1 A2 A3 A4 B0 distribD1[of R X x y z])
   qed
 qed
-
-
-
 
 lemma distr_latticeI1:
   "\<lbrakk>pord R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
@@ -2032,27 +2027,24 @@ lemma fin_distr2:"\<lbrakk>distributive_lattice R X; trans R X; antisym R X; ref
 lemma fin_distr1:"\<lbrakk>distributive_lattice R X; trans R X; antisym R X; refl R X;finite A;A \<noteq> {};A \<subseteq> X; b \<in> X\<rbrakk>\<Longrightarrow>Sup R X { b, (Inf R X  A)} = Inf R X {Sup R X {b, a}|a. a \<in> A}" 
    using distr_finite1[of b X R A]  by (simp add: distr_eq_dist2)
 
-lemma finite_ind_in:
-  "\<lbrakk>refl R X; antisym R X; trans R X; is_inf_semilattice R X; finite I; I \<noteq> {}; (\<forall>i. i \<in> I \<longrightarrow> f i \<in> X)\<rbrakk> \<Longrightarrow>is_inf R X (f`I) (Inf R X (f`I))"
-  by (simp add: image_subsetI inf_semilattice_finf)
 
 subsection CompleteLattices
 
 lemma csupD2:
   "\<lbrakk>ord R X; is_csup_semilattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_sup R X A x)"
   by (simp add: is_csup_semilattice_def)
+
 lemma csupD4:
   "\<lbrakk>ord R X; is_csup_semilattice R X;  A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup R X A (Sup R X A)"
   by (metis csupD2 sup_equality)
+
 lemma csupD50:
   "\<lbrakk>ord R X; is_csup_semilattice R X;  A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Sup R X A) \<in> X"
   by (meson csupD4 is_supD1)
 
-
 lemma csupD61:
   "\<lbrakk>ord R X; is_csup_semilattice R X;  A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> (Sup R X A, b) \<in> R "
   by (meson csupD4 is_supD2)
-
 
 lemma cinfD2:
   "\<lbrakk>ord R X; is_cinf_semilattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf R X A x)"
@@ -2064,7 +2056,7 @@ lemma clatD21:
 
 lemma clatD22:
   "\<lbrakk>ord R X; is_clattice R X; A \<subseteq> X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf R X A x)"
-  by (meson clatD21 inf_if_sup_lb ubd_sub)
+  by (metis converse_converse is_clattice_def sup_if_inf_ub ubd_space)
 
 lemma clatD1:
   "is_clattice R X \<Longrightarrow> is_csup_semilattice R X"
@@ -2072,7 +2064,7 @@ lemma clatD1:
 
 lemma clatD2:
   "is_clattice R X \<Longrightarrow> is_cinf_semilattice R X"
-  by (metis inf_if_sup_lb is_cinf_semilattice_def is_clattice_def ubd_sub)
+  by (metis inf_if_sup_lb is_cinf_semilattice_def is_clattice_def ubd_space)
 
 lemma csupD3:
   "is_csup_semilattice R X \<Longrightarrow> (\<exists>x. is_greatest R X x)"
@@ -2080,24 +2072,15 @@ lemma csupD3:
 
 lemma cinfD4:
   "\<lbrakk>ord R X; is_cinf_semilattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_inf R X A (Inf R X A)"
-  by (metis antisym_on_converse cinfD2 is_sup_unique the1I2)
+  by (metis cinfD2 inf_equality)
 
 lemma clatD41:
   "\<lbrakk>ord R X; is_clattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup R X A (Sup R X A)"
-  by (simp add: clatD21 sup_exI)
+  by (simp add: clatD1 csupD4)
 
 lemma cinfD50:
   "\<lbrakk>ord R X; is_cinf_semilattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> (Inf R X A) \<in> X"
   by (meson cinfD4 is_supD1)
-
-
-lemma cinfD61:
-  "\<lbrakk>ord R X; is_cinf_semilattice R X;  A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> b \<in> lbd R X A \<Longrightarrow> (b, Inf R X A) \<in> R "
-  by (meson cinfD4 converseD is_supD2)
-
-lemma csup_inf:
-  "\<lbrakk>ord R X; is_csup_semilattice R X; A \<subseteq> X; lbd R X A \<noteq> {}\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf R X A x)"
-  by (meson ubd_sub csupD2 inf_if_sup_lb)
 
 lemma csup_fsup:
   "is_csup_semilattice R X \<Longrightarrow> is_sup_semilattice R X"
@@ -2114,9 +2097,10 @@ lemma clatD31:
 lemma clatD32:
   "\<lbrakk>ord R X; is_clattice R X; A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> Inf R X A \<in> X"
   by (simp add: clatD2 cinfD50)
+
 lemma clat_lattice:
   "is_clattice R X \<Longrightarrow> is_lattice R X"
-  using cinf_sinf clatD1 clatD2 csup_fsup is_lattice_def ssupD2 by fastforce
+  by (simp add: cinf_sinf clatD1 clatD2 csup_fsup lattI2)
 
 lemma sup_iso1b:
   "\<lbrakk>ord R X; is_csup_semilattice R X; A \<noteq> {}; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (Sup R X A, Sup R X B)\<in>R"
@@ -2125,22 +2109,6 @@ lemma sup_iso1b:
 lemma sup_iso1:
   "\<lbrakk>ord R X;is_clattice R X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (Sup R X A, Sup R X B)\<in>R"
   by (metis clatD21 dual_order.trans is_sup_iso1 sup_equality)
-
-lemma sup_iso2:
-  "\<lbrakk>ord R X;is_clattice R X; is_clattice R Y;A \<subseteq> Y; Y \<subseteq> X; Y \<noteq> {}\<rbrakk> \<Longrightarrow> (Sup R X A, Sup R Y A)\<in>R"
-  by (meson antisym_on_subset clatD21 is_sup_iso2 order_trans sup_equality2 trans_on_subset)
-
-lemma inf_anti1:
-  "\<lbrakk>ord R X; is_clattice R X; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (Inf R X B, Inf R X A)\<in>R"
-  by (meson clatD22 converseD dual_order.trans inf_equality2 is_sup_iso1)
-
-lemma pow_is_clattice2:
-  "is_inf (pwr X) (Pow X) {} X"
-  by (metis Union_Pow_eq empty_subsetI inf_if_sup_lb powrel5 subset_Pow_Union ubd_empty)
-
-lemma pow_is_clattice:
-  "is_clattice (pwr X) (Pow X)"
-  by (meson Pow_not_empty is_clattice_def powrel5)
 
 section Functions
 subsection Isotonicity
@@ -2167,7 +2135,7 @@ lemma isotone_emp:
 
 lemma isotoneD41: 
    "\<lbrakk>isotone R X Ry f; b \<in>ubd R X A; A \<subseteq> X\<rbrakk> \<Longrightarrow> (f b) \<in> ubd Ry (f`X) (f`A)"
-proof(rule ubdI)
+proof(rule ubdI1)
   show "isotone R X Ry f \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> A \<subseteq> X \<Longrightarrow> f b \<in> f ` X" using ubdD1 by fastforce
   show " \<And>y. isotone R X Ry f \<Longrightarrow> b \<in> ubd R X A \<Longrightarrow> A \<subseteq> X \<Longrightarrow> y \<in> f ` A \<Longrightarrow> (y, f b) \<in> Ry"
   proof-
@@ -2222,7 +2190,7 @@ qed
 
 lemma extensive_ub_imp:
   "\<lbrakk>trans R X; extensive R X f ; (f`X \<subseteq> X); A \<subseteq> X ; b \<in> ubd R (f`X) (f`A) \<rbrakk> \<Longrightarrow> b \<in> ubd R X A"
-  by (metis extensive_ub subset_eq ubdI ubd_iso2 ubd_sub)
+  by (metis extensive_ub subset_eq ubdI1  ubd_sub)
 
 
 lemma extensive_ub_imp2:
