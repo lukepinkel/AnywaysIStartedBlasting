@@ -8,7 +8,7 @@ no_notation List.list.Nil ("[]")
 no_notation Cons (infixr "#" 65) 
 hide_type list
 hide_const rev Sup Inf trans refl Greatest
-declare [[show_consts, show_results, show_types]]
+declare [[show_consts, show_results]]
 
 
 section Definitions
@@ -331,7 +331,7 @@ lemma Pow_neI2:
   by (simp add:Pow_ne_def)
 
 lemma Pow_neD:
-  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq>X \<and> A \<in> Pow X \<and> A \<noteq> {}"
+  "A \<in> Pow_ne X \<Longrightarrow> A \<subseteq> X \<and> A \<in> Pow X \<and> A \<noteq> {}"
   by (simp add:Pow_ne_def)
 
 lemma Fpow_neI1:
@@ -1279,6 +1279,10 @@ lemma maximalI3:
 
 
 section SupSemilattices
+
+lemma sup_semilatticeI1:
+  "\<lbrakk>X \<noteq> {};(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X {x1,x2} s)\<rbrakk> \<Longrightarrow>is_sup_semilattice R X"
+  by (simp add: is_sup_semilattice_def)
 
 lemma sup_semilattice_ex1:
   assumes ssl:"is_sup_semilattice R X" 
@@ -7644,8 +7648,18 @@ proof
     then show "(\<exists>\<G> \<in>  pfilters_on (pwr X) (Pow X). (\<G>, x) \<in> Lim \<and> {A}#\<G>)"   
       using gmem hlim by blast
   qed
-  then show ?R 
-    unfolding LimCl_def ClLim_def using pfil xmem by (smt (verit, best) CollectI case_prodI)
+  show ?R 
+  unfolding LimCl_def ClLim_def
+  proof(rule CollectI,rule case_prodI,auto)
+    show "\<F> \<in> pfilters_on (pwr X) (Pow X)"
+      by (simp add: pfil)
+    show "x \<in> X"
+      by (simp add: xmem)
+    show "\<And>A. A \<subseteq> X \<Longrightarrow> {A} # \<F> \<Longrightarrow> x \<in> X"
+      using xmem by auto
+    show "\<And>A. A \<subseteq> X \<Longrightarrow> {A} # \<F> \<Longrightarrow> \<exists>\<F>\<in>pfilters_on (pwr X) (Pow X). {A} # \<F> \<and> (\<F>, x) \<in> Lim"
+      using L pfil by blast
+  qed
 next
   assume R:?R
   then obtain R0:"\<And>F. \<lbrakk>F \<in> Pow X; {F}#\<F>\<rbrakk> \<Longrightarrow>  (\<exists>\<G> \<in>  pfilters_on (pwr X) (Pow X). (\<G>, x) \<in> Lim \<and> {F}#\<G>)" 
@@ -7911,15 +7925,21 @@ proof-
         then obtain a1:"a \<in> Pow X" and  ab1:"a \<subseteq> b" and x1:"x \<notin> Cl``{X-a}"
           by (simp add: \<F>_def powrel8) 
         then show "b \<in> \<F>"  
-      unfolding \<F>_def using ab0 b0  by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
+          unfolding \<F>_def using ab0 b0  by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
       qed
     qed
     have PF1:"Pow X \<noteq> \<F>"
-    by (metis (no_types, lifting) CCl2 CollectD Diff_empty Pow_bottom Pow_top \<F>_def subsetD x0)
+      by (metis (no_types, lifting) CCl2 CollectD Diff_empty Pow_bottom Pow_top \<F>_def subsetD x0)
     have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
       by (simp add: PF0 PF1 is_pfilterI1 pfilters_on_iff)
+    have F1a:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl `` {X - V}\<rbrakk>\<Longrightarrow> A \<inter> V \<noteq> {}"
+    proof-
+      fix V assume vix:"V \<in> Pow X" and xex:"x \<notin> Cl `` {X - V}"
+      show "A \<inter> V \<noteq> {}" 
+        using cl_lim_prtp2b[of Cl X A x]  CCl1 CCl2 CCl3 vix x0 R is_cl xex by auto
+    qed
     have F1:"{A} # \<F> " 
-      unfolding \<F>_def mesh_def by (smt (verit, del_insts) CCl1 CCl2 CCl3 CollectD Image_singleton_iff Int_commute R cl_lim_prtp2b is_cl singletonD)
+      unfolding \<F>_def mesh_def by (simp add: F1a)
     have F2:"\<And>E. \<lbrakk>E \<in> Pow X; {E}#\<F>\<rbrakk> \<Longrightarrow> (E, x) \<in> Cl"
     proof-
       fix E assume E0:"E \<in> Pow X" and E1:"{E}#\<F>"
