@@ -7859,7 +7859,7 @@ lemma cl_lim_prtp2b:
           CCl1:"Cl``{{}} = {}" and
           CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}" and
           CCl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B}"
-  shows "\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+  shows "\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})" 
 proof-
   fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
   show "(A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})" (is "?L \<longleftrightarrow> ?R")
@@ -7881,10 +7881,7 @@ proof-
 qed
 
   
-
-
   
-
 lemma cl_lim_prtp1:
   assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  
           CCl1:"Cl``{{}} = {}" and
@@ -7915,7 +7912,8 @@ proof-
           unfolding \<F>_def by fastforce
         then obtain "a \<inter> b \<in> Pow X" and "x \<notin> Cl``{X-(a \<inter> b)}" 
           by (metis CCl3 Diff_Int Diff_subset Int_Un_eq(1) Pow_iff Un_iff Un_subset_iff)
-        then obtain "\<exists>c\<in>\<F>. c \<subseteq> a \<and> c \<subseteq> b"  using \<F>_def by auto
+        then obtain "\<exists>c\<in>\<F>. c \<subseteq> a \<and> c \<subseteq> b" 
+          using \<F>_def by auto
         then show " \<exists>c\<in>\<F>. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
           by (meson PowD amem bmem converseI pwr_mem_iff)
       qed
@@ -7925,7 +7923,8 @@ proof-
         then obtain a1:"a \<in> Pow X" and  ab1:"a \<subseteq> b" and x1:"x \<notin> Cl``{X-a}"
           by (simp add: \<F>_def powrel8) 
         then show "b \<in> \<F>"  
-          unfolding \<F>_def using ab0 b0  by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
+          unfolding \<F>_def using ab0 b0
+          by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
       qed
     qed
     have PF1:"Pow X \<noteq> \<F>"
@@ -7944,7 +7943,8 @@ proof-
     proof-
       fix E assume E0:"E \<in> Pow X" and E1:"{E}#\<F>"
       then show "(E, x) \<in> Cl" 
-        by (smt (verit, del_insts) CollectI Diff_Diff_Int Diff_disjoint Image_singleton_iff PowD Pow_def \<F>_def inf.absorb_iff2 insert_iff mesh_def)
+        unfolding mesh_def \<F>_def using CCl1 CCl2 CCl3 is_cl x0 cl_lim_prtp2b[of Cl X E x]
+        by (simp add: Int_commute)
     qed
     then show ?L
        unfolding ClLim_def LimCl_def using A0 x0 R F0 F1 F2 by auto
