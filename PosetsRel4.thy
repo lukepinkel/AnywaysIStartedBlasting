@@ -5411,33 +5411,6 @@ proof-
    by blast 
 qed  
 
-lemma finite_ind_fil8:
-  fixes f::"'b \<Rightarrow> 'a set" and I::"'b set"
-  assumes A0:"is_lattice R X" and
-          A1:"is_greatest R X top" and 
-          A2:"I \<noteq> {}" and 
-          A3:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X  (f i))" and
-          A4:"refl R X" and 
-          A5:"antisym R X" and 
-          A6:"trans R X"
-  shows "Sup (pwr X) (filters_on R X) (f`I) = {x \<in> X. \<exists>F \<in> Fpow_ne (\<Union>(f`I)). (Inf R X F, x)\<in>R}"
-proof-
-  let ?A="\<Union>(f`I)"
-  have B0:"?A \<noteq> {}"   
-    using A2 A3 is_filterD1 by fastforce
-  have B1:"is_inf_semilattice R X"
-    using A0 latt_iff by auto
-  have B2:"f`I \<in> Pow_ne (filters_on R X)"
-    by (simp add: A2 A3 Pow_ne_iff filters_on_iff image_subset_iff)
-  have B3:"Sup (pwr X) (filters_on R X) (f`I) = filter_closure R X (?A)"
-    using A4 A5 A6 B1 B2 semilat_filters_isl2 by auto
-  also have B4:"... = {x \<in> X. \<exists>F \<subseteq> ?A. finite F \<and> F \<noteq> {} \<and> (Inf R X F, x)\<in>R} " 
-      unfolding filter_closure using B0 by (simp add: filter_closure_def)
-  also have B3:"... = {x \<in> X. \<exists>F \<in> Fpow_ne ?A.  (Inf R X F, x)\<in>R}"
-    by (metis (no_types, opaque_lifting) Fpow_ne_iff)  
-  finally show ?thesis
-   by blast 
-qed
 
 lemma inf_comp:
   assumes por:"pord R X" and sub1:"A1 \<subseteq> X" and sub2:"A2 \<subseteq> X" and gbl1:"is_inf R X A1 i1" and
@@ -5776,46 +5749,52 @@ proof-
     using B0 B2 by blast
 qed
 
-lemma compact_dense:
-  assumes A0:"is_clattice R X" and 
-          A1:"compactly_generated R X" and
-          A2:"x \<in> X" and 
-          A3:"antisym R X" and
-          A4:"trans R X" and
-          A5:"refl R X"
-  shows "x = Sup R X {k \<in> compact_elements R X. (k, x)\<in>R}"
-proof-
-  let ?K=" compact_elements R X"
-  let ?Kd="{k \<in> ?K. (k, x)\<in>R}"
-  obtain Kx where A6:"Kx \<in> Pow ?K" and A7:"is_sup R X Kx x" by (meson A1 A2 compactly_generatedD1)
-  have B0:"?K \<subseteq> X" 
-     by (simp add: compact_elements_sub)
-  have B1:"?Kd \<subseteq> X" 
-    using B0 by blast
-  have B2:"Kx \<subseteq> ?Kd" 
-      using A6 A7 is_supD1 by fastforce
-  have B3:"(Sup R X ?Kd, Sup R X Kx)\<in>R"
-    by (metis (no_types, lifting) A0 A3 A4 A7 B1 CollectD clatD21 is_supD1 sup_equality) 
-  have B4:" Sup R X Kx = x"   
-    by (simp add: A3 A7 sup_equality) 
-  have B6:"(x, Sup R X ?Kd)\<in>R"  
-     using A0 A3 A4 B1 B2 B4 sup_iso1 by blast 
-  show ?thesis 
-    using B3 B4 B6 by (metis (no_types, lifting) A0 A2 A3 A4 B1 B2 antisym_onD bot.extremum_uniqueI clatD31)
+lemma compact_gen:
+  assumes clt:"is_clattice R X" and
+          cgn:"compactly_generated R X" and
+          por:"pord R X"
+  shows compact_gen1:"\<And>x. x \<in> X \<Longrightarrow> x = Sup R X {k \<in> compact_elements R X. (k, x)\<in>R}" and
+        compact_gen2:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X;\<not>((y, x)\<in>R)\<rbrakk>\<Longrightarrow>\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
+proof-  
+  show P0:"\<And>x. x \<in> X \<Longrightarrow> x = Sup R X {k \<in> compact_elements R X. (k, x)\<in>R}"
+  proof-
+    fix x assume xmem:"x \<in> X"
+    show "x = Sup R X {k \<in> compact_elements R X. (k, x)\<in>R}"
+    proof-
+      let ?K=" compact_elements R X"  let ?Kd="{k \<in> ?K. (k, x)\<in>R}"
+      obtain Kx where kxmem:"Kx \<in> Pow ?K" and xis:"is_sup R X Kx x" 
+        using xmem cgn compactly_generatedD1[of R X x] by blast
+      obtain ksub:"?K \<subseteq> X" and kdsub:"?Kd \<subseteq> X"
+        using compact_elements_sub by fastforce
+      obtain B0:"Kx \<subseteq> ?Kd"
+        using is_supD1 kxmem xis by fastforce
+      obtain B1:"Kx \<subseteq> X"
+        using B0 kdsub by auto
+      have B2:" Sup R X Kx \<in> ubd R X ?Kd"
+        using ubdI1[of "Sup R X Kx" X ?Kd R] CollectD por sup_equality xis xmem by fastforce
+      have B3:"(Sup R X ?Kd, Sup R X Kx)\<in>R"
+        by (simp add: B2 clatD4 clt kdsub por)
+      have B4:" Sup R X Kx = x"
+        by (simp add: por sup_equality xis)   
+      have B5:"(x, Sup R X ?Kd)\<in>R"
+        using B0 B4 clt kdsub por sup_iso1 by blast  
+      have B6:"(Sup R X ?Kd, x)\<in>R"
+        using B3 B4 by auto
+      have B7:" Sup R X ?Kd \<in> X"
+        by (simp add: clatD21 clt ex_sup5 kdsub por) 
+      show ?thesis
+        using B5 B6 B7 antisym_onD por xmem by fastforce 
+      qed
+    qed
+  show P1:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X;\<not>((y, x)\<in>R)\<rbrakk>\<Longrightarrow>\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
+  proof-
+    fix x y assume xmem:"x \<in> X" and ymem:"y \<in> X" and nlq:"\<not>((y,x)\<in>R)"
+    then show "\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
+      using cgn PowD compactly_generatedD1[of R  X] is_supD1[of R X] subset_iff  by metis
+  qed
 qed
-
-lemma compactly_generated_meets:
-  assumes A0:"is_clattice R X" and 
-          A1:"compactly_generated R X" and
-          A2:"x \<in> X" and
-          A3:"y \<in> X" and 
-          A4:"\<not>((y, x)\<in>R)" and
-          A5:"antisym R X" and
-          A6:"trans R X" and
-          A7:"refl R X"
-  shows "\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
-  by (meson A1 A2 A3 A4 PowD compactly_generatedD1 is_supD1 subset_iff)
-
+      
+    
 lemma meet_reduction1:
   assumes A0:"is_clattice R X" and
           A1:"antisym R X" and
@@ -6041,8 +6020,8 @@ lemma mirred_temp2d:
           A7:"refl R X" 
   obtains m where "m \<in> X" "meet_irr R X m" "(a, m)\<in>R" "\<not> ((b, m)\<in>R)"
 proof-
-  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)" 
-     using A0 A1 A2 A3 A4 compactly_generated_meets by (metis A5 A6 A7)
+  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)"
+    by (meson A0 A1 A2 A3 A4 A5 A6 A7 compact_gen2) 
   have B0b:"is_compact R X k" 
     using B0 compact_elements_mem_iff1   by fastforce
   obtain m where B3:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> (\<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" 
@@ -7080,7 +7059,7 @@ proof-
   obtain por1:"pord (pwr X) (filters_on R X)" and por2:"pord (pwr X) ( (Pow X))"
     by (meson Pow_iff filters_on_iff is_filterD1 powrel6 powrel7 pwr_memI refl_def subsetI)
   have B2:"F= Sup (pwr X) (filters_on R X) {k \<in> compact_elements (pwr X) (filters_on R X). (k, F)\<in>pwr X}" 
-    using A2 B0 B1 compact_dense[of "pwr X" "filters_on R X" F] por1 filters_on_iff by blast
+    using A2 B0 B1 compact_gen1[of "pwr X" "filters_on R X" F] por1 filters_on_iff by blast
   have B3:"\<And>f. f \<in> compact_elements (pwr X) (filters_on R X) \<Longrightarrow> f \<in> {lcro R X x|x. x \<in> X}"
   proof-
     fix f assume C0:"f \<in> compact_elements (pwr X) (filters_on R X)" 
