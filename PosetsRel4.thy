@@ -5700,32 +5700,55 @@ proof-
     by (meson B4 B5 B6 mredI1)  
 qed
 
-lemma filter_compl1:
-  "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X -  F) \<noteq> {}"
-  using is_filterD1 is_pfilter_def by fastforce
-
-lemma filter_compl2: 
-  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> (X - F \<noteq> X)"
-  by (metis Diff_Diff_Int Diff_cancel is_filter_def inf_absorb2 is_pfilterD1)
-
-lemma pfilter_compl3: 
-  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; x \<in> (X-F); y \<in> X; (y, x)\<in>R\<rbrakk> \<Longrightarrow>y \<in> (X-F)"
-  by (metis Diff_iff is_filterD1 is_ord_clE1 is_pfilterD1)
-
-lemma pfilter_compl4:
-   "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> is_ord_cl X (X-F) (dual R)"
-   by (meson converseD is_ord_cl_def pfilter_compl3)
-
-lemma prime_filter_compl5:
-   "\<lbrakk>antisym R X; trans R X; refl R X; is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk> \<Longrightarrow> Sup R X {x, y} \<in> (X-F)"
-  by (metis Diff_iff lattD42 ssl_ex_sup5 sup_primeD1)
-
-lemma prime_filter_compl7: 
-  "\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F; sup_prime R X F; x \<in> X; y \<in> X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"
-  by (metis DiffD2 DiffI filter_inf_closed1 is_pfilterD1 lattD31)  
-
-lemma prime_filter_compl9:"\<lbrakk>antisym R X; trans R X; refl R X;is_lattice R X; is_pfilter R X F;  sup_prime R X F\<rbrakk> \<Longrightarrow> inf_prime R X (X-F)" 
-  by (meson inf_primeI1 prime_filter_compl7)
+lemma filter_compl:
+  assumes por:"pord R X" and
+          lat:"is_lattice R X" and
+          pfl:"is_pfilter R X F"
+  shows filter_compl1:"X-F \<noteq> {}" and
+        filter_compl2:"X-F \<noteq> X" and
+        filter_compl3:"\<And>x y. \<lbrakk>x \<in>(X-F); y \<in>X; (y,x)\<in>R\<rbrakk>\<Longrightarrow>y \<in> X-F" and
+        filter_compl4:"is_ord_cl X (X-F) (dual R)" and
+        filter_compl5:"\<And>x y. \<lbrakk>sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk>\<Longrightarrow>Sup R X {x, y} \<in> (X-F)" and
+        filter_compl6:"\<And>x y. \<lbrakk>sup_prime R X F; x \<in> X; y \<in>X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))" and
+        filter_compl7:"sup_prime R X F \<Longrightarrow> inf_prime R X (X-F)"
+proof-
+  obtain fil:"is_filter R X F" and nst:"F \<noteq> X"
+    using is_pfilter_def pfl by blast
+  obtain ocl:"is_ord_cl X F R" and ddr:"is_dir F (dual R)" and nem:"F \<noteq> {}" and fsb:"F \<subseteq> X"
+    using is_filterD1 fil by auto
+  have ssl:"is_sup_semilattice R X" 
+    using lattD42 lat by auto
+  show P1:"X-F \<noteq> {}"
+    using fsb nst by auto
+  show P2: " (X - F \<noteq> X)"
+    using fsb nem by auto
+  show P3:"\<And>x y. \<lbrakk>x \<in>(X-F); y \<in>X; (y,x)\<in>R\<rbrakk>\<Longrightarrow>y \<in> X-F"
+  proof-
+    fix x y assume xmem:"x \<in>(X-F)" and ymem:"y\<in>X" and ylx:"(y,x)\<in>R"
+    then show "y \<in> X-F" 
+      using ocl is_ord_clE1[of X F R] Diff_iff by blast
+  qed
+  show P4:"is_ord_cl X (X-F) (dual R)"
+    unfolding is_ord_cl_def using converseD P3 by metis
+  show P5:"\<And>x y. \<lbrakk>sup_prime R X F; x \<in> (X-F); y \<in> (X-F)\<rbrakk>\<Longrightarrow>Sup R X {x, y} \<in> (X-F)"
+  proof-
+    fix x y assume spr:"sup_prime R X F" and xmme:"x \<in> X-F" and ymem:"y \<in> X-F"
+    show "Sup R X {x, y} \<in> (X-F)"
+      using por ssl ssl_ex_sup5[of X R] sup_primeD1 spr xmme ymem by fastforce 
+  qed
+  show P6:"\<And>x y. \<lbrakk>sup_prime R X F; x \<in> X; y \<in>X; Inf R X {x, y} \<in> (X-F)\<rbrakk> \<Longrightarrow> (x \<in> (X-F)) \<or> (y \<in> (X-F))"
+  proof-
+    fix x y assume spr:"sup_prime R X F" and xmem:"x\<in>X" and ymem:"y\<in>X" and imem:"Inf R X {x,y}\<in>(X-F)"
+    then show "(x \<in> (X-F)) \<or> (y \<in> (X-F))"
+      using lattD31 por fil filter_inf_closed1 DiffD2 DiffI lat by metis
+  qed
+  show P7:"sup_prime R X F \<Longrightarrow> inf_prime R X (X-F)"
+  proof-
+    assume "sup_prime R X F"
+    then show "inf_prime R X (X-F)"
+      using inf_primeI1[of X R "X-F"] P6 by presburger
+  qed
+qed
 
 lemma prime_filter_on_lattice:
   assumes A0:"is_lattice R X" and 
