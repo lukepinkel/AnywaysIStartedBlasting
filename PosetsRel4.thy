@@ -5863,7 +5863,6 @@ proof-
   show P1:"is_inf R X ?A m"
     using P0 B8 B9 cis por cinfD4[of X R ?A] by presburger
 qed
-           
 
 lemma mirred_temp1:
   assumes A0:"is_clattice R X" and 
@@ -5915,6 +5914,11 @@ proof-
   show "Sup R X D \<in> ?Q" 
     using B1 B11 sup_equality using A12 by fastforce
 qed
+
+
+
+           
+
 
 lemma mirred_temp2b:
   assumes A0:"is_clattice R X" and 
@@ -5989,6 +5993,7 @@ proof-
   qed
 qed
 
+
 lemma mirred_temp2c:
   assumes A0:"is_clattice R X" and
           A1:"compactly_generated R X" and
@@ -6031,65 +6036,224 @@ proof(rule ccontr)
   show False 
      using A8 B3 by blast
 qed
-
-lemma mirred_temp2d:
-  assumes A0:"is_clattice R X" and 
-          A1:"compactly_generated R X" and
-          A2:"a \<in> X" and
-          A3:"b \<in> X" and 
-          A4:"\<not>((b,a)\<in>R)"and
-          A5:"antisym R X" and
-          A6:"trans R X" and
-          A7:"refl R X" 
-  obtains m where "m \<in> X" "meet_irr R X m" "(a, m)\<in>R" "\<not> ((b, m)\<in>R)"
+(*
+  
+*)
+lemma mirred_rep1:
+  assumes clt:"is_clattice R X" and
+          cpg:"compactly_generated R X" and
+          por:"pord R X" and
+          a0:"a\<in>X" and
+          b0:"b\<in>X " and
+          ab0:"(b,a)\<notin>R" and 
+          k0:"is_compact R X k" and
+          kb0:"(k,b)\<in>R" and 
+          ka0:"(k,a)\<notin>R" 
+        shows mirr1:"\<And>D. \<lbrakk>D\<subseteq>{q\<in>X. (a,q)\<in>R \<and> (k,q)\<notin>R};is_dir D R;D\<noteq>{}\<rbrakk>\<Longrightarrow>Sup R X D\<in>{q\<in>X. (a,q)\<in>R \<and> (k,q)\<notin> R}" and
+              mirr2:"\<exists>m \<in> {q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin> R}. \<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> (k,q)\<notin> R}.  (m,q)\<in>R \<longrightarrow> q = m" and
+              mirr3:"\<And>m. \<lbrakk>m \<in> {q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin>R};(\<And>q. \<lbrakk>q\<in>{q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin>R};(m,q)\<in>R\<rbrakk>\<Longrightarrow>q=m)\<rbrakk>\<Longrightarrow>\<not>(meet_reducible R X m)"
 proof-
-  obtain k where B0:"k \<in> compact_elements R X" and  B1:"(k, b)\<in>R" and B2: "\<not> ((k,a)\<in>R)"
-    by (meson A0 A1 A2 A3 A4 A5 A6 A7 compact_gen2) 
-  have B0b:"is_compact R X k" 
-    using B0 compact_elements_mem_iff1   by fastforce
-  obtain m where B3:"m \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)} \<and> (\<forall>q \<in> {q \<in> X. (a,q)\<in>R \<and> \<not> ((k,q)\<in>R)}.  (m,q)\<in>R \<longrightarrow> q = m)" 
-    using A0 A1 A2 A3 A4 B0b B1 B2 mirred_temp2b[of R X a b k]  A5 A6 A7 by blast
-  have B4:"\<not>(meet_reducible R X m)" 
-    using mirred_temp2c[of R X a b  k m] A0 A1 A2 A3 A4 B0b B1 B2 B3 A5 A6 A7 by blast
-  show ?thesis  using B1 B3 B4  
-     by (metis (mono_tags, lifting) A3 A6 B0b compactD2 mem_Collect_eq that trans_onD) 
+  let ?Q=" {q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin>R}"
+  obtain Q0:"?Q \<subseteq> X"
+    by simp
+  obtain ssl:"is_sup_semilattice R X"
+    using clatD1 clt csup_fsup by auto
+  show P0:"\<And>D. \<lbrakk>D\<subseteq>?Q;is_dir D R;D\<noteq>{}\<rbrakk>\<Longrightarrow>Sup R X D\<in>?Q"
+  proof-
+    fix D assume  D0:"D \<subseteq>?Q" and D1:"is_dir D R" and  D2:"D\<noteq>{}"
+    show "Sup R X D \<in>?Q"
+    proof-
+      obtain j where B1:"is_sup R X D j"
+        by (meson Q0 D0 clatD21 clt dual_order.trans por) 
+      have B2:"j \<in> X"
+        by (meson B1 is_supD1) 
+      have B3:"\<And>d. d \<in> D \<Longrightarrow> (a,d)\<in>R"
+        using D0 by blast   
+      have B4:"a \<in> lbd R X D"
+        by (simp add: B3 a0 ubdI1)  
+      have B5:"(a, j)\<in>R"
+        by (meson Q0 B1 B3 D0 D2 a0 bot.extremum_uniqueI is_supD1 por subsetD subset_emptyI trans_onD)
+      have B6:"\<not> ((k,j)\<in>R)"
+      proof(rule ccontr)
+        assume P0:"\<not>(\<not> ((k,j)\<in>R))" 
+        obtain P1:"(k,j)\<in>R"  
+          using P0 by auto
+        have B7:"(k,Sup R X D)\<in>R"
+          using B1 P1 por sup_equality by force   
+        have B8:"D \<in> Pow_ne X"
+          by (meson Q0 D0 D2 Pow_neI1 subset_trans)
+        obtain d where B10:"d \<in> D \<and> (k,d)\<in>R"
+          by (meson B7 B8 ssl D1 compactD3 k0 por)
+        show False
+          using B10 D0 by auto
+      qed
+      have B11:"j \<in> ?Q"   
+        by (simp add: B2 B5 B6)
+      show "Sup R X D \<in> ?Q"
+        using B1 B11 por sup_equality by fastforce 
+    qed
+  qed
+  show P1:"\<exists>m \<in> ?Q. \<forall>q \<in>?Q.  (m,q)\<in>R \<longrightarrow> q = m"
+  proof(rule predicate_Zorn)
+  show "partial_order_on ?Q (relation_of (\<lambda>x y. (x, y) \<in> R) ?Q)"
+  proof(rule partial_order_on_relation_ofI)
+    show "\<And>aa. aa \<in> ?Q \<Longrightarrow> (aa, aa) \<in> R"
+      using por refl_def by fastforce
+    show "\<And>aa b c. aa \<in> ?Q \<Longrightarrow> b \<in>?Q \<Longrightarrow> c \<in> ?Q \<Longrightarrow> (aa, b) \<in> R \<Longrightarrow> (b, c) \<in> R \<Longrightarrow> (aa, c) \<in> R"
+    proof-
+      fix aa b c assume "aa \<in> ?Q" and "b \<in>?Q" and " c \<in> ?Q" and aab:"(aa, b) \<in> R" and bc:"(b, c) \<in> R"
+      then obtain "aa \<in> X" and "b \<in> X" and "c \<in> X"
+        by fastforce
+      then show "(aa, c) \<in> R"
+        using por aab bc trans_onD[of X R aa b c] by simp
+    qed
+    show " \<And>aa b. aa \<in>?Q\<Longrightarrow> b \<in>?Q\<Longrightarrow> (aa, b) \<in> R \<Longrightarrow> (b, aa) \<in> R \<Longrightarrow> aa = b"
+      using por antisym_onD by fastforce
+  qed
+  show P1:"\<And>C. C \<in> Chains (relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q) \<Longrightarrow> \<exists>u\<in>?Q. \<forall>q\<in>C. (q, u)\<in>R"
+  proof-
+    fix C assume A8:"C \<in> Chains (relation_of (\<lambda>x y. (x, y) \<in> R) ?Q)"
+    have B0:"C \<subseteq> X"  
+       using A8 Chains_relation_of by blast
+     have B1:"\<forall>c. c \<in> C \<longrightarrow> (a, c)\<in>R"  
+       using A8 Chains_relation_of by force
+     have B2:"\<forall>c. c \<in> C \<longrightarrow> \<not> (k, c)\<in>R"   
+       using A8 Chains_relation_of by blast
+    show "\<exists>u\<in> ?Q. \<forall>q\<in>C. (q, u)\<in>R"
+    proof(cases "C = {}")
+      case True
+      then show ?thesis  
+        using a0 ka0 por reflE1 by force
+      next
+        case False
+        have B3:"C \<noteq> {}"   
+          by (simp add: False)
+        have B4:"\<And>x y. x \<in> C \<and> y \<in> C \<longrightarrow> (\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"
+        proof
+          fix x y assume A10:"x \<in> C \<and>  y \<in> C"
+          have B1:"(x, y) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q \<or> (y, x) \<in> relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q" 
+            using Chains_def[of " relation_of ((\<lambda>x y. (x, y) \<in> R)) ?Q"] A8 A10 by auto
+          have B2:"(x, y)\<in>R \<or> (y, x)\<in>R" 
+            using B1 relation_of_def[of "((\<lambda>x y. (x, y) \<in> R))" "?Q"] by blast
+          show "(\<exists>z \<in> C. (x,z)\<in>R \<and> (y, z)\<in>R)"  
+            using A10 B2 B0 reflE1 subset_iff por by metis
+      qed
+      have B5:"is_dir C R" 
+        by (simp add: B4 is_dirI1)
+      have B6:"C \<subseteq> ?Q"   
+         using A8 Chains_relation_of by blast
+      have B7:"Sup R X C \<in> ?Q"
+         using clt cpg a0 b0 ab0 k0 kb0 ka0 B3 B5 B6 P0 by presburger
+      have B8:"\<forall>c  \<in> C. (c, Sup R X C)\<in>R"
+        by (simp add: B0 clatD21 clt ex_sup0 por)
+      then show ?thesis   
+        using B7 by blast 
+      qed
+    qed
+  qed
+  show P2:"\<And>m. \<lbrakk>m \<in> {q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin>R};(\<And>q. \<lbrakk>q\<in>?Q;(m,q)\<in>R\<rbrakk>\<Longrightarrow>q=m)\<rbrakk>\<Longrightarrow>\<not>(meet_reducible R X m)"
+  proof-
+    fix m assume m0:"m \<in>?Q" and m1:"(\<And>q. \<lbrakk>q\<in>?Q;(m,q)\<in>R\<rbrakk>\<Longrightarrow>q=m)"
+    show "\<not>(meet_reducible R X m)"
+    proof(rule ccontr)
+      assume contr:"\<not>\<not>(meet_reducible R X m)"
+      obtain mrd:"meet_reducible R X m"  
+        using contr by auto
+      have B0:"\<And>x. \<lbrakk>x\<in>X;(m,x)\<in>R;(m\<noteq>x)\<rbrakk>\<Longrightarrow>(k,x)\<in>R"
+      proof-
+        fix x assume x0:"x\<in>X" and x1:"(m,x)\<in>R" and x2:"m\<noteq>x"
+        obtain x3:"x \<notin> ?Q"
+          using m1 x1 x2 by blast
+        obtain x4:"(a,x)\<in>R"
+          by (metis (mono_tags, lifting) CollectD a0 m0 por trans_onD x0 x1)
+        show "(k,x)\<in>R"
+          using x0 x3 x4 by blast
+      qed
+      have B1:"m=Inf R X {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)}"
+        using clt contr m0 meet_reduction2 por by fastforce  
+      have B2:"k \<in> lbd R X {x \<in> X.(m,x)\<in>R \<and> (m \<noteq> x)}" 
+      proof(rule ubdI1)
+        show "k \<in> X"
+          using compactD2[of R X k] k0 by simp
+        show "\<And>a. a \<in> {x \<in> X. (m, x) \<in> R \<and> m \<noteq> x} \<Longrightarrow> (a, k) \<in> dual R"
+          using B0 by blast
+      qed
+      obtain B3:"m \<in> X" and B4:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"
+        using clt is_supD4 meet_reducible_def meet_reduction3 mrd por by fastforce
+      then obtain B5:"(k,m)\<in>R"
+        using B1 B2 ex_inf3 por by fastforce
+      then show False
+        using m0 by auto 
+    qed
+  qed
 qed
 
-lemma mirred_temp3:
-  assumes A0:"is_clattice R X" and
-          A1:"compactly_generated R X" and 
-          A2:"a \<in> X" and
-          A3:"antisym R X" and
-          A4:"trans R X" and
-          A5:"refl R X" 
-  shows "a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
+
+lemma mirred_rep2:
+  assumes clt:"is_clattice R X" and
+          cpg:"compactly_generated R X" and
+          por:"pord R X" and
+          a0:"a \<in> X"
+  shows mirr4:"\<And>b. \<lbrakk>b \<in>X;(b,a)\<notin>R\<rbrakk> \<Longrightarrow>(\<exists>m. m\<in>X \<and> meet_irr R X m \<and>(a,m)\<in>R \<and>(b,m)\<notin>R)" and
+        mirr5:"a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
 proof-
-  let ?M="{m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}" 
-  obtain top where top:"is_greatest R X top"
-     using A0 clatD1 csupD3 by blast
-  obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}" 
-    by (metis (no_types, lifting) A2 A3 empty_iff is_greatestD1  mem_Collect_eq mredD2 subsetI top) 
-  obtain b where idef:"is_inf R X ?M b"  
-    using A0 B0 clatD22  A3 A4 by blast 
-  have B4:"(a, b)\<in>R"
-    using A2 idef is_supD1 by force 
-  have B5: "\<not>((a,b)\<in>R \<and> a \<noteq> b)"
-  proof(rule ccontr)
-    assume B5dneg:"\<not> \<not> ((a,b)\<in>R \<and> a \<noteq> b)" obtain B5neg:"(a,b)\<in>R \<and> a \<noteq> b"  
-      using B5dneg by auto
-    obtain m where B50:"m \<in> X" and B51:"meet_irr R X m" and  B52:"(a, m)\<in>R" and B53:"\<not> ((b, m)\<in>R)"   
-      by (meson A0 A1 A2 A3 A4 A5 B5neg antisym_onD idef is_supD1 mirred_temp2d) 
-    have B54:"m \<in> ?M"   
-      by (simp add: B50 B51 B52)
-    have B55:"(b, m)\<in>R"   
-      using B54 idef is_supD1 by fastforce 
-    show False
-      using B53 B55 by auto
+  show P0:"\<And>b. \<lbrakk>b \<in>X;(b,a)\<notin>R\<rbrakk> \<Longrightarrow>(\<exists>m. m\<in>X \<and> meet_irr R X m \<and>(a,m)\<in>R \<and>(b,m)\<notin>R)"
+  proof-
+    fix b assume b0:"b\<in>X" and ba0:"(b,a)\<notin>R"
+    show "(\<exists>m. m\<in>X \<and> meet_irr R X m \<and>(a,m)\<in>R \<and>(b,m)\<notin>R)"
+    proof-
+      obtain k where k0:"k \<in> compact_elements R X" and  kb1:"(k, b)\<in>R" and ka1: "(k,a)\<notin>R"
+        by (meson clt cpg a0 b0 ba0 por compact_gen2) 
+      let ?Q=" {q\<in>X. (a,q)\<in>R\<and>(k,q)\<notin>R}"
+      obtain k1:"is_compact R X k" and k2:"k \<in> X"
+        using k0 compact_element_memD1[of k R X] compact_element_memD2[of k R X]  by blast
+      obtain m where B3:"m \<in> ?Q \<and> (\<forall>q \<in> ?Q.  (m,q)\<in>R \<longrightarrow> q = m)" 
+        using clt cpg a0 b0 k1 kb1 ka1 mirr2[of R X a b k] ba0 por by blast
+      have B4:"\<not>(meet_reducible R X m)" 
+        using mirr3[of R X a b k m] B3 a0 b0 ba0 clt cpg k1 ka1 kb1 por by blast
+      obtain B5:"m \<in> X" and B6:"(a,m)\<in>R" and B7:"(k,m)\<notin>R"
+        using B3 by blast
+      have B7:"(b,m)\<notin>R"
+      proof(rule ccontr)
+        assume contr0:"\<not>(b,m)\<notin>R" 
+        then obtain contr1:"(b,m)\<in>R"
+          by simp
+        then show False
+          by (meson B5 B7 b0 k2 kb1 por trans_onD)
+      qed        
+      then show ?thesis
+        using B4 B5 B6 by blast 
+    qed
   qed
-  have "a = b"  
-    using B4 B5 nless_le by blast
-  show ?thesis  
-    using A3 B4 B5 idef inf_equality by fastforce
+  show P1:"a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
+  proof-
+    let ?M="{m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}" 
+     obtain top where top:"is_greatest R X top"
+       using clatD1 clt csupD3 by blast
+     obtain B0:"?M \<subseteq> X" and B1:"top \<in> ?M" and B2:"?M \<noteq> {}"
+       by (metis (no_types, lifting) a0 empty_iff is_greatestD1 mem_Collect_eq mredD2 por subsetI top) 
+     obtain b where idef:"is_inf R X ?M b"
+       using B0 clatD22 clt por by blast  
+     have B4:"(a, b)\<in>R"
+       using a0 idef is_infD1 by fastforce
+     have B5: "\<not>((a,b)\<in>R \<and> a \<noteq> b)"
+     proof(rule ccontr)
+       assume B5dneg:"\<not> \<not> ((a,b)\<in>R \<and> a \<noteq> b)" obtain B5neg:"(a,b)\<in>R \<and> a \<noteq> b"  
+         using B5dneg by auto
+       obtain m where B50:"m \<in> X" and B51:"meet_irr R X m" and  B52:"(a, m)\<in>R" and B53:"\<not> ((b, m)\<in>R)"
+         by (meson B5neg P0 a0 antisym_onD idef is_supD4 por)   
+       have B54:"m \<in> ?M"   
+         by (simp add: B50 B51 B52)
+       have B55:"(b, m)\<in>R"   
+         using B54 idef is_supD1 by fastforce 
+       show False
+         using B53 B55 by auto
+     qed
+     have "a = b"  
+       using B4 B5 nless_le by blast
+     then show ?thesis
+       using idef inf_equality por by force  
+   qed
 qed
 
 lemma meet_irr_imp_fmeet_irr:
@@ -6123,7 +6287,7 @@ proof-
   have B2:"F \<in> ?FX"
     using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast
   have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
-    using mirred_temp3[of ?RX ?FX F] B0 B1 B2  by (metis PowI filters_on_def is_filterD1 mem_Collect_eq powrel6 powrel7 pwr_memI refl_def subsetI)
+    using mirr5[of ?RX ?FX F] B0 B1 B2  by (metis PowI filters_on_def is_filterD1 mem_Collect_eq powrel6 powrel7 pwr_memI refl_def subsetI)
   have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  
     by fastforce
   then show ?thesis  
@@ -6181,7 +6345,7 @@ proof-
   have B2:"F \<in> ?FX"
     using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast 
   have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}"
-    by (simp add: B0 B1 B2 C1 C2 C3 mirred_temp3) 
+    by (simp add: B0 B1 B2 C1 C2 C3 mirr5) 
   have B4:"\<And>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX} \<Longrightarrow> Fm \<in> ?FX \<and> sup_prime R X Fm " 
   proof-
     fix Fm assume A6:"Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and>(F, Fm)\<in>?RX}" 
