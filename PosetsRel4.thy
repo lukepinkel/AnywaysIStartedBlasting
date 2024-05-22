@@ -8526,15 +8526,6 @@ proof-
     by blast
 qed
 
-(*
-
-lemma Cl_to_Lim2:
-  assumes A0:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (pwr X) (Pow X))" and 
-          A1:"A \<in> Pow X"
-  shows "(ClLim Lim X)``{A} = \<Union>{Lim``{\<F>}|\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> {A}#\<F>}"
-  unfolding ClLim_def using assms by(auto)
-
-*)
 
 lemma cont12:
   assumes prtpx:"is_prtop X q" and
@@ -8585,5 +8576,9 @@ proof
       using B3 mesh_singleE by auto
   qed
   have B10:"(f x) \<in> (ClLim p Y)``{f`A}"
+    by (meson B0 B9 ClLim_Im_memD ClLim_mem_iff fmap image_Pow_mono image_eqI in_mono prtpy)
+  then show "y \<in> ?R"
+    using B1 by blast
+qed
 
 end
