@@ -8508,6 +8508,7 @@ lemma continuousD1:
   "\<lbrakk>cont_at f X q Y p x; (\<F>, x) \<in> q\<rbrakk> \<Longrightarrow>({E \<in> Pow Y. \<exists>F \<in> \<F>. f`(F) \<subseteq> E}, f x) \<in> p "
   by (simp add:cont_at_def)
 
+
 lemma ClLim_mem_iff:
   assumes prtpx:"is_prtop X q" and
           xmem:"x \<in> X" and 
@@ -8533,6 +8534,18 @@ proof-
   with LR RL show ?thesis
     by blast
 qed
+
+
+(*
+1. "\<And>\<F>. (\<F>,x)\<in>q\<Longrightarrow> (Imfil f X Y \<F>, f x)\<in>p"
+2. "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+3. "\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}"
+4. "\<And>V. V \<in> (NLim p Y)``{f x} \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
+5. "\<And>V. V \<in> (NLim p Y)``{f x} \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+
+adding vimage f Y \<subseteq> X allows for the x \<in> X to dropped from some of these
+
+*)
 
 
 lemma cont12:
@@ -8621,42 +8634,121 @@ qed
 
 
 lemma cont34:
+ assumes prtpx:"is_prtop X q" and
+         prtpy:"is_prtop Y p" and 
+         fmap1:"f`X \<subseteq> Y" and 
+         fmap2:"vimage f Y \<subseteq> X" and 
+         cont3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}"
+ shows "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
+proof-
+  fix x V assume xmem:"x \<in> X" and vmem:" V \<in> (NLim p Y)``{f x}"
+  then show "vimage f V \<in> (NLim q X)``{x}"
+  proof-
+    have "\<And>V. \<lbrakk>V \<in> Pow Y; vimage f V \<notin>  (NLim q X)``{x}\<rbrakk> \<Longrightarrow> V \<notin> (NLim p Y)``{f x}"
+    proof-
+      fix V assume A0:"V \<in> Pow Y" and A1:"vimage f V \<notin>  (NLim q X)``{x}"
+      obtain A2:"vimage f V \<in> Pow X"
+        using A0 fmap2 by auto
+      let ?A="X-(vimage f V)"
+      obtain A3:"?A \<in> Pow X"
+        by simp
+      obtain A4:"f`(?A) \<subseteq> (Y-V)"
+        using fmap1 by blast
+      obtain A5:"f`(?A) \<in> Pow Y" and A6:"Y-V \<in> Pow Y"
+        using fmap1 by fastforce
+      obtain B0:"x \<in> (ClLim q X)``{X-(vimage f V)}"
+        using A1 A2 nhl2 prtpx xmem by fastforce
+      then obtain B1:"f x \<in>  f`((ClLim q X)``{?A})"
+        by blast
+      then obtain B2:"f x \<in> (ClLim p Y)``{f`(?A)}"
+        by (meson A3 cont3 in_mono)
+      have B3:"(ClLim p Y)``{f`(?A)} \<subseteq>  (ClLim p Y)``{Y-V}"
+        by (meson A4 A5 A6 prtp_lim_ccl3 prtpy)
+      then obtain B4:"f x \<in> (ClLim p Y)``{Y-V}"
+        using B2 by blast
+      then show "V \<notin> (NLim p Y)``{f x}"
+        by (meson NLim_Im_memD nhl2 prtpy)
+    qed
+  then show ?thesis
+    by (meson NLim_Im_memD vmem)
+  qed
+qed
+(*
+1. "\<And>\<F>. (\<F>,x)\<in>q\<Longrightarrow> (Imfil f X Y \<F>, f x)\<in>p"
+2. "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+3. "\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}"
+4. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
+5. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+*)
+
+lemma cont45:
+   assumes prtpx:"is_prtop X q" and
+           prtpy:"is_prtop Y p" and  
+           fmap1:"f`X \<subseteq> Y" and 
+           fmap2:"vimage f Y \<subseteq> X" and
+           cont4:"\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
+  shows  "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+proof-
+  fix x V assume xmem:"x \<in> X" and vmem:"V \<in> (NLim p Y)``{f x}"
+  show "\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+  proof-
+  let ?U="vimage f V"
+  obtain B0:"?U \<in> (NLim q X)``{x}"
+    using cont4 vmem xmem by auto
+  also obtain B1:"f`?U \<subseteq> V"
+    by blast
+  then show ?thesis
+    using calculation by blast
+  qed
+qed
+  
+
+
+lemma cont35:
   assumes prtpx:"is_prtop X q" and
           prtpy:"is_prtop Y p" and 
-          cont2:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
+          cont3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
           fmap1:"f`X \<subseteq> Y" and 
           fmap2:"vimage f Y \<subseteq> X" and
           xmem:"x \<in> X" and
           vmem:"V \<in> (NLim p Y)``{f x}"
-  shows "vimage f V \<in> (NLim q X)``{x}"
+  shows "\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
 proof-
-  have "\<And>V. \<lbrakk>V \<in> Pow Y; vimage f V \<notin>  (NLim q X)``{x}\<rbrakk> \<Longrightarrow> V \<notin> (NLim p Y)``{f x}"
-  proof-
-    fix V assume A0:"V \<in> Pow Y" and A1:"vimage f V \<notin>  (NLim q X)``{x}"
-    obtain A2:"vimage f V \<in> Pow X"
-      using A0 fmap2 by auto
-    let ?A="X-(vimage f V)"
-    obtain A3:"?A \<in> Pow X"
-      by simp
-    obtain A4:"f`(?A) \<subseteq> (Y-V)"
-      using fmap1 by blast
-    obtain A5:"f`(?A) \<in> Pow Y" and A6:"Y-V \<in> Pow Y"
-      using fmap1 by fastforce
-    obtain B0:"x \<in> (ClLim q X)``{X-(vimage f V)}"
-      using A1 A2 nhl2 prtpx xmem by fastforce
-    then obtain B1:"f x \<in>  f`((ClLim q X)``{?A})"
-      by blast
-    then obtain B2:"f x \<in> (ClLim p Y)``{f`(?A)}"
-      by (meson A3 cont2 in_mono)
-    have B3:"(ClLim p Y)``{f`(?A)} \<subseteq>  (ClLim p Y)``{Y-V}"
-      by (meson A4 A5 A6 prtp_lim_ccl3 prtpy)
-    then obtain B4:"f x \<in> (ClLim p Y)``{Y-V}"
-      using B2 by blast
-    then show "V \<notin> (NLim p Y)``{f x}"
-      by (meson NLim_Im_memD nhl2 prtpy)
-  qed
+  let ?U="vimage f V"
+  obtain B0:"?U \<in> (NLim q X)``{x}"
+    using assms cont34[of X q Y p f] by auto
+  also obtain B1:"f`?U \<subseteq> V"
+    by blast
   then show ?thesis
-    by (meson NLim_Im_memD vmem)
+    using calculation by blast
+qed
+  
+
+lemma cont32:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          cont3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
+          fmap1:"f`X \<subseteq> Y" and
+          fmap2:"vimage f Y \<subseteq> X" and
+          xmem:"x \<in> X"
+  shows "(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})" (is "?L \<subseteq> ?R")
+proof
+  fix V assume A0:"V \<in> ?L"
+  then have B0:"\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+    using assms cont35[of X q Y p f] by auto
+  then obtain U where "U \<in> (NLim q X)``{x}" and "f`U \<subseteq> V"
+    by blast
+  then show "V \<in> ?R"
+    by (meson A0 Imfil_memI NLim_Im_memD)
 qed
 
+lemma cont53:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          cont5:"\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> (\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V)" and
+          fmap1:"f`X \<subseteq> Y" and 
+          fmap2:"vimage f Y \<subseteq> X" and
+          amem:"A \<in> Pow X"
+  shows "f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" (is "?L \<subseteq> ?R")
+          
 end
