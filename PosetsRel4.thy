@@ -8113,15 +8113,21 @@ proof-
 qed
 
 lemma prtp_lim_cl1:
-  assumes centered:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> Lim" and
-          upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim" and
-          vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim " and  
-          is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (pwr X) (Pow X))" 
+  assumes prtp:"is_prtop X Lim"
   shows prtp_lim_cleq:"(ClLim Lim X) = {(A, x). A \<in> Pow X \<and> x \<in> X \<and> (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)}" and
         prtp_lim_ccl0:"(ClLim Lim X)``{{}}={}" and
         prtp_lim_ccl1:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq>(ClLim Lim X)``{A}" and
-        prtp_lim_ccl2:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> (ClLim Lim X)``{A \<union> B}=(ClLim Lim X)``{A} \<union> (ClLim Lim X)``{B}"
+        prtp_lim_ccl2:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> (ClLim Lim X)``{A \<union> B}=(ClLim Lim X)``{A} \<union> (ClLim Lim X)``{B}" and
+        prtp_lim_ccl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>  (ClLim Lim X)``{A} \<subseteq>  (ClLim Lim X)``{B}"
 proof-
+  obtain centered:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> Lim"
+    by (meson centered_def prtp)
+  obtain  upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim"
+    using isoconv_def prtp by fastforce
+  obtain  vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim "
+    using onpconv_def prtp by force
+  obtain  is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (pwr X) (Pow X))"
+    by (metis isconvs_def prtp) 
   show Q0:"(ClLim Lim X) = {(A, x). A \<in> Pow X \<and> x \<in> X \<and> (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)}"
   proof-
      have P0:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim Lim X) \<longleftrightarrow>  (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). {A}#\<F> \<and> (\<F>, x) \<in> Lim)" 
@@ -8249,8 +8255,10 @@ proof-
       qed
     qed
   qed
+  show Q4:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>  (ClLim Lim X)``{A} \<subseteq>  (ClLim Lim X)``{B}"
+    by (metis Q3 subset_Un_eq)
 qed
-      
+
 lemma cl_lim_prtp2b:
   assumes is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"  and  
           CCl1:"Cl``{{}} = {}" and
@@ -8579,6 +8587,46 @@ proof
     by (meson B0 B9 ClLim_Im_memD ClLim_mem_iff fmap image_Pow_mono image_eqI in_mono prtpy)
   then show "y \<in> ?R"
     using B1 by blast
+qed
+
+
+lemma cont34:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          cont2:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
+          fmap1:"f`X \<subseteq> Y" and 
+          fmap2:"vimage f Y \<subseteq> X" and
+          xmem:"x \<in> X" and
+          vmem:"V \<in> (NLim p Y)``{f x}"
+  shows "vimage f V \<in> (NLim q X)``{x}"
+proof-
+  have "\<And>V. \<lbrakk>V \<in> Pow Y; vimage f V \<notin>  (NLim q X)``{x}\<rbrakk> \<Longrightarrow> V \<notin> (NLim p Y)``{f x}"
+  proof-
+    fix V assume A0:"V \<in> Pow Y" and A1:"vimage f V \<notin>  (NLim q X)``{x}"
+    obtain A2:"vimage f V \<in> Pow X"
+      using A0 fmap2 by auto
+    let ?A="X-(vimage f V)"
+    obtain A3:"?A \<in> Pow X"
+      by simp
+    obtain A4:"f`(?A) \<subseteq> (Y-V)"
+      using fmap1 by blast
+    obtain A5:"f`(?A) \<in> Pow Y" and A6:"Y-V \<in> Pow Y"
+      using fmap1 by fastforce
+    obtain B0:"x \<in> (ClLim q X)``{X-(vimage f V)}"
+      using A1 A2 nhl2 prtpx xmem by fastforce
+    then obtain B1:"f x \<in>  f`((ClLim q X)``{?A})"
+      by blast
+    then obtain B2:"f x \<in> (ClLim p Y)``{f`(?A)}"
+      by (meson A3 cont2 in_mono)
+    have B3:"(ClLim p Y)``{f`(?A)} \<subseteq>  (ClLim p Y)``{Y-V}"
+      by (meson A4 A5 A6 prtp_lim_ccl3 prtpy)
+    then obtain B4:"f x \<in> (ClLim p Y)``{Y-V}"
+      using B2 by blast
+    then show "V \<notin> (NLim p Y)``{f x}"
+      by (meson NLim_Im_memD nhl2 prtpy)
+  qed
+  then show ?thesis
+    by (meson NLim_Im_memD vmem)
 qed
 
 end
