@@ -8550,6 +8550,36 @@ proof-
     using NLim_Im_memD isgconvD1 prtpy by fastforce
 qed
 
+lemma cont21:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          map:"f`X \<subseteq> Y" and
+          cont2:"\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+  shows "cont_at f X q Y p x"
+proof(rule cont_atI1)
+  show P0:"isconvs X q"
+    by (simp add: prtpx)
+  show "\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> (\<F>, x) \<in> q \<Longrightarrow> (Imfil f X Y \<F>, f x) \<in> p"
+  proof-
+    fix \<F> assume A0:" \<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"(\<F>, x) \<in> q"
+    then obtain B0:"(NLim q X)``{x} \<subseteq> \<F>"
+      using NLim_Im_memD by fastforce
+    have B1:"(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+      by (meson A1 P0 cont2 isgconvD1)
+    have B2:"... \<subseteq>  Imfil f X Y \<F>"
+      by (meson B0 Imfil_memD Imfil_memI subsetD subsetI)
+    have B3:"((NLim p Y)``{f x}, f x)\<in>p"
+      using A1 P0 isgconvD1 map onpconvD2 prtpy by fastforce
+    have B4:"Imfil f X Y \<F> \<in> pfilters_on (pwr Y) (Pow Y)"
+      by (meson A0 im_filter map pfilters_on_iff)
+    have B5:"(NLim p Y)``{f x}  \<subseteq> Imfil f X Y \<F> "
+      using B1 B2 by auto
+    show "(Imfil f X Y \<F>, f x) \<in> p"
+      using B3 B4 B5 isoconvD1[of Y p "Imfil f X Y \<F>" "(NLim p Y)``{f x}" "f x"]  prtpy by blast
+  qed
+qed
+
+
 lemma cont23:
   assumes prtpx:"is_prtop X q" and
           prtpy:"is_prtop Y p" and 
