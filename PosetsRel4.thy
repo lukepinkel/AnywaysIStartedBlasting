@@ -5610,6 +5610,92 @@ proof-
   qed
 qed
     
+lemma filter_sup_distattice:
+  assumes por:"pord R X" and
+          dlt:"distributive_lattice R X" and
+          top:"is_greatest R X m" and 
+          ind2:"I \<noteq> {}" and 
+          fil:"(\<And>i. i \<in> I \<Longrightarrow> is_filter R X (f i))"
+  shows "Sup (pwr X) (filters_on R X) (f`I) = {x \<in> X. \<exists>F \<in> Fpow_ne (\<Union>(f`I)). x = Inf R X F}"  (is "?L=?R")
+proof-
+ obtain lat:"is_lattice R X"
+    by (simp add: distr_latticeD5 dlt) 
+  obtain ssl:"is_sup_semilattice R X"
+    by (simp add: lat lattD42)
+  obtain dpr:"pord (dual R) X"
+    by (simp add: por refl_dualI)
+  obtain clt:"is_clattice (pwr X) (filters_on R X)"
+    using lat lattice_filters_complete por top by fastforce
+  have B0:"?L = {x \<in> X. \<exists>F \<in> Fpow_ne (\<Union>(f`I)). (Inf R X F, x)\<in>R}" (is "?L=?R2")
+    using filter_sup_lattice[of X R m I] por top ind2 fil lat by presburger
+  have RL:"?R \<subseteq> ?L"
+  proof
+    fix x assume R0:"x \<in> ?R"
+    then obtain F where F0:"F\<in>Fpow_ne (\<Union> (f ` I))" and "x = Inf R X F"
+      by blast
+    then obtain "(Inf R X F, x)\<in>R"
+      using R0 por reflE1 by auto
+    then obtain "x \<in> ?R2"
+      using F0 R0 by blast
+    then show "x \<in> ?L"
+      using B0 by blast
+  qed
+  have LR:"?L \<subseteq> ?R"
+  proof
+    fix x assume L0:"x \<in> ?L"
+    then obtain F where F0:"x \<in> X" and F1:"F\<in>Fpow_ne (\<Union> (f ` I))" and F2:"(Inf R X F,x)\<in>R"
+      using B0 by auto
+    from F1 obtain F3:"finite F" and F4:"F \<noteq> {}" and F5:"F \<subseteq> X"
+      by (metis Fpow_ne_iff SUP_le_iff dual_order.trans fil is_filterD1)
+    then have F7:"Sup R X {x, (Inf R X F)} = Inf R X {Sup R X {x, xj}|xj. xj \<in> F}"
+      using fin_distr1[of R X F x] por  F0 dlt by fastforce
+    have F8:"x = Sup R X {x, (Inf R X F)}"
+      by (simp add: F0 F2 F3 F4 F5 Fpow_neI1 bsup_or2 lat lattD4 por ssl_fin_sup6)
+    have F9:"\<And>y. y \<in> F \<Longrightarrow> (\<exists>i. i \<in> I \<and> (y \<in> f i))"
+    proof-
+      fix y assume y0:"y \<in> F"
+      then obtain y1:"y \<in> \<Union> (f ` I)"
+        using F1 Fpow_neD by blast
+      then obtain Fj where y2:"Fj \<in> (f`I)" and y3:"y \<in> Fj"
+        by blast
+      then obtain i where y4:"i \<in> I" and y5:"Fj = (f i)"
+        by blast
+      then show "(\<exists>i. i \<in> I \<and> (y \<in> f i))"
+        using y3 by blast
+    qed
+    let ?G="{Sup R X {x, xj}|xj. xj \<in> F}"
+    have L1:"?G \<in>Fpow_ne (\<Union> (f ` I)) "
+    proof(rule Fpow_neI1)
+      show "?G \<subseteq> \<Union>(f`I)"
+      proof
+        fix xa assume C0:"xa \<in> ?G"
+        then obtain xj where C1:"xj \<in> F" and C2:"xa = Sup R X {x, xj}"
+          by blast
+        then obtain i where C3:"i \<in> I" and C4:"xj \<in> (f i)"
+          using F9 by auto
+        obtain "(xj,xa)\<in>R" and "xa \<in> X"
+          by (metis C1 C2 F0 F5 por ssl ssl_ex_sup0b ssl_ex_sup5 subset_eq)
+        then obtain "xa \<in> (f i)"
+          by (metis C3 C4 fil is_filterD1 is_ord_clE1)
+        then show "xa \<in>  \<Union>(f`I)"
+          using C3 by blast
+      qed
+      show "?G \<noteq> {}"
+        by (simp add: F4)
+      show "finite ?G"
+        by (simp add: F3)
+    qed
+    have L2:"x = Inf R X ?G"
+      using F7 F8 by presburger
+    then have L3:"\<exists>G\<in>Fpow_ne (\<Union> (f ` I)). x = Inf R X G"
+      using L1 by blast
+    then show "x \<in> ?R"
+      using F0 by blast
+  qed
+  from LR RL show ?thesis
+    by blast
+qed
+    
       
          
 section MeetReducibility
