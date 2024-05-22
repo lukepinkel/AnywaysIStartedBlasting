@@ -8540,13 +8540,9 @@ qed
 1. "\<And>\<F>. (\<F>,x)\<in>q\<Longrightarrow> (Imfil f X Y \<F>, f x)\<in>p"
 2. "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
 3. "\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}"
-4. "\<And>V. V \<in> (NLim p Y)``{f x} \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
-5. "\<And>V. V \<in> (NLim p Y)``{f x} \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
-
-adding vimage f Y \<subseteq> X allows for the x \<in> X to dropped from some of these
-
+4. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
+5. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
 *)
-
 
 lemma cont12:
   assumes prtpx:"is_prtop X q" and
@@ -8563,12 +8559,23 @@ proof-
     using NLim_Im_memD isgconvD1 prtpy by fastforce
 qed
 
+lemma cont12_global:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          cont1:"\<And>x. x \<in> X \<Longrightarrow> cont_at f X q Y p x "
+  shows "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+proof-
+  fix x assume xmem:"x \<in> X"
+  then show "(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+    using xmem assms cont12[of X q Y p x f] by blast
+qed
+
 lemma cont21:
   assumes prtpx:"is_prtop X q" and
           prtpy:"is_prtop Y p" and 
           map:"f`X \<subseteq> Y" and
           cont2:"\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
-  shows "cont_at f X q Y p x"
+  shows "cont_at f X q Y p x" (*(\<F>, x)\<in>q implicitly yields x \<in> X *)
 proof(rule cont_atI1)
   show P0:"isconvs X q"
     by (simp add: prtpx)
@@ -8591,6 +8598,20 @@ proof(rule cont_atI1)
       using B3 B4 B5 isoconvD1[of Y p "Imfil f X Y \<F>" "(NLim p Y)``{f x}" "f x"]  prtpy by blast
   qed
 qed
+
+
+lemma cont21_global:
+  assumes prtpx:"is_prtop X q" and
+          prtpy:"is_prtop Y p" and 
+          map:"f`X \<subseteq> Y" and
+          cont2:"\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
+  shows "\<And>x. x \<in> X \<Longrightarrow> cont_at f X q Y p x "
+proof-
+  fix x assume xmem:"x \<in> X"
+  then show "cont_at f X q Y p x" 
+    using assms cont21[of X q Y p f] by auto
+qed
+  
 
 
 lemma cont23:
@@ -8673,13 +8694,7 @@ proof-
     by (meson NLim_Im_memD vmem)
   qed
 qed
-(*
-1. "\<And>\<F>. (\<F>,x)\<in>q\<Longrightarrow> (Imfil f X Y \<F>, f x)\<in>p"
-2. "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
-3. "\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}"
-4. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> vimage f V \<in> (NLim q X)``{x}"
-5. "\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
-*)
+
 
 lemma cont45:
    assumes prtpx:"is_prtop X q" and
@@ -8703,52 +8718,29 @@ proof-
 qed
   
 
-
-lemma cont35:
+lemma cont52:
   assumes prtpx:"is_prtop X q" and
           prtpy:"is_prtop Y p" and 
-          cont3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
+          cont5:"\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> \<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V" and
           fmap1:"f`X \<subseteq> Y" and 
-          fmap2:"vimage f Y \<subseteq> X" and
-          xmem:"x \<in> X" and
-          vmem:"V \<in> (NLim p Y)``{f x}"
-  shows "\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+          fmap2:"vimage f Y \<subseteq> X" 
+  shows "\<And>x. x \<in> X \<Longrightarrow> (NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
 proof-
-  let ?U="vimage f V"
-  obtain B0:"?U \<in> (NLim q X)``{x}"
-    using assms cont34[of X q Y p f] by auto
-  also obtain B1:"f`?U \<subseteq> V"
-    by blast
-  then show ?thesis
-    using calculation by blast
-qed
-  
-
-lemma cont32:
-  assumes prtpx:"is_prtop X q" and
-          prtpy:"is_prtop Y p" and 
-          cont3:"\<And>A. A \<in> Pow X \<Longrightarrow> f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" and
-          fmap1:"f`X \<subseteq> Y" and
-          fmap2:"vimage f Y \<subseteq> X" and
-          xmem:"x \<in> X"
-  shows "(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})" (is "?L \<subseteq> ?R")
-proof
-  fix V assume A0:"V \<in> ?L"
-  then have B0:"\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
-    using assms cont35[of X q Y p f] by auto
-  then obtain U where "U \<in> (NLim q X)``{x}" and "f`U \<subseteq> V"
-    by blast
-  then show "V \<in> ?R"
-    by (meson A0 Imfil_memI NLim_Im_memD)
+  fix x assume xmem:"x \<in> X"
+  show "(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})" (is "?L \<subseteq> ?R")
+  proof
+    fix V assume A0:"V \<in> ?L"
+    then have B0:"\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V"
+      by (simp add: cont5 xmem)
+    then obtain U where "U \<in> (NLim q X)``{x}" and "f`U \<subseteq> V"
+      by blast
+    then show "V \<in> ?R"
+      by (meson A0 Imfil_memI NLim_Im_memD)
+  qed
 qed
 
-lemma cont53:
-  assumes prtpx:"is_prtop X q" and
-          prtpy:"is_prtop Y p" and 
-          cont5:"\<And>x V. \<lbrakk>x \<in> X; V \<in> (NLim p Y)``{f x}\<rbrakk> \<Longrightarrow> (\<exists>U \<in> (NLim q X)``{x}. f`U \<subseteq> V)" and
-          fmap1:"f`X \<subseteq> Y" and 
-          fmap2:"vimage f Y \<subseteq> X" and
-          amem:"A \<in> Pow X"
-  shows "f`((ClLim q X)``{A}) \<subseteq> (ClLim p Y)``{f`A}" (is "?L \<subseteq> ?R")
-          
+(*
+so 2\<longrightarrow>3\<longrightarrow>4\<longrightarrow>5\<longrightarrow>2 and 1\<longrightarrow>2\<longrightarrow>1 which is 1\<longleftrightarrow>2\<longleftrightarrow>3\<longleftrightarrow>4\<longleftrightarrow>5 
+*)
+
 end
