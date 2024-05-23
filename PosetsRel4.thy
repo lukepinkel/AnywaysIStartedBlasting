@@ -4788,7 +4788,8 @@ proof-
                         Inf R X {Sup R X {x1, Inf R X {x2, t}},  Sup R X {y, Inf R X {x2, t}}}"
           by simp
         have B22:"... = Sup R X {Inf R X {x1, y}, Inf R X {x2, t}}"
-          by (metis A0 A1 B01 B11 B12 B13 B14 distr_latticeD2 is_supD1 lattD31)
+          using A0 B11 B12 B13 B14 distr_latticeD2[of R X "Inf R X {x2, t}" x1 y] 
+                B01 A1 lattD31[of X R x2 t] is_infD1[of R X "{x2, t}" "Inf R X {x2, t}"] by presburger
         obtain B23:"Inf R X {x1,y}\<in>X" and B24:"Inf R X {x2,t}\<in>X" and B25:"Inf R X {x2,t}\<in>X" and 
                B26:"Sup R X {y,x2}\<in>X" and B27:"Sup R X {y,t}\<in>X"
           by (simp add: A1 B01 B11 B12 B13 B14 lattD4 ssl_ex_sup5)
@@ -8677,7 +8678,17 @@ proof(rule cont_atI1)
     have B1:"(NLim p Y)``{f x} \<subseteq> Imfil f X Y ((NLim q X)``{x})"
       by (meson A1 P0 cont2 isgconvD1)
     have B2:"... \<subseteq>  Imfil f X Y \<F>"
-      by (meson B0 Imfil_memD Imfil_memI subsetD subsetI)
+    proof
+      fix E assume L0:"E \<in> Imfil f X Y (NLim q X `` {x})"
+      then obtain L1:"E \<in> Pow Y" 
+        using Imfil_memD[of E f X Y ] by presburger
+      obtain F where L2:"F \<in> (NLim q X `` {x})" and L3:"f`F \<subseteq> E"
+        using B0 L0 Imfil_memD[of E f X Y " (NLim q X `` {x})"]  by auto
+      then have L4:"F \<in> \<F>"
+        using B0 by auto 
+      show "E \<in> Imfil f X Y \<F>"
+        using L1 L4 L3 Imfil_memI[of E Y \<F> f X]  by blast
+    qed
     have B3:"((NLim p Y)``{f x}, f x)\<in>p"
       using A1 P0 isgconvD1 map onpconvD2 prtpy by fastforce
     have B4:"Imfil f X Y \<F> \<in> pfilters_on (pwr Y) (Pow Y)"
