@@ -4643,8 +4643,10 @@ proof-
     show "is_dir ?FC (dual R)"
     proof(rule is_dirI1)
       fix a b assume amem1:"a \<in> ?FC" and bmem1:"b \<in> ?FC"
-      then obtain amem2:"a \<in> X" and bmem2:"b \<in> X" 
-        using filter_bsup_memD1 by force
+      obtain amem2:"a \<in> X"
+        using amem1 filter_bsup_memD1[of a R X F1 F2] by auto
+      obtain bmem2:"b \<in> X" 
+        using bmem1 filter_bsup_memD1[of b R X F1 F2] by auto 
       obtain a1 a2 b1 b2 where B0:"a1 \<in> F1" and B1:"b1 \<in> F1" and B2:"a2 \<in> F2" and B3:"b2 \<in> F2" and 
                                B4:"(Inf R X {a1, a2}, a)\<in>R" and B5:"(Inf R X {b1,b2},b)\<in>R"
          by (meson amem1 bmem1 filter_bsup_memD1)
@@ -6123,8 +6125,10 @@ proof-
         fix x assume x0:"x\<in>X" and x1:"(m,x)\<in>R" and x2:"m\<noteq>x"
         obtain x3:"x \<notin> ?Q"
           using m1 x1 x2 by blast
+        obtain x40:"m \<in> X" and x41:"(a, m)\<in>R" and x42:"(k, m) \<notin> R"
+          using m0 by auto
         obtain x4:"(a,x)\<in>R"
-          by (metis (mono_tags, lifting) CollectD a0 m0 por trans_onD x0 x1)
+          using a0 x40 x0 x41 x1 por trans_onD[of X R a m x] by simp
         show "(k,x)\<in>R"
           using x0 x3 x4 by blast
       qed
@@ -7224,11 +7228,27 @@ proof-
     by blast
 qed
 
+
+
 lemma grill_union_inter:
   assumes A0:"\<AA> \<in> Pow (Pow (Pow X))" and A1:"\<AA> \<noteq> {}"
   shows "grill (Pow X) (\<Union>\<AA>) = \<Inter>{grill (Pow X) \<A>|\<A>. \<A> \<in> \<AA>}" (is "?L =?R")
-  unfolding grill_def using assms apply(auto, simp add: mesh_single_iff)
-  unfolding mesh_def using assms apply(auto) by(blast)
+proof
+  show "?L \<subseteq> ?R"
+  proof
+    fix a assume "a \<in> ?L"
+    then show "a \<in> ?R"
+      unfolding grill_def using assms by(auto simp add:mesh_single_iff)
+  qed
+  next
+  show "?R \<subseteq> ?L"
+  proof
+    fix a assume "a \<in> ?R"
+    then show "a \<in> ?L"
+      unfolding grill_def mesh_def using assms by(auto)
+  qed
+qed
+
 
 lemma ideals_filter_grill:
   assumes A0:"\<G> \<in> (Pow (Pow X))"  and A1:"\<G> \<noteq> {}" and A2:"{} \<notin> \<G>"
