@@ -5199,17 +5199,24 @@ lemma prime_filter_iff2:
     (sup_prime R X F \<and> is_pfilter R X F)  \<longleftrightarrow>  (is_pfilter R X F \<and> (\<forall>F1 F2. is_filter R X  F1 \<and> is_filter R X  F2 \<and> F1 \<inter> F2 \<subseteq> F \<longrightarrow> F1 \<subseteq> F \<or> F2 \<subseteq> F))"
   by (metis sup_prime_pfilterD3 sup_prime_pfilterI2)
 
-lemma prime_filter_fin_irr1:
-  "\<lbrakk>is_lattice R X; pord R X; sup_prime R X F; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; G \<inter> H = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
-  by (meson filters_on_iff inf_le1 inf_le2 order_refl subset_antisym sup_prime_pfilterD4)
+lemma prime_filter_fin_irr:
+  assumes lat:"is_lattice R X" and 
+          por:"pord R X" and
+          pfl:"is_pfilter R X F" and
+          spr:"sup_prime R X F"
+  shows "fin_inf_irr (pwr X) (filters_on R X) F"
+proof(rule fin_inf_irrI1)
+  fix a b assume A0:"a\<in>filters_on R X " and A1:"b\<in>filters_on R X " and A2:"F=Inf (pwr X) (filters_on R X){a,b}"
+  then obtain B0:"is_filter R X a" and B1:"is_filter R X b" and B2:"a \<inter> b = F"
+    by (simp add: filters_onD1 lat lattice_filters_isl7 por) 
+  then obtain B3:"F \<subseteq> a" and B4:"F \<subseteq> b" and B5:"a \<inter> b \<subseteq> F"
+    by blast
+  then obtain B6:"a \<subseteq> F \<or> b \<subseteq> F"
+    using B0 B1 lat pfl por spr sup_prime_pfilterD4[of R X F a b] by fastforce 
+  then show "F = a \<or> F = b"
+    using B3 B4 by blast
+qed
 
-lemma prime_filter_fin_irr2:
-  "\<lbrakk>is_lattice R X; sup_prime R X F; pord R X; is_pfilter R X F; G \<in> filters_on R X; H \<in> filters_on R X; Inf (pwr X) (filters_on R X) {G, H} = F\<rbrakk> \<Longrightarrow> G=F \<or> H=F"
-  by (simp add: lattice_filters_isl7 prime_filter_fin_irr1)
-
-lemma prime_filter_irr3:
-  "\<lbrakk>is_lattice R X; sup_prime R X F;pord R X; is_pfilter R X F\<rbrakk> \<Longrightarrow> fin_inf_irr (pwr X) (filters_on R X) F"
-  by (metis fin_sup_irr_def prime_filter_fin_irr2)
 
 lemma proper_principal_prime:
   "\<lbrakk>is_pfilter R X (lcro R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X a)"
@@ -5221,7 +5228,7 @@ lemma proper_principal_prime2:
 
 lemma proper_principal_fin_irr:
   "\<lbrakk>is_lattice R X; pord R X;is_pfilter R X (lcro R X a); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (a, Sup R X {x, y})\<in>R\<rbrakk> \<Longrightarrow> (a, x) \<in> R \<or> (a,y)\<in>R)\<rbrakk> \<Longrightarrow>fin_inf_irr (pwr X) (filters_on R X) (lcro R X a)"
-  by (simp add: prime_filter_irr3 proper_principal_prime)
+  by (simp add: prime_filter_fin_irr proper_principal_prime)
 
 lemma fin_irr_filter_prime:
   assumes dis:"distributive_lattice R X" and por:"pord R X" and pfil:"is_pfilter R X F" and
@@ -6176,8 +6183,10 @@ proof-
         show "\<And>a. a \<in> {x \<in> X. (m, x) \<in> R \<and> m \<noteq> x} \<Longrightarrow> (a, k) \<in> dual R"
           using B0 by blast
       qed
-      obtain B3:"m \<in> X" and B4:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"
-        using clt is_supD4 meet_reducible_def meet_reduction3 mrd por by fastforce
+      obtain B3:"m \<in> X"
+        using m0 by fastforce
+      obtain B4:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"
+        using clt por B3 mrd meet_reduction3[of R X m]  by blast 
       then obtain B5:"(k,m)\<in>R"
         using B1 B2 ex_inf3 por by fastforce
       then show False
@@ -6481,7 +6490,7 @@ proof-
   proof-
     assume B32:"is_compact (pwr X) (filters_on R X) F"  
     obtain A0 where B33:"A0 \<in> Fpow_ne ?A " and B34:"(F, Sup (pwr X)(filters_on R X) A0)\<in>pwr X"
-      using B17 B18 B32 B9 compactD by fastforce
+      using B17 B18 B32 B9 compactD[of "pwr X" "(filters_on R X)" F] by fastforce
     obtain B35:"A0 \<subseteq> ?A" and B36:"finite A0" and B37:"A0 \<noteq> {}"
       using B33 Fpow_neD by blast
     obtain B38:"A0 \<subseteq> Pow X"
