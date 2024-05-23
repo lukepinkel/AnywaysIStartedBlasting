@@ -2075,7 +2075,7 @@ proof(rule is_supI3)
   proof-
     fix b assume A4:"b \<in> X" and A5:"(\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R)"
     then obtain "\<And>a. a \<in> {s1,x} \<Longrightarrow> (a,b)\<in>R" 
-      using A0 is_supD1 by force
+      using A0 is_supD1[of R X A s1] by force
     then show "(s2,b)\<in>R"
     by (meson A1 A4 is_supD1)
   qed
