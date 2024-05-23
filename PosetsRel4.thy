@@ -3497,6 +3497,21 @@ proof-
 qed
 
 
+lemma filter_cobounded:
+  "\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, b) \<in> dual (pwr X)) \<Longrightarrow> (F1 \<inter> F2, b) \<in> dual (pwr X)"
+proof-
+  fix b assume A0:"b \<in> filters_on R X" and A1:" \<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, b) \<in> dual (pwr X)"
+  then obtain B0:"\<And>a. a \<in> {F1,F2} \<Longrightarrow> (b, a)\<in> pwr X"
+    by (simp add: filters_onD1) 
+  then obtain B1:"b \<subseteq> F1" and B2:"b \<subseteq> F2" and B3:"F1 \<subseteq> X" and B4:"F2 \<subseteq> X"
+    by (simp add: pwr_mem_iff)
+  then obtain B5:"b \<subseteq> F1 \<inter> F2" and B6:"F1 \<inter> F2 \<subseteq> X"
+    by auto
+  then obtain B7:"(b, F1 \<inter> F2) \<in> pwr X"
+    by (simp add: pwr_mem_iff)
+  then show "(F1 \<inter> F2, b) \<in> dual (pwr X)"
+    by fastforce
+qed
 
 lemma filter_cl_eq_cl:
   assumes por:"pord R X" and 
@@ -3504,6 +3519,7 @@ lemma filter_cl_eq_cl:
 				asb:"A \<subseteq> X"
 	shows "filter_closure R X A = (cl_from_clr (pwr X) (filters_on R X)) A"
 	by (metis asb clr_equality filter_cl3 filter_cl_lub filters_clr por pwr_antisym sem)
+
 
 lemma filters_on_lattice_inf_semilattice1:
   assumes por:"pord R X" and lat:"is_lattice R X"
@@ -3567,7 +3583,7 @@ proof-
       show "\<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, F1 \<inter> F2) \<in> dual (pwr X)"
         by (metis Int_lower1 converseI fil1 fil2 inf.cobounded2 insertE is_filterD1 le_infI1 pwr_memI singleton_iff)
       show "\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> {F1, F2} \<Longrightarrow> (a, b) \<in> dual (pwr X)) \<Longrightarrow> (F1 \<inter> F2, b) \<in> dual (pwr X)"
-        by (metis converse_iff dual_order.trans insert_subset le_inf_iff pwr_memD pwr_memI subsetI)
+        using filter_cobounded[of _ R X F1 F2] by presburger
     qed
    qed
    show P2:"is_inf_semilattice (pwr X) (filters_on R X)"
@@ -3583,7 +3599,23 @@ proof-
     show "is_filter R X ?FC"
     proof(rule is_filterI1)
       show fcne:"?FC \<noteq> {}"
-        by (metis A0 A1 Sup_le_iff bot.extremum_uniqueI filter_cl0 filters_on_iff is_filterD1 por subset_eq)
+      proof-
+        obtain a where a0:"a \<in> (\<Union> A)"
+          using B1 by blast
+        have "a \<in> ?FC"
+        proof(rule filter_closure_singleton)
+          show "refl R X"
+            using por by blast
+          show "antisym R X"
+            by (simp add: por)
+          show "\<Union> A \<subseteq> X"
+            using B2 by blast
+          show "a \<in> \<Union> A"
+            using a0 by auto
+        qed
+        then show ?thesis
+          by blast
+      qed
       show fcsub:"?FC \<subseteq> X"
         by (metis (no_types, lifting) B1 CollectD filter_closure_def subsetI)
       show "is_dir ?FC (dual R)"
@@ -5214,6 +5246,8 @@ proof(rule sup_primeI2)
     by (meson dis distr_latticeD5 filters_on_iff is_supD1 lattD32 lcro_filter maximalD1 por ult)
   then obtain A7:"is_filter R X F" and A8:"is_filter R X(lcro R X a)"
     by (simp add: filters_on_iff is_pfilterD1 pfilters_on_iff)
+  obtain fup:"is_ord_cl X F R"
+    by (simp add: A7 is_filterD1)
   obtain A9:"is_lattice R X"
     by (simp add: dis distr_latticeD5)
   obtain isl:"is_inf_semilattice R X" and ssl:"is_sup_semilattice R X"
@@ -5247,7 +5281,7 @@ proof(rule sup_primeI2)
   obtain A22:"?i_sbf_sbc \<in> X"
     using A1 B8 B9 by presburger 
   obtain B10a:"?sbf \<in>F"
-    using A1 A13 A16 A19 A7 A9 is_filterD1 is_ord_clE1 lattD42 por ssl_ex_sup0b by fastforce
+    using A1 A16 por ssl ssl_ex_sup0b[of X R b f] fup A13 A19 is_ord_clE1[of X F R f "Sup R X {b,f}"] by blast
   obtain B10b:"?sbc \<in>?upa"
     using A0 A1 A14 A20 A9 lcroD1 lcroI1 lattD42 por  bsup_le2 by metis
   obtain B10c:"b=?i_sbf_sbc"
@@ -6350,8 +6384,10 @@ lemma principal_filters_compact:
   shows "is_compact (pwr X) (filters_on R X) F \<longleftrightarrow> (\<exists>x \<in> X. F = (lcro R X x))" (is "?L \<longleftrightarrow> ?R")
 proof-                             
   let ?A="{lcro R X x|x. x \<in>F}" let ?U="\<Union>?A"
-  obtain B0:"?A \<in> Pow(Pow X)" and B1:"?U \<in> Pow X"
-    using lcroD1 by fastforce
+  obtain B0:"?A \<in> Pow(Pow X)"
+    using lcroD1 by fastforce 
+  obtain B1:"?U \<in> Pow X"
+    using B0 by blast
   obtain B2:"pord (pwr X) (Pow X)" and B3:"pord (pwr X) (filters_on R X)"
     by (meson PowI filters_on_iff is_filterD1 powrel3 powrel6 powrel7 refl_def refl_onD subsetI)
   have B4:"\<And>f. f \<in> ?A \<Longrightarrow> is_filter R X f"
