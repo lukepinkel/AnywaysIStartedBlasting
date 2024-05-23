@@ -1086,6 +1086,7 @@ qed
   but that seems a bit gross}
   (2). using the non indexed version that uses the Sup operator turned out to work lmfao 
 *)
+
 lemma assoc_sup:
   assumes por:"pord R X" and ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X" and
           sab:"is_sup R X {a, b} s" and tcd:"is_sup R X {c, d} t"
@@ -6435,8 +6436,13 @@ proof-
        by (metis B49 B50 B8 is_leastI3 lcroD1)
      obtain B54:"pord (dual R) Ai"
        by (simp add: B52 refl_dualI)
-     obtain B55:"S Ai = x" 
-       unfolding S_def using B49 B54 B53 greatest_equalityI2[of Ai "dual R"] theI' by blast
+     have B55:"S Ai = x"
+     proof(unfold S_def, rule the_equality)
+      show "x \<in> F \<and> is_least R Ai x"
+        by (simp add: B49 B53)
+      show "\<And>xa. xa \<in> F \<and> is_least R Ai xa \<Longrightarrow> xa = x"
+        by (meson B53 B54 greatest_unique)
+     qed
      then obtain B56: "(S Ai) \<in>F" and B343:"is_least R Ai (S Ai)"
        by (simp add: B49 B53)
      obtain B57:"lcro R X (S Ai) = Ai"
@@ -8742,5 +8748,5 @@ qed
 (*
 so 2\<longrightarrow>3\<longrightarrow>4\<longrightarrow>5\<longrightarrow>2 and 1\<longrightarrow>2\<longrightarrow>1 which is 1\<longleftrightarrow>2\<longleftrightarrow>3\<longleftrightarrow>4\<longleftrightarrow>5 
 *)
-
+print_options
 end
