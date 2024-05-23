@@ -492,7 +492,7 @@ lemma powrel9:
 
 lemma powrel4b:
   "A \<subseteq> Pow X \<Longrightarrow> A \<noteq> {} \<Longrightarrow> is_inf (pwr X) (Pow X) A (\<Inter>A)"
-  unfolding is_sup_def is_greatest_def ubd_def pwr_def by(auto,blast)
+  by (simp add: pwr_ne_inf)
 
 lemma pord_sub:
   assumes sub:"A \<subseteq> X" and por:"pord R X"
@@ -2633,42 +2633,68 @@ proof
 qed
 
 lemma cl_is_closure:
-   assumes A0:"refl R C" and A1:"antisym R X" and A2:"trans R X" and A3:"clr R X C"
+  assumes ref:"refl R C" and
+          ant:"antisym R X" and
+          trn:"trans R X" and
+          isc:"clr R X C"
   shows "closure R X (cl_from_clr R C)"
 proof(rule closureI1)
-  obtain B0:"C \<subseteq> X" and B1:"refl R C"  and B2:"trans R C" 
-    using A0 A2 A3 clrD1[of R X C] trans_on_subset by auto
+  obtain B0:"C \<subseteq> X"
+    using clrD1 isc by auto
+  then obtain B1:"refl R C" and B2:"trans R C"
+    using ref trans_on_subset trn by auto
   then show B3:"cl_from_clr R C ` X \<subseteq> X" 
-    by (simp add: A1 A3 clr_induced_closure_id)
+    by (simp add: B0 ant isc clr_induced_closure_id)
   show B4:"isotone R X R (cl_from_clr R C)"
   proof(rule isotoneI1)
     fix x1 x2 assume A4:"x1 \<in> X" and A5:"x2 \<in> X" and A6:"(x1,x2)\<in>R"
     then obtain B30:"ubd R C {x2} \<subseteq> ubd R C {x1}" 
-       using ubd_iso3[of x1 X x2 R C] A2 B0 by fastforce
-    obtain c1 c2 where B31:"is_least R (ubd R C {x1}) c1" and B32:"is_least R (ubd R C {x2}) c2" 
-      using A3 A4 A5 clrD1[of R X C] by blast
+      using ubd_iso3[of x1 X x2 R C] trn B0 by fastforce
+    obtain c1 where B31:"is_least R (ubd R C {x1}) c1"
+      using A4 clrD1[of R X C] isc by blast
+    obtain c2 where B32:"is_least R (ubd R C {x2}) c2"
+      using A5 clrD1[of R X C] isc by blast
     obtain B33:"(c1,c2)\<in>R"  
       using B30 B31 B32 is_greatest_iso2[of "ubd R C {x2}" "ubd R C {x1}"] converse.simps by blast
     then show "(cl_from_clr R C x1, cl_from_clr R C x2) \<in> R" 
-      using A1 A3 B31 B32 clr_equality by fastforce
+      using ant isc B31 B32 clr_equality by fastforce
   qed
   show B5:"extensive R X (cl_from_clr R C)"
   proof(rule extensiveI1)
     fix x assume A7:"x \<in> X"
     show "(x, cl_from_clr R C x)\<in>R"
-      using A1 A3 A7 clrD1[of R X C] clr_equality[of X R C] 
+      using ant isc A7 clrD1[of R X C] clr_equality[of X R C] 
             is_leastD1[of R "ubd R C {x}"] ubdD2 by fastforce 
   qed
   show "idempotent X (cl_from_clr R C)"
   proof(rule idempotentI1)
     fix x assume A8:"x \<in> X"
     then obtain xc where B0:"xc \<in> X" and B1:"is_least R (ubd R C {x}) xc"
-      by (metis A1 A3 B3 clrD1 clr_equality image_subset_iff) 
-    then obtain B2:"is_least R (ubd R C {xc}) xc"
-      by (metis A0 converseI is_greatestD1 is_greatestI3 reflD2 ubd_singleton_mem)  
-    then show "cl_from_clr R C (cl_from_clr R C x) = cl_from_clr R C x" 
-      using A1 A3 B1 clr_equality by fastforce
+      by (metis ant isc B3 clrD1 clr_equality image_subset_iff) 
+    have B2:"is_least R (ubd R C {xc}) xc"
+    proof(rule is_leastI3)
+      show "xc \<in> ubd R C {xc}"
+        by (meson B1 is_greatestD1 is_leastD2 ubd_singleton_mem)
+      show "\<And>a. a \<in> ubd R C {xc} \<Longrightarrow> (xc, a) \<in> R"
+        by (simp add: ubd_singleton_mem)
+    qed
+    then show "cl_from_clr R C (cl_from_clr R C x) = cl_from_clr R C x"
+      using B1 ant clr_equality isc by fastforce 
   qed
+qed
+
+
+lemma cl_is_closure2:
+  assumes por:"pord R X" and
+          isc:"clr R X C"
+  shows "closure R X (cl_from_clr R C)"
+proof-
+  obtain B0:"C \<subseteq> X"
+    using clrD1 isc by auto
+  then obtain ref:"refl R C" and ant:"antisym R X" and trn:"trans R X"
+    by (simp add: por pord_sub1)
+  then show ?thesis
+    using ref ant trn isc cl_is_closure[of R C X]  by simp
 qed
 
 lemma closure_is_clr:
@@ -4081,7 +4107,11 @@ proof-
       unfolding fne_sup_cl_def using A0 Fpow_mono by force
   qed
   show P4:"isotone (pwr X) (Pow X) (pwr X) (\<lambda>A. fne_sup_cl R X A)"
-    by (metis P0 P3 isotone_def pwr_memD pwr_memI)
+  proof(rule isotoneI1)
+    fix x1 x2 assume x1m:"x1 \<in> Pow X" and x2m:"x2 \<in> Pow X" and x1l2:"(x1,x2)\<in>pwr X"
+    then show "(fne_sup_cl R X x1, fne_sup_cl R X x2) \<in> pwr X"
+      by (simp add: P0 P3 pwr_mem_iff)
+  qed
   show P5:"\<And>A. A \<subseteq> X \<Longrightarrow> fne_sup_cl R X (fne_sup_cl R X A) = fne_sup_cl R X A"
   proof-
     fix A assume sub:"A \<subseteq> X" let ?L1="fne_sup_cl R X A" let ?L2="fne_sup_cl R X ?L1"
@@ -7935,14 +7965,43 @@ lemma adh_nh_mono2:
           ntr:"\<And>x. x \<in> X \<Longrightarrow> N``{x} \<noteq> {}"
   shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N"
 proof-
+  let ?PF="pfilters_on (pwr X) (Pow X)"
   fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
-  have "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
+  have "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
     unfolding NAdh_def using amem xmem by blast
-  also have "... \<longleftrightarrow>  (\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
+  also have "... \<longleftrightarrow>  (\<forall>\<F> \<in>?PF. (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
     unfolding AdhN_def using amem xmem by auto
-  also have "... \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"
-    by (metis Image_singleton_iff is_nh mesh_def singletonD singletonI)
-  finally have P0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"  by blast
+  also have "... \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)" (is "?L \<longleftrightarrow> ?R")
+  proof
+    assume L0:?L
+    have L1:"\<And>\<F>. \<lbrakk>\<F> \<in> ?PF;(N``{x})#\<F>\<rbrakk> \<Longrightarrow> {A}#\<F>"
+    proof-
+      fix \<F> assume L2:"\<F> \<in> ?PF" and L3:"(N``{x})#\<F>"
+      then obtain L4:"x \<in> (AdhN N X)``{\<F>}"
+        using is_nh xmem Nhoods_to_Adh0[of \<F> X x] by presburger
+      then show "{A}#\<F>"
+        using L0 AdhN_Im_memD[of x N X \<F>] by fastforce
+    qed
+    then show ?R
+      by blast
+    next
+    assume R0:?R
+    have R1:"\<And>\<F>.  \<lbrakk>\<F> \<in> ?PF;  (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)\<rbrakk> \<Longrightarrow> {A}#\<F>"
+    proof-
+      fix \<F> assume R2:"\<F> \<in> ?PF" and R3:"(\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)"
+      then obtain R4:"\<And>V. \<lbrakk>V \<in> Pow X; V \<in> N``{x}\<rbrakk> \<Longrightarrow> {V}#\<F>"
+        by auto
+      then obtain R5:"\<And>V F. \<lbrakk>V \<in> N``{x}; F \<in> \<F>\<rbrakk> \<Longrightarrow> V \<inter> F \<noteq> {}"
+        by (meson Image_singleton_iff is_nh mesh_singleE)
+      then obtain R6:"(N``{x})#\<F>"
+        using meshI by blast
+      then show "{A}#\<F>"
+        by (simp add: R0 R2)
+    qed
+    then show ?L
+      by auto
+  qed
+  finally have P0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"  by blast
   show "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
   proof
     assume R:?R 
