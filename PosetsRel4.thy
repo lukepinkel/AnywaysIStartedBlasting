@@ -3901,12 +3901,17 @@ lemma lcro_inter2:
   shows "Sup (pwr X )(filters_on R X) {lcro R X f|f. f \<in> F} =lcro R X (Inf R X F)"
 proof-
   let ?A="{lcro R X f|f. f \<in> F}"
+  let ?\<FF>="filters_on R X"
+  obtain iss:"is_sup_semilattice R X" and iis:"is_inf_semilattice R X"
+    by (simp add: A0 lattD4)
   from A1 obtain A1a:"F \<subseteq> X" and A1b:"finite F" and A1c:"F \<noteq> {}"
     by (simp add: Fpow_neD)
-  then obtain B0a:"?A \<subseteq> (filters_on R X)"
+  then obtain B0a:"?A \<subseteq> ?\<FF>"
     using filters_on_iff lcro_filter por by fastforce 
   obtain B0b:"finite ?A" and B0c:"?A \<noteq> {}"
     using A1b A1c by force
+  obtain D0:"?A \<in> Pow_ne (?\<FF>)"
+    using B0a B0c Pow_neI1 by fastforce
   obtain B0d:"Inf R X F \<in> X"
     by (simp add: A0 A1 lattD4 por ssl_fin_sup6)
   have B0e:"pord (dual R) X"
@@ -3917,25 +3922,35 @@ proof-
     show "(lcro R X f) \<subseteq> (lcro R X (Inf R X F))"
       by (meson A0 A1 A1a B0e fmem in_mono is_infD1 lattD4 lcro_dual_iso2 por ssl_fin_sup7)
   qed
-  have B1:" (lcro R X (Inf R X F)) \<in> ubd (pwr X) (filters_on R X) ?A"
-    proof(rule ubdI1)
-      show "lcro R X (Inf R X F) \<in> filters_on R X"
-        by (simp add: B0d filters_on_iff lcro_filter por)
-      show "\<And>a. a \<in> {lcro R X f |f. f \<in> F} \<Longrightarrow> (a, lcro R X (Inf R X F)) \<in> pwr X"
-      proof-
-        fix a assume amem:"a \<in> {lcro R X f |f. f \<in> F}"
-        then obtain f where fmem:"f \<in> F" and aeq:"a = lcro R X f"
-          by blast
-        then show "(a, lcro R X (Inf R X F)) \<in> pwr X"
-          using B0[of f] converse_converse lcro_subset1[of "dual R" X "Inf R X F"] 
-                pwr_mem_iff[of a "lcro R X (Inf R X F)" X] by simp
-      qed
+  have B1:" (lcro R X (Inf R X F)) \<in> ubd (pwr X) (?\<FF>) ?A"
+  proof(rule ubdI1)
+    show "lcro R X (Inf R X F) \<in> ?\<FF>"
+      by (simp add: B0d filters_on_iff lcro_filter por)
+    show "\<And>a. a \<in> {lcro R X f |f. f \<in> F} \<Longrightarrow> (a, lcro R X (Inf R X F)) \<in> pwr X"
+    proof-
+      fix a assume amem:"a \<in> {lcro R X f |f. f \<in> F}"
+      then obtain f where fmem:"f \<in> F" and aeq:"a = lcro R X f"
+        by blast
+      then show "(a, lcro R X (Inf R X F)) \<in> pwr X"
+        using B0[of f] converse_converse lcro_subset1[of "dual R" X "Inf R X F"] 
+              pwr_mem_iff[of a "lcro R X (Inf R X F)" X] by simp
     qed
-  then have B2:"(Sup (pwr X) (filters_on R X) ?A, lcro R X (Inf R X F))\<in>pwr X"
-    using A0 B0a B0c Pow_neI1 is_supD2 lattD4 por semilat_filters_isl0 semilat_filters_isl2 by fastforce
-  have B3:"\<And>G. G \<in> ubd (pwr X) (filters_on R X) ?A \<Longrightarrow>  lcro R X (Inf R X F) \<subseteq> G"
+  qed
+  have B2:"(Sup (pwr X) (?\<FF>) ?A, lcro R X (Inf R X F))\<in>pwr X"
   proof-
-    fix G assume B30:"G \<in> ubd (pwr X) (filters_on R X) ?A" 
+    let ?\<AA>="filter_closure R X (\<Union> ?A)" let ?\<BB>="lcro R X (Inf R X F)"
+    obtain B20:" is_sup (pwr X) (?\<FF>) ?A ?\<AA>"
+      using D0 iis por semilat_filters_isl0 by blast
+    obtain B21:"Sup (pwr X) (?\<FF>) ?A = ?\<AA>"
+      by (simp add: D0 iis por semilat_filters_isl2)
+    obtain B22:"?\<BB> \<in> ubd (pwr X) (?\<FF>) ?A "
+      using B1 by blast
+    then show ?thesis
+      using B20 B21 is_supD2[of "pwr X" ?\<FF> ?A ?\<AA> ?\<BB>]  by presburger
+  qed
+  have B3:"\<And>G. G \<in> ubd (pwr X) (?\<FF>) ?A \<Longrightarrow>  lcro R X (Inf R X F) \<subseteq> G"
+  proof-
+    fix G assume B30:"G \<in> ubd (pwr X) ?\<FF> ?A" 
     have  B31:"\<And>f. f \<in> F \<Longrightarrow> f \<in> G"
     proof-
       fix f assume f1:"f \<in> F" then obtain "f \<in> X" and "f \<in> lcro R X f"
@@ -3954,7 +3969,7 @@ proof-
     then show "lcro R X (Inf R X F) \<subseteq> G"
       by (meson B34 is_ord_clE1 lcroD1 subsetI)
   qed
-  then have "(lcro R X (Inf R X F), Sup (pwr X) (filters_on R X) ?A)\<in>pwr X"
+  then have "(lcro R X (Inf R X F), Sup (pwr X) ?\<FF> ?A)\<in>pwr X"
     by (metis (no_types, lifting) A0 B0a B0c B2 Pow_neI1 is_supD6 lattD4 por pwr_memD pwr_memI semilat_filters_isl0 semilat_filters_isl2)
   then show ?thesis
     using B2 pwr_memD by blast
@@ -4053,8 +4068,10 @@ proof-
     using Fpow_neD by blast
   have B7:"pord R A" 
     by (meson B2 antisym_on_subset por refl_subset trans_on_subset)
-  then obtain a where B8:"a \<in> A" and B9:"(\<forall>x. x \<in> F \<longrightarrow> (x,a)\<in>R)"
-    by (metis B3 B5 B6 dir dir_finite1 is_dir_def)
+  obtain B8:"(\<And>a b. \<lbrakk>a\<in>A;b\<in>A\<rbrakk>\<Longrightarrow>(\<exists>c\<in>A.(a,c)\<in>R\<and>(b,c)\<in>R))"
+    using dir is_dirD1[of A R] by blast
+  then obtain a where B9:"a \<in> A" and B10:"(\<forall>x. x \<in> F \<longrightarrow> (x,a)\<in>R)"
+    using B3 B5 B6 B7 dir dir_finite1[of A R F] by blast
   then show ?thesis 
     using B0 B1 by blast
 qed
@@ -4843,7 +4860,7 @@ proof-
         have B37:"z \<in> binary_filter_sup R X f ?igh"
           by (meson B32 B34 B35 B36 filter_bsup_memI1)
         have B38:" binary_filter_sup R X f ?igh = Sup ?R ?F {f, ?igh}"
-          by (metis A1 A2 A3 A4 A5 A6 B01 filter_on_lattice_bsup11 filters_on_iff is_supD1 lattice_filters_isl1 lattice_filters_isl7)
+          by (simp add: A1 A2 A3 A40 A41 A42 A5 A6 B01 filter_on_lattice_bsup11 lattice_filters_isl0 lattice_filters_isl7)
         then show "z \<in> Sup ?R ?F {f, ?igh}"
           using B37 by presburger 
        qed
@@ -5415,8 +5432,10 @@ proof-
         using fil is_filterD1 prd by fastforce
       have B2:"is_sup R X ?F ?s"
         by (simp add: B0 B1 Fpow_neI1 ind2 lat lattD4 por ssl_fin_sup7)
+      have B3:"\<And>i. i \<in> I \<Longrightarrow> ?s \<in> f i"
+        using B2 P3 prd by blast
       then show ?thesis
-        using fil is_filterD1 is_ord_clE1 is_supD1 prd by fastforce
+        by blast
     qed
   qed
   show P6:"\<And>s. \<lbrakk>s \<in> (\<Inter>(f` I))\<rbrakk> \<Longrightarrow>  s \<in> {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
@@ -5852,10 +5871,20 @@ proof-
   qed
 qed
 
-
 lemma mredD3:
-  "\<lbrakk>m \<in> X; antisym R X; refl R X; trans R X; is_clattice R X;  \<not>(is_greatest R X m)\<rbrakk> \<Longrightarrow> {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} \<noteq> {}"
-  using clatD41 is_supD1 sup_maxI1 by fastforce
+  assumes por:"pord R X" and 
+          clt:"is_clattice R X" and
+          ntp:"\<not>(is_greatest R X m)" and
+          mix:"m\<in>X"
+  shows "{x \<in> X. (m, x)\<in>R \<and> m \<noteq> x} \<noteq> {}"
+proof-
+  from por clt obtain top where "is_greatest R X top"
+    using clatD1 csupD3 by blast
+  then obtain "top \<in> X" and "(m,top)\<in>R" and "m \<noteq> top"
+    using is_greatestD1 mix ntp by fastforce
+  then show ?thesis
+    by blast
+qed
 
 lemma mredD4:
   assumes A0:"is_clattice R X" and A1:"m \<in> X" and A2:"\<not>(is_greatest R X m)" and A3:"\<not>((m, Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}) \<in> R \<and> m \<noteq> Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x})" and
@@ -6294,7 +6323,16 @@ proof-
   have B2:"F \<in> ?FX"
     using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast
   have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
-    using mirr5[of ?RX ?FX F] B0 B1 B2  by (metis PowI filters_on_def is_filterD1 mem_Collect_eq powrel6 powrel7 pwr_memI refl_def subsetI)
+  proof(rule mirr5)
+    show "is_clattice (pwr X) (filters_on R X)"
+      by (simp add: B1)
+    show "compactly_generated (pwr X) (filters_on R X)"
+      using B0 by blast
+    show "pord (pwr X) (filters_on R X)"
+      by (meson equalityD2 pwr_antisym_sub pwr_refl_sub pwr_trans_sub sub_filters_onD1)
+    show "F \<in> filters_on R X"
+      by (simp add: B2)
+  qed
   have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  
     by fastforce
   then show ?thesis  
@@ -8264,7 +8302,7 @@ proof-
     using onpconv_def prtp by force
   obtain  is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (pwr X) (Pow X))"
     by (metis isconvs_def prtp) 
-  show Q0:"(ClLim Lim X) = {(A, x). A \<in> Pow X \<and> x \<in> X \<and> (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)}"
+  show Q0:"(ClLim Lim X) = {(A, x). A \<in> Pow X \<and> x \<in> X \<and> (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)}" (is "?L = ?R")
   proof-
      have P0:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim Lim X) \<longleftrightarrow>  (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). {A}#\<F> \<and> (\<F>, x) \<in> Lim)" 
         unfolding ClLim_def  by blast
@@ -8297,12 +8335,16 @@ proof-
           using A0 F3 P0 f1 x0 by auto
       qed
     qed
-    from P1 have  P2:"\<And>A x. (A, x) \<in> (ClLim Lim X) \<Longrightarrow>  (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)"
+    from P1 have P2:"\<And>A x. (A, x) \<in> (ClLim Lim X) \<Longrightarrow>  (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)"
       by (metis (no_types, lifting) ClLim_def CollectD case_prodD)
     from P1 have P3: "\<And>A x.   (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim) \<Longrightarrow> (A, x) \<in> (ClLim Lim X)"
-      by (meson PowI is_limit pfilters_on_iff setfilters0 setfilters3)  
-    from P2 P3 show ?thesis
-      unfolding ClLim_def by blast
+      by (meson PowI is_limit pfilters_on_iff setfilters0 setfilters3) 
+    from P2 have P4:"?L\<subseteq>?R"
+      by (simp add: ClLim_def Collect_mono_iff) 
+    also from P3 have P5:"?R \<subseteq> ?L"
+      by blast
+    then show ?thesis
+      using calculation by fastforce
   qed
   show Q1:"(ClLim Lim X)``{{}}={}"
   proof-
@@ -8889,4 +8931,5 @@ qed
 so 2\<longrightarrow>3\<longrightarrow>4\<longrightarrow>5\<longrightarrow>2 and 1\<longrightarrow>2\<longrightarrow>1 which is 1\<longleftrightarrow>2\<longleftrightarrow>3\<longleftrightarrow>4\<longleftrightarrow>5 
 *)
 print_options
+
 end
