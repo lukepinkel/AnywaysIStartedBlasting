@@ -4845,8 +4845,13 @@ lemma elem_inf_primeI1:
   by (simp add:elem_sup_prime_def Sup_def)
 
 lemma elem_sup_primeE1:
-  "\<lbrakk>x \<in> X; elem_sup_prime R X x\<rbrakk> \<Longrightarrow> sup_prime R X (lcro R X x)"
-  by (metis elem_sup_prime_def lcroD1 lcroI1 sup_prime_def)       
+  assumes xmem:"x \<in> X" and esp:"elem_sup_prime R X x"
+  shows "sup_prime R X (lcro R X x)"
+proof(rule sup_primeI1)
+  fix a b assume A0:"a \<in> X" and A1:"b \<in> X" and A2:"Sup R X {a, b} \<in> lcro R X x"
+  then show "a \<in> lcro R X x \<or> b \<in> lcro R X x"
+    by (metis elem_sup_primeD1 esp lcroD1 lcroI1)
+qed
 
 lemma elem_inf_primeE1:
   "\<lbrakk>x \<in> X; elem_inf_prime R X x\<rbrakk> \<Longrightarrow> inf_prime R X (lorc R X x)"
