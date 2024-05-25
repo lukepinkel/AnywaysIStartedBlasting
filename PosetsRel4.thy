@@ -1742,7 +1742,7 @@ lemma lattD42:
 
 lemma dual_lattice:
   "is_lattice R X \<longleftrightarrow> is_lattice (dual R) X"
-  by (metis converse_converse is_lattice_def)
+  unfolding is_lattice_def by auto
 
 lemma latt_eqs1:
   assumes por:"pord R X" and 
@@ -1834,79 +1834,144 @@ qed
 
 section DistributiveLattices
 
-lemma distribD1:
-  assumes A0:"is_lattice R X" and
-          A1:"ord R X" and 
-          A2:"refl R X" and
-          A3:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}" and
-          A4:" x \<in> X \<and> y \<in> X \<and> z \<in> X"
-  shows "Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+lemma distr_latticeI0:
+  assumes lat:"is_lattice R X" and
+          dst:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+  shows "distributive_lattice R X"
+  by (simp add: distributive_lattice_def dst lat)
+
+lemma distrI0:
+  assumes lat:"is_lattice R X" and
+          por:"pord R X" and
+          dst:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}" 
+  shows "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
 proof-
-  obtain A5:"is_sup_semilattice R X" and A6:"is_inf_semilattice R X" 
-    using A0 lattD4 by blast
-  obtain A7:"Inf R X {y, z} \<in> X" and A8:"Inf R X {x, z} \<in> X" and A9:"Sup R X {x, y} \<in> X"
-    by (simp add: A1 A4 A5 A6 ssl_ex_sup5)  
-  have B0:"Sup R X {x, Inf R X {y, z}} = Sup R X {Sup R X {x, Inf R X {x, z}}, Inf R X {y, z}}"
-    by (simp add: A0 A1 A2 A4 lat_absorb1)  (*x \<or> (x \<and> z) = ((x \<or> (x \<and> z) \<or> (z \<and> y)))*)
-  have B1:"... = Sup R X {x, Sup R X {Inf R X {z, x}, Inf R X {z, y}}}"
-    by (metis A1 A4 A5 A7 A8 bsup_assoc2 doubleton_eq_iff)  (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *) (*also clunky fixme*)
-  have B2:"... = Sup R X {x, Inf R X {z, Sup R X {x, y}}}" (*x \<or> (z \<and> (x \<or> y))*)
-    by (simp add: A3 A4) 
-  have B3:"... = Sup R X {Inf R X {Sup R X {x, y}, x}, Inf R X {Sup R X {x, y}, z}}"
-    by (simp add: A0 A1 A2 A4 insert_commute lat_absorb2) 
-  have B4:"... = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
-    by (simp add: A3 A4 A9)
-  show ?thesis
-    by (simp add: B0 B1 B2 B3 B4)
+  fix x y z assume x0:"x \<in> X" and y0:"y \<in> X" and z0:"z \<in> X"
+  obtain iss:"is_sup_semilattice R X" and iis:"is_inf_semilattice R X" 
+    using lat lattD4 by blast
+  let ?yz="Inf R X {y, z}" let ?xz="Inf R X {x, z}"
+  obtain yz0:"?yz \<in> X" and xz0:"?xz\<in> X" and xy0:"Sup R X {x, y} \<in> X"
+    by (simp add: por x0 y0 z0 iss iis ssl_ex_sup5)  
+  have B0:"Sup R X {x, ?yz} = Sup R X {Sup R X {x,?xz}, ?yz}"
+    by (simp add: lat por x0 y0 z0 lat_absorb1)  (*x \<or> (x \<and> z) = ((x \<or> (x \<and> z) \<or> (z \<and> y)))*)
+  also have B1:"... = Sup R X {x, Sup R X {?xz, ?yz}}"
+    using por x0 y0 z0 iss yz0 xz0 bsup_assoc2[of X R x ?xz ?yz] by blast   (* x \<or> ((z \<and> x) \<or> (z \<and> y)) *)
+  also have B2:"... = Sup R X {x, Sup R X {Inf R X {z, x}, Inf R X {z, y}}}"
+    by (simp add: insert_commute)
+  also have B3:"... = Sup R X {x, Inf R X {z, Sup R X {x, y}}}" (*x \<or> (z \<and> (x \<or> y))*)
+    by (simp add: dst x0 y0 z0) 
+  also have B4:"... = Sup R X {Inf R X {Sup R X {x, y}, x}, Inf R X {Sup R X {x, y}, z}}"
+    by (simp add: lat por x0 y0 z0 insert_commute lat_absorb2) 
+  also have B5:"... = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+    by (simp add: dst x0 y0 z0 xy0)
+  finally show "Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+    by blast
+qed
+
+lemma distrI1:
+  assumes lat:"is_lattice R X" and
+          por:"pord R X" and
+          dst:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+  shows "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}" 
+proof-
+   fix x y z assume x0:"x \<in> X" and y0:"y \<in> X" and z0:"z \<in> X"
+   also obtain "is_lattice (dual R) X" and "pord (dual R) X"
+     using dual_lattice antisym_on_converse lat por refl_dualI trans_on_converse by blast
+   then show "Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+   using distrI0[of "dual R" X] by (simp add: dst x0 y0 z0)
 qed
 
 
-lemma distribD2:
-  assumes A0:"is_lattice R X" and
-          A1:"ord R X" and 
-          A2:"refl R X" and
-          A3: "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}" and
-          A4: "x \<in> X \<and> y \<in> X \<and> z \<in> X"
-  shows "Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
-  using distribD1[of "dual R" X x y z]
-  by (metis A0 A1 A2 A3 A4 dual_lattice antisym_on_converse converse_converse refl_iff trans_on_converse)
 
+lemma distr_latticeE1:
+  "distributive_lattice R X \<Longrightarrow> (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}})"
+  by (simp add: distributive_lattice_def)
 
-lemma distribD3:
-  assumes A0:"is_lattice R X" and
-          A1:"ord R X" and 
-          A2:"refl R X" and
-          A3:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R"
-  shows      "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
-proof-
-  fix x y z assume A4:"x\<in>X" and A5:"y\<in>X" and A6:"z\<in>X"
-  let ?a="Sup R X {x, Inf R X {y, z}}" let ?b="Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
-  obtain A7:"?a\<in>X" and A8:"?b\<in>X"
-    by (simp add: A0 A1 A4 A5 A6 lattD4 ssl_ex_sup5)
-  have B0:"(?a, ?b)\<in>R" 
-    by (simp add: A0 A1 A4 A5 A6 distrib_sup_le) 
-  also have B1:"(?b, ?a)\<in>R" 
-    by (simp add: A3 A4 A5 A6)
-  then show "?a=?b"  
-    by (meson A1 A7 A8 antisym_onD calculation) 
-qed
+lemma dist_latticeE2:
+  "\<lbrakk>distributive_lattice R X; pord R X\<rbrakk> \<Longrightarrow> (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}})" 
+  using distrI1[of R X] unfolding distributive_lattice_def by blast
+        
 
 lemma distr_latticeI1:
-  "\<lbrakk>pord R X; is_lattice R X; (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R)\<rbrakk> \<Longrightarrow> distributive_lattice R X"
-  by(simp add:distributive_lattice_def distribD3)
+  assumes lat:"is_lattice R X" and
+          por:"pord R X" and
+          dst:"\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+  shows "distributive_lattice R X"
+proof(rule distr_latticeI0)
+  show "is_lattice R X" 
+    using lat by simp
+  show "\<And>x y z. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+    using lat por dst distrI0[of R X] by blast
+qed
 
-lemma distr_latticeD1:
-  "\<lbrakk>distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}} "
-  by (simp add: distributive_lattice_def insert_commute)
+lemma distr_latticeI2:
+  assumes lat:"is_lattice R X" and
+          por:"pord R X" and
+          dle:"(\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {Sup R X {x, y}, Sup R X {x, z}}, Sup R X {x, Inf R X {y, z}})\<in>R)"
+  shows "distributive_lattice R X"
+proof(rule distr_latticeI0)
+  show "is_lattice R X" 
+    using lat by simp
+  show "\<And>x y z. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+  proof-
+    fix x y z assume x0:"x\<in>X" and y0:"y\<in>X" and z0:"z\<in>X"
+    let ?a="Sup R X {x, Inf R X {y, z}}" let ?b="Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+    obtain a0:"?a \<in> X" and b0:"?b \<in> X"
+      by (simp add: lat lattD4 por ssl_ex_sup5 x0 y0 z0) 
+    obtain ba:"(?b, ?a)\<in>R"
+      using x0 y0 z0 dle[of x y z]  by blast 
+    obtain ab:"(?a, ?b)\<in>R"
+      by (simp add: distrib_sup_le lat por x0 y0 z0)
+    then show "?a=?b"
+      using por a0 b0 ba ab antisym_onD[of X R ?a ?b] by blast
+  qed
+qed
 
-lemma distr_latticeD2:
-  "\<lbrakk>distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Sup R X {Inf R X {y, z}, x} = Inf R X {Sup R X {y, x}, Sup R X {z, x}}"
-  by (simp add: distributive_lattice_def insert_commute)
- 
-lemma distr_latticeD3:
-  "\<lbrakk>pord R X; distributive_lattice R X; x \<in> X; y \<in> X; z \<in> X \<rbrakk> \<Longrightarrow>  Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
-  using distribD2 distributive_lattice_def by fastforce
- 
+lemma distr_latticeI3:
+  assumes lat:"is_lattice R X" and
+          por:"pord R X" and
+          dle:"(\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>\<Longrightarrow> (Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R)"
+  shows "distributive_lattice R X"
+proof(rule distr_latticeI1)
+  show "is_lattice R X"
+    by(simp add:lat)
+  show "pord R X" 
+    by(simp add:por)
+  show "\<And>x y z. \<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+  proof-
+    fix x y z assume x0:"x\<in>X" and y0:"y\<in>X" and z0:"z\<in>X"
+    let ?a="Inf R X {x, Sup R X {y, z}}" let ?b="Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+    obtain a0:"?a \<in> X" and b0:"?b \<in> X"
+      by (simp add: lat lattD4 por ssl_ex_sup5 x0 y0 z0) 
+    obtain ba:"(?a, ?b)\<in>R"
+      using x0 y0 z0 dle[of x y z]  by blast 
+    obtain ab:"(?b, ?a)\<in>R"
+      by (simp add: distrib_inf_le lat por x0 y0 z0)
+    then show "?a=?b"
+      using por a0 b0 ba ab antisym_onD[of X R ?a ?b] by blast
+  qed
+qed
+
+lemma distr_latticeD:
+  assumes dlt:"distributive_lattice R X" and
+          x0:"x \<in> X" and y0:"y \<in> X" and z0:"z \<in> X"
+  shows distr_latticeD1:"Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}" and
+        distr_latticeD2:"Sup R X {Inf R X {y, z}, x} = Inf R X {Sup R X {y, x}, Sup R X {z, x}}" and
+        distr_latticeD3:"pord R X \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+proof-
+  show P0:"Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}}"
+    using dlt x0 y0 z0 insert_commute unfolding distributive_lattice_def by blast 
+  show P1:"Sup R X {Inf R X {y, z}, x} = Inf R X {Sup R X {y, x}, Sup R X {z, x}}"
+     by (simp add: P0 insert_commute)
+  show P2:"pord R X \<Longrightarrow> Inf R X {x, Sup R X {y, z}} = Sup R X {Inf R X {x, y}, Inf R X {x, z}}"
+  proof-
+    assume "pord R X"
+    then show ?thesis
+      by (simp add: dist_latticeE2 dlt x0 y0 z0)
+  qed
+qed
+
+
 lemma distr_latticeD5:
   "distributive_lattice R X \<Longrightarrow> is_lattice R X" 
   by (simp add: distributive_lattice_def)
@@ -1919,25 +1984,37 @@ lemma distributive_lattice_dual:
 proof-
   assume lhs:"distributive_lattice R X" 
   show "distributive_lattice (dual R) X"
-  proof(rule distr_latticeI1)
-    show "pord (dual R) X"
+  proof(rule distr_latticeI2)
+    show P0:"pord (dual R) X"
       by (simp add: por refl_iff)
-    show "is_lattice (dual R) X"
-      using dual_lattice distr_latticeD5 lhs by blast
+    have lat:"is_lattice R X"
+      by (simp add: distr_latticeD5 lhs)
+    show P1:"is_lattice (dual R) X"
+      using dual_lattice lat by blast
     show " \<And>x y z. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> (Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}}, Sup (dual R) X {x, Inf (dual R) X {y, z}}) \<in> dual R"
     proof-
       fix x y z assume x0:"x \<in> X" and y0:"y \<in> X" and z0:"z \<in> X"
-      have B0:"Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}} = Sup R X {Inf R X {x,y}, Inf R X {x,z}}"
+      let ?yz="Sup R X {y, z}" let ?xy="Inf R X {x, y}" let ?xz="Inf R X {x, z}"
+      obtain isl:"is_sup_semilattice R X" and iis:"is_inf_semilattice R X"
+        by (simp add: lat lattD4)
+      obtain yz0:"?yz \<in> X" and xy0:"?xy \<in> X" and xz0:"?xz \<in> X"
+        by (simp add: distr_latticeD5 lattD4 lhs por ssl_ex_sup5 x0 y0 z0)
+      have B0:"Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}} = Sup R X {?xy, ?xz}"
         by (simp add: Sup_def)
-      have B1:"Sup (dual R) X {x, Inf (dual R) X {y, z}} = Inf R X {x, Sup R X {y,z}}"
+      have B1:"Sup (dual R) X {x, Inf (dual R) X {y, z}} = Inf R X {x, ?yz}"
         by (simp add: Sup_def)
-      have B2:"(Inf R X {x, Sup R X {y, z}}, Sup R X {Inf R X {x, y}, Inf R X {x, z}})\<in>R"
-        using por x0 y0 z0 distrib_inf_le[of X R x y z] distr_latticeD3[of X R x y z] lhs distr_latticeD5[of R X] by fastforce 
+      have B2:"Inf R X {x, ?yz} = Sup R X {?xy, ?xz}"
+        by (simp add: dist_latticeE2 lhs por x0 y0 z0)
+      also obtain B3:"Inf R X {x, ?yz} \<in> X" and  B4:"Sup R X {?xy, ?xz} \<in> X"
+        by (simp add: B2 isl por ssl_ex_sup5 xy0 xz0)
+      then obtain B5:"(Inf R X {x, ?yz}, Sup R X {?xy, ?xz})\<in>R"
+        using calculation por reflE1 by auto
       then show "(Inf (dual R) X {Sup (dual R) X {x, y}, Sup (dual R) X {x, z}}, Sup (dual R) X {x, Inf (dual R) X {y, z}}) \<in> dual R"
         using B0 B1 by force
     qed
   qed
 qed
+
 lemma distributive_lattice_dualization:
   assumes lat:"distributive_lattice R X" and por:"pord R X" and
           lem:"(\<And>R X. \<lbrakk>distributive_lattice R X; pord R X\<rbrakk> \<Longrightarrow> P R X)"
@@ -2167,7 +2244,8 @@ next
     using A6 Fpow_neI1 P10 P4 P6 ssl ssl_fin_sup6 by fastforce
   have P13:"?sxba \<in> X"
     using A6 P11 P5 P7 ssl ssl_fin_sup6[of X R ?xba] Fpow_neI1[of ?xba X] by blast 
-  have P14:"(Sup R X {?sba, (Inf R X {b, x})}) \<in> X"
+  let ?s2=" (Sup R X {(?sba), (Inf R X {b, x})})"
+  have P14:"?s2 \<in> X"
     by (simp add: A6 P12 P9 ssl ssl_ex_sup5)
   have B0:"Inf R X {b, ?s} = ?sba"  
     using A0 A1 insert.hyps(4) insert.prems(1) by blast
@@ -2185,10 +2263,10 @@ next
       by (simp add: doubleton_eq_iff)
     have B6:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(Inf R X {b, x}), (?sba)})"
       by (simp add: A6 P12 P9 lat lattD32)
-    have B7:"is_sup R X {Inf R X {b, x},?sba} (Sup R X {(?sba), (Inf R X {b, x})})"
+    have B7:"is_sup R X {Inf R X {b, x},?sba} ?s2"
       using B6 B6s by auto 
-    have B8:"is_sup R X (insert (Inf R X {b, x}) ?ba) (Sup R X {(?sba), (Inf R X {b, x})})"
-      using A6 B5 B6 B6s P12 P14 P4 P9 sup_insert2 by fastforce
+    have B8:"is_sup R X (insert (Inf R X {b, x}) ?ba) ?s2"
+      using A6 B5 B6 B6s P12 P14 P4 P9 sup_insert2[of _ X R " {Inf R X {b, a} |a. a \<in> F}" ?s2 "Inf R X {b, x}"] by fastforce
     have B9:"insert (Inf R X {b, x}) ?ba =  {Inf R X {b, a}|a. a \<in> (insert x F)}"  
       using B5 B7 sup_ubd by blast
     show "(Sup R X {(?sba), (Inf R X {b, x})}) =  Sup R X {Inf R X {b, a}|a. a \<in> (insert x F)}"
@@ -4880,7 +4958,7 @@ proof-
     have P:" \<And>x y z. \<lbrakk>x \<in> ?F;  y \<in>?F; z \<in> ?F\<rbrakk> \<Longrightarrow> (Inf ?R ?F {Sup ?R ?F {x, y}, Sup ?R ?F {x, z}}, Sup ?R ?F {x, Inf ?R ?F {y, z}}) \<in> (pwr X)"
       using B1 by blast
     show "distributive_lattice ?R ?F"
-    proof(rule distr_latticeI1)
+    proof(rule distr_latticeI2)
       show "pord ?R ?F"
         by (meson PowI filters_on_iff is_filterD1 powrel6 powrel7 pwr_memI refl_def subsetI)
       show " is_lattice ?R ?F"
@@ -5450,7 +5528,7 @@ proof-
     then obtain x where "(\<And>i. i \<in> I \<longrightarrow> x i \<in> f i)" and "is_sup R X (x ` I) s"
       using P4[of s] by auto
     then show "s \<in> {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"
-      using por sup_equality by force
+      using por sup_equality[of R X "x`I" s] by force
   qed
   show P7:"\<Inter>(f`I) \<subseteq> {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}"  (is "?LHS \<subseteq>?RHS")
   proof
@@ -5458,7 +5536,7 @@ proof-
     then obtain x where "(\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))" and "is_sup R X (x` I) a"
       using P4[of a] by blast
     then show "a \<in> ?RHS"
-      using por sup_equality by force 
+      using por sup_equality[of R X "x`I" a] by force 
   qed
   show P8:"is_lattice R X \<Longrightarrow> \<Inter>(f`I) = {Sup R X (x` I)|x. (\<forall>i. i \<in> I \<longrightarrow> (x i) \<in> (f i))}" 
   proof-
@@ -6025,8 +6103,26 @@ proof-
   show P1:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X;\<not>((y, x)\<in>R)\<rbrakk>\<Longrightarrow>\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
   proof-
     fix x y assume xmem:"x \<in> X" and ymem:"y \<in> X" and nlq:"\<not>((y,x)\<in>R)"
+    let ?Kx="{k \<in> compact_elements R X. (k, x)\<in>R}" let ?Ky=" {k \<in> compact_elements R X. (k, y)\<in>R}"
+    obtain B0:"x = Sup R X ?Kx" and B1:"y = Sup R X ?Ky" 
+      using xmem P0[of x] ymem P0[of y] by blast
+    have "\<not> (?Ky \<subseteq> ?Kx)"
+    proof(rule ccontr)
+      assume c0:"\<not>(\<not>(?Ky \<subseteq> ?Kx))" then obtain "?Ky \<subseteq> ?Kx" 
+        by simp
+      also obtain "?Kx \<subseteq> X"
+        using compact_element_memD2 by fastforce
+      then obtain "(Sup R X ?Ky, Sup R X ?Kx)\<in>R"
+        using sup_iso1[of X R ?Ky  ?Kx] clt por calculation by fastforce
+      then show False
+        using B0 B1 nlq by auto
+    qed
+    then obtain B2:"?Ky - ?Kx \<noteq> {}"
+      by simp
+    then obtain k where "k \<in> ?Ky - ?Kx"
+      by blast
     then show "\<exists>k \<in> compact_elements R X. (k, y)\<in>R \<and> \<not>((k,x)\<in>R)"
-      using cgn PowD compactly_generatedD1[of R  X] is_supD1[of R X] subset_iff  by metis
+      by blast
   qed
 qed
       
@@ -6076,6 +6172,25 @@ proof-
   show P1:"is_inf R X ?A m"
     using P0 B8 B9 cis por cinfD4[of X R ?A] by presburger
 qed
+
+
+lemma lbd_lt_sup:
+  assumes ne:"A \<noteq> {}" and
+          lb:"l \<in> lbd R X A" and
+          sp:"is_sup R X A s" and
+          tr:"trans R X" and
+          sb:"A \<subseteq> X"
+  shows "(l,s)\<in>R"
+proof-
+  obtain a where A0:"a \<in> A"
+    using ne by blast
+  then obtain "l \<in> X" and "a \<in> X" and "s \<in> X"
+    using sp is_supD4[of R X A s] lb sb ubdD1[of l "dual R" X A] subsetD[of A X a] by blast 
+  also obtain "(l, a)\<in>R" and "(a,s)\<in>R"
+    using A0 converse.cases is_supD3[of R X A s a] lb sp ubdD2[of l "dual R" X A a] by blast
+  then show "(l,s)\<in>R"
+    using calculation tr trans_onD[of X R l a s] by blast
+qed
   
 lemma mirred_rep1:
   assumes clt:"is_clattice R X" and
@@ -6110,7 +6225,7 @@ proof-
       have B4:"a \<in> lbd R X D"
         by (simp add: B3 a0 ubdI1)  
       have B5:"(a, j)\<in>R"
-        by (meson Q0 B1 B3 D0 D2 a0 bot.extremum_uniqueI is_supD1 por subsetD subset_emptyI trans_onD)
+        using B1 B4 D0 D2 Q0 subset_trans[of D ?Q X] lbd_lt_sup[of D a R X j] por by fastforce
       have B6:"\<not> ((k,j)\<in>R)"
       proof(rule ccontr)
         assume P0:"\<not>(\<not> ((k,j)\<in>R))" 
@@ -6444,7 +6559,7 @@ proof-
   obtain B2:"pord (pwr X) (Pow X)" and B3:"pord (pwr X) (filters_on R X)"
     by (meson PowI filters_on_iff is_filterD1 powrel3 powrel6 powrel7 refl_def refl_onD subsetI)
   have B4:"\<And>f. f \<in> ?A \<Longrightarrow> is_filter R X f"
-    using A3 filters_on_iff is_filterD1 lcro_filter por by fastforce
+    using A3 filters_on_iff[of _ R X] is_filterD1[of R X] lcro_filter[of  X R] por by fastforce
   have B5:"\<And>f. f \<in> ?A \<Longrightarrow> f \<subseteq> X \<and> f \<noteq> {}"
     using B4 is_filterD1 by blast
   have B6:"\<And>f. f \<in> ?A \<Longrightarrow> f \<in> Pow_ne X"
@@ -6882,7 +6997,7 @@ proof-
     also have B9:"X \<inter> f \<subseteq> f" 
       by simp
     then show "f \<in> H"
-      using A0 A4 H_def is_pfilterD1 setfilters0 by fastforce 
+      using A0 A4 H_def is_pfilterD1[of "pwr X" "Pow X" F] setfilters0[of X F f] by fastforce 
   qed
 qed
 
@@ -7405,6 +7520,21 @@ next
   using B0 pfilters_on_iff by blast
 qed
 
+lemma lcro_subI1:
+  assumes fil:"is_filter R X F" and
+          zmem:"z \<in> F"
+  shows "(lcro R X z, F) \<in> pwr X"
+proof(rule pwr_memI)
+  obtain B0:"F \<subseteq> X" and B1:"is_ord_cl X F R"
+    using fil is_filterD1 by auto
+  show P0:"F \<subseteq> X"
+    using B0 by auto
+  show P1:"lcro R X z \<subseteq> F"
+    using B1 is_ord_clD1[of X F R z] lcroD1[of _ R X z] zmem by blast
+  show P2:"lcro R X z \<subseteq> X"
+    using P0 P1 by auto
+qed
+
 lemma filter_sup_principal_filters:
   assumes A0:"is_lattice R X" and
           A1:"is_greatest R X top" and
@@ -7437,7 +7567,7 @@ proof-
   have B7b:"\<And>z. \<lbrakk>z \<in> X; lcro R X z \<subseteq> F\<rbrakk> \<Longrightarrow> z \<in> F"
     by (simp add: A3 lcro_memI1 subsetD)
   have B8:"\<And>z. \<lbrakk>z \<in> X; z \<in> F\<rbrakk> \<Longrightarrow> (lcro R X z, F)\<in>pwr X "
-    by (meson A2 is_filterD1 is_ord_clE1 lcroD1 pwr_mem_iff subsetI)
+    by (simp add: A2 lcro_subI1)
   have B8b:"\<And>z. \<lbrakk>z \<in>X; z \<in> F\<rbrakk>\<Longrightarrow>lcro R X z \<subseteq> F"
     using B8 powrel8 by blast
   have B9:"{lcro R X x|x. x \<in> X}  \<subseteq> Pow X"
@@ -7989,8 +8119,8 @@ lemma cl_nh_mono2:
   shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl (ClN N X) X) \<longleftrightarrow> (x, A) \<in> N"
 proof-
   fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
-  have ordcl:"is_ord_cl (Pow X) (N``{x}) (pwr X)"
-    by (meson Image_singleton_iff is_ord_cl_def powrel8 upcl) 
+  have ordcl:"is_ord_cl (Pow X) (N``{x}) (pwr X)"        
+    using is_ord_cl_def[of "Pow X" "N``{x}" "pwr X"] powrel8[of _ _ X] Image_singleton_iff[of _ N x] upcl[of x] by meson
   have B0:"(converse (ClN N X))``{x} = grill (Pow X) (N``{x})"  
     by (simp add: Cl_to_Nhoods2 xmem)
   have B1:"(NCl (ClN N X) X)``{x} = grill (Pow X) ((converse (ClN N X))``{x})" 
@@ -8824,7 +8954,7 @@ proof
   then obtain x where B0:"x \<in> (ClLim q X)``{A}" and B1:"y = f x"
     by blast
   then obtain B2:"{A}#((NLim q X)``{x})"
-    by (meson ClLim_Im_memD NLim_Im_memD mesh_singleE mesh_singleI)
+    using ClLim_Im_memD[of x q X A] NLim_Im_memD[of _ q X x] mesh_singleE mesh_singleI[of "(NLim q X)``{x}" "A"] by metis
   have B3:"{f`A}#(Imfil f X Y ((NLim q X)``{x}))"
   proof(rule mesh_singleI)
     fix a assume B4:"a \<in> Imfil f X Y (NLim q X `` {x})"
