@@ -2070,7 +2070,13 @@ proof(rule is_supI3)
   show P0:"s2 \<in> X"
     using A1 is_supD1 by fastforce
   show Pq:"\<And>a. a \<in> insert x A \<Longrightarrow> (a, s2) \<in> R"
-    by (meson A0 A1 A2 A3 sup_insert5 ubdD2)
+  proof-
+    fix a assume Pq0:"a \<in> insert x A"
+    have " s2 \<in> ubd R X (insert x A)"
+      using A0 A1 A2 A3 sup_insert5[of R X A s1 x s2] by simp
+    then show "(a,s2)\<in>R"
+      using Pq0 ubdD2[of s2 R X "insert x A" a]  by auto
+  qed
   show "\<And>b. b \<in> X \<Longrightarrow> (\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R) \<Longrightarrow> (s2, b) \<in> R"
   proof-
     fix b assume A4:"b \<in> X" and A5:"(\<And>a. a \<in> insert x A \<Longrightarrow> (a, b) \<in> R)"
