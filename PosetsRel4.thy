@@ -7518,9 +7518,13 @@ lemma NAdh_Im_memI:
   "\<lbrakk>A \<in> Pow X; x \<in> X; (\<And>\<E>. \<lbrakk>\<E> \<in> pfilters_on (pwr X) (Pow X); (\<E>, x) \<in> Adh\<rbrakk> \<Longrightarrow> {A}#\<E>)\<rbrakk> \<Longrightarrow> A \<in> (NAdh Adh X)``{x}"
   by (simp add: NAdh_def)
 
-lemma NAdh_memD:
+lemma NAdh_memD1:
   "(x, A)\<in> NAdh Adh X \<Longrightarrow> (A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E>. \<E> \<in> pfilters_on (pwr X) (Pow X) \<and> (\<E>, x) \<in> Adh \<longrightarrow> {A}#\<E>)) "
   by (simp add: NAdh_def)
+
+lemma NAdh_memD2:
+  "(x, A)\<in> NAdh Adh X \<Longrightarrow> (\<And>\<E>. \<lbrakk>\<E> \<in> pfilters_on (pwr X) (Pow X);(\<E>, x) \<in> Adh\<rbrakk> \<Longrightarrow> {A}#\<E> )"
+  using NAdh_memD1[of x A Adh X] by presburger
 
 lemma NAdh_Im_memD:
   "A \<in> (NAdh Adh X)``{x} \<Longrightarrow> (A \<in> Pow X \<and> x \<in> X \<and> (\<forall>\<E>. \<E> \<in> pfilters_on (pwr X) (Pow X) \<and> (\<E>, x) \<in> Adh \<longrightarrow> {A}#\<E>))"
