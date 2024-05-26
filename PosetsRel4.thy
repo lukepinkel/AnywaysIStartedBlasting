@@ -4463,7 +4463,7 @@ proof-
   from A0 A3 B0 B1 B3 obtain B8:"?f {x} \<in> C" and fxmem:"?f {x} \<in> ?P"
     by (metis Int_iff clr_induced_closure_id image_eqI inf.orderE refl_subset xmem)
   from A0 A3 B3 obtain B9:"({x}, ?f {x})\<in>?R"
-    by (metis B0 clrD1 clr_equality is_supD1 is_sup_def singletonI xmem)
+    by (meson B0 B1 B2 clr_ext extensiveD1 xmem)
   then have B10:"{x} \<subseteq> ?f {x}"
     using pwr_memD by blast 
   also have B11:"... \<subseteq> \<Union>A"   
@@ -4578,7 +4578,7 @@ proof-
     obtain s where "is_sup ?R C ?A s"
       using B0 B4 is_clattice_def[of ?R C] by blast
     then show ?thesis
-      using A0 B0b clrD1 is_supD4 sup_equality by fastforce
+      using A0 B0b clrD1[of ?R "Pow X" C] is_supD4[of ?R C ?A s] sup_equality[of ?R C ?A s] by fastforce
   qed
   have B8c:"(Sup ?R C ?A, E)\<in>pwr X" 
     using clatD4[of C ?R ?A E] B0b B0 B8 B4 by blast
