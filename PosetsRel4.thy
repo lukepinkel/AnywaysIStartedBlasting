@@ -9,6 +9,7 @@ no_notation Cons (infixr "#" 65)
 hide_type list
 hide_const rev Sup Inf trans refl Greatest
 declare [[show_consts, show_results]]
+declare [[show_abbrevs=false]]
 
 
 section Definitions
@@ -409,6 +410,10 @@ section SubsetRelation
 lemma pwr_memI:
   "\<lbrakk>A \<subseteq> X; B \<subseteq> X; A \<subseteq> B\<rbrakk> \<Longrightarrow> (A,B)\<in>pwr X"
   by (simp add:pwr_def)
+
+lemma pwr_memI1:
+  "\<lbrakk>A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> (A,B)\<in>pwr X"
+   using pwr_memI[of A X B] subset_trans[of A B X] by fastforce
 
 lemma pwr_memD:
   "(A,B)\<in>pwr X \<Longrightarrow> A \<subseteq> X \<and> B \<subseteq> X \<and> A \<subseteq> B"
@@ -2601,9 +2606,8 @@ lemma is_iso_sup:
   by (meson is_supD2 is_supD6 isotoneD41)
 
 lemma is_iso_inf:
-  "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf R A X x \<Longrightarrow> is_inf R (f`X) (f`A) y  \<Longrightarrow> (f x, y)\<in>R"
-  using is_iso_sup[of "dual R" X f A x y] dual_isotone[of R X R f]
-  by (metis converse.cases is_greatestI3 is_supD3 is_supD4 subset_iff sup_maxE1) 
+  "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf R X A x \<Longrightarrow> is_inf R (f`X) (f`A) y  \<Longrightarrow> (f x,y)\<in>R"
+  using  dual_isotone[of R X R f] is_iso_sup[of "dual R" X f A x y] by blast
 
 section Idempotency
 
@@ -3000,8 +3004,15 @@ proof(rule clrI1)
           by (simp add: pwr_memI)
       qed
       show B23:"\<And>a. a \<in> ubd (pwr X) C {x} \<Longrightarrow> (a,?c) \<in> dual (pwr X)"
-        using B1 is_supD1 subset_trans ubd_space
-        by (metis pwr_ar_inf)
+      proof-
+        fix a assume aub:"a \<in> ubd (pwr X) C {x} "
+        then obtain "?c \<subseteq> a" and "a \<in> C"
+          by (simp add: Inf_lower le_infI2 ubd_singleton_mem)
+        then obtain "(?c, a)\<in> pwr X"
+          using pwr_memI1[of ?c a X] A1 B1 by blast
+        then show " (a,?c) \<in> dual (pwr X)"
+          by force
+      qed
     qed
     then show "\<exists>c. is_least (pwr X) (ubd (pwr X) C {x}) c" 
       by blast
@@ -4101,7 +4112,7 @@ proof-
       fix f assume f1:"f \<in> F" then obtain "f \<in> X" and "f \<in> lcro R X f"
         by (meson A1a lcro_memI1 por subsetD)
       then show "f \<in> G"
-        using B30 f1 pwr_memD ubdD2 by fastforce 
+        using B30 f1 ubdD2[of G "pwr X" ?\<FF> ?A " lcro R X f"] pwr_memD[of "lcro R X f" G X]  by blast 
     qed
     then obtain B32:"F \<subseteq> G" and B33:"finite F" and B34:"F \<noteq> {}" 
       using A1b A1c by blast
@@ -5411,8 +5422,10 @@ lemma distr_lattice_maximal_prime:
   shows "sup_prime R X F"
 proof(rule sup_primeI2)
   fix a b assume A0:"a \<in> X" and A1:"b\<in>X" and A2:"Sup R X {a, b} \<in> F" and  A3:"a \<notin> F"
-  then obtain A4:"Sup R X {a,b}\<in>X" and A5:"lcro R X a \<in> filters_on R X" and A6:"F \<in> pfilters_on R X"
-    by (meson dis distr_latticeD5 filters_on_iff is_supD1 lattD32 lcro_filter maximalD1 por ult)
+  have "is_lattice R X" 
+    using dis distr_latticeD5 by auto
+  with A0 A1 A2 A3 obtain A4:"Sup R X {a,b}\<in>X" and A5:"lcro R X a \<in> filters_on R X" and A6:"F \<in> pfilters_on R X"
+    by (meson filters_on_iff lattD42 lcro_filter maximalD1 por ssl_ex_sup5 ult)
   then obtain A7:"is_filter R X F" and A8:"is_filter R X(lcro R X a)"
     by (simp add: filters_on_iff is_pfilterD1 pfilters_on_iff)
   obtain fup:"is_ord_cl X F R"
@@ -5434,7 +5447,7 @@ proof(rule sup_primeI2)
   then obtain B3:"?Fa \<notin> pfilters_on R X"
     by (metis A7 A8 A9 filter_on_lattice_bsup6 is_filterD1 maximalD2 por psubset_eq pwr_memI ult)
   obtain B4:"?Fa \<in> filters_on R X" and B5:"?Fa = X" and  B6:"b \<in> ?Fa"
-    by (metis A1 A12 B3 filters_on_iff is_pfilter_def pfilters_on_iff) 
+    by (metis A1 A12 B3 filters_on_iff is_pfilterI1 pfilters_on_iff)
   obtain f c where A13:"f \<in>F" and A14:"c \<in> ?upa" and A15:"(Inf R X {f, c}, b)\<in>R"
     by (meson B6 filter_bsup_memD1)
   then obtain A16:"f\<in>X" and A17:"c\<in>X"
@@ -6032,24 +6045,30 @@ proof-
 qed
 
 lemma mredD4:
-  assumes A0:"is_clattice R X" and A1:"m \<in> X" and A2:"\<not>(is_greatest R X m)" and A3:"\<not>((m, Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}) \<in> R \<and> m \<noteq> Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x})" and
-          A4:"antisym R X" and A5:"trans R X" and A6:"refl R X"
+  assumes por:"pord R X" and
+          clt:"is_clattice R X" and 
+          mix:"m \<in> X" and
+          ntp:"\<not>(is_greatest R X m)" and 
+          nli:"\<not>((m, Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}) \<in> R \<and> m \<noteq> Inf R X {x \<in> X. (m, x)\<in>R \<and> m \<noteq> x})"
   shows "meet_reducible R X m"
 proof-
   let ?A="{x \<in> X. (m, x)\<in>R \<and> m \<noteq> x}"
   obtain B0:"?A \<subseteq> X" and B1:"?A \<noteq> {}" 
-    by (metis (no_types, lifting) A0 A1 A2 A4 A5 A6 Collect_empty_eq mem_Collect_eq mredD3 subsetI) 
+    using por clt ntp mix mredD3[ of X R m] by blast 
   have B2:"(m, Inf R X ?A)\<in>R"
-    using A0 A1 A4 A5 clatD22 ex_inf2 by fastforce
-  have B3:"m = Inf R X ?A"   
-     using A3 B2 by blast  
+    using por clt clatD22[of X R ?A] mix ex_inf2[of X R ?A m]  by blast 
+  have B3:"m = Inf R X ?A"
+    using B2 nli by blast   
   have B4:"?A \<in> Pow_ne X"
     using B1 Pow_ne_iff by auto
-  have B5:"m \<notin> ?A"  by simp
-  have B6:"is_inf R X ?A m"   
-    by (metis (no_types, lifting) A0 A4 A5 B0 B1 B3 cinfD4 clatD2) 
-  show "meet_reducible R X m"
-    by (meson B4 B5 B6 mredI1)  
+  have B5:"m \<notin> ?A"  
+    by simp
+  obtain "is_inf R X ?A (Inf R X ?A)"
+    using B0 B1 cinfD4 clatD2 clt por by blast
+  then have B6:"is_inf R X ?A m"
+    using B3 by fastforce   
+  then show "meet_reducible R X m"
+    using B4 mredI1[of ?A X m R] by blast
 qed
 
 lemma filter_compl:
@@ -7605,6 +7624,8 @@ lemma filter_sup_principal_filters:
 proof-
   from A0 A1 A3 obtain B0:"is_clattice (pwr X) (filters_on R X)" and B1:"compactly_generated (pwr X)(filters_on R X)" 
     using lattice_filters_complete[of X R top] filters_on_lattice_compactgen[of X R top] by blast
+  from A1 obtain ne:"X \<noteq> {}"
+    using A0 lattD1 by blast
   obtain por1:"pord (pwr X) (filters_on R X)" and por2:"pord (pwr X) ( (Pow X))"
     by (meson Pow_iff filters_on_iff is_filterD1 powrel6 powrel7 pwr_memI refl_def subsetI)
   have B2:"F= Sup (pwr X) (filters_on R X) {k \<in> compact_elements (pwr X) (filters_on R X). (k, F)\<in>pwr X}" 
@@ -7612,12 +7633,12 @@ proof-
   have B3:"\<And>f. f \<in> compact_elements (pwr X) (filters_on R X) \<Longrightarrow> f \<in> {lcro R X x|x. x \<in> X}"
   proof-
     fix f assume C0:"f \<in> compact_elements (pwr X) (filters_on R X)" 
-   then obtain "is_filter R X f"
-    by (meson compact_element_memD2 filters_on_iff) 
-   then obtain x where "lcro R X x = f"  using A0 A1 principal_filters_compact
-    by (metis A3 C0 compact_element_memD1 compact_element_memD2 lattD1)
+   then obtain "f \<in> filters_on R X" and "is_compact (pwr X) (filters_on R X) f"
+     by (simp add: compactD2 compact_elements_mem_iff1)
+   then obtain x where "x \<in> X" and "lcro R X x = f"
+      using A0 A1 ne A3 principal_filters_compact[of R X top f] by blast
   then show  "f \<in> {lcro R X x|x. x \<in> X}"
-    using A0 A1 A3 C0 compact_element_memD1 compact_element_memD2 lattD1 principal_filters_compact by fastforce
+    by blast
   qed
   have B4:"\<And>f.  f \<in> {lcro R X x|x. x \<in> X} \<Longrightarrow> f \<in> compact_elements(pwr X) (filters_on R X) "
      using A0 A1 principal_filters_compact[of R X top]  compact_elements_mem_iff1 A3 filters_on_def lcro_filter by fastforce 
@@ -8747,7 +8768,14 @@ proof-
           then have B14:"(H, x) \<in> Lim"  
             using upclosed by blast 
           show "x \<in> (ClLim Lim X)``{B}"  
-            using B13 B14 B14a ClLim_def Q0 bmem is_limit by fastforce
+          proof(rule ClLim_Im_memI)
+            show " B \<in> Pow X"
+              using bmem by auto
+            show " x \<in> X"
+              using B14 is_limit by blast
+              show " \<exists>\<F>\<in>pfilters_on (pwr X) (Pow X). {B} # \<F> \<and> (\<F>, x) \<in> Lim"
+                using B13 B14 B14a filter_mem_mesh by blast
+          qed
         qed
         have B15:"x \<in>  (ClLim Lim X)``{A} \<or> x \<in>  (ClLim Lim X)``{B}"  
           using B4 by blast
