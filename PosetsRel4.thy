@@ -8943,10 +8943,14 @@ proof(rule is_pfilterI1)
         by (meson P0 converseD is_dirE1 powrel8)  
       then obtain B7:"f`fc \<subseteq> f`fc" and B8:"f`fc \<in> Pow Y" and B9:"f`fc \<subseteq> a" and B10:"f`fc \<subseteq> b"
         by (meson B2 B3 P2 PowD PowI equalityD1 image_mono ims in_mono subset_trans)
-      then obtain "f`fc \<in> ?fF" and "(a,f`fc)\<in>dual(pwr Y)" and  "(b,f`fc)\<in>dual(pwr Y)"
-        unfolding Imfil_def using A0 A1 B4 pwr_memI  F1 subset_eq by fastforce
+      obtain B11:"f`fc \<in> ?fF"
+        using B4 B7 B8 Imfil_memI[of "f`fc" Y \<F> f X] by blast
+      obtain B12:"(a,f`fc)\<in>dual(pwr Y)"
+        using A0 B9 Imfil_memD[of a f X Y \<F>] pwr_memI1[of "f`fc" a Y] by blast 
+      obtain B13:"(b,f`fc)\<in>dual(pwr Y)"
+        using A1 B10 Imfil_memD[of b f X Y \<F>]  pwr_memI1[of "f`fc" b Y] by blast
       then show "\<exists>c \<in> ?fF. (a, c) \<in> dual (pwr Y) \<and> (b, c) \<in> dual (pwr Y)"
-        by meson 
+        using B11 B12 B13 by blast
     qed
     show " is_ord_cl (Pow Y) ?fF (pwr Y)"
     proof(rule is_ord_clI1)
