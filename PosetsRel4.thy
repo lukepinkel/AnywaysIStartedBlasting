@@ -2802,9 +2802,14 @@ proof(rule closureI1)
   show B5:"extensive R X (cl_from_clr R C)"
   proof(rule extensiveI1)
     fix x assume A7:"x \<in> X"
+    then obtain c where A7b:"is_least R (ubd R C {x}) c"
+      using isc clrD1[of R X C]  by presburger
+    from A7 obtain A7d:"C \<noteq> {}" and A7e:"C \<subseteq> X "
+      using isc clrD1[of R X C]  by simp 
     show "(x, cl_from_clr R C x)\<in>R"
-      using ant isc A7 clrD1[of R X C] clr_equality[of X R C] 
-            is_leastD1[of R "ubd R C {x}"] ubdD2 by fastforce 
+      using A7b ant isc clr_equality[of X R C x c] is_leastD1[of R "ubd R C {x}" c]   
+            ubdD2[of "cl_from_clr R C x" R C "{x}" x]  insertCI
+      by blast
   qed
   show "idempotent X (cl_from_clr R C)"
   proof(rule idempotentI1)
