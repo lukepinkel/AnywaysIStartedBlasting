@@ -1186,7 +1186,7 @@ proof-
     proof-
       fix b assume B20:"b \<in> X" and B21:"(\<And>a. a \<in> insert x F \<Longrightarrow> (a, b) \<in> R)"
       then obtain B22:"(\<And>a. a \<in> {s1, x} \<Longrightarrow> (a, b)\<in>R)"
-        using A1 is_supD1 by force 
+        using A1 is_supD1[of R X F s1] by auto 
       then show "(s2, b) \<in> R" 
         using is_supD5[of R X "{s1,x}" s2 b] A3 B20 by fastforce
     qed
@@ -3939,7 +3939,7 @@ proof-
       by (metis P3 Pow_neD ef0 filters_on_iff)
   qed
   show P10:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, filter_closure R X (\<Union> EF)) \<in> pwr X)"
-    by (metis Int_Collect P3 Pow_ne_iff Sup_le_iff filter_cl0 filters_on_def inf.orderE is_filterD1 por pwr_memI)
+    by (meson is_supD1 lat lattD4 por semilat_filters_isl0)
   show P11:"\<And>EF. EF \<in> Pow_ne (filters_on R X) \<Longrightarrow> (\<And>b. b \<in> filters_on R X \<Longrightarrow> (\<And>a. a \<in> EF \<Longrightarrow> (a, b) \<in> pwr X) \<Longrightarrow> (filter_closure R X (\<Union> EF), b) \<in> pwr X)"
   proof-
     fix EF assume ef0:"EF \<in> Pow_ne (filters_on R X)"
@@ -4569,8 +4569,24 @@ lemma dir_set_closure_subset2:
           A5:"((cl_from_clr  (pwr X) C) {x}, Sup  (pwr X) C A) \<in> pwr X" and 
           A6:"is_dir A (pwr X)"
   shows "\<exists>a \<in> A. ((cl_from_clr (pwr X) C) {x}, a) \<in> pwr X"
-  using dir_set_closure_subset[of X C x A]
-  by (metis A0 A2 A3 A4 A5 A6 is_dirE1 pwr_memD pwr_memI)
+proof-
+  from A0 obtain "C \<in> Pow (Pow X)"
+    by (simp add: clrD1)
+  then obtain "A \<in> Pow (Pow X)"
+    using A4 Pow_neD by blast
+  from A5 obtain "cl_from_clr (pwr X) C {x} \<subseteq> Sup (pwr X) C A"
+    using pwr_memD by blast
+  then obtain "\<exists>a\<in>A. cl_from_clr (pwr X) C {x} \<subseteq> a"
+    using A0 A2 A3 A4 A6 dir_set_closure_subset[of X C x A] by blast
+  then obtain a where "a \<in> A" and "cl_from_clr (pwr X) C {x} \<subseteq> a"
+    by blast
+  then obtain "a \<subseteq> X"
+    using \<open>A \<in> Pow (Pow X)\<close> by blast
+  then obtain "(cl_from_clr (pwr X) C {x}, a) \<in> pwr X"
+    by (simp add: \<open>cl_from_clr (pwr X) C {x} \<subseteq> a\<close> pwr_mem_iff)
+  then show ?thesis
+    using \<open>a \<in> A\<close> by blast
+qed 
 
 lemma singleton_closure_compact:
   assumes A0:"clr (pwr X) (Pow X) C" and 
@@ -4580,7 +4596,7 @@ lemma singleton_closure_compact:
   shows "is_compact (pwr X) C (cl_from_clr (pwr X) C {x})"
 proof(rule ccompact1)
   show P0:"pord (pwr X) C"
-    by (meson A0 Pow_iff Pow_top clrD1 powrel6 powrel7 pwr_memI refl_def subsetD)
+    by (meson A0 clrD1 pord_sub1 pwr_antisym pwr_refl pwr_trans)
   show P1:"is_csup_semilattice (pwr X) C"
     by (meson A0 PowD clatD1 clr_clattice2 pow_is_clattice powrel1 powrel2 pwr_memI reflI1 subset_iff)
   show P2:"cl_from_clr (pwr X) C {x} \<in> C"
@@ -7867,7 +7883,21 @@ proof(rule is_pfilterI1)
     by (metis A1 Pow_bottom lcroD1 pwr_mem_iff subset_empty)
 qed
 
-
+lemma pfilter_nmem_mesh:
+  assumes A0:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"A \<in> Pow X" and A2:"A \<notin> \<F>"
+  shows "{X-A}#\<F>"
+proof-
+  obtain pfl:"is_pfilter (pwr X) (Pow X) \<F>" and sub:"A \<subseteq> X"
+    using A0 A1 pfilters_on_iff by auto
+  have "\<And>F. F \<in> \<F> \<Longrightarrow>  F \<inter> (X-A) \<noteq> {}"
+  proof -
+    fix F assume a1: "F \<in> \<F>"
+    then show "F \<inter> (X - A) \<noteq> {}"
+      using A2 pfilters_sets_comp3 pfl sub by auto
+  qed
+  then show ?thesis
+    by (simp add: Int_commute mesh_single_iff)
+qed
 section ConvergenceRelations
 
 lemma ClN_memI1:
@@ -8733,7 +8763,7 @@ proof-
       unfolding LimN_def using isoconv_def by fastforce 
     have B3:"\<And>x. x \<in> X  \<Longrightarrow> (N``{x}) \<in> pfilters_on (pwr X) (Pow X)"
       using prt by blast
-    have B3:"onpconv  X ?q"
+    have B4:"onpconv  X ?q"
     proof(rule onpconvI1)
       fix x assume xmem:"x \<in> X"
       let ?N="(\<Inter> {\<F>. (\<F>, x) \<in> LimN N X})" let ?C="{\<F>. (\<F>, x) \<in> LimN N X}"
@@ -8769,7 +8799,7 @@ proof-
         by (simp add: LimN_memI \<open>x \<in> X\<close> pfilters_on_iff principal_pfilter_sets subset_iff)
     qed
     then show "is_prtop X (LimN N X)"
-      by (simp add: B0 B2 B3 centeredI1)
+      by (simp add: B0 B2 B4 centeredI1)
   qed
 qed
 
@@ -9341,12 +9371,11 @@ proof-
   qed
 qed
 
-lemma prtp_cl_mem_iff:
-  assumes prt:"prtop_cl X Cl"
+lemma LimCl_iso:
+  assumes CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
   shows Cl_mem_iff1:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})" and
         Cl_mem_iff2:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (X-A, x) \<notin> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})" and
-        Cl_mem_iff3:"(\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" and 
-        Cl_mem_iff7:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X "
+        Cl_mem_iff4:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<in> Cl``{X-A}\<rbrakk>\<Longrightarrow>(\<forall>V \<in> Pow X. x \<notin> Cl `` {X - V} \<longrightarrow> V \<inter> (X-A) \<noteq> {})"
 proof-
   show P0:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
   proof-
@@ -9362,7 +9391,7 @@ proof-
         then obtain "A \<subseteq> (X-V)" and "(X-V) \<in> Pow X"
            using A0 by blast 
         then obtain "Cl``{A} \<subseteq> Cl``{(X-V)}"
-          by (metis prt A0 subset_Un_eq) 
+          by (metis CCl4) 
         then obtain "x \<notin> Cl``{A}" 
           using V1 by blast
         then show "\<not>(?L)"  
@@ -9394,6 +9423,20 @@ proof-
      then show "(X-A, x) \<notin> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in>Cl \<longrightarrow> V \<inter> A \<noteq> {})"
        by (metis Diff_disjoint Diff_subset Int_commute P0 Pow_iff)
   qed
+  show P2:"\<And>A x. \<lbrakk>A \<in> Pow X; x \<in> X; x \<in> Cl``{X-A}\<rbrakk>\<Longrightarrow>(\<forall>V \<in> Pow X. x \<notin> Cl `` {X - V} \<longrightarrow> V \<inter> (X-A) \<noteq> {})"
+  proof-
+     fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X" and A2:"x \<in> Cl``{X-A}"
+     then show "(\<forall>V \<in> Pow X. x \<notin> Cl `` {X - V} \<longrightarrow> V \<inter> (X-A) \<noteq> {})"
+       using P1 by auto
+  qed
+qed
+
+
+lemma prtp_cl_mem_iff:
+  assumes prt:"prtop_cl X Cl"
+  shows Cl_mem_iff3:"(\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" and 
+        Cl_mem_iff7:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X "
+proof-
   obtain CCl1:"Cl``{{}} = {}"
     using prt by fastforce
   obtain  CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}"
@@ -9416,7 +9459,8 @@ proof-
 qed
 
 lemma ClLim_ps_prt: 
-  assumes prt:"prtop_cl X Cl" and isp:"isspmap X Cl"
+  assumes prt:"prtop_cl X Cl" and 
+          isp:"isspmap X Cl"
   shows ClLim_ps_prt1:"(\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" and
         ClLim_ps_prt2:"(\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"  and
         ClLim_ps_prt3:"(\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})" and
@@ -9424,6 +9468,8 @@ lemma ClLim_ps_prt:
 proof-
   obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X "
     using isp by auto
+  obtain CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
+    using isp prt prtop_clD4[of Cl X] by force
   show P2:"(\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" 
   proof-
     fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
@@ -9438,8 +9484,8 @@ proof-
     also have "... \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
       using is_cl by blast
     also have "... \<longleftrightarrow> (X-A, x) \<notin> Cl" 
-      using prt A0 A1 Cl_mem_iff2[of Cl X A x]  by blast
-    finally show "(x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
+      using CCl4 A0 A1 Cl_mem_iff2[of X Cl A x] by presburger
+    finally show "(x, A)\<in>  (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
       using A0 by blast
   qed
   show P3:"(\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"
@@ -9464,24 +9510,10 @@ proof-
           by (metis LimCl_memD PowD \<open>A \<in> Pow X\<close> inf_sup_aci(1) pfilters_on_iff pfilters_sets_comp3)
         obtain is_pfil:"is_pfilter (pwr X) (Pow X) \<F>"
           by (metis LimCl_memD ftx pfilters_on_iff)
-        define \<H> where  "\<H> \<equiv> {E \<in> Pow X. \<exists>B \<in> \<F>. (X-A) \<inter> B \<subseteq> E}" 
-        then obtain hpfil:"is_pfilter (pwr X) (Pow X) \<H>" and fsub:"\<F>\<subseteq> \<H>" 
-          using is_pfil amesh_unfold amem finer_proper_filter[of X \<F> "X-A"]  by (simp add: Int_commute)  
-        obtain gmem:"\<H> \<in> pfilters_on (pwr X) (Pow X)"
-          using hpfil pfilters_on_iff by blast 
-        then have hlim:"(\<H>, x) \<in> LimCl Cl X"
-        using A0 proof(rule LimCl_memI)
-          show "\<And>A. A \<in> Pow X \<Longrightarrow> {A} # \<H> \<Longrightarrow> (A, x) \<in> Cl"
-          proof -
-            fix E :: "'a set"   assume a1: "E \<in> Pow X" and a2: "{E} # \<H>"
-            then show "(E, x) \<in> Cl"
-              using fsub ftx LimCl_memD[of \<F> x Cl X]  by (simp add: mesh_single_iff subset_eq) 
-          qed
-        qed
-        also obtain hmesh:"{X-A}#\<H>" 
-          unfolding \<H>_def mesh_def using amesh_unfold by fastforce
+        then obtain fmesh:"{X-A}#\<F>"
+          by (simp add: amesh_unfold mesh_singleI)
         then obtain "x \<in>(Cl``{X-A})"
-          using LimCl_memD hlim by fastforce
+          using LimCl_memD ftx by force
         then show "A \<notin>(NCl Cl X)``{x}"
           using A0 P3 isp by auto
       qed
@@ -9491,8 +9523,8 @@ proof-
       have ctr2:"\<And>A. \<lbrakk>A \<in> Pow X;A \<notin>(NCl Cl X)``{x}\<rbrakk> \<Longrightarrow>  A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
       proof-
         fix A assume amem:"A \<in> Pow X" and "A \<notin>(NCl Cl X)``{x}"
-       then obtain "(x ,A) \<notin> NCl Cl X"
-        by auto
+        then obtain "(x ,A) \<notin> NCl Cl X"
+          by auto
         then obtain "x \<in> Cl``{X-A}"
           unfolding NCl_def  using A0 P3 \<open>A \<notin> NCl Cl X `` {x}\<close> amem isp by force
         define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
@@ -9500,10 +9532,10 @@ proof-
           unfolding \<F>_def  using A0 prt Cl_mem_iff3[of Cl X x] by presburger
         have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
           by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
-        have F1a:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl `` {X - V}\<rbrakk>\<Longrightarrow> V \<inter> (X-A) \<noteq> {}"
-          using Cl_mem_iff1[of Cl X "X-A" x]  A0 \<open>x \<in> Cl `` {X - A}\<close> prt by fastforce
+        also have anotin:"A \<notin> \<F>"
+          using \<F>_def \<open>x \<in> Cl `` {X - A}\<close> by blast
         then have F1:"{X-A} # \<F> "
-          unfolding \<F>_def by (simp add: Int_commute mesh_single_iff)
+          using amem calculation pfilter_nmem_mesh by auto
         have "(\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl)"
         proof-
           fix V assume V0:"V \<in> Pow X" and vmesh:"{V}#\<F>"
@@ -9512,16 +9544,14 @@ proof-
           then obtain "\<forall>W \<in> Pow X. (X-W,x)  \<notin> Cl \<longrightarrow> W \<inter> V \<noteq> {}"
             by blast
           then show "(V, x) \<in> Cl"
-            using prt  V0 Cl_mem_iff1[of Cl X "V" x] unfolding mesh_def \<F>_def using A0 by blast
+            using A0 CCl4 V0 Cl_mem_iff1[of X Cl V x]  by presburger
         qed
-        have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
-          by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
+        then have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
+          by auto
         then have "(\<F>, x)\<in> LimCl Cl X"
           by (meson A0 F0 LimCl_memI \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
-        also have "A \<notin> \<F>"
-          using \<F>_def \<open>x \<in> Cl `` {X - A}\<close> by auto
         then show " A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-          using calculation by blast
+          using anotin by blast
       qed
       have "centered X (LimCl Cl X)"
         using centeredI1[of X "LimCl Cl X"] prt ext_LimCl1[of X Cl] by presburger
@@ -9551,7 +9581,7 @@ proof-
           then obtain "\<forall>W \<in> Pow X. (X-W,x)  \<notin> Cl \<longrightarrow> W \<inter> V \<noteq> {}"
             by blast
           then show "(V, x) \<in> Cl"
-            using prt \<open>x \<in> X\<close> V0 Cl_mem_iff1[of Cl X "V" x] unfolding mesh_def \<F>_def by blast
+            using CCl4  V0 \<open>x \<in> X\<close> Cl_mem_iff1[of X Cl V x] by presburger
         qed
         have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
           by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
@@ -9597,7 +9627,7 @@ proof-
     then obtain "(X-V, x)\<notin>Cl"
       by blast
     then show "V \<inter> A \<noteq> {}" 
-      using A0 A1 amem  xmem Cl_mem_iff1[of Cl X A x] R vix by blast
+      using CCl4 R amem vix xmem  Cl_mem_iff1[of X Cl A x]  by force
   qed
   have F2:"\<And>x E. \<lbrakk>x \<in> X; E \<in> Pow X; {E}#{V \<in> Pow X. x \<notin> Cl``{X-V}}\<rbrakk> \<Longrightarrow> (E, x) \<in> Cl"
   proof-
@@ -9608,8 +9638,8 @@ proof-
       by (simp add: E2)
     have E4:"\<And>V. \<lbrakk>V \<in> Pow X; (X-V, x)\<notin>Cl\<rbrakk> \<Longrightarrow> V \<inter> E \<noteq> {}"
       using E3 Int_commute[of E] by auto
-    then show "(E, x) \<in> Cl" 
-       using A0 A1 xmem Cl_mem_iff1[of Cl X E x] E0 by force
+    then show "(E, x) \<in> Cl"
+      using  CCl4  E0 xmem Cl_mem_iff1[of X Cl E x]  by force
   qed
   show Q0:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
   proof-  
