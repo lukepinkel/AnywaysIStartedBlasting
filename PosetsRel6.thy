@@ -6885,9 +6885,16 @@ qed
        
 
 lemma setfilters2:
-  assumes A0:"is_filter (pwr X) (Pow X) EF" and A1:"A \<in> EF" and A2:"B \<in> Pow X" and A3:"A \<subseteq> B"
-  shows "B \<in> EF"
-  by (meson A0 A1 A2 A3 is_filter_def PowD is_ord_cl_def pwr_mem_iff)
+  assumes A0:"is_filter (pwr X) (Pow X) F" and A1:"A \<in> F" and A2:"B \<in> Pow X" and A3:"A \<subseteq> B"
+  shows "B \<in> F"
+proof-
+  obtain ioc:"is_ord_cl (Pow X) F (pwr X)"
+    using A0 is_filterD1 by blast
+  also obtain "(A, B) \<in> pwr X"
+    using A2 A3 pwr_memI1 by fastforce
+  then show "B \<in> F"
+    using A1 A2 ioc is_ord_clE1[of "Pow X" F "pwr X" A B] by blast
+qed
 
 lemma setfilters3:
   "is_pfilter (pwr X) (Pow X) EF \<longleftrightarrow> (is_filter (pwr X) (Pow X) EF) \<and> (EF \<noteq> (Pow X))"
@@ -6911,8 +6918,16 @@ lemma pfilter_sets:
     show "is_dir F (dual (pwr X))"
     proof(rule is_dirI1)
       fix a b assume "a \<in> F" and "b \<in> F" 
+      then obtain ab:" a \<inter> b \<in> F" and "a \<in> Pow X" and "b \<in> Pow X"
+        using A0 A3 by blast
+      also obtain " a \<inter> b \<subseteq> a" and " a \<inter> b \<subseteq> b"
+        by simp
+      then obtain "(a \<inter> b, a) \<in> pwr X" and "(a \<inter> b, b) \<in> pwr X"
+        unfolding pwr_def using calculation by blast
+      then obtain "(a, a \<inter> b) \<in> dual (pwr X)" and "(b, a \<inter> b) \<in>dual (pwr X)"
+        by auto
       then show "\<exists>c \<in> F. (a,c)\<in>(dual (pwr X)) \<and> (b,c)\<in>(dual (pwr X))"
-        by (meson A0 A3 PowD converseI in_mono inf.cobounded1 inf.cobounded2 pwr_mem_iff)
+        using ab by blast
     qed
     show "is_ord_cl (Pow X) F (pwr X)"
       by (meson A4 is_ord_clI1 powrel8)
@@ -6920,6 +6935,10 @@ lemma pfilter_sets:
   show "Pow X \<noteq> F"
     using A2 by auto 
 qed
+
+lemma setpfilterI1:
+  "is_filter (pwr X) (Pow X) \<F> \<Longrightarrow> {} \<notin> \<F> \<Longrightarrow> is_pfilter (pwr X) (Pow X) \<F>"
+  using is_pfilterI1 by auto
 
 lemma sets_pfilter:
   assumes "is_pfilter (pwr X) (Pow X) F"
@@ -6935,7 +6954,7 @@ proof-
   show P1:"F \<noteq> Pow X"
     using assms is_pfilterD2 by blast
   show P2:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> F\<rbrakk> \<Longrightarrow> A \<inter> B \<in> F)"
-    using assms is_pfilterD1 setfilters1 by blast 
+    using assms is_pfilterD1 setfilters1 by blast
   show P3:"(\<And>A B. \<lbrakk>A \<in> F; B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> B \<in> F)"
     using assms is_pfilterD1 setfilters2 by blast
   show "{} \<notin> F"
@@ -7884,6 +7903,10 @@ lemma NCl_Im_memD:
   "A \<in> (NCl Cl X)``{x}  \<Longrightarrow>(A \<in> Pow X \<and> x \<in> X \<and> {A}#(converse Cl)``{x})"
   using NCl_memD by force
 
+lemma NCl_space:
+  "(NCl Cl X) \<subseteq> X \<times> (Pow X)"
+  unfolding NCl_def by blast
+
 lemma NAdh_memI:
   "\<lbrakk>A \<in> Pow X; x \<in> X; (\<And>\<E>. \<lbrakk>\<E> \<in> pfilters_on (pwr X) (Pow X); (\<E>, x) \<in> Adh\<rbrakk> \<Longrightarrow> {A}#\<E>)\<rbrakk> \<Longrightarrow> (x, A)\<in> NAdh Adh X"
   by (simp add: NAdh_def)
@@ -8202,7 +8225,25 @@ proof-
 qed  
 
 
+lemma NCl_memI2:
+  assumes A0:"A \<in> Pow X" and A1:"x \<in> X" and
+          A2:"\<And>B. x \<in> Cl``{B} \<Longrightarrow> A \<inter> B \<noteq> {}"
+  shows "(x, A) \<in> (NCl Cl X)"
+proof-
+  from A2 obtain "\<And>a b. \<lbrakk>a \<in> {A}; b \<in> dual Cl `` {x}\<rbrakk> \<Longrightarrow> a \<inter> b \<noteq> {}"
+    by blast
+  then have "{A}#((dual Cl)``{x})"
+    unfolding mesh_def by fastforce
+  then show ?thesis
+    using A0 A1 unfolding NCl_def by fastforce
+qed
 
+
+
+lemma NCl_memD2:
+  assumes "(x, A) \<in> (NCl Cl X)"
+  shows "\<And>B. x \<in> Cl``{B} \<Longrightarrow> A \<inter> B \<noteq> {}"
+  using assms unfolding NCl_def mesh_def  by blast
 
 section \<open>Between Convergence Relations\<close>
 
@@ -8242,7 +8283,26 @@ lemma Nh_to_Adh:
         Nh_to_Adh2:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<E>, x)\<in>(AdhN N X) \<longleftrightarrow> (N``{x})#\<E> " 
 proof-
   show P0:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> x\<in>(AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E> " 
-    using A0 unfolding AdhN_def mesh_def  by force 
+  proof-
+    fix \<E> x assume A1:"x \<in> X" and A2:"\<E> \<in> pfilters_on (pwr X) (Pow X)"
+    show "x\<in>(AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E>" 
+    proof-
+      have "x \<in> (AdhN N X)``{\<E>} \<longleftrightarrow> (\<E>, x) \<in> AdhN N X "
+        by auto
+      also have "... \<longleftrightarrow>  (\<forall>A. A \<in> Pow X \<and> (x, A) \<in> N \<longrightarrow> {A}#\<E>)"
+         unfolding AdhN_def using A0 A1 A2 by force
+      also have "... \<longleftrightarrow> (\<forall>A.  (x, A) \<in> N \<longrightarrow> {A}#\<E>)"
+        using A0 by blast
+      also have "... \<longleftrightarrow> (\<forall>A E. (x, A) \<in> N \<and> E \<in> \<E> \<longrightarrow> A \<inter> E \<noteq> {}) "
+        by (meson mesh_single_iff)
+      also have "... \<longleftrightarrow>  (\<forall>A E.  A \<in> N``{x} \<and> E \<in> \<E> \<longrightarrow> A \<inter> E \<noteq> {})"
+        by auto
+      also have "... \<longleftrightarrow> N``{x} # \<E>"
+        unfolding mesh_def by blast
+      finally show ?thesis
+        by auto
+    qed
+  qed
   show P1:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<E>, x)\<in>(AdhN N X) \<longleftrightarrow> (N``{x})#\<E> "
     using P0 by force
 qed
@@ -8525,18 +8585,11 @@ section ConvergenceSet
 lemma ClNh_if_iso:
   assumes A0:"isspmap X Cl" and
           A1:"iso_spmap X Cl"
-  shows ClNh_if_iso1:"\<And>x A. \<lbrakk>x \<in> X; A\<in>Pow X\<rbrakk> \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))" and
-        ClNh_if_iso2:"\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow>(converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})" and
-        ClNh_if_iso3:"\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" and 
-        ClNh_if_iso4:"(ClN (NCl Cl X) X) = Cl" and
+ shows  ClNh_if_iso4:"(ClN (NCl Cl X) X) = Cl" and
         ClNh_if_iso5:"ispsmap X (NCl Cl X)" and 
         ClNh_if_iso6:"iso_psmap X (NCl Cl X)" 
 proof-
-  show P1:"\<And>x A.  \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (NCl Cl X)``{x} = (grill (Pow X) ((converse Cl)``{x}))"
-    by (simp add: Cl_to_Nh1)
-  show P2:"\<And>x A.  \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow>(converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((NCl Cl X)``{x})"
-    by (simp add: Nh_to_Cl1) 
-  show P3:"\<And>x A.  \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow>(A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+  have P3:"\<And>x A.  \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow>(A, x) \<in> (ClN (NCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
   proof-
     fix x A assume A2:"x \<in> X" and aA3mem:"A \<in> Pow X"
     obtain B0:"(converse (ClN (NCl Cl X) X))``{x} = grill (Pow X) ((grill (Pow X) ((converse Cl)``{x})))"
@@ -8659,7 +8712,15 @@ proof-
   proof-
     fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
     show "(x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
-      unfolding NLim_def LimN_def using  amem prt xmem by auto
+    proof
+      assume "(x,A) \<in>  NLim (LimN N X) X"
+      then show "(x, A) \<in> N"
+        unfolding NLim_def LimN_def using prt by blast
+      next
+      assume "(x, A) \<in> N"
+      then show "(x,A) \<in>  NLim (LimN N X) X"
+      unfolding NLim_def LimN_def using amem xmem by blast
+    qed
   qed
   show P1:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> A \<in> (NLim (LimN N X) X)``{x} \<longleftrightarrow> A \<in> N``{x}"
     using P0 by auto
@@ -8674,15 +8735,14 @@ proof-
       using prt by blast
     have B3:"onpconv  X ?q"
     proof(rule onpconvI1)
-      fix x assume "x \<in> X"
+      fix x assume xmem:"x \<in> X"
       let ?N="(\<Inter> {\<F>. (\<F>, x) \<in> LimN N X})" let ?C="{\<F>. (\<F>, x) \<in> LimN N X}"
-      obtain "?C \<subseteq> pfilters_on (pwr X) (Pow X)"
-        using LimN_memD by force
+      obtain "N``{x} \<in> ?C" and "?C \<subseteq> pfilters_on (pwr X) (Pow X)"
+        using xmem B3 unfolding LimN_def by blast
       also obtain"?C \<noteq> {}"
-        using LimN_Im_memI \<open>x \<in> X\<close> prt by fastforce
+        using calculation by blast
       then have B4:"is_pfilter (pwr X) (Pow X) ?N "
-        using set_pfilters_inter
-        using calculation by auto
+        using set_pfilters_inter calculation by auto
       then have B5:"?N \<in> pfilters_on (pwr X) (Pow X)"
         by (simp add: pfilters_on_def)
       then show "(\<Inter> {\<F>. (\<F>, x) \<in> LimN N X}, x) \<in> LimN N X"
@@ -8942,14 +9002,6 @@ proof-
   show Q0:"\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> Lim \<longleftrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X"
   proof-
     fix \<F> x assume pfil:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and xmem:"x \<in> X" 
-     obtain centered:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> Lim"
-       by (simp add: centeredD1 prt)
-    obtain upclosed:"\<And>\<G> \<F> x. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); (\<F>, x) \<in> Lim;  \<F> \<subseteq> \<G>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Lim"
-      by (metis isoconvD1 prt) 
-    obtain vicinity:"\<And>x. x \<in> X \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim "
-      using onpconvD1 prt by force   
-    obtain is_limit:"\<And>x \<E>. (\<E>, x) \<in> Lim \<Longrightarrow> x \<in> X \<and> \<E> \<in> (pfilters_on (pwr X) (Pow X))"
-      using prt by blast  
     show "(\<F>, x) \<in> Lim \<longleftrightarrow> (\<F>, x) \<in> LimCl (ClLim Lim X) X" (is "?L \<longleftrightarrow> ?R")
     proof
       assume L:?L
@@ -9186,15 +9238,115 @@ proof-
     using ClLim_memD by fastforce
 qed
 
+lemma ext_LimCl:
+  assumes CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}"
+  shows ext_LimCl1:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X" and
+        ext_LimCl2:"\<And>x. x \<in> X \<Longrightarrow> {} \<notin> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
+proof-
+  show P0:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X"
+  proof-
+    fix x assume "x \<in> X" let ?U="lcro (pwr X) (Pow X) {x}"
+    obtain B0:"?U \<in> pfilters_on (pwr X) (Pow X)"
+      by (simp add: \<open>x \<in> X\<close> pfilters_on_iff principal_pfilter_sets)
+    show "(?U, x)\<in>LimCl Cl X"
+    proof-
+      have  B1:"?U \<in> pfilters_on (pwr X) (Pow X)"
+        by (simp add: \<open>lcro (pwr X) (Pow X) {x} \<in> pfilters_on (pwr X) (Pow X)\<close>)
+      also have "\<And>A. \<lbrakk>A \<in> Pow X; {A} # ?U\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl" 
+      proof-
+        fix A assume "A \<in> Pow X" and "{A}#?U"
+        then obtain "\<And>B. B \<in> ?U \<Longrightarrow> B \<inter> A \<noteq> {}"
+          by (simp add: Int_commute mesh_single_iff)
+        then obtain "x \<in> A"
+        proof-
+          assume a1: "x \<in> A \<Longrightarrow> thesis"
+          have f2: "refl (pwr X) (Pow X)"
+            using pwr_refl by blast
+          have f3: "{} = A \<inter> {}"
+            by simp
+          have "{x} \<subseteq> X"
+            using \<open>x \<in> X\<close> by blast
+          then have "x \<in> A"
+            using f3 f2 by (metis (no_types) PowI \<open>{A} # lcro (pwr X) (Pow X) {x}\<close> disjoint_insert(2) lcro_memI1 mesh_single_iff)
+          then show ?thesis
+            using a1 by fastforce
+        qed  
+        then have "\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl``{X-V} \<rbrakk> \<Longrightarrow> V \<inter> A \<noteq> {}"
+          using CCl2 \<open>x \<in> X\<close> by blast
+        then have "(\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+          by auto
+        then show "(A, x) \<in> Cl"
+          using CCl2 \<open>A \<in> Pow X\<close> \<open>x \<in> A\<close> by blast
+      qed
+      then show "(?U, x)\<in>LimCl Cl X"
+        by (meson LimCl_memI \<open>x \<in> X\<close> calculation)
+    qed
+  qed
+  show P1:"\<And>x. x \<in> X \<Longrightarrow> {} \<notin> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
+    using assms by auto
+qed
+  
+lemma LimCl_add_iso:
+  assumes CCl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B}"
+  shows  "\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
+proof-
+    fix A B assume "B \<in> Pow X" and "A \<subseteq> B"
+    then obtain "A \<in> Pow X" and "B = A \<union> B"
+      by blast
+    then show "Cl``{A}\<subseteq>Cl``{B}"
+      using \<open>B \<in> Pow X\<close> subset_Un_eq[of A B] CCl3[of A B] by auto
+qed
+
+lemma LimCl_add:
+  assumes CCl1:"Cl``{{}} = {}" and
+          CCl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B}"
+  shows "(\<And>x. x \<in> X \<Longrightarrow> is_filter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" 
+proof-
+  fix x assume "x \<in> X"
+  obtain CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
+    using CCl3 LimCl_add_iso[of X Cl]  by presburger
+  let ?\<F> ="{V \<in> Pow X. x \<notin> Cl``{X-V}}"
+  show "is_filter (pwr X) (Pow X) ?\<F>"
+  proof(rule is_filterI1)
+    show PF01:"?\<F> \<noteq> {}"
+      using CCl1 by fastforce
+    show PF02:"?\<F> \<subseteq> Pow X"
+      by blast
+    show PF03:"is_dir ?\<F> (dual (pwr X))"
+    proof(rule is_dirI1)
+      fix a b assume "a \<in> ?\<F>" and "b \<in> ?\<F>" 
+      then obtain amem:"a \<in> Pow X" and "x \<notin> Cl``{X-a}" and bmem:"b \<in> Pow X" and "x \<notin> Cl``{X-b}" 
+        by fastforce
+      then obtain "a \<inter> b \<in> Pow X" and "x \<notin> Cl``{X-(a \<inter> b)}" 
+        by (metis CCl3 Diff_Int Diff_subset Int_Un_eq(1) Pow_iff Un_iff Un_subset_iff)
+      then obtain "\<exists>c\<in>?\<F>. c \<subseteq> a \<and> c \<subseteq> b" 
+        by auto
+      then show " \<exists>c\<in>?\<F>. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
+        by (meson PowD amem bmem converseI pwr_mem_iff)
+    qed
+    show PF04:"is_ord_cl (Pow X) ?\<F> (pwr X)"
+    proof(rule is_ord_clI1)
+      fix a b assume a0:"a \<in> ?\<F>" and b0:"b \<in> Pow X"  and ab0:"(a,b)\<in>pwr X" 
+      then obtain a1:"a \<in> Pow X" and  ab1:"a \<subseteq> b" and x1:"x \<notin> Cl``{X-a}"
+        by (simp add: powrel8) 
+      then obtain "(X-b) \<subseteq> (X-a)"
+        by (simp add: Diff_mono)
+      then obtain "Cl``{X-b} \<subseteq> Cl``{X-a}"
+        by (simp add: CCl4)
+      then obtain "X-(Cl``{X-a}) \<subseteq>X-(Cl``{X-b})"
+        by blast
+      then show "b \<in> ?\<F>"
+        using \<open>x \<in> X\<close> b0 x1 by blast  
+    qed
+  qed
+qed
 
 lemma prtp_cl_mem_iff:
   assumes prt:"prtop_cl X Cl"
   shows Cl_mem_iff1:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})" and
-        Cl_mem_iff2:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" and 
-        Cl_mem_iff3:"isspmap X Cl \<Longrightarrow> (\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" and
-        Cl_mem_iff4:"isspmap X Cl \<Longrightarrow> (\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"  and
-        Cl_mem_iff5:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})" and
-        Cl_mem_iff6:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ((NCl Cl X)``{x}, x) \<in> (LimCl Cl X))"
+        Cl_mem_iff2:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (X-A, x) \<notin> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})" and
+        Cl_mem_iff3:"(\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" and 
+        Cl_mem_iff7:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X "
 proof-
   show P0:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
   proof-
@@ -9236,306 +9388,187 @@ proof-
         using calculation by blast 
     qed
   qed
+  show P1:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (X-A, x) \<notin> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+  proof-
+     fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
+     then show "(X-A, x) \<notin> Cl \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in>Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+       by (metis Diff_disjoint Diff_subset Int_commute P0 Pow_iff)
+  qed
   obtain CCl1:"Cl``{{}} = {}"
     using prt by fastforce
   obtain  CCl2:"\<And>A. A \<in> Pow X \<Longrightarrow> A \<subseteq> Cl``{A}"
     by (simp add: prt)
   obtain CCl3:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B}"
     using prt by presburger
-  show P1:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" 
+  show P2:"(\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})" 
   proof-
-    assume isp:"isspmap X Cl"
-    obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"
-      using isp by blast
-    have CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
-    proof-
-      fix A B assume "B \<in> Pow X" and "A \<subseteq> B"
-      then show "Cl``{A}\<subseteq>Cl``{B}"
-        using prt isp prtop_clD4[of Cl X B A] by fastforce
-    qed
-    show "(\<And>x. x \<in> X \<Longrightarrow> is_pfilter  (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}})"
-    proof-
-      fix x assume "x \<in> X"
-      let ?\<F> ="{V \<in> Pow X. x \<notin> Cl``{X-V}}"
-      show "is_pfilter (pwr X) (Pow X) ?\<F>"
-      proof(rule is_pfilterI1)
-        show "is_filter (pwr X) (Pow X) ?\<F>" 
-        proof(rule is_filterI1)
-          show PF01:"?\<F> \<noteq> {}"
-            using CCl1 by fastforce
-          show PF02:"?\<F> \<subseteq> Pow X"
-            by blast
-          show PF03:"is_dir ?\<F> (dual (pwr X))"
-          proof(rule is_dirI1)
-            fix a b assume "a \<in> ?\<F>" and "b \<in> ?\<F>" 
-            then obtain amem:"a \<in> Pow X" and "x \<notin> Cl``{X-a}" and bmem:"b \<in> Pow X" and "x \<notin> Cl``{X-b}" 
-              by fastforce
-            then obtain "a \<inter> b \<in> Pow X" and "x \<notin> Cl``{X-(a \<inter> b)}" 
-              by (metis CCl3 Diff_Int Diff_subset Int_Un_eq(1) Pow_iff Un_iff Un_subset_iff)
-            then obtain "\<exists>c\<in>?\<F>. c \<subseteq> a \<and> c \<subseteq> b" 
-              by auto
-            then show " \<exists>c\<in>?\<F>. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
-              by (meson PowD amem bmem converseI pwr_mem_iff)
-          qed
-          show PF04:"is_ord_cl (Pow X) ?\<F> (pwr X)"
-          proof(rule is_ord_clI1)
-            fix a b assume a0:"a \<in> ?\<F>" and b0:"b \<in> Pow X"  and ab0:"(a,b)\<in>pwr X" 
-            then obtain a1:"a \<in> Pow X" and  ab1:"a \<subseteq> b" and x1:"x \<notin> Cl``{X-a}"
-              by (simp add: powrel8) 
-            then show "b \<in> ?\<F>"  
-              using ab0 b0  by (metis (no_types, lifting) CCl3 Diff_Int Diff_subset Pow_iff Un_iff inf.absorb_iff2 mem_Collect_eq)
-          qed
-        qed
-        show "Pow X \<noteq> ?\<F>"
-          by (metis (no_types, lifting) CCl2 CollectD Diff_empty Pow_bottom Pow_top \<open>x \<in> X\<close> subsetD)
-      qed
+    fix x assume "x \<in> X"
+    let ?\<F> ="{V \<in> Pow X. x \<notin> Cl``{X-V}}"
+    show "is_pfilter (pwr X) (Pow X) ?\<F>"
+    proof(rule setpfilterI1)
+      show "is_filter (pwr X) (Pow X) ?\<F>" 
+        using CCl1 CCl3 LimCl_add[of Cl X x] \<open>x \<in> X\<close> by blast
+      show "{} \<notin> ?\<F>" using CCl2 \<open>x \<in> X\<close> by auto
     qed
   qed
-  show P2:"isspmap X Cl \<Longrightarrow> (\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" 
+  show P3:"\<And>x. x \<in> X \<Longrightarrow> ( lcro (pwr X) (Pow X) {x},x)\<in>LimCl Cl X"
+    by (meson CCl2 ext_LimCl1)
+qed
+
+lemma ClLim_ps_prt: 
+  assumes prt:"prtop_cl X Cl" and isp:"isspmap X Cl"
+  shows ClLim_ps_prt1:"(\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" and
+        ClLim_ps_prt2:"(\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"  and
+        ClLim_ps_prt3:"(\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})" and
+        ClLim_ps_prt4:"(\<And>x. x \<in> X \<Longrightarrow> ((NCl Cl X)``{x}, x) \<in> (LimCl Cl X))"
+proof-
+  obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X "
+    using isp by auto
+  show P2:"(\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})" 
   proof-
-    assume isp:"isspmap X Cl"
-    obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"
-      using isp by blast
-    have CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
-    proof-
-      fix A B assume "B \<in> Pow X" and "A \<subseteq> B"
-      then show "Cl``{A}\<subseteq>Cl``{B}"
-        using prt isp prtop_clD4[of Cl X B A] by fastforce
-    qed
-    show "\<And>x A. \<lbrakk>x\<in>X;A\<in>Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
-    proof-
-      fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
-      have "is_pfilter (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}}"
-        using A1 P1 isp by auto
-      have "(x, A) \<in> (NCl Cl X) \<longleftrightarrow> {A}#(dual Cl)``{x}"
-        unfolding NCl_def using A0 A1 by blast
-      also have "... \<longleftrightarrow> (\<forall>V \<in> (dual Cl)``{x}. V \<inter> A \<noteq> {})"
-        by (simp add: Int_commute mesh_single_iff)
-      also have "... \<longleftrightarrow> (\<forall>V. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
-        by blast
-      also have "... \<longleftrightarrow> (X-A, x) \<notin> Cl" (is "?L \<longleftrightarrow> ?R")
-      proof
-        assume ?L
-        then show ?R
-          by blast
-        next
-        assume ?R
-        then show ?L
-          by (metis A0 P0 inf_commute is_cl)
-      qed
-      finally show "(x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
-        using A0 by blast
-    qed
+    fix A x assume A0:"A\<in>(Pow X)" and A1:"x\<in>X"
+    have "is_pfilter (pwr X) (Pow X) {V \<in> Pow X. x \<notin> Cl``{X-V}}"
+      using prt A1 Cl_mem_iff3[of Cl X x]  by fastforce
+    have "(x, A) \<in> (NCl Cl X) \<longleftrightarrow> {A}#(dual Cl)``{x}"
+      unfolding NCl_def using A0 A1 by blast
+    also have "... \<longleftrightarrow> (\<forall>V \<in> (dual Cl)``{x}. V \<inter> A \<noteq> {})"
+      by (simp add: Int_commute mesh_single_iff)
+    also have "... \<longleftrightarrow> (\<forall>V. (V, x) \<in> Cl \<longrightarrow>  V \<inter> A \<noteq> {})"
+      by blast
+    also have "... \<longleftrightarrow> (\<forall>V \<in> Pow X. (V, x) \<in> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
+      using is_cl by blast
+    also have "... \<longleftrightarrow> (X-A, x) \<notin> Cl" 
+      using prt A0 A1 Cl_mem_iff2[of Cl X A x]  by blast
+    finally show "(x, A) \<in> (NCl Cl X) \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
+      using A0 by blast
   qed
-  show P3:"isspmap X Cl \<Longrightarrow> (\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"
-   proof-
-    assume isp:"isspmap X Cl"
-    obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"
-      using isp by blast
-    have CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
-    proof-
-      fix A B assume "B \<in> Pow X" and "A \<subseteq> B"
-      then show "Cl``{A}\<subseteq>Cl``{B}"
-        using prt isp prtop_clD4[of Cl X B A] by fastforce
-    qed
-    show "(\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"
-    proof-
-       fix A x assume A0:"x\<in>X"  
-       then obtain "A \<in> (NCl Cl X)``{x} \<Longrightarrow> A \<in> Pow X"
-          unfolding NCl_def by blast
-       also obtain "A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl} \<Longrightarrow> A \<in> Pow X"
-          by blast
-       then show "A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
-         using A0 P2 calculation isp by fastforce
-    qed
-  qed
-  show P6:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})" 
+  show P3:"(\<And>x A. x \<in> X \<Longrightarrow>A \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl})"
   proof-
-    assume isp:"isspmap X Cl"
-    obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"
-      using isp by blast
-    have CCl4:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow> Cl``{A}\<subseteq>Cl``{B}" 
-    proof-
-      fix A B assume "B \<in> Pow X" and "A \<subseteq> B"
-      then show "Cl``{A}\<subseteq>Cl``{B}"
-        using prt isp prtop_clD4[of Cl X B A] by fastforce
-    qed
-    show "(\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})"
-    proof-
-      fix x assume A0:"x \<in> X"
-      have "\<And>\<F> x. (\<F>, x) \<in> (LimCl Cl X) \<Longrightarrow> \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> x \<in> X"
-        by (meson LimCl_memD)
-      have "\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow>  (LimCl Cl X)``{\<F>} = \<Inter>{Cl``{A}|A. A \<in> Pow X \<and> {A}#\<F>}"
-        by (simp add: Cl_to_Lim isp)
-      have "\<And>\<F>. (\<F>, x) \<in> (LimCl Cl X) \<Longrightarrow> (\<forall>A. A \<in> Pow X \<and> {A}#\<F> \<longrightarrow> (A, x)\<in> Cl) "
+    fix x A assume "x \<in> X"
+    obtain "(NCl Cl X)``{x} \<subseteq> Pow X"
+      by (meson NCl_Im_memD subsetI)
+    then show "A  \<in> (NCl Cl X)``{x} \<longleftrightarrow> A \<in> {V\<in>Pow X. (X-V, x) \<notin>Cl}"
+    using P2[of x A]  \<open>x \<in> X\<close> isp by blast
+  qed
+  show P6:"(\<And>x. x \<in> X \<Longrightarrow>  (NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)})" 
+  proof-
+    fix x assume A0:"x \<in> X"
+    show "(NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
+    proof
+      have "\<And>A. \<lbrakk>A \<in> Pow X; A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}\<rbrakk> \<Longrightarrow> A \<notin>(NCl Cl X)``{x}"
       proof-
-        fix \<F> assume "(\<F>, x) \<in> (LimCl Cl X)"
-        then obtain "\<F> \<in> pfilters_on (pwr X) (Pow X)"
-          by (simp add: \<open>\<And>x \<F>. (\<F>, x) \<in> LimCl Cl X \<Longrightarrow> \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> x \<in> X\<close>)
-        then show "(\<forall>A. A \<in> Pow X \<and> {A}#\<F> \<longrightarrow> (A, x)\<in> Cl) "
-          by (metis LimCl_memD \<open>(\<F>, x) \<in> LimCl Cl X\<close>)
+        fix A assume amem:"A \<in> Pow X" and "A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
+        then obtain \<F> where ftx:"(\<F>, x) \<in> (LimCl Cl X)" and "A \<notin> \<F>"
+          by blast
+        then obtain amesh_unfold:"\<And>F. F \<in> \<F> \<Longrightarrow> (X-A) \<inter> F \<noteq> {}"
+          by (metis LimCl_memD PowD \<open>A \<in> Pow X\<close> inf_sup_aci(1) pfilters_on_iff pfilters_sets_comp3)
+        obtain is_pfil:"is_pfilter (pwr X) (Pow X) \<F>"
+          by (metis LimCl_memD ftx pfilters_on_iff)
+        define \<H> where  "\<H> \<equiv> {E \<in> Pow X. \<exists>B \<in> \<F>. (X-A) \<inter> B \<subseteq> E}" 
+        then obtain hpfil:"is_pfilter (pwr X) (Pow X) \<H>" and fsub:"\<F>\<subseteq> \<H>" 
+          using is_pfil amesh_unfold amem finer_proper_filter[of X \<F> "X-A"]  by (simp add: Int_commute)  
+        obtain gmem:"\<H> \<in> pfilters_on (pwr X) (Pow X)"
+          using hpfil pfilters_on_iff by blast 
+        then have hlim:"(\<H>, x) \<in> LimCl Cl X"
+        using A0 proof(rule LimCl_memI)
+          show "\<And>A. A \<in> Pow X \<Longrightarrow> {A} # \<H> \<Longrightarrow> (A, x) \<in> Cl"
+          proof -
+            fix E :: "'a set"   assume a1: "E \<in> Pow X" and a2: "{E} # \<H>"
+            then show "(E, x) \<in> Cl"
+              using fsub ftx LimCl_memD[of \<F> x Cl X]  by (simp add: mesh_single_iff subset_eq) 
+          qed
+        qed
+        also obtain hmesh:"{X-A}#\<H>" 
+          unfolding \<H>_def mesh_def using amesh_unfold by fastforce
+        then obtain "x \<in>(Cl``{X-A})"
+          using LimCl_memD hlim by fastforce
+        then show "A \<notin>(NCl Cl X)``{x}"
+          using A0 P3 isp by auto
       qed
-      have "\<And>\<F>. \<lbrakk>(\<forall>A. A \<in> Pow X \<and> {A}#\<F> \<longrightarrow> (A, x)\<in> Cl);  \<F> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> (LimCl Cl X)"
-        by (meson A0 LimCl_memI)
-      show "(NCl Cl X)``{x} = \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-      proof
-        have "\<And>A. \<lbrakk>A \<in> Pow X; A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}\<rbrakk> \<Longrightarrow> A \<notin>(NCl Cl X)``{x}"
+      then show "(NCl Cl X)``{x} \<subseteq>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
+        by (meson NCl_Im_memD subsetI)
+      next
+      have ctr2:"\<And>A. \<lbrakk>A \<in> Pow X;A \<notin>(NCl Cl X)``{x}\<rbrakk> \<Longrightarrow>  A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
+      proof-
+        fix A assume amem:"A \<in> Pow X" and "A \<notin>(NCl Cl X)``{x}"
+       then obtain "(x ,A) \<notin> NCl Cl X"
+        by auto
+        then obtain "x \<in> Cl``{X-A}"
+          unfolding NCl_def  using A0 P3 \<open>A \<notin> NCl Cl X `` {x}\<close> amem isp by force
+        define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
+        have "is_pfilter  (pwr X) (Pow X) \<F>"
+          unfolding \<F>_def  using A0 prt Cl_mem_iff3[of Cl X x] by presburger
+        have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
+          by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
+        have F1a:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl `` {X - V}\<rbrakk>\<Longrightarrow> V \<inter> (X-A) \<noteq> {}"
+          using Cl_mem_iff1[of Cl X "X-A" x]  A0 \<open>x \<in> Cl `` {X - A}\<close> prt by fastforce
+        then have F1:"{X-A} # \<F> "
+          unfolding \<F>_def by (simp add: Int_commute mesh_single_iff)
+        have "(\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl)"
         proof-
-          fix A assume amem:"A \<in> Pow X" and "A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-          then obtain \<F> where "(\<F>, x) \<in> (LimCl Cl X)" and "A \<notin> \<F>"
+          fix V assume V0:"V \<in> Pow X" and vmesh:"{V}#\<F>"
+          then obtain "\<forall>W \<in> Pow X. x  \<notin> Cl``{X-W} \<longrightarrow> W \<inter> V \<noteq> {}"
+            by (simp add: Int_commute \<F>_def mesh_single_iff)
+          then obtain "\<forall>W \<in> Pow X. (X-W,x)  \<notin> Cl \<longrightarrow> W \<inter> V \<noteq> {}"
             by blast
-          then obtain amesh_unfold:"\<And>F. F \<in> \<F> \<Longrightarrow> (X-A) \<inter> F \<noteq> {}"
-            by (metis LimCl_memD PowD \<open>A \<in> Pow X\<close> inf_sup_aci(1) pfilters_on_iff pfilters_sets_comp3)
-          obtain is_pfil:"is_pfilter (pwr X) (Pow X) \<F>"
-            using \<open>(\<F>, x) \<in> LimCl Cl X\<close> \<open>\<And>x \<F>. (\<F>, x) \<in> LimCl Cl X \<Longrightarrow> \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> x \<in> X\<close> pfilters_on_iff by blast
-          define \<H> where  "\<H> \<equiv> {E \<in> Pow X. \<exists>B \<in> \<F>. (X-A) \<inter> B \<subseteq> E}" 
-          then obtain hpfil:"is_pfilter (pwr X) (Pow X) \<H>" and fsub:"\<F>\<subseteq> \<H>" 
-            using is_pfil amesh_unfold amem finer_proper_filter[of X \<F> "X-A"]  by (simp add: Int_commute)  
-          obtain gmem:"\<H> \<in> pfilters_on (pwr X) (Pow X)"
-            using hpfil pfilters_on_iff by blast 
-          then obtain hlim:"(\<H>, x) \<in> LimCl Cl X"
-            by (metis LimCl_memD LimCl_memI \<open>(\<F>, x) \<in> LimCl Cl X\<close> fsub mesh_single_iff subset_eq) 
-          also obtain hmesh:"{X-A}#\<H>" 
-            unfolding \<H>_def mesh_def using amesh_unfold by fastforce
-          then obtain "x \<in>(Cl``{X-A})"
-            using \<open>\<And>\<F>. (\<F>, x) \<in> LimCl Cl X \<Longrightarrow> \<forall>A. A \<in> Pow X \<and> {A} # \<F> \<longrightarrow> (A, x) \<in> Cl\<close> hlim by force
-          then show "A \<notin>(NCl Cl X)``{x}"
-            using A0 P3 isp by auto
+          then show "(V, x) \<in> Cl"
+            using prt  V0 Cl_mem_iff1[of Cl X "V" x] unfolding mesh_def \<F>_def using A0 by blast
         qed
-        then show "(NCl Cl X)``{x} \<subseteq>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-          by (meson NCl_Im_memD subsetI)
-        next
-        have "\<And>A. \<lbrakk>A \<in> Pow X;A \<notin>(NCl Cl X)``{x}\<rbrakk> \<Longrightarrow>  A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-        proof-
-          fix A assume amem:"A \<in> Pow X" and "A \<notin>(NCl Cl X)``{x}"
-         then obtain "(x ,A) \<notin> NCl Cl X"
-          by auto
-          then obtain "x \<in> Cl``{X-A}"
-            unfolding NCl_def  using A0 P3 \<open>A \<notin> NCl Cl X `` {x}\<close> amem isp by force
-          define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
-          have "is_pfilter  (pwr X) (Pow X) \<F>"
-            unfolding \<F>_def  using A0 P1 isp by presburger
-          have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
-            by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
-          have F1a:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl `` {X - V}\<rbrakk>\<Longrightarrow> V \<inter> (X-A) \<noteq> {}"
-            by (meson A0 Diff_subset Image_singleton_iff P0 Pow_iff \<open>x \<in> Cl `` {X - A}\<close>)
-          then have F1:"{X-A} # \<F> "
-            unfolding \<F>_def by (simp add: Int_commute mesh_single_iff)
-          have "(\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl)"
-          proof-
-            fix V assume V0:"V \<in> Pow X" and vmesh:"{V}#\<F>"
-            then show "(V, x) \<in> Cl"
-              using P0 unfolding mesh_def \<F>_def
-            proof -
-              assume "\<forall>a b. a \<in> {V} \<longrightarrow> b \<in> {V \<in> Pow X. x \<notin> Cl `` {X - V}} \<longrightarrow> a \<inter> b \<noteq> {}"
-              then show ?thesis
-                by (metis (lifting) A0 CollectI Image_singleton_iff Int_commute P0 V0 singletonI)
-            qed
-          qed
-          have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
-            by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
-          then have "(\<F>, x)\<in> LimCl Cl X"
-            by (simp add: F0 \<open>\<And>\<F>. \<lbrakk>\<forall>A. A \<in> Pow X \<and> {A} # \<F> \<longrightarrow> (A, x) \<in> Cl; \<F> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<F>, x) \<in> LimCl Cl X\<close>) 
-          also have "A \<notin> \<F>"
-            using \<F>_def \<open>x \<in> Cl `` {X - A}\<close> by auto
-          then show " A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
-            using calculation by blast
-        qed
-        have "\<And>x. x \<in> X \<Longrightarrow> ( lcro (pwr X) (Pow X) {x},x)\<in>LimCl Cl X"
-        proof-
-          fix x assume "x \<in> X" let ?U="lcro (pwr X) (Pow X) {x}"
-          obtain B0:"?U \<in> pfilters_on (pwr X) (Pow X)"
-            by (simp add: \<open>x \<in> X\<close> pfilters_on_iff principal_pfilter_sets)
-          show "(?U, x)\<in>LimCl Cl X"
-          proof-
-            have  B1:"?U \<in> pfilters_on (pwr X) (Pow X)"
-              by (simp add: \<open>lcro (pwr X) (Pow X) {x} \<in> pfilters_on (pwr X) (Pow X)\<close>)
-            also have "\<And>A. \<lbrakk>A \<in> Pow X; {A} # ?U\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl" 
-            proof-
-              fix A assume "A \<in> Pow X" and "{A}#?U"
-              then obtain "\<And>B. B \<in> ?U \<Longrightarrow> B \<inter> A \<noteq> {}"
-                by (simp add: Int_commute mesh_single_iff)
-              then obtain "x \<in> A"
-              proof -
-                assume a1: "x \<in> A \<Longrightarrow> thesis"
-                have f2: "refl (pwr X) (Pow X)"
-                  using pwr_refl by blast
-                have f3: "{} = A \<inter> {}"
-                  by simp
-                have "{x} \<subseteq> X"
-                  using \<open>x \<in> X\<close> by blast
-                then have "x \<in> A"
-                  using f3 f2 by (metis (no_types) PowI \<open>{A} # lcro (pwr X) (Pow X) {x}\<close> disjoint_insert(2) lcro_memI1 mesh_single_iff)
-                then show ?thesis
-                  using a1 by fastforce
-             qed  
-              then have "\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl``{X-V} \<rbrakk> \<Longrightarrow> V \<inter> A \<noteq> {}"
-                using CCl2 \<open>x \<in> X\<close> by blast
-              then have "(\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
-                by auto
-              then show "(A, x) \<in> Cl"
-                using CCl2 \<open>A \<in> Pow X\<close> \<open>x \<in> A\<close> by blast
-              qed
-              then show "(?U, x)\<in>LimCl Cl X"
-                by (meson LimCl_memI \<open>x \<in> X\<close> calculation)
-            qed
-          qed
-          then have "centered X (LimCl Cl X)"
-            using centeredI1 by auto 
-          have "isoconv X (LimCl Cl X)"
-          proof(rule isoconvI1)
-            fix \<G> \<F> x assume  "\<G> \<in> pfilters_on (pwr X) (Pow X)" and "(\<F>, x) \<in> LimCl Cl X"  and "\<F> \<subseteq> \<G>" 
-          then show "(\<G>, x) \<in> LimCl Cl X"
-            unfolding LimCl_def by (simp add: mesh_single_iff subset_eq)
-        qed
-        have  "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> Pow X"
-          using A0 LimCl_memD \<open>\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> LimCl Cl X\<close> pfilters_on_iff sets_pfilter6 by fastforce
-        then show "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> (NCl Cl X)``{x}"
-        proof -
-          show ?thesis
-            using \<open>\<And>A. \<lbrakk>A \<in> Pow X; A \<notin> NCl Cl X `` {x}\<rbrakk> \<Longrightarrow> A \<notin> \<Inter> {\<F>. (\<F>, x) \<in> LimCl Cl X}\<close> \<open>\<Inter> {\<F>. (\<F>, x) \<in> LimCl Cl X} \<subseteq> Pow X\<close> by blast
-        qed
+        have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
+          by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
+        then have "(\<F>, x)\<in> LimCl Cl X"
+          by (meson A0 F0 LimCl_memI \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
+        also have "A \<notin> \<F>"
+          using \<F>_def \<open>x \<in> Cl `` {X - A}\<close> by auto
+        then show " A \<notin>  \<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)}"
+          using calculation by blast
       qed
+      have "centered X (LimCl Cl X)"
+        using centeredI1[of X "LimCl Cl X"] prt ext_LimCl1[of X Cl] by presburger
+      have "{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<noteq> {}"
+        using prt ext_LimCl1[of X Cl] A0 by auto
+      then have "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> Pow X"
+        using A0 LimCl_memD[of _ x Cl X]  pfilters_on_iff[of _ "pwr X" "Pow X"] sets_pfilter6 by fastforce
+      then show "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> (NCl Cl X)``{x}"
+        using ctr2  by (meson subsetD subsetI)
     qed
   qed
-  show P7:"isspmap X Cl \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> ((NCl Cl X)``{x}, x) \<in> (LimCl Cl X))"
+  show P7:"\<And>x. x \<in> X \<Longrightarrow> ((NCl Cl X)``{x}, x) \<in> (LimCl Cl X)"
   proof-
-    assume isp:"isspmap X Cl" 
-    show "\<And>x. x \<in> X \<Longrightarrow> ((NCl Cl X)``{x}, x) \<in> (LimCl Cl X)"
+    fix x assume "x \<in> X"
+    show "((NCl Cl X)``{x}, x) \<in> (LimCl Cl X)"
     proof-
-      fix x assume "x \<in> X"
-      show "((NCl Cl X)``{x}, x) \<in> (LimCl Cl X)"
-      proof-
-        define \<F> where "\<F> \<equiv> {V \<in> Pow X. (X-V, x) \<notin> Cl}"
-         have " is_pfilter  (pwr X) (Pow X) \<F>"
-           using P1 \<F>_def \<open>x \<in> X\<close> isp by auto
-         have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
-           by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
-          have "(\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl)"
-          proof-
-            fix V assume V0:"V \<in> Pow X" and vmesh:"{V}#\<F>"
-            then show "(V, x) \<in> Cl"
-              using P0 unfolding mesh_def \<F>_def
-              by (metis (no_types, lifting) CollectI \<open>x \<in> X\<close> inf.commute singletonI)
-          qed
-          have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
-            by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
-          then have "(\<F>, x)\<in> LimCl Cl X"
-            by (meson F0 LimCl_memI \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close> \<open>x \<in> X\<close>)
-          have "(NCl Cl X)``{x} \<subseteq> Pow X"
-            using NCl_Im_memD by fastforce
-          have "\<F> \<subseteq> Pow X"
-            by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> sets_pfilter6)
-          also have "(NCl Cl X)``{x} = \<F>"
-            using P2[of x] unfolding \<F>_def
-            using \<open>NCl Cl X `` {x} \<subseteq> Pow X\<close> \<open>x \<in> X\<close> isp subset_antisym by auto
-          then show ?thesis
-            by (simp add: \<open>(\<F>, x) \<in> LimCl Cl X\<close>)
+      define \<F> where "\<F> \<equiv> {V \<in> Pow X. (X-V, x) \<notin> Cl}"
+       have " is_pfilter  (pwr X) (Pow X) \<F>"
+         using prt \<open>x \<in> X\<close> Cl_mem_iff3[of Cl X x] \<F>_def isp by auto
+       have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
+         by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
+        have "(\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl)"
+        proof-
+          fix V assume V0:"V \<in> Pow X" and vmesh:"{V}#\<F>"
+          then obtain "\<forall>W \<in> Pow X. x  \<notin> Cl``{X-W} \<longrightarrow> W \<inter> V \<noteq> {}"
+            by (simp add: Int_commute \<F>_def mesh_single_iff)
+          then obtain "\<forall>W \<in> Pow X. (X-W,x)  \<notin> Cl \<longrightarrow> W \<inter> V \<noteq> {}"
+            by blast
+          then show "(V, x) \<in> Cl"
+            using prt \<open>x \<in> X\<close> V0 Cl_mem_iff1[of Cl X "V" x] unfolding mesh_def \<F>_def by blast
         qed
+        have "\<And>V. \<lbrakk>V \<in> Pow X; {V}#\<F>\<rbrakk> \<Longrightarrow> x \<in> Cl``{V}"
+          by (simp add: \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close>)
+        then have "(\<F>, x)\<in> LimCl Cl X"
+          by (meson F0 LimCl_memI \<open>\<And>V. \<lbrakk>V \<in> Pow X; {V} # \<F>\<rbrakk> \<Longrightarrow> (V, x) \<in> Cl\<close> \<open>x \<in> X\<close>)
+        have "(NCl Cl X)``{x} \<subseteq> Pow X"
+          using NCl_Im_memD by fastforce
+        have "\<F> \<subseteq> Pow X"
+          by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> sets_pfilter6)
+        also have "(NCl Cl X)``{x} = \<F>"
+          using P2[of x] unfolding \<F>_def
+          using \<open>NCl Cl X `` {x} \<subseteq> Pow X\<close> \<open>x \<in> X\<close> contrapos_sub by auto
+        then show ?thesis
+          by (simp add: \<open>(\<F>, x) \<in> LimCl Cl X\<close>)
     qed
   qed
 qed
-
 
 
 lemma ClLim_if_prt:
@@ -9590,7 +9623,7 @@ proof-
       assume R:?R
       define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
       have " is_pfilter  (pwr X) (Pow X) \<F>"
-        unfolding \<F>_def using A0 A1 xmem Cl_mem_iff2[of Cl X x] by blast
+        unfolding \<F>_def using A0 A1 xmem Cl_mem_iff3[of Cl X x] by blast
       have F0:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
         by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> pfilters_on_iff)
       have F1a:"\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl `` {X - V}\<rbrakk>\<Longrightarrow> V \<inter> A \<noteq> {}"
@@ -9623,44 +9656,7 @@ proof-
     qed
   qed
   have "\<And>x. x \<in> X \<Longrightarrow> ( lcro (pwr X) (Pow X) {x},x)\<in>LimCl Cl X"
-  proof-
-    fix x assume "x \<in> X" let ?U="lcro (pwr X) (Pow X) {x}"
-    obtain B0:"?U \<in> pfilters_on (pwr X) (Pow X)"
-      by (simp add: \<open>x \<in> X\<close> pfilters_on_iff principal_pfilter_sets)
-    show "(?U, x)\<in>LimCl Cl X"
-    proof-
-      have  B1:"?U \<in> pfilters_on (pwr X) (Pow X)"
-        by (simp add: \<open>lcro (pwr X) (Pow X) {x} \<in> pfilters_on (pwr X) (Pow X)\<close>)
-      also have "\<And>A. \<lbrakk>A \<in> Pow X; {A} # ?U\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl" 
-      proof-
-        fix A assume "A \<in> Pow X" and "{A}#?U"
-        then obtain "\<And>B. B \<in> ?U \<Longrightarrow> B \<inter> A \<noteq> {}"
-          by (simp add: Int_commute mesh_single_iff)
-        then obtain "x \<in> A"
-        proof -
-          assume a1: "x \<in> A \<Longrightarrow> thesis"
-          have f2: "refl (pwr X) (Pow X)"
-            using pwr_refl by blast
-          have f3: "{} = A \<inter> {}"
-            by simp
-          have "{x} \<subseteq> X"
-            using \<open>x \<in> X\<close> by blast
-          then have "x \<in> A"
-            using f3 f2 by (metis (no_types) PowI \<open>{A} # lcro (pwr X) (Pow X) {x}\<close> disjoint_insert(2) lcro_memI1 mesh_single_iff)
-          then show ?thesis
-            using a1 by fastforce
-        qed  
-        then have "\<And>V. \<lbrakk>V \<in> Pow X; x \<notin> Cl``{X-V} \<rbrakk> \<Longrightarrow> V \<inter> A \<noteq> {}"
-          by (meson CCl2 F1a Image_singleton_iff \<open>A \<in> Pow X\<close> \<open>x \<in> X\<close> subsetD)
-        then have "(\<forall>V \<in> Pow X. (X-V, x) \<notin> Cl \<longrightarrow> V \<inter> A \<noteq> {})"
-          by auto
-        then show "(A, x) \<in> Cl"
-          using CCl2 \<open>A \<in> Pow X\<close> \<open>x \<in> A\<close> by blast
-      qed
-      then show "(?U, x)\<in>LimCl Cl X"
-        by (meson LimCl_memI \<open>x \<in> X\<close> calculation)
-    qed
-  qed
+    by (simp add: A1 Cl_mem_iff7)
   then have cent:"centered X ?q"
     using centeredI1 by auto 
   have iso:"isoconv X ?q"
@@ -9675,9 +9671,9 @@ proof-
     let ?\<FF>="{\<F>. (\<F>, x) \<in> ?q}"
     let ?\<F>="(\<Inter>?\<FF>)"
     have "?\<F>=(NCl Cl X)``{x}"
-      using Cl_mem_iff5[of Cl X x] using A0 A1 \<open>x \<in> X\<close> by presburger
+      using ClLim_ps_prt3[of Cl X x] using A0 A1 \<open>x \<in> X\<close> by presburger
     then show "(?\<F>, x)\<in>?q"
-      using Cl_mem_iff6[of Cl X x] A0 A1 \<open>x \<in> X\<close> by presburger
+      using ClLim_ps_prt4[of Cl X x] A0 A1 \<open>x \<in> X\<close> by presburger
   qed
   show "is_prtop X (LimCl Cl X)"
     using  isc iso cent onp by blast
