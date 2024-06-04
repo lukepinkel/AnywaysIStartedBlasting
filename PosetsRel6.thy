@@ -10259,9 +10259,22 @@ qed
 lemma NAdhN_ext:
   "extensive (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))  ((\<lambda>Adh. NAdh Adh X) \<circ>(\<lambda>N. AdhN N X))"
 proof(rule extensiveI1)
-  fix x assume "x \<in> Pow (X \<times> Pow X)" 
-  then show " (x, ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) x) \<in> pwr (X \<times> Pow X)"
-  unfolding NAdh_def AdhN_def pwr_def mesh_def by(auto)  
+  fix A assume amem:"A \<in> Pow (X \<times> Pow X)" 
+  show " (A, ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) A) \<in> pwr (X \<times> Pow X)"
+  proof(rule pwr_memI)
+    show  P0:"ispsmap X A"
+      using amem by auto
+    show P1:"ispsmap X (((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) A)"
+      using NAdh_memD1 by fastforce
+    show P2:"A \<subseteq> ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) A"
+    proof
+      fix x assume xmem:"x \<in> A"
+      then obtain "x \<in> (X \<times> (Pow X))"
+        using P0 by blast
+      then show "x \<in> ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) A"
+         unfolding NAdh_def AdhN_def  using xmem by auto
+    qed
+  qed
 qed
 
 lemma AdhNAdh_ext:
