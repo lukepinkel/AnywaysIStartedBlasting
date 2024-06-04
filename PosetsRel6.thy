@@ -8612,6 +8612,70 @@ qed
 
 section ConvergenceSet
 
+(*
+
+Nhoods and Closures of Limits
+
+For arbitrary \<L>
+
+  \<forall>x\<in>X:\<forall>V\<in>\<PP>(X): (x, V) \<in> \<N>\<^sub>\<L> \<longleftrightarrow> (X\V, x) \<notin> Cl\<^sub>\<L>
+
+If \<L> is pretopological then 
+
+  (A, x) \<in> Cl\<^sub>\<L> \<longleftrightarrow> \<exists>\<F>\<in>\<bbbF>\<^sub>p(X): A \<in> \<F> \<and> (\<F>, x) \<in>  \<L>
+
+
+Closures and Limits
+
+For extensive Cl
+
+   \<forall>x\<in>X: (\<up>x, x) \<in> \<L>\<^sub>C\<^sub>l
+
+For isotone Cl
+
+  \<forall>x\<in>X:\<forall>A\<in>\<PP>(X): (A, x) \<in> Cl \<longleftrightarrow> (\<forall>V\<in>\<PP>(X):(X\V, x) \<notin> Cl \<Longrightarrow> V \<inter> A \<noteq> {})
+
+For additive Cl that maps emptysets to emptysets 
+
+   \<forall>x\<in>X: {V\<in>\<PP>(X): x \<notin> Cl (X\V)} \<in>\<bbbF>(X)
+
+For Cech closure (i.e. pretopological closure) Cl
+
+  \<forall>x\<in>X: {V\<in>\<PP>(X): x \<notin> Cl (X\V)} \<in>\<bbbF>\<^sub>p(X)
+  
+  \<forall>x\<in>X:\<N>\<^sub>C\<^sub>l(x) = {V\<in>\<PP>(X): x \<notin> Cl (X\V)}
+
+  \<forall>x\<in>X:(\<N>\<^sub>C\<^sub>l(x), x) \<in> \<L>\<^sub>C\<^sub>l
+
+  \<forall>x\<in>X: \<N>\<^sub>C\<^sub>l(x) = \<Inter>{\<F>: (\<F>, x) \<in> \<L>\<^sub>C\<^sub>l}
+
+
+If Cl is pretopological then \<L>\<^sub>C\<^sub>l is pretopological
+
+If \<L> is pretopological then Cl\<^sub>\<L> is pretopological 
+
+
+Closures and Neighborhoods
+
+If Cl is isotone then 
+
+  \<forall>x\<in>X: \<N>\<^sub>C\<^sub>l(x) is upclosed
+
+If \<forall>x\<in>X:\<N>(x) is upclosed then 
+  
+  Cl\<^sub>\<N> is isotone
+
+Limits and Neighborhoods
+
+If \<N> is pretopological then \<L>\<^sub>\<N> is pretopological 
+
+If \<L> is pretopological then \<N>\<^sub>\<L> is pretopological 
+
+TODO: Closures and Adherences, Nhoods and Adherences 
+
+
+*)
+
 lemma ClNh_if_iso:
   assumes A0:"isspmap X Cl" and
           A1:"iso_spmap X Cl"
@@ -8861,7 +8925,6 @@ proof-
       using calculation by blast
    qed
 qed
-
 
 
 lemma NhAdh_if_iso:
@@ -9592,8 +9655,8 @@ proof-
         have "\<F> \<subseteq> Pow X"
           by (simp add: \<open>is_pfilter (pwr X) (Pow X) \<F>\<close> sets_pfilter6)
         also have "(NCl Cl X)``{x} = \<F>"
-          using P2[of x] unfolding \<F>_def
-          using \<open>NCl Cl X `` {x} \<subseteq> Pow X\<close> \<open>x \<in> X\<close> contrapos_sub by auto
+          using P2[of x] unfolding \<F>_def using P3 \<open>x \<in> X\<close> by auto
+        
         then show ?thesis
           by (simp add: \<open>(\<F>, x) \<in> LimCl Cl X\<close>)
     qed
@@ -10022,6 +10085,274 @@ qed
 (*
 so 2\<longrightarrow>3\<longrightarrow>4\<longrightarrow>5\<longrightarrow>2 and 1\<longrightarrow>2\<longrightarrow>1 which is 1\<longleftrightarrow>2\<longleftrightarrow>3\<longleftrightarrow>4\<longleftrightarrow>5 
 *)
+
+
+
 print_options
+section \<open>Galois Connections on Convergences\<close>
+
+
+(*
+
+For Nhood Adherence galois connection the fixed points in the Adherence closure system are those adherences such that
+  
+  \<alpha>(\<F>) = \<Inter>{\<alpha>(\<up>A): A \<in> \<F>}
+
+For Nhood Closure galois connection the fixed points in Cl are isotone and in Nhoods are upclosed
+
+For Nhood Limit galois connection the fixed points in Nh and Lim are the respective pretopological axioms 
+
+*)
+
+lemma NCl_antitone:
+  "antitone (pwr ((Pow X) \<times> X)) (Pow ((Pow X) \<times> X))  (pwr (X \<times> (Pow X)))  (\<lambda>Cl. NCl Cl X)"
+proof-
+  have "\<And>Cl1 Cl2. \<lbrakk>isspmap X Cl1; isspmap X Cl2; (Cl1, Cl2) \<in> pwr (Pow X \<times> X)\<rbrakk> \<Longrightarrow> (NCl Cl2 X, NCl Cl1 X) \<in> pwr (X \<times> Pow X)"
+  proof-
+    fix Cl1 Cl2 assume "isspmap X Cl1" and  "isspmap X Cl2" and  "(Cl1, Cl2) \<in> pwr (Pow X \<times> X)"
+    then obtain "Cl1 \<subseteq> Cl2"
+      by (simp add: powrel8)
+     have "NCl Cl2 X \<subseteq> NCl Cl1 X"
+    proof
+      fix l assume "l \<in> NCl Cl2 X"
+      then obtain x A where  "A \<in> Pow X"  and "x \<in> X" and "(\<forall>a b. a \<in> {A} \<longrightarrow> b \<in> dual Cl2 `` {x} \<longrightarrow> a \<inter> b \<noteq> {})" and "l=(x, A)"
+        unfolding NCl_def mesh_def by auto
+      then obtain "(\<forall>a b. a \<in> {A} \<longrightarrow> b \<in> dual Cl1 `` {x} \<longrightarrow> a \<inter> b \<noteq> {})"
+        using \<open>Cl1 \<subseteq> Cl2\<close> by auto
+       then show "l \<in> NCl Cl1 X"
+         by (metis NCl_memI \<open>A \<in> Pow X\<close> \<open>l = (x, A)\<close> \<open>x \<in> X\<close> mesh_def)
+    qed
+    then show "(NCl Cl2 X, NCl Cl1 X) \<in> pwr (X \<times> Pow X)"
+      by (metis NCl_space pwr_memI1)
+  qed
+  then show ?thesis
+    by (meson PowD converseI isotoneI1)
+qed
+
+
+lemma NCl_rng:
+  " (\<lambda>Cl. NCl Cl X)`(Pow ((Pow X) \<times> X)) \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NCl_def mesh_def by(auto)
+
+lemma ClN_antitone:
+  "antitone (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))  (pwr ((Pow X) \<times> X))  (\<lambda>N. ClN N X)"
+proof(rule isotoneI1)
+  fix N1 N2 assume "N1\<in> Pow (X \<times> Pow X)" and "N2 \<in> Pow (X \<times> Pow X)" and "(N1, N2)\<in> pwr (X \<times> Pow X)"
+  then obtain "N1 \<subseteq> N2"
+    by (simp add: pwr_memD)
+  then obtain "ClN N2 X \<subseteq> ClN N1 X"
+    unfolding ClN_def mesh_def by auto
+  then obtain "(ClN N2 X, ClN N1 X) \<in>  (pwr (Pow X \<times> X))"
+    by (metis ClN_memD1 mem_Sigma_iff pwr_memI1 subrelI)
+  then show "(ClN N1 X, ClN N2 X) \<in> dual (pwr (Pow X \<times> X))"
+    by simp
+qed
+
+lemma ClN_rng:
+  " (\<lambda>N. ClN N X)`( (Pow (X \<times> (Pow X))) ) \<subseteq>  (Pow ((Pow X) \<times> X))"
+  unfolding ClN_def mesh_def by(auto)
+
+lemma ClNCl_ext:
+  "extensive (pwr ((Pow X) \<times> X)) (Pow ((Pow X) \<times> X)) ((\<lambda>N. ClN N X) \<circ> (\<lambda>Cl. NCl Cl X))"
+  unfolding extensive_def ClN_def NCl_def mesh_def mesh_def pwr_def by(auto) 
+
+lemma NClN_ext:
+  "extensive (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X))) ((\<lambda>Cl. NCl Cl X) \<circ> (\<lambda>N. ClN N X))"
+  unfolding extensive_def ClN_def NCl_def mesh_def pwr_def by auto
+
+
+lemma NCl_galois:
+  "galois_conn (\<lambda>Cl. NCl Cl X) (pwr ((Pow X) \<times> X)) (Pow ((Pow X) \<times> X)) (\<lambda>N. ClN N X)  (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X))) "
+  apply(rule gcI)
+  apply (simp add: NCl_antitone)
+  using ClN_antitone apply blast
+  using ClNCl_ext apply blast
+  using NClN_ext apply blast
+  apply (simp add: NCl_rng)
+  apply (simp add: ClN_rng)
+  using pwr_antisym pwr_refl pwr_trans apply blast
+  by (simp add: pwr_antisym pwr_refl pwr_trans)
+
+
+
+
+lemma NAdh_antitone:
+  "antitone (pwr ((Pow (Pow X)) \<times> X)) (Pow ((Pow (Pow X)) \<times> X)) (pwr (X \<times> (Pow X)))   (\<lambda>Adh. NAdh Adh X)"
+  unfolding isotone_def NAdh_def pwr_def by auto
+
+lemma NAdh_antitone2:
+  "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X)) 
+            (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))
+             (pwr (X \<times> (Pow X)))
+             (\<lambda>Adh. NAdh Adh X)"
+   unfolding isotone_def NAdh_def pwr_def by auto
+
+lemma NAdh_rng:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
+
+lemma NAdh_rng2:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
+
+lemma AdhN_rng:
+  "(\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
+proof
+  fix z assume "z \<in> (\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))"
+  then obtain w where "w \<in> (Pow (X \<times> (Pow X)))" and "z= (\<lambda>N. AdhN N X) w"
+    by force
+  have "z \<subseteq> (Pow (Pow X)) \<times> X"
+  proof
+    fix l assume "l \<in> z" 
+    then obtain "l \<in> (\<lambda>N. AdhN N X) w"
+      using \<open>z = AdhN w X\<close> by fastforce
+    then obtain \<E> x where "\<E> \<in> pfilters_on (pwr X) (Pow X)" and "x \<in> X" and  
+                "(\<forall>A. A \<in> Pow X \<and> (x, A) \<in> w \<longrightarrow> {A} # \<E>)" and "l=(\<E>, x)"
+      unfolding AdhN_def by auto
+    then show "l \<in> (Pow (Pow X)) \<times> X"
+      by (simp add: pfilters_on_iff sets_pfilter6)
+  qed
+  then show "z \<in>  (Pow ((Pow (Pow X)) \<times> X))"
+     by auto
+qed
+
+
+lemma AdhN_rng2:
+  "(\<lambda>N. AdhN N X) ` Pow (X \<times> Pow X) \<subseteq> Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+proof
+  fix z assume "z \<in> (\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))"
+  then obtain w where "w \<in> (Pow (X \<times> (Pow X)))" and "z= (\<lambda>N. AdhN N X) w"
+    by force
+  have "z \<subseteq> ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+  proof
+    fix l assume "l \<in> z" 
+    then obtain "l \<in> (\<lambda>N. AdhN N X) w"
+      using \<open>z = AdhN w X\<close> by fastforce
+    then obtain \<E> x where "\<E> \<in> pfilters_on (pwr X) (Pow X)" and "x \<in> X" and  
+                "(\<forall>A. A \<in> Pow X \<and> (x, A) \<in> w \<longrightarrow> {A} # \<E>)" and "l=(\<E>, x)"
+      unfolding AdhN_def by auto
+    then show "l \<in>  (pfilters_on (pwr X) (Pow X)) \<times> X"
+      by (simp add: pfilters_on_iff sets_pfilter6)
+  qed
+  then show "z \<in> Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+    by auto
+qed
+
+lemma AdhN_antitone:
+  "antitone (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))  (pwr (((pfilters_on (pwr X) (Pow X))) \<times> X)) (\<lambda>N. AdhN N X)"
+proof(rule isotoneI1)
+  fix N1 N2 assume " N1 \<in> Pow (X \<times> Pow X)" and "N2 \<in> Pow (X \<times> Pow X)" and "(N1,N2) \<in> pwr (X \<times> Pow X)"
+  then obtain "N1 \<subseteq> N2"
+    by (meson pwr_memD)
+  have "AdhN N2 X \<subseteq> AdhN N1 X"
+     unfolding AdhN_def mesh_def using \<open>N1 \<subseteq> N2\<close> by blast
+  also have "AdhN N1 X \<subseteq> (pfilters_on (pwr X) (Pow X)) \<times> X"
+    by (metis AdhN_memD mem_Sigma_iff subrelI)
+  then obtain "(AdhN N2 X, AdhN N1 X) \<in> (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))"
+    by (simp add: calculation pwr_mem_iff)
+  then show "(AdhN N1 X, AdhN N2 X) \<in> dual (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))"
+    by simp
+qed 
+
+
+
+lemma NAdhN_ext:
+  "extensive (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))  ((\<lambda>Adh. NAdh Adh X) \<circ>(\<lambda>N. AdhN N X))"
+proof(rule extensiveI1)
+  fix x assume "x \<in> Pow (X \<times> Pow X)" 
+  then show " (x, ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) x) \<in> pwr (X \<times> Pow X)"
+  unfolding NAdh_def AdhN_def pwr_def mesh_def by(auto)  
+qed
+
+lemma AdhNAdh_ext:
+  "extensive (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (Pow (pfilters_on (pwr X) (Pow X) \<times> X)) ((\<lambda>N. AdhN N X) \<circ> (\<lambda>Adh. NAdh Adh X))"
+proof(rule extensiveI1)
+  fix x assume "x \<in> (Pow (pfilters_on (pwr X) (Pow X) \<times> X))" 
+  then show "(x, ((\<lambda>N. AdhN N X) \<circ> (\<lambda>Adh. NAdh Adh X)) x) \<in> pwr (pfilters_on (pwr X) (Pow X) \<times> X)"
+  unfolding NAdh_def AdhN_def pwr_def mesh_def by(auto)  
+qed
+
+lemma NAdh_galois:
+  "galois_conn (\<lambda>Adh. NAdh Adh X) (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (Pow (pfilters_on (pwr X) (Pow X) \<times> X)) (\<lambda>N. AdhN N X) (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))"
+  apply(rule gcI)
+  apply (simp add: NAdh_antitone2)
+  apply (simp add: AdhN_antitone)
+  using AdhNAdh_ext apply blast
+  using NAdhN_ext apply blast
+  using NAdh_rng apply blast
+  apply (simp add: AdhN_rng2)
+  apply (simp add: pwr_antisym pwr_refl pwr_trans)
+  by (simp add: pwr_antisym pwr_refl pwr_trans)
+
+lemma NLim_antitone2:
+  "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))
+            (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)) 
+            (pwr (X \<times> (Pow X))) 
+            (\<lambda>Lim. NLim Lim X)"
+proof(rule isotoneI1)
+  fix L1 L2 assume "L1 \<in> Pow (pfilters_on (pwr X) (Pow X) \<times> X)" and 
+                   "L2 \<in> Pow (pfilters_on (pwr X) (Pow X) \<times> X)" and
+                   "(L1,L2) \<in>  pwr (pfilters_on (pwr X) (Pow X) \<times> X)"
+  then obtain "L1 \<subseteq> L2"
+    by (meson pwr_memD)
+  have "NLim L2 X \<subseteq> NLim L1 X"
+     unfolding NLim_def mesh_def using \<open>L1 \<subseteq> L2\<close> by blast
+  also have "NLim L1 X \<subseteq>  (X \<times> (Pow X))"
+    unfolding NLim_def by force
+  then obtain "(NLim L2 X , NLim L1 X ) \<in> pwr (X \<times> (Pow X))"
+    by (simp add: calculation pwr_mem_iff)
+  then show "(NLim L1 X , NLim L2 X ) \<in> dual (pwr (X \<times> (Pow X)))"
+    by simp
+qed 
+
+lemma NLim_rng:
+  "(\<lambda>Lim. NLim Lim X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NLim_def mesh_def by(auto)
+
+lemma NLim_rng2:
+  "(\<lambda>Lim. NLim Lim X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NLim_def mesh_def by(auto)
+
+lemma LimN_antitone:
+  "antitone (pwr (X \<times> (Pow X)))
+            (Pow (X \<times> (Pow X))) 
+            (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))
+             (\<lambda>N. LimN N X)"
+unfolding LimN_def isotone_def pwr_def by(auto)
+
+lemma LimN_rng:
+  "(\<lambda>N. LimN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
+  unfolding LimN_def mesh_def pfilters_on_def is_pfilter_def is_filter_def by(auto)
+
+lemma LimN_rng2:
+  "(\<lambda>N. LimN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow (pfilters_on (pwr X)(Pow X) \<times> X))"
+   unfolding LimN_def by(auto)
+
+
+lemma NLim_ext:
+  "extensive (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))  ( (\<lambda>Lim. NLim Lim X) \<circ> (\<lambda>N. LimN N X))"
+  unfolding extensive_def LimN_def NLim_def mesh_def pwr_def by(auto)
+
+lemma LimN_ext:
+  "extensive (pwr  (pfilters_on(pwr X) (Pow X) \<times> X)) (Pow (pfilters_on(pwr X)(Pow X) \<times> X)) ((\<lambda>N. LimN N X) \<circ> (\<lambda>Lim. NLim Lim X))"
+  unfolding extensive_def LimN_def NLim_def mesh_def pwr_def by(auto)
+
+lemma LimN_galois:
+  "galois_conn (\<lambda>Lim. NLim Lim X)
+               (pwr (pfilters_on (pwr X)(Pow X) \<times> X))
+               (Pow (pfilters_on (pwr X)(Pow X) \<times> X)) 
+               (\<lambda>N. LimN N X) 
+               (pwr (X \<times> (Pow X)))
+               (Pow (X \<times> (Pow X)))"
+  apply(rule gcI)
+  apply (simp add: NLim_antitone2)
+  using LimN_antitone apply blast
+  using LimN_ext apply blast
+  using NLim_ext apply blast
+  using NLim_rng2 apply blast
+  apply (simp add: LimN_rng2)
+  using pwr_antisym pwr_refl pwr_trans apply blast
+  by (simp add: pwr_antisym pwr_refl pwr_trans)
+
 
 end
