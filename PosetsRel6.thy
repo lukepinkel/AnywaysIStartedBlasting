@@ -46,6 +46,13 @@ definition Sup::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 
 abbreviation Inf::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a" where  
   "Inf R X A \<equiv> Sup (converse R) X A"
 
+definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_maximal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> a =x)"
+
+definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
+
+
 subsection Lattices
 definition is_sup_semilattice::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
   "is_sup_semilattice R X \<equiv> (X \<noteq> {}) \<and> (\<forall>a b. a \<in> X \<and> b \<in> X \<longrightarrow> (\<exists>x. is_sup R X {a, b} x))"
@@ -147,6 +154,22 @@ definition Pow_ne::"'a set \<Rightarrow> 'a set set" where
 
 definition Fpow_ne::"'a set \<Rightarrow> 'a set set" where 
   "Fpow_ne X = Fpow X - {{}}"
+
+definition pwr::"'a set \<Rightarrow> ('a set \<times> 'a set) set"  where
+   "pwr X \<equiv> {(A, B). A \<subseteq> X \<and> B \<subseteq> X \<and> A \<subseteq> B}"
+
+definition is_ultrafilter::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "is_ultrafilter R X F \<equiv> is_maximal (pwr X) (pfilters_on R X) F"
+
+definition ultrafilters_on::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
+  "ultrafilters_on R X \<equiv> {F. is_ultrafilter R X F}"
+
+definition finer_ultrafilters::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
+  "finer_ultrafilters R X F \<equiv> {U.  is_ultrafilter R X U \<and> F \<subseteq> U}"
+
+definition finer_pfilters::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
+  "finer_pfilters R X F \<equiv> {G. is_pfilter R X G \<and> F \<subseteq> G}"
+
 
 subsection SpecialElements
 definition is_compact::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where 
@@ -273,9 +296,6 @@ definition mesh::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" (infix
 
 definition grill::"'a set set \<Rightarrow> 'a set set \<Rightarrow> 'a set set" 
   where "grill PX A \<equiv> {E \<in> PX. {E}#A}"
-
-definition pwr  where
-    "pwr X \<equiv> {(A, B). A \<subseteq> X \<and> B \<subseteq> X \<and> A \<subseteq> B}"
 
 subsection Convergence
   
@@ -1309,13 +1329,28 @@ lemma inf_equality:
   "\<lbrakk>is_inf R X A m; antisym R X\<rbrakk> \<Longrightarrow> Inf R X A = m"
   by (simp add: Sup_def is_inf_unique the_equality) 
 
+lemma sup_pwr:
+  assumes A0:"A \<in> Pow X" and A1:"B \<in> Pow X"
+  shows "Sup (pwr X) (Pow X) {A, B} =  A \<union> B"
+  by (metis A0 A1 Sup_insert ccpo_Sup_singleton empty_subsetI insert_subset pwr_antisym pwr_ar_sup sup_equality)
+
+lemma inf_pwr:
+  assumes A0:"A \<in> Pow X" and A1:"B \<in> Pow X"
+  shows "Inf (pwr X) (Pow X) {A, B} =  A \<inter> B"
+proof-
+  have "is_inf (pwr X) (Pow X) {A, B} (\<Inter>{A, B})"
+  proof(rule pwr_ne_inf)
+    show " {A, B} \<subseteq> Pow X"
+      using A0 A1 by blast
+    show "{A, B} \<noteq> {}"
+      by simp
+  qed
+  then show ?thesis
+    by (simp add: inf_equality pwr_antisym)
+qed
+
+
 section MinimaMaxima
-
-definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_maximal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> a =x)"
-
-definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
 
 lemma maximalD1:
   "is_maximal R A x \<Longrightarrow> x \<in> A"
@@ -2007,6 +2042,43 @@ qed
 lemma distr_latticeD5:
   "distributive_lattice R X \<Longrightarrow> is_lattice R X" 
   by (simp add: distributive_lattice_def)
+
+lemma pwr_distr:
+  "distributive_lattice (pwr X) (Pow X)"
+proof(rule distr_latticeI3)
+  show "is_lattice (pwr X) (Pow X)"
+    by (metis Pow_not_empty empty_subsetI insert_subset lattI1 pwr_ar_inf pwr_ar_sup)
+  show "pord (pwr X) (Pow X)"
+    by (simp add: pwr_antisym pwr_refl pwr_trans)
+  show "\<And>x y z.
+       \<lbrakk>x \<in> Pow X; y \<in> Pow X;z \<in> Pow X\<rbrakk> \<Longrightarrow>
+       (Inf (pwr X) (Pow X) {x, Sup (pwr X) (Pow X) {y, z}},
+        Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}})
+       \<in> pwr X"
+  proof-
+    fix x y z assume A0:"x \<in> Pow X" and A1:"y \<in> Pow X" and A2:"z \<in> Pow X"
+    obtain "Sup (pwr X) (Pow X) {y, z} = y \<union> z"
+      by (meson A1 A2 sup_pwr)
+    obtain "y \<union> z \<in> Pow X"
+      using A1 A2 by blast
+    then obtain "Inf (pwr X) (Pow X) {x, Sup (pwr X) (Pow X) {y, z}} = x \<inter> (y \<union> z)"
+      by (metis A0 \<open>Sup (pwr X) (Pow X) {y, z} = y \<union> z\<close> inf_pwr)
+    obtain "Inf (pwr X) (Pow X) {x, y} = x \<inter> y" and "Inf (pwr X) (Pow X) {x, z} = x \<inter> z"
+      by (meson A0 A1 A2 inf_pwr)
+    obtain "x \<inter> y \<in> Pow X" and "x \<inter> z \<in> Pow X"
+      using A0 by blast
+    then obtain "Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}} = (x \<inter> y) \<union> (x \<inter> z)"
+      by (simp add: \<open>Inf (pwr X) (Pow X) {x, y} = x \<inter> y\<close> \<open>Inf (pwr X) (Pow X) {x, z} = x \<inter> z\<close> sup_pwr)
+    have " (x \<inter> y) \<union> (x \<inter> z) = x \<inter> (y \<union> z)"
+      by auto
+    then obtain "Inf (pwr X) (Pow X) {x, Sup (pwr X) (Pow X) {y, z}} \<subseteq> Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}}"
+      by (simp add: \<open>Inf (pwr X) (Pow X) {x, Sup (pwr X) (Pow X) {y, z}} = x \<inter> (y \<union> z)\<close> \<open>Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}} = x \<inter> y \<union> x \<inter> z\<close>)
+    then show " (Inf (pwr X) (Pow X) {x, Sup (pwr X) (Pow X) {y, z}},
+        Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}})
+       \<in> pwr X"
+      using \<open>Sup (pwr X) (Pow X) {Inf (pwr X) (Pow X) {x, y}, Inf (pwr X) (Pow X) {x, z}} = x \<inter> y \<union> x \<inter> z\<close> \<open>x \<inter> y \<in> Pow X\<close> \<open>x \<inter> z \<in> Pow X\<close> pwr_memI1 by fastforce
+  qed
+qed
 
 section LatticeDuals
 
@@ -5581,6 +5653,10 @@ proof(rule sup_primeI2)
     by (meson A1 A7 B18 is_filterD1 is_ord_clE1)
 qed
 
+lemma distr_lattice_maximal_prime2:
+  "\<lbrakk>distributive_lattice R X; pord R X; is_ultrafilter R X U\<rbrakk> \<Longrightarrow> sup_prime R X U"
+  using distr_lattice_maximal_prime is_ultrafilter_def by blast
+
 section FiltersOnLattice
 
 (*
@@ -7131,7 +7207,59 @@ proof-
 qed
 
     
+lemma pfilter_u1:
+  assumes A0:"is_pfilter (pwr X) (Pow X) F" and A1:"sup_prime (pwr X) (Pow X) F"
+  shows "\<And>A. A \<in> Pow X \<Longrightarrow> (A \<in> F) \<or> (X-A \<in> F)"
+proof-
+  fix A assume A2:"A \<in> Pow X"
+  then obtain B0:"X-A \<in> Pow X"
+    by blast
+  have "Sup (pwr X) (Pow X) {A, X-A} = \<Union>{A, X-A}"
+     by (meson A2 B0 bot.extremum insert_subsetI pwr_antisym pwr_ar_sup sup_equality)
+  also have "... = X"
+      using A2 by auto
+  then obtain "Sup (pwr X) (Pow X) {A, X-A} \<in> F"
+    by (metis A0 calculation powrel_top setfilters3 top_filters1)
+  then show "(A \<in> F) \<or> (X-A \<in> F)"
+    by (metis A1 A2 B0 sup_primeD1)
+qed
 
+lemma pfilter_u2:
+  assumes A0:"is_pfilter (pwr X) (Pow X) F" and A1: "\<And>A. A \<in> Pow X \<Longrightarrow> (A \<in> F) \<or> (X-A \<in> F)"
+  shows "is_ultrafilter (pwr X) (Pow X) F"
+  unfolding is_ultrafilter_def
+  proof(rule maximalI2)
+  show "F \<in> pfilters_on (pwr X) (Pow X)"
+    by (simp add: A0 pfilters_on_iff)
+  show " \<not> (\<exists>a\<in>pfilters_on (pwr X) (Pow X). (F, a) \<in> pwr (Pow X) \<and> F \<noteq> a)"
+  proof(rule ccontr)
+    assume "\<not>\<not> (\<exists>G\<in>pfilters_on (pwr X) (Pow X). (F, G) \<in> pwr (Pow X) \<and> F \<noteq> G)"
+    then obtain G where B0:"G\<in>pfilters_on (pwr X) (Pow X)" and B1:"(F, G) \<in> pwr (Pow X)" and B2:"F \<noteq> G"
+      by blast
+    then obtain B3:"F \<subset> G" and B4:"is_pfilter (pwr X) (Pow X) G"
+      by (simp add: pfilters_on_iff powrel8 psubsetI)
+    then obtain A where B5:"A \<in> G" and B6:"A \<notin> F"
+      by auto
+    then obtain B7:"A \<in> Pow X"
+      using B4 sets_pfilter6 by blast
+    then obtain B8:"X-A \<in> F"
+      using A1 B6 by blast
+    then obtain B9:"X-A \<in> G" and B10:"A \<in> G"
+      using B3 B5 by auto
+    then show False
+      using B4 pfilters_sets_comp2 by blast
+  qed
+qed
+
+lemma pfilter_u3:
+  assumes "is_ultrafilter (pwr X) (Pow X) F"
+  shows  "sup_prime (pwr X) (Pow X) F" and  "is_pfilter (pwr X) (Pow X) F"
+proof-
+  show  "sup_prime (pwr X) (Pow X) F"
+    using distr_lattice_maximal_prime2  pwr_antisym pwr_distr pwr_refl pwr_trans assms by blast
+  show "is_pfilter (pwr X) (Pow X) F"
+    using assms unfolding is_ultrafilter_def  by (meson maximalD1 pfilters_on_iff)
+qed
 
 lemma principal_filter_sets:
   "x \<in> X \<Longrightarrow> is_filter (pwr X) (Pow X) (lcro (pwr X) (Pow X) {x})"
@@ -7898,6 +8026,148 @@ proof-
   then show ?thesis
     by (simp add: Int_commute mesh_single_iff)
 qed
+
+lemma finer_ultrafilters:
+  assumes A0:"is_pfilter (pwr X) (Pow X) F"
+  shows "\<exists>U. is_ultrafilter (pwr X) (Pow X) U \<and> F\<subseteq> U"
+proof-
+  let ?G="(finer_pfilters (pwr X) (Pow X) F)"
+  have "\<And>\<C>. subset.chain ?G \<C> \<Longrightarrow> \<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+  proof-
+    fix \<C> assume A1:"subset.chain ?G \<C>"
+    show "\<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+    proof(cases "\<C> = {}")
+      case True
+      then show ?thesis
+      proof -
+        show ?thesis
+          using True assms finer_pfilters_def by fastforce
+      qed 
+    next
+      case False
+      have B0:"\<C> \<subseteq> (finer_pfilters (pwr X) (Pow X) F)"
+          using A1 unfolding subset.chain_def by blast
+      have B1:"\<And>A B. \<lbrakk>A \<in> \<C>; B \<in> \<C>\<rbrakk> \<Longrightarrow> (A \<subseteq> B) \<or> (B \<subseteq> A)"
+        using A1 unfolding subset.chain_def  by blast
+      have B2:"\<And>C. C \<in> \<C> \<Longrightarrow> is_pfilter (pwr X) (Pow X) C \<and> F \<subseteq> C"
+          using B0 unfolding finer_pfilters_def by blast
+      have B3:"\<And>C. C \<in> \<C> \<Longrightarrow> {} \<notin> C"
+        using B2 sets_pfilter5 by auto  
+      have B4:"\<And>C. C \<in> \<C> \<Longrightarrow> C \<noteq> {} \<and> C \<subseteq> Pow X"
+        using B2 sets_pfilter1 sets_pfilter6 by blast
+      let ?D="\<Union>\<C>"
+      have "is_pfilter (pwr X) (Pow X) ?D"
+      proof(rule is_pfilterI1)
+        show "Pow X \<noteq> ?D"
+          using B3 by blast
+        show "is_filter (pwr X) (Pow X) (\<Union> \<C>)"
+        proof(rule is_filterI1)
+          show "?D \<noteq> {}"
+            by (simp add: B4 False)
+          show "?D \<subseteq> Pow X"
+            by (simp add: B4 Union_least)
+          show "is_dir (\<Union> \<C>) (dual (pwr X))"
+          proof(rule is_dirI1)
+            fix a b assume "a \<in> ?D" and "b \<in> ?D"
+            then obtain Ca Cb where "Ca \<in> \<C>" and "a \<in> Ca" and "Cb \<in> \<C>" and "b \<in> Cb"
+              by blast
+            then obtain "(a \<in> Cb) \<or> (b \<in> Ca)"
+              using B1 by blast
+            obtain "is_dir Ca (dual (pwr X))" and "is_dir Cb (dual (pwr X))"
+              by (meson B2 \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> is_filterD1 is_pfilterD1)
+            then obtain c where "(a,c)\<in>(dual (pwr X))" and "(b,c)\<in>(dual (pwr X))" and "c \<in> Ca \<or> c \<in> Cb"
+              by (metis \<open>a \<in> Ca\<close> \<open>a \<in> Cb \<or> b \<in> Ca\<close> \<open>b \<in> Cb\<close> is_dirE1)
+            then show "\<exists>c \<in> ?D. (a,c)\<in>(dual (pwr X)) \<and> (b,c)\<in>(dual (pwr X))"
+              using \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> by blast
+          qed
+          show "is_ord_cl (Pow X) ?D (pwr X)"
+          proof(rule is_ord_clI1)
+            fix a b assume "a \<in> ?D" and "b \<in> Pow X" and "(a, b) \<in> pwr X"
+            then obtain Ca where "Ca \<in> \<C>" and "a \<in> Ca"
+              by blast
+            then obtain "b \<in> Ca"
+              by (meson B2 \<open>(a, b) \<in> pwr X\<close> \<open>b \<in> Pow X\<close> powrel8 sets_pfilter4)
+            then show "b \<in> ?D"
+              using \<open>Ca \<in> \<C>\<close> by auto
+          qed
+        qed
+      qed
+      then obtain "?D \<in> ?G"
+        by (simp add: B2 False finer_pfilters_def less_eq_Sup)
+      then show ?thesis
+        by blast
+    qed
+  qed
+  then have "\<exists>U\<in>?G. \<forall>G\<in>?G. U \<subseteq> G \<longrightarrow> G = U"
+    using subset_Zorn[of ?G] by blast
+  then obtain U where B5:"U\<in>?G" and B6:"\<And>G. \<lbrakk>G \<in> ?G;  U \<subseteq> G\<rbrakk> \<Longrightarrow> G = U"
+    by auto
+  then have "F \<subseteq> U"
+    unfolding finer_pfilters_def by blast
+  have B7:"U \<in> pfilters_on (pwr X) (Pow X)"
+    using B5 unfolding finer_pfilters_def  by (simp add: pfilters_on_def) 
+  have B8:"\<And>a. \<lbrakk>a \<in> pfilters_on (pwr X) (Pow X); (U, a) \<in> pwr (Pow X)\<rbrakk> \<Longrightarrow> a = U"
+  proof-
+    fix a assume B9:"a \<in> pfilters_on (pwr X) (Pow X)" and "(U, a) \<in> pwr (Pow X)"
+    then obtain "U \<subseteq> a"
+      by (simp add: powrel8)
+    then obtain "a \<in> ?G"
+      unfolding finer_pfilters_def using B9 \<open>F \<subseteq> U\<close> pfilters_on_def by fastforce
+    then show "a = U"
+      by (simp add: B6 \<open>U \<subseteq> a\<close>)
+  qed
+  then have "is_ultrafilter (pwr X) (Pow X) U"
+    by (simp add: B7 is_ultrafilter_def maximalI1)
+  then show ?thesis
+    using \<open>F \<subseteq> U\<close> by blast
+qed
+  
+  
+   
+
+lemma filter_meet_finer_ultra:
+  assumes A0:"is_pfilter (pwr X) (Pow X) \<F>"
+  shows "\<F> = \<Inter> (finer_ultrafilters (pwr X) (Pow X) \<F>)"
+proof
+  show "\<F> \<subseteq> \<Inter> (finer_ultrafilters (pwr X) (Pow X) \<F>)"
+    unfolding finer_ultrafilters_def by auto
+  show "\<Inter>(finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> \<F>"
+  proof-
+    let ?\<UU>="(finer_ultrafilters (pwr X) (Pow X) \<F>)"
+    have B0:"\<And>A. \<lbrakk>A \<in> Pow X; A \<notin> \<F>\<rbrakk> \<Longrightarrow> \<exists>\<U> \<in> ?\<UU>. A \<notin> \<U>"
+    proof-
+      fix A assume A1:"A \<in> Pow X" and A2:"A \<notin> \<F>"
+      obtain "X-A \<in> Pow X"
+        by simp
+      then obtain "\<F>#{(X-A)}"
+        using A1 A2 assms mesh_sym pfilter_nmem_mesh pfilters_on_iff by blast
+      define \<H> where " \<H> \<equiv> {E \<in> Pow X. \<exists>B \<in> \<F>. (X-A) \<inter> B \<subseteq> E}" 
+      then obtain "is_pfilter (pwr X) (Pow X) \<H>" and "\<F> \<subseteq> \<H> "
+        using finer_proper_filter2[of X \<F> "X-A"]  \<open>\<F> # {X - A}\<close> assms by fastforce
+      then obtain \<U> where "is_ultrafilter (pwr X) (Pow X) \<U>"  and "\<H>\<subseteq> \<U> "
+        using finer_ultrafilters by blast
+      have "\<F> \<subseteq> \<U>"
+        using \<open>\<F> \<subseteq> \<H>\<close> \<open>\<H> \<subseteq> \<U>\<close> by auto
+      have "(X-A) \<in> \<U>"
+         using \<H>_def \<open>\<H> \<subseteq> \<U>\<close> assms sets_pfilter1 by fastforce
+      then obtain "A \<notin> \<U>"
+        using \<open>is_ultrafilter (pwr X) (Pow X) \<U>\<close> pfilter_u3(2) pfilters_sets_comp2 by blast
+      then show "\<exists>\<U> \<in> ?\<UU>. A \<notin> \<U>"
+        unfolding finer_ultrafilters_def using \<open>\<F> \<subseteq> \<U>\<close> \<open>is_ultrafilter (pwr X) (Pow X) \<U>\<close> by blast
+    qed
+    have "(finer_ultrafilters (pwr X) (Pow X) \<F>) \<noteq> {}"
+      using B0 assms sets_pfilter5 by auto
+    then have "\<Inter>(finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> Pow X"
+      by (metis (no_types, lifting) CollectD Inter_subset finer_ultrafilters_def pfilter_u3(2) sets_pfilter6)
+    have "\<F> \<subseteq> Pow X"
+      using assms sets_pfilter6 by auto
+    then show ?thesis
+      by (meson B0 Inter_iff \<open>\<Inter> (finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> Pow X\<close> subsetD subsetI)
+  qed
+qed
+      
+  
+
 section ConvergenceRelations
 
 lemma ClN_memI1:
@@ -10272,7 +10542,7 @@ proof(rule extensiveI1)
       then obtain "x \<in> (X \<times> (Pow X))"
         using P0 by blast
       then show "x \<in> ((\<lambda>Adh. NAdh Adh X) \<circ> (\<lambda>N. AdhN N X)) A"
-         unfolding NAdh_def AdhN_def  using xmem by auto
+         unfolding NAdh_def AdhN_def using xmem by auto
     qed
   qed
 qed
@@ -10366,6 +10636,7 @@ lemma LimN_galois:
   apply (simp add: LimN_rng2)
   using pwr_antisym pwr_refl pwr_trans apply blast
   by (simp add: pwr_antisym pwr_refl pwr_trans)
+
 
 
 end
