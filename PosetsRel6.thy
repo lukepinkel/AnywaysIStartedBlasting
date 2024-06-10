@@ -347,6 +347,12 @@ definition isoconv::"'a set \<Rightarrow> ('a set set \<times> 'a) set \<Rightar
 definition onpconv:: "'a set \<Rightarrow> ('a set set \<times> 'a) set \<Rightarrow> bool" where
   "onpconv X q \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> q}, x) \<in> q)"
 
+definition ufdetconv::"'a set \<Rightarrow> ('a set set \<times> 'a) set \<Rightarrow> bool" where
+  "ufdetconv X q \<equiv> (\<forall>\<F> x.  (x \<in> X \<and> \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> (\<forall>\<U>. \<U>\<in> finer_ultrafilters (pwr X) (Pow X) \<F> \<longrightarrow> (\<U>, x)\<in>q)) \<longrightarrow> (\<F>, x)\<in>q)"
+
+definition ufdetadh::"'a set \<Rightarrow> ('a set set \<times> 'a) set \<Rightarrow> bool" where
+  "ufdetadh X Adh \<equiv> (\<forall>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<longrightarrow> Adh``{\<F>} = \<Union>{Adh``{\<U>}|\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>})"
+
 abbreviation isconvs:: "'a set \<Rightarrow> ('a set set \<times> 'a) set \<Rightarrow> bool" where
   "isconvs X q \<equiv> q \<subseteq> (pfilters_on (pwr X) (Pow X)) \<times> X"
 
@@ -361,6 +367,12 @@ abbreviation is_gconv where
 
 abbreviation is_prtop where
   "is_prtop X q \<equiv> isconvs X q \<and> centered X q \<and> isoconv X q \<and> onpconv X q"
+
+abbreviation is_pseudotop where
+  "is_pseudotop X q \<equiv>  isconvs X q \<and> centered X q \<and> isoconv X q  \<and> ufdetconv X q"
+
+abbreviation pseudotop_adh where
+  "pseudotop_adh X Adh \<equiv> isconvs X Adh \<and> centered X Adh \<and> ufdetadh X Adh"
 
 abbreviation prtop_nh where
   "prtop_nh X N \<equiv> (\<forall>x. x \<in> X \<longrightarrow>  (N``{x}) \<in> pfilters_on (pwr X) (Pow X)) \<and> (\<forall>A x. x \<in> X \<and> A \<in> Pow X \<and> (x, A) \<in>N \<longrightarrow> x \<in> A)"
@@ -4366,7 +4378,7 @@ lemma compactD3:
   shows "\<exists>a \<in> A. (c, a) \<in> R"
 proof-
   obtain F a where B0:"F \<in> Fpow_ne A" and B1:"a \<in> A" and B2:"(\<forall>x. x \<in> F\<longrightarrow>(x,a)\<in>R)" and B3:"(c, Sup R X F)\<in>R"
-    by (meson agt amem cmp compactD1 dir por)
+    using agt amem cmp dir por compactD1[of X R c A] by blast
   then obtain B4:"A \<subseteq> X" and B5:"A \<noteq> {}" and B6:"a \<in> X" and B7:"pord R A"
     by (metis Pow_ne_iff amem antisym_on_subset por refl_subset subsetD trans_on_subset)
   then obtain B8:"F \<subseteq> A" and B9:"finite F" and B10:"F \<noteq> {}" and B11:"F \<subseteq> X"
@@ -7371,6 +7383,88 @@ proof-
     using finer_proper_filter[of X F A]  A0 A1 A3 H_def by blast 
 qed
 
+lemma finer_proper_filter3:
+  assumes A0:"is_pfilter (pwr X) (Pow X) \<F>" and A1:"is_pfilter (pwr X) (Pow X) \<G>" and A2:"\<G>#\<F>" 
+  defines "\<H> \<equiv> {E \<in> Pow X. \<exists>F \<in> \<F>. \<exists>G \<in> \<G>. G \<inter> F \<subseteq> E}" 
+  shows "is_pfilter (pwr X) (Pow X) \<H>" and "\<F> \<subseteq> \<H>" and "\<G> \<subseteq> \<H>"
+proof-
+  let ?X="Pow X" let ?R="(pwr X)"
+  obtain B0:"is_filter (pwr X) (Pow X) \<F>" and B1:"is_filter (pwr X) (Pow X) \<G>"
+    using A0 A1 setfilters3 by blast
+  then obtain B2:"\<F> \<noteq> {}" and B3:"\<G> \<noteq> {}" and B4:"\<F> \<in> Pow (Pow X)" and B5:"\<G> \<in> Pow (Pow X)"
+    by (simp add: is_filterD1)
+  obtain B6:"\<And>F G. \<lbrakk>G \<in> \<G>; F \<in>\<F>\<rbrakk> \<Longrightarrow> G \<inter> F \<noteq> {}"
+    using A2 mesh_def by blast 
+  obtain B7:"X \<in> \<F>" and B8:"X \<in> \<G>"
+    by (meson B0 B1 powrel_top top_filters1)
+  obtain B9:"{} \<notin> \<F>" and B10:"{} \<notin> \<G>"
+    using A0 A1 sets_pfilter5 by auto
+  show "is_pfilter ?R ?X \<H>"
+  proof(rule is_pfilterI1)
+    show "is_filter ?R ?X \<H>"
+    proof(rule is_filterI1)
+      show P0:"\<H> \<noteq> {}"
+        unfolding \<H>_def using B7 B8 by blast
+      show P1:"\<H> \<subseteq> Pow X"
+        using \<H>_def by blast
+      show P2:"is_dir \<H> (dual (pwr X))"
+      proof(rule is_dirI1)
+        fix a b assume A4:"a \<in> \<H>" and A5:"b \<in> \<H>"
+        then obtain Ga Gb Fa Fb where B11:"Ga \<in> \<G>" and B12:"Gb \<in> \<G>" and B13:"Fa \<in>\<F>" and B14:"Fb \<in>\<F>" and B15:"Ga \<inter> Fa \<subseteq> a" and B16:"Gb \<inter> Fb \<subseteq> b"
+          using \<H>_def by auto
+        then obtain Fc Gc where "Fc \<in> \<F>" and "Fc \<subseteq> Fa" and  "Fc \<subseteq> Fb"  and "Gc \<in> \<G>" and "Gc \<subseteq> Ga" and  "Gc \<subseteq> Gb"
+          by (meson B0 B1 inf_le1 inf_le2 setfilters1)
+        then obtain "Fc \<inter> Gc \<subseteq> Ga \<inter> Fa \<inter> Gb \<inter> Fb "
+          by blast
+        obtain "Fc \<inter> Gc  \<in> Pow X" and "Fc \<inter> Gc \<subseteq> Fc \<inter> Gc "
+          using B4 \<open>Fc \<in> \<F>\<close> by blast
+        then obtain "Fc \<inter> Gc \<in> \<H>"
+          using \<H>_def \<open>Fc \<in> \<F>\<close> \<open>Gc \<in> \<G>\<close> by blast
+        also obtain B6:"Fc \<inter> Gc \<subseteq> a" and "Fc \<inter> Gc \<subseteq> b"
+          using \<open>Fc \<inter> Gc \<subseteq> Ga \<inter> Fa \<inter> Gb \<inter> Fb\<close> \<open>Ga \<inter> Fa \<subseteq> a\<close> \<open>Gb \<inter> Fb \<subseteq> b\<close> by fastforce  
+        then show " \<exists>c\<in>\<H>. (a, c) \<in> dual (pwr X) \<and> (b, c) \<in> dual (pwr X)"
+          by (meson A4 A5 P1 PowD calculation converse_iff pwr_memI subsetD)
+        qed
+      show "is_ord_cl (Pow X) \<H> (pwr X)"
+      proof(rule is_ord_clI1)
+        fix a b assume B0:"a \<in>\<H>" and B1:"b \<in> Pow X" and B2:"(a,b)\<in>pwr X"
+        then obtain Fa Ga where B3:"Fa \<in> \<F>" and "Ga \<in> \<G>" and B4:"Fa \<inter> Ga \<subseteq> a" 
+          unfolding \<H>_def by fastforce
+        then obtain B5:"Fa \<inter> Ga \<subseteq> b"
+          using B2 powrel8 by fastforce
+        then show "b \<in> \<H>"
+          using B1 B3 \<H>_def \<open>Ga \<in> \<G>\<close> by blast
+      qed
+    qed
+    show "Pow X \<noteq> \<H>"
+    proof-
+      have B7:"{} \<notin> \<H>" 
+        using B6 B9 B10 unfolding \<H>_def by blast
+      then show ?thesis by blast
+    qed
+  qed
+  show "\<F> \<subseteq> \<H>"
+  proof
+    fix f assume A6:"f \<in> \<F>"
+    have B17:"X \<in>\<F>"
+      using A0 A6 pfilters_sets_comp3 by auto
+    also have B18:"X \<inter> f \<subseteq> f" 
+      by simp
+    then show "f \<in> \<H>"
+      using A0 A6  B4 B8  unfolding  \<H>_def by blast
+  qed
+  show "\<G> \<subseteq> \<H>"
+  proof
+    fix g assume A6:"g \<in> \<G>"
+    have B17:"X \<in>\<G>"
+      using A1 A6 pfilters_sets_comp3 by auto
+    also have B18:"X \<inter> g \<subseteq> g" 
+      by simp
+    then show "g \<in> \<H>"
+      using A1 A6 B5 B7 unfolding \<H>_def by blast
+  qed
+qed
+
 lemma principal_ufilter_sets:
   "x \<in> X \<Longrightarrow> is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) (lcro (pwr X) (Pow X) {x})"
 proof(rule pmb_filters2)
@@ -7894,6 +7988,21 @@ next
   qed
   then show ?L 
   using B0 pfilters_on_iff by blast
+qed
+
+lemma lcro_subI2:
+  assumes A0:"is_pfilter (pwr X) (Pow X) \<F>" and A1:"x \<in> X" and A2:"lcro (pwr X) (Pow X) {x} # \<F>"
+  shows "\<F> \<subseteq> lcro (pwr X) (Pow X) {x}"
+proof
+  fix F assume A3:"F \<in> \<F>"
+  then obtain "F \<subseteq> X"
+    using A0 sets_pfilter6 by blast 
+  obtain "F \<inter> {x} \<noteq> {}"
+    by (meson A1 A2 A3 PowD PowI Pow_bottom insert_subsetI lcro_memI1 mesh_def mesh_sym pwr_refl)
+  then obtain "{x} \<subseteq> F"
+    by auto
+  then show "F \<in> lcro (pwr X) (Pow X) {x}"
+    by (simp add: \<open>F \<subseteq> X\<close> lcroI1 pwr_mem_iff)
 qed
 
 lemma lcro_subI1:
@@ -8495,6 +8604,12 @@ qed
 lemma iso_psmapI1:
   "(\<And>x. x \<in> X \<Longrightarrow>  is_ord_cl (Pow X) (N``{x}) (pwr X)) \<Longrightarrow> iso_psmap X N"
   by blast
+
+lemma ufdetconvI1:
+  "(\<And>\<F> x.\<lbrakk>x \<in> X; \<F> \<in> pfilters_on (pwr X) (Pow X); (\<And>\<U>. \<U>\<in> finer_ultrafilters (pwr X) (Pow X) \<F> \<Longrightarrow> (\<U>, x)\<in>q)\<rbrakk> \<Longrightarrow>(\<F>, x)\<in>q) \<Longrightarrow>ufdetconv X q"
+  by (simp add: ufdetconv_def)
+
+
       
 lemma prtop_clD:
   assumes  A0:"isspmap X Cl" and 
@@ -8868,6 +8983,60 @@ proof-
     unfolding AdhLim_def using B0 A1 by auto
 qed
 
+
+lemma Lim_to_Adh2: 
+  assumes A0:"isconvs X Lim" and A1:"isoconv X Lim"
+  shows "\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> (AdhLim Lim X)``{\<F>} = \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>)}"
+proof-
+  fix \<F> assume A2:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
+  then obtain B0:"is_pfilter (pwr X) (Pow X) \<F>" and "\<F> \<subseteq> Pow X"
+    by (simp add: pfilters_on_iff sets_pfilter6)
+  have "(AdhLim Lim X)``{\<F>}  \<subseteq> \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>)}"
+  proof
+    fix x assume "x \<in> (AdhLim Lim X)``{\<F>}" 
+    then obtain \<G> where  B1:"\<G> \<in>  pfilters_on (pwr X) (Pow X)" and B2:"\<G>#\<F>" and B3:"(\<G>, x)\<in>Lim"
+      by (meson AdhLim_Im_memD)
+    have B4:"is_pfilter (pwr X) (Pow X) \<G>"
+      using B1 pfilters_on_iff by auto
+    define \<H> where "\<H> \<equiv>{E \<in> Pow X. \<exists>F \<in> \<F>. \<exists>G \<in> \<G>. G \<inter> F \<subseteq> E}" 
+    then obtain B5:"is_pfilter (pwr X) (Pow X) \<H>" and B6:"\<F> \<subseteq> \<H>" and B7:"\<G> \<subseteq> \<H>"
+      using finer_proper_filter3[of X \<F> \<G>] B0 B2 B4  by fastforce
+    then obtain B8:"(\<H>, x)\<in>Lim"
+      by (meson A1 B3 isoconvD1 pfilters_on_iff)
+    obtain \<U> where B9:"is_ultrafilter (pwr X) (Pow X) \<U>" and B10:"\<H> \<subseteq> \<U>"
+      using B5 finer_ultrafilters by blast
+    then obtain B11:"\<U> \<in> pfilters_on (pwr X) (Pow X)"
+      by (simp add: pfilter_u3(2) pfilters_on_iff)
+    then obtain B12:"(\<U>, x)\<in>Lim" and B13:"\<F> \<subseteq> \<U>"
+      by (meson A1 B10 B6 B8 dual_order.trans isoconvD1)
+    then obtain B13:"\<U> \<in> (finer_ultrafilters (pwr X) (Pow X) \<F>)" and B14:"\<U>#\<F>"
+      unfolding finer_ultrafilters_def using A2 B11 B9 mesh_sym pfilter_mesh1 by fastforce
+    also obtain "x \<in> Lim``{\<U>}"
+      by (simp add: B12)
+    then show "x \<in> \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>)}"
+      using B13 B14 by blast
+  qed
+  also have "\<And>x.  x \<notin>(AdhLim Lim X)``{\<F>} \<Longrightarrow> x \<notin>  \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>) } "
+  proof-
+    fix x assume B14:"x \<notin>(AdhLim Lim X)``{\<F>}"
+    then obtain B15:"\<And>\<G>. \<lbrakk>\<G> \<in>  pfilters_on (pwr X) (Pow X); \<G>#\<F>\<rbrakk> \<Longrightarrow> x \<notin> Lim``{\<G>}"
+      by (meson A0 A2 AdhLim_Im_memI Image_singleton_iff isgconvD1)
+    have B16: "\<And>\<G>. \<lbrakk>\<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>)\<rbrakk> \<Longrightarrow> x \<notin> Lim``{\<G>}"
+    proof-
+      fix \<G> assume "\<G> \<in> (finer_ultrafilters (pwr X) (Pow X) \<F>)"
+      then obtain "\<G> \<in> pfilters_on (pwr X) (Pow X)" and "\<F> \<subseteq> \<G>"
+        by (simp add: finer_ultrafilters_def pfilter_u3(2) pfilters_on_iff)
+      then obtain "\<G>#\<F>"
+        using A2 mesh_sym pfilter_mesh1 by blast
+      then show " x \<notin> Lim``{\<G>}"
+        using B15 \<open>\<G> \<in> pfilters_on (pwr X) (Pow X)\<close> by auto
+    qed
+    then show "x \<notin>  \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>) }"
+      by blast
+  qed
+  then show " (AdhLim Lim X)``{\<F>} = \<Union>{Lim``{\<G>}|\<G>. \<G> \<in> (finer_ultrafilters (pwr X) (Pow X)\<F>)}"
+    using calculation by blast
+qed
 
 lemma Adh_to_Lim: 
   assumes A0:"isconvs X Adh"
@@ -10043,9 +10212,93 @@ proof-
 qed
 
 
+lemma LimAdh_if_pstop:
+  assumes pst:"pseudotop_adh X Adh"
+  shows LimAdh_if_pstop0:"isconvs X (LimAdh Adh X)" and 
+        LimAdh_if_pstop1:"centered X(LimAdh Adh X)" and 
+        LimAdh_if_pstop2:"isoconv X(LimAdh Adh X)" and 
+        LimAdh_if_pstop3:"ufdetconv X(LimAdh Adh X)" and 
+        LimAdh_if_pstop4:"is_pseudotop X (LimAdh Adh X)" 
+proof-
+  have "ufdetadh X Adh"
+    using pst by auto
+  then obtain ufd:"\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> Adh``{\<F>} = \<Union>{Adh``{\<U>}|\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>}"
+    unfolding ufdetadh_def  by fastforce
+  show P0:"isconvs X (LimAdh Adh X)"
+    unfolding LimAdh_def by blast
+  show P1:"centered X (LimAdh Adh X)"
+  proof(rule centeredI1)
+    fix x assume B0:"x \<in> X"
+    show "(lcro (pwr X) (Pow X) {x}, x) \<in> LimAdh Adh X"
+    proof(rule LimAdh_memI)
+       show "lcro (pwr X) (Pow X) {x} \<in> pfilters_on (pwr X) (Pow X)"
+         by (simp add: B0 pfilters_on_iff principal_pfilter_sets)
+       show " x \<in> X"
+         by (simp add: B0)
+       show "\<And>\<G>. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); \<G> # lcro (pwr X) (Pow X) {x}\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Adh"
+       proof-
+        fix \<G> assume A0:" \<G> \<in> pfilters_on (pwr X) (Pow X)" and A1:" \<G> # lcro (pwr X) (Pow X) {x}"
+        then obtain B1:"\<G> \<subseteq> lcro (pwr X) (Pow X) {x}"
+          by (simp add: B0 lcro_subI2 mesh_sym pfilters_on_iff)
+        have B2:"is_ultrafilter (pwr X) (Pow X) (lcro (pwr X) (Pow X) {x}) "
+          by (simp add: B0 is_ultrafilter_def principal_ufilter_sets)
+        then obtain B3:"lcro (pwr X) (Pow X) {x} \<in> finer_ultrafilters (pwr X) (Pow X) \<G>"
+          by (simp add: B1 finer_ultrafilters_def)
+        have B4:" Adh``{\<G>} = \<Union>{Adh``{\<U>}|\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<G>}"
+          using A0 ufd by auto
+        have B5:"x \<in> Adh``{lcro (pwr X) (Pow X) {x}}"
+          by (simp add: B0 centeredD1 pst)
+        then obtain "x \<in> Adh``{\<G>}"
+          using B3 B4 by blast
+        then show " (\<G>, x) \<in> Adh"
+          by simp
+      qed
+    qed
+  qed
+  show P2:"isoconv X(LimAdh Adh X)"
+  proof(rule isoconvI1)
+    fix \<G> \<F> x assume A0:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and A1:"(\<F>, x) \<in> LimAdh Adh X" and A2:"\<F> \<subseteq> \<G>"
+    then obtain A3:"\<And>\<H>. \<lbrakk>\<H> \<in> pfilters_on (pwr X) (Pow X); \<H>#\<F>\<rbrakk> \<Longrightarrow> (\<H>, x) \<in> Adh"
+      unfolding LimAdh_def by blast
+    then obtain A4:"\<And>\<H>. \<lbrakk>\<H> \<in> pfilters_on (pwr X) (Pow X); \<H>#\<G>\<rbrakk> \<Longrightarrow> (\<H>, x) \<in> Adh"
+      by (meson A2 mesh_def subset_eq)
+    also obtain A4:"x \<in> X"
+      using A1 P0 by blast
+    then show "(\<G>, x) \<in> LimAdh Adh X"
+      by (simp add: A0 LimAdh_memI calculation)
+  qed
+  show P3:"ufdetconv X(LimAdh Adh X)"
+  proof(rule ufdetconvI1)
+    fix \<F> x assume A0:"x \<in> X" and A1:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and 
+                   A2:"(\<And>\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F> \<Longrightarrow> (\<U>, x) \<in> LimAdh Adh X)"
+    then obtain B0:"\<And>\<G> \<U>. \<lbrakk>\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>;\<G> \<in> pfilters_on (pwr X) (Pow X); \<G>#\<U>\<rbrakk>\<Longrightarrow> (\<G>, x) \<in> Adh "
+      by (meson LimAdh_memD)
+    have B1:"\<And>\<G>. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); \<G>#\<F>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Adh"
+    proof-
+      fix \<G> assume A3:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and A4:"\<G>#\<F>"
+      obtain B2:"is_pfilter (pwr X) (Pow X) \<F>" and B3:"is_pfilter (pwr X) (Pow X) \<G>"
+        using A1 A3 pfilters_on_iff by blast
+      define \<H> where "\<H> \<equiv> {E \<in> Pow X. \<exists>F \<in> \<F>. \<exists>G \<in> \<G>. G \<inter> F \<subseteq> E}" 
+      then obtain "is_pfilter (pwr X) (Pow X) \<H>" and "\<F> \<subseteq> \<H>" and "\<G> \<subseteq> \<H>"
+        using finer_proper_filter3[of X \<F> \<G>]  A4 B2 B3 by fastforce
+      then obtain \<U> where "is_ultrafilter (pwr X) (Pow X) \<U>" and "\<H> \<subseteq> \<U> "
+        using finer_ultrafilters by blast
+      then obtain "\<G>\<subseteq> \<U>" and "\<F>\<subseteq> \<U>"
+        using \<open>\<F> \<subseteq> \<H>\<close> \<open>\<G> \<subseteq> \<H>\<close> by auto
+      then obtain "\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<G>" and "\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>"
+        by (simp add: \<open>is_ultrafilter (pwr X) (Pow X) \<U>\<close> finer_ultrafilters_def) 
+      obtain "\<G>#\<U>"
+        by (metis A3 \<open>\<G> \<subseteq> \<U>\<close> \<open>is_ultrafilter (pwr X) (Pow X) \<U>\<close> is_ultrafilter_def maximalD1 pfilter_mesh1)
+      then show "(\<G>, x) \<in> Adh"
+        using A3 B0 \<open>\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>\<close> by blast
+    qed
+    then show  "(\<F>, x) \<in> LimAdh Adh X"
+      by (simp add: A0 A1 LimAdh_memI)
+  qed
+  show "is_pseudotop X (LimAdh Adh X)"
+    by (simp add: P0 P1 P2 P3)
+qed
 
-
- 
 section Continuity
 definition Imfil where
   "Imfil f X Y \<F> \<equiv> {E \<in> Pow Y. \<exists>F \<in> \<F>. f`F \<subseteq> E}"
