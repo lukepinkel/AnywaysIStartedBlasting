@@ -10374,10 +10374,12 @@ proof-
           using B18 B4 B5 finer_ultrafilters_def by fastforce
         then show  "(\<G>, x) \<in> Adh" 
           using ufd B15 A1 by blast
-    show "(\<F>, x) \<in> AdhLim (LimAdh Adh X) X "
-    unfolding AdhLim_def LimAdh_def apply(auto)
+    qed
+    then show "(\<F>, x) \<in> AdhLim (LimAdh Adh X) X "
+      by (metis AdhLim_memI B0 B1 B5 B8 LimAdh_memI mem_Collect_eq pfilter_u3(2) pfilters_on_def)
+  qed
   show "(AdhLim (LimAdh Adh X) X) = Adh"
-
+    using P5 P6 by auto
 qed
 
 lemma AdhLim_if_pstop:
