@@ -9236,31 +9236,13 @@ proof-
    qed
 qed 
 
-      
-
+     
 lemma LimNh_if_prtop:
-  assumes prt:"prtop_nh X N" 
-  shows LimNh_if_prtop1:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N" and
-        LimNh_if_prtop2:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> A \<in> (NLim (LimN N X) X)``{x} \<longleftrightarrow> A \<in> N``{x}" and
-        LimNh_if_prtop3:"is_prtop X (LimN N X)"
+  assumes prt:"prtop_nh X N" and is_nh:"ispsmap X N"
+  shows LimNh_if_prtop1:"is_prtop X (LimN N X)" and
+        LimNh_if_prtop2:"NLim (LimN N X) X = N"
 proof-
-  show P0:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
-  proof-
-    fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
-    show "(x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
-    proof
-      assume "(x,A) \<in>  NLim (LimN N X) X"
-      then show "(x, A) \<in> N"
-        unfolding NLim_def LimN_def using prt by blast
-      next
-      assume "(x, A) \<in> N"
-      then show "(x,A) \<in>  NLim (LimN N X) X"
-      unfolding NLim_def LimN_def using amem xmem by blast
-    qed
-  qed
-  show P1:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> A \<in> (NLim (LimN N X) X)``{x} \<longleftrightarrow> A \<in> N``{x}"
-    using P0 by auto
-  show P2:"is_prtop X (LimN N X)"
+  show P0:"is_prtop X (LimN N X)"
   proof-
     let ?q="(LimN N X)"
     have B0:"isconvs  X ?q" 
@@ -9307,36 +9289,35 @@ proof-
     then show "is_prtop X (LimN N X)"
       by (simp add: B0 B2 B4 centeredI1)
   qed
+  obtain P1:"N \<subseteq> X \<times> (Pow X)"
+    by (simp add: is_nh)
+  then obtain P2:"NLim (LimN N X) X \<subseteq> X \<times> (Pow X)" 
+    unfolding NLim_def by blast
+  have P3:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
+  proof-
+    fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X"
+    show "(x, A) \<in> NLim (LimN N X) X \<longleftrightarrow> (x, A) \<in> N"
+    proof
+      assume "(x,A) \<in>  NLim (LimN N X) X"
+      then show "(x, A) \<in> N"
+        unfolding NLim_def LimN_def using prt by blast
+      next
+      assume "(x, A) \<in> N"
+      then show "(x,A) \<in>  NLim (LimN N X) X"
+      unfolding NLim_def LimN_def using amem xmem by blast
+    qed
+  qed
+  then show P4:"NLim (LimN N X) X = N"
+    using P1 P2 by auto
 qed
+
 
 lemma NhLim_if_prtop:
   assumes prt:"is_prtop X Lim"
-  shows NhLim_if_prtop1:"\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); x \<in> X\<rbrakk> \<Longrightarrow>(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" and
-        NhLim_if_prtop2:"prtop_nh X (NLim Lim X)"
+  shows NhLim_if_prtop1:"prtop_nh X (NLim Lim X)" and
+        NhLim_if_prtop2:"LimN (NLim Lim X) X =Lim"
 proof-
-  show P0:"\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); x \<in> X\<rbrakk> \<Longrightarrow>(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim"
-  proof-
-    fix \<F> x assume pfil:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and xmem:"x \<in> X" 
-    show "(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" (is "?L \<longleftrightarrow> ?R")
-    proof
-       assume L:"(\<F>, x) \<in> LimN (NLim Lim X) X"
-       obtain smallest:"(\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim"
-          using prt xmem onpconvD1[of X Lim x] by blast
-       have B0:"(\<And>A. \<lbrakk>A \<in>  Pow X; (x, A) \<in> (NLim Lim X)\<rbrakk> \<Longrightarrow> A \<in> \<F>)" 
-        using L unfolding LimN_def by auto
-       have B1:"\<Inter>{\<F>. (\<F>, x) \<in> Lim} = (NLim Lim X)``{x}"
-         by (simp add: Lim_to_Nh2 prt xmem)
-      also have B2:"... \<subseteq> \<F>" 
-        unfolding NLim_def using B1 B0 L prt by blast
-      finally show "(\<F>, x) \<in> Lim" 
-        using prt smallest pfil isoconvD1[of X Lim \<F> "\<Inter>{\<F>. (\<F>, x) \<in> Lim}" x]
-        by blast
-    next
-      assume R:"(\<F>, x) \<in> Lim" then show "?L" 
-      unfolding LimN_def NLim_def using pfil xmem by auto
-    qed
-  qed
-  show P1:"prtop_nh X (NLim Lim X)"
+  show P0:"prtop_nh X (NLim Lim X)"
   proof-
     let ?N="(NLim Lim X)"
     have "\<And>x. x \<in> X \<Longrightarrow> ?N``{x} \<in>  pfilters_on (pwr X) (Pow X) "
@@ -9365,155 +9346,198 @@ proof-
     qed
     then show ?thesis
       using calculation by blast
-   qed
+  qed
+  obtain P1:"Lim \<subseteq> (pfilters_on (pwr X) (Pow X)) \<times> X"
+    by (simp add: prt) 
+  obtain P2:"LimN (NLim Lim X) X \<subseteq> (pfilters_on (pwr X) (Pow X)) \<times> X"
+    unfolding LimN_def by blast
+  have P3:"\<And>\<F> x. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); x \<in> X\<rbrakk> \<Longrightarrow>(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" 
+  proof-
+    fix \<F> x assume pfil:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and xmem:"x \<in> X" 
+    show "(\<F>, x) \<in> LimN (NLim Lim X) X \<longleftrightarrow> (\<F>, x) \<in> Lim" (is "?L \<longleftrightarrow> ?R")
+    proof
+       assume L:"(\<F>, x) \<in> LimN (NLim Lim X) X"
+       obtain smallest:"(\<Inter>{\<F>. (\<F>, x) \<in> Lim}, x) \<in> Lim"
+          using prt xmem onpconvD1[of X Lim x] by blast
+       have B0:"(\<And>A. \<lbrakk>A \<in>  Pow X; (x, A) \<in> (NLim Lim X)\<rbrakk> \<Longrightarrow> A \<in> \<F>)" 
+        using L unfolding LimN_def by auto
+       have B1:"\<Inter>{\<F>. (\<F>, x) \<in> Lim} = (NLim Lim X)``{x}"
+         by (simp add: Lim_to_Nh2 prt xmem)
+      also have B2:"... \<subseteq> \<F>" 
+        unfolding NLim_def using B1 B0 L prt by blast
+      finally show "(\<F>, x) \<in> Lim" 
+        using prt smallest pfil isoconvD1[of X Lim \<F> "\<Inter>{\<F>. (\<F>, x) \<in> Lim}" x]
+        by blast
+    next
+      assume R:"(\<F>, x) \<in> Lim" then show "?L" 
+      unfolding LimN_def NLim_def using pfil xmem by auto
+    qed
+  qed
+  then show "LimN (NLim Lim X) X = Lim"
+    using P2 prt by auto
 qed
-
+  
 
 lemma NhAdh_if_iso:
   assumes inh:"ispsmap X N"  and 
           iso: "iso_psmap X N" and
           ntr:"\<And>x. x \<in> X \<Longrightarrow> N``{x} \<noteq> {}"
-  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N"
+  shows NhAdh_if_iso1:"NAdh (AdhN N X) X = N" 
 proof-
-  let ?PF="pfilters_on (pwr X) (Pow X)"
-  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
-  have "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
-    unfolding NAdh_def using amem xmem by blast
-  also have "... \<longleftrightarrow>  (\<forall>\<F> \<in>?PF. (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
-    unfolding AdhN_def using amem xmem by auto
-  also have "... \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)" (is "?L \<longleftrightarrow> ?R")
-  proof
-    assume L0:?L
-    have L1:"\<And>\<F>. \<lbrakk>\<F> \<in> ?PF;(N``{x})#\<F>\<rbrakk> \<Longrightarrow> {A}#\<F>"
-    proof-
-      fix \<F> assume L2:"\<F> \<in> ?PF" and L3:"(N``{x})#\<F>"
-      then obtain L4:"x \<in> (AdhN N X)``{\<F>}"
-        by (meson Nh_to_Adh1 inh xmem)
-      then show "{A}#\<F>"
-        using L0 AdhN_Im_memD[of x N X \<F>] by fastforce
+  have P0:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N"
+  proof-
+    let ?PF="pfilters_on (pwr X) (Pow X)"
+    fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
+    have "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (\<F>, x) \<in> (AdhN N X) \<longrightarrow> {A}#\<F>)"
+      unfolding NAdh_def using amem xmem by blast
+    also have "... \<longleftrightarrow>  (\<forall>\<F> \<in>?PF. (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>) \<longrightarrow> {A}#\<F>)"
+      unfolding AdhN_def using amem xmem by auto
+    also have "... \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)" (is "?L \<longleftrightarrow> ?R")
+    proof
+      assume L0:?L
+      have L1:"\<And>\<F>. \<lbrakk>\<F> \<in> ?PF;(N``{x})#\<F>\<rbrakk> \<Longrightarrow> {A}#\<F>"
+      proof-
+        fix \<F> assume L2:"\<F> \<in> ?PF" and L3:"(N``{x})#\<F>"
+        then obtain L4:"x \<in> (AdhN N X)``{\<F>}"
+          by (meson Nh_to_Adh1 inh xmem)
+        then show "{A}#\<F>"
+          using L0 AdhN_Im_memD[of x N X \<F>] by fastforce
+      qed
+      then show ?R
+        by blast
+      next
+      assume R0:?R
+      have R1:"\<And>\<F>.  \<lbrakk>\<F> \<in> ?PF;  (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)\<rbrakk> \<Longrightarrow> {A}#\<F>"
+      proof-
+        fix \<F> assume R2:"\<F> \<in> ?PF" and R3:"(\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)"
+        then obtain R4:"\<And>V. \<lbrakk>V \<in> Pow X; V \<in> N``{x}\<rbrakk> \<Longrightarrow> {V}#\<F>"
+          by auto
+        obtain R5:"\<And>V. V \<in> N``{x} \<Longrightarrow> V \<in> Pow X"
+          using inh by auto
+        then obtain R5:"\<And>V F. \<lbrakk>V \<in> N``{x}; F \<in> \<F>\<rbrakk> \<Longrightarrow> V \<inter> F \<noteq> {}"
+          by (meson R4 mesh_singleE)
+        then obtain R6:"(N``{x})#\<F>"
+          using meshI by blast
+        then show "{A}#\<F>"
+          by (simp add: R0 R2)
+      qed
+      then show ?L
+        by auto
     qed
-    then show ?R
-      by blast
+    finally have P0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"  by blast
+    show "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
+    proof
+      assume R:?R 
+      have B0:"\<And>\<F>. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); (\<F>, x) \<in> (AdhN N X)\<rbrakk> \<Longrightarrow> {A}#\<F>"
+      proof-
+        fix \<F> assume fmem:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and fadh:"(\<F>, x) \<in> (AdhN N X)"
+        then obtain "\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> {V}#\<F>" unfolding AdhN_def using xmem by blast
+        then show"{A}#\<F>" using R xmem amem by blast
+      qed
+      then show ?L unfolding NAdh_def using amem xmem by blast
     next
-    assume R0:?R
-    have R1:"\<And>\<F>.  \<lbrakk>\<F> \<in> ?PF;  (\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)\<rbrakk> \<Longrightarrow> {A}#\<F>"
-    proof-
-      fix \<F> assume R2:"\<F> \<in> ?PF" and R3:"(\<forall>V \<in> Pow X. (x, V) \<in> N \<longrightarrow> {V}#\<F>)"
-      then obtain R4:"\<And>V. \<lbrakk>V \<in> Pow X; V \<in> N``{x}\<rbrakk> \<Longrightarrow> {V}#\<F>"
-        by auto
-      obtain R5:"\<And>V. V \<in> N``{x} \<Longrightarrow> V \<in> Pow X"
-        using inh by auto
-      then obtain R5:"\<And>V F. \<lbrakk>V \<in> N``{x}; F \<in> \<F>\<rbrakk> \<Longrightarrow> V \<inter> F \<noteq> {}"
-        by (meson R4 mesh_singleE)
-      then obtain R6:"(N``{x})#\<F>"
-        using meshI by blast
-      then show "{A}#\<F>"
-        by (simp add: R0 R2)
-    qed
-    then show ?L
-      by auto
-  qed
-  finally have P0:"(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (\<forall>\<F> \<in> ?PF. (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"  by blast
-  show "(x, A) \<in> (NAdh (AdhN N X) X) \<longleftrightarrow> (x, A) \<in> N" (is "?L \<longleftrightarrow> ?R")
-  proof
-    assume R:?R 
-    have B0:"\<And>\<F>. \<lbrakk>\<F> \<in> pfilters_on (pwr X) (Pow X); (\<F>, x) \<in> (AdhN N X)\<rbrakk> \<Longrightarrow> {A}#\<F>"
-    proof-
-      fix \<F> assume fmem:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and fadh:"(\<F>, x) \<in> (AdhN N X)"
-      then obtain "\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> {V}#\<F>" unfolding AdhN_def using xmem by blast
-      then show"{A}#\<F>" using R xmem amem by blast
-    qed
-    then show ?L unfolding NAdh_def using amem xmem by blast
-  next
-    assume L:?L 
-    have B0:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
-    proof-
-      assume notr1:"\<not>(?R)"
-      then obtain notr2:"A \<notin> N``{x}"
-        by auto
-      have B1:"\<And>V. \<lbrakk>V \<in> Pow X; V \<in> N``{x}\<rbrakk> \<Longrightarrow>\<not> (V \<subseteq> A)"
+      assume L:?L 
+      have B0:"\<not>(?R) \<Longrightarrow> \<not>(?L)"
       proof-
-        fix V assume "V \<in> Pow X" and "V \<in>N``{x}" 
-        then show "\<not>(V \<subseteq> A)"
-          using PowD[of A X] amem xmem is_ord_clE1[of  "(Pow X)" "N``{x}" "pwr X" V A] iso notr2 pwr_mem_iff[ of V A X] by force
-      qed
-      obtain B2:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)"
-        by (simp add: B1) 
-      have B3:"{(X-A)}#(N``{x})"
-      proof-
-        have B20:"\<And>B. B \<in> N``{x} \<Longrightarrow> B \<inter> (X-A) \<noteq> {}"
+        assume notr1:"\<not>(?R)"
+        then obtain notr2:"A \<notin> N``{x}"
+          by auto
+        have B1:"\<And>V. \<lbrakk>V \<in> Pow X; V \<in> N``{x}\<rbrakk> \<Longrightarrow>\<not> (V \<subseteq> A)"
         proof-
-          fix B assume B21:"B \<in> N``{x}"
-          then obtain B22:"B \<in> Pow X"
-            using inh by auto
-          then obtain "\<not>(B \<subseteq> A)"
-            using B1 B21 by auto
-          then show "B \<inter> (X-A) \<noteq> {}"
-            using B22 by blast
+          fix V assume "V \<in> Pow X" and "V \<in>N``{x}" 
+          then show "\<not>(V \<subseteq> A)"
+            using PowD[of A X] amem xmem is_ord_clE1[of  "(Pow X)" "N``{x}" "pwr X" V A] iso notr2 pwr_mem_iff[ of V A X] by force
         qed
-        then show ?thesis
-          using mesh_singleI[of "N``{x}"] by (simp add: Int_commute)
+        obtain B2:"\<And>V. \<lbrakk>V \<in> Pow X; (x, V) \<in> N\<rbrakk> \<Longrightarrow> \<not> (V \<subseteq> A)"
+          by (simp add: B1) 
+        have B3:"{(X-A)}#(N``{x})"
+        proof-
+          have B20:"\<And>B. B \<in> N``{x} \<Longrightarrow> B \<inter> (X-A) \<noteq> {}"
+          proof-
+            fix B assume B21:"B \<in> N``{x}"
+            then obtain B22:"B \<in> Pow X"
+              using inh by auto
+            then obtain "\<not>(B \<subseteq> A)"
+              using B1 B21 by auto
+            then show "B \<inter> (X-A) \<noteq> {}"
+              using B22 by blast
+          qed
+          then show ?thesis
+            using mesh_singleI[of "N``{x}"] by (simp add: Int_commute)
+        qed
+        then have B4:"(lcro (pwr X) (Pow X) (X-A))#(N``{x})"
+          unfolding mesh_def lcro_def  using powrel8 by fastforce 
+        have B5:"\<not>((lcro (pwr X) (Pow X) (X-A))#{A})"
+          by (meson Diff_disjoint Diff_subset Pow_iff lcroI1 mesh_def mesh_sym powrel3 refl_onD singletonI) 
+        obtain B6:"(X-A) \<in> Pow X"
+          by simp
+        obtain B7:"(X-A) \<noteq> {}"
+           using B3 mesh_singleE ntr xmem by fastforce 
+        then obtain B8:"(lcro (pwr X) (Pow X) (X-A)) \<in> pfilters_on (pwr X) (Pow X)"
+          by (simp add: lorc_set_pfilter pfilters_on_iff)
+        then obtain B8:"\<not>(\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"
+          using B4 B5 mesh_sym by blast
+        then show "\<not>(?L)" 
+        using P0 by blast
       qed
-      then have B4:"(lcro (pwr X) (Pow X) (X-A))#(N``{x})"
-        unfolding mesh_def lcro_def  using powrel8 by fastforce 
-      have B5:"\<not>((lcro (pwr X) (Pow X) (X-A))#{A})"
-        by (meson Diff_disjoint Diff_subset Pow_iff lcroI1 mesh_def mesh_sym powrel3 refl_onD singletonI) 
-      obtain B6:"(X-A) \<in> Pow X"
-        by simp
-      obtain B7:"(X-A) \<noteq> {}"
-         using B3 mesh_singleE ntr xmem by fastforce 
-      then obtain B8:"(lcro (pwr X) (Pow X) (X-A)) \<in> pfilters_on (pwr X) (Pow X)"
-        by (simp add: lorc_set_pfilter pfilters_on_iff)
-      then obtain B8:"\<not>(\<forall>\<F> \<in> pfilters_on (pwr X) (Pow X). (N``{x})#\<F> \<longrightarrow> {A}#\<F>)"
-        using B4 B5 mesh_sym by blast
-      then show "\<not>(?L)" 
-      using P0 by blast
+      then show ?R using L by fastforce
     qed
-    then show ?R using L by fastforce
   qed
+  also obtain "N \<subseteq> X \<times> (Pow X)" and "(NAdh (AdhN N X) X) \<subseteq> X \<times> Pow X"
+    unfolding NAdh_def   using inh by blast
+  then show "NAdh (AdhN N X) X = N"
+    using calculation by auto
 qed
-  
-lemma ClAdh_if_cl:
+
+lemma ClAdh_if_iso:
   assumes A0:"isspmap X Cl" and
           A1:"iso_spmap X Cl" and
           A2:"Cl``{{}} = {}" 
-  shows "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+  shows ClAdh_if_iso1:"(ClAdh (AdhCl Cl X) X) = Cl"
 proof-
-  fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
-  show "(A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"  (is "?L \<longleftrightarrow> ?R")
-  proof
-    assume L:?L
-    then obtain \<F> where f1:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and f2:"A \<in> \<F>" and f3:"(\<F>, x) \<in> AdhCl Cl X" 
-      unfolding ClAdh_def using xmem amem L  by blast
-    have f4:"\<And>B. B \<in> \<F> \<Longrightarrow> B \<in> Pow X"
-      using f1 pfilters_on_iff sets_pfilter6 by blast  
-    have f5:"\<And>B. B \<in> \<F> \<Longrightarrow> (B, x) \<in> Cl" using f3 unfolding AdhCl_def using xmem f1 f4  by fastforce
-    then show ?R using f2  by auto
-  next
-    assume R:?R
-    let ?F="lcro (pwr X) (Pow X) A"
-    have B0:"?F \<in> pfilters_on (pwr X) (Pow X)"
-      by (metis A2 Image_singleton_iff R amem equals0D lorc_set_pfilter pfilters_on_iff) 
-    have B1:"\<And>B. B \<in> ?F \<Longrightarrow> (B, x) \<in> Cl"
-    proof-
-      fix B assume B2:"B \<in> ?F" 
-      then obtain "A \<subseteq> B" and "B \<in> Pow X"
-        by (meson lcroD1 powrel8)
-      then obtain "Cl``{A} \<subseteq> Cl``{B}"
-        by (meson A1 iso_spmapD1)
-      then show "(B, x)\<in>Cl"
-        using R by blast
+  have P0: "\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+  proof-
+    fix x A assume xmem:"x \<in> X" and amem:"A \<in> Pow X" 
+    show "(A, x) \<in> (ClAdh (AdhCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"  (is "?L \<longleftrightarrow> ?R")
+    proof
+      assume L:?L
+      then obtain \<F> where f1:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and f2:"A \<in> \<F>" and f3:"(\<F>, x) \<in> AdhCl Cl X" 
+        unfolding ClAdh_def using xmem amem L  by blast
+      have f4:"\<And>B. B \<in> \<F> \<Longrightarrow> B \<in> Pow X"
+        using f1 pfilters_on_iff sets_pfilter6 by blast  
+      have f5:"\<And>B. B \<in> \<F> \<Longrightarrow> (B, x) \<in> Cl" using f3 unfolding AdhCl_def using xmem f1 f4  by fastforce
+      then show ?R using f2  by auto
+    next
+      assume R:?R
+      let ?F="lcro (pwr X) (Pow X) A"
+      have B0:"?F \<in> pfilters_on (pwr X) (Pow X)"
+        by (metis A2 Image_singleton_iff R amem equals0D lorc_set_pfilter pfilters_on_iff) 
+      have B1:"\<And>B. B \<in> ?F \<Longrightarrow> (B, x) \<in> Cl"
+      proof-
+        fix B assume B2:"B \<in> ?F" 
+        then obtain "A \<subseteq> B" and "B \<in> Pow X"
+          by (meson lcroD1 powrel8)
+        then obtain "Cl``{A} \<subseteq> Cl``{B}"
+          by (meson A1 iso_spmapD1)
+        then show "(B, x)\<in>Cl"
+          using R by blast
+      qed
+      have B2:"(?F, x) \<in>  (AdhCl Cl X)"  
+        by (simp add: AdhCl_def B0 B1 xmem)
+      have B3:"A \<in> ?F"
+        by (meson amem lcroI1 powrel3 refl_onD) 
+      have B4:"(\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> (AdhCl Cl X))"  
+        using B0 B2 B3 by blast
+      show ?L 
+        using B4 xmem amem unfolding ClAdh_def by blast
     qed
-    have B2:"(?F, x) \<in>  (AdhCl Cl X)"  
-      by (simp add: AdhCl_def B0 B1 xmem)
-    have B3:"A \<in> ?F"
-      by (meson amem lcroI1 powrel3 refl_onD) 
-    have B4:"(\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> (AdhCl Cl X))"  
-      using B0 B2 B3 by blast
-    show ?L 
-      using B4 xmem amem unfolding ClAdh_def by blast
   qed
+  also obtain P1:"Cl \<subseteq> (Pow X) \<times> X" and P2:"(ClAdh (AdhCl Cl X) X) \<subseteq> (Pow X) \<times> X"
+    unfolding ClAdh_def using A0 by blast
+  then show "ClAdh (AdhCl Cl X) X = Cl"
+    using calculation by auto
 qed
+
 
 lemma LimCl_if_prtop:
   assumes prt:"is_prtop X Lim"
@@ -9524,7 +9548,8 @@ lemma LimCl_if_prtop:
         LimCl_if_prtop5:"\<And>A B. \<lbrakk>A \<in> Pow X; B \<in> Pow X\<rbrakk> \<Longrightarrow> (ClLim Lim X)``{A \<union> B}=(ClLim Lim X)``{A} \<union> (ClLim Lim X)``{B}" and
         LimCl_if_prtop6:"\<And>A B. \<lbrakk>B \<in> Pow X; A \<subseteq> B\<rbrakk> \<Longrightarrow>  (ClLim Lim X)``{A} \<subseteq>  (ClLim Lim X)``{B}" and
         LimCl_if_prtop7:"prtop_cl X (ClLim Lim X)" and
-        LimCl_if_prtop8:"isspmap X (ClLim Lim X)"
+        LimCl_if_prtop8:"isspmap X (ClLim Lim X)" and
+        LimCl_if_prtop9:"LimCl (ClLim Lim X) X = Lim"
 proof-
   obtain centered:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> Lim"
     by (meson centered_def prt)
@@ -9771,6 +9796,8 @@ proof-
     using Q2 Q3 Q4 by presburger
   show Q7:"isspmap X (ClLim Lim X)"
     using ClLim_memD by fastforce
+  show Q8:"LimCl (ClLim Lim X) X = Lim"
+    by (meson LimCl_memD Q0 is_limit pred_equals_eq2)
 qed
 
 lemma ext_LimCl:
@@ -10106,10 +10133,10 @@ proof-
 qed
 
 
-lemma ClLim_if_prt:
+lemma ClLim_if_prtop:
   assumes A0:"isspmap X Cl" and 
           A1:"prtop_cl X Cl"
-  shows ClLim_if_prt1:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"  and
+  shows ClLim_if_prt1:"(ClLim (LimCl Cl X) X) = Cl"  and
         ClLim_if_prt2:"is_prtop X (LimCl Cl X)"
 proof-
    obtain is_cl:"\<And>A x. (A, x) \<in> Cl \<Longrightarrow> A \<in> Pow X \<and> x \<in> X"
@@ -10146,7 +10173,7 @@ proof-
     then show "(E, x) \<in> Cl"
       using  CCl4  E0 xmem Cl_mem_iff1[of X Cl E x]  by force
   qed
-  show Q0:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
+  have Q0:"\<And>A x. \<lbrakk>A \<in> (Pow X); x \<in> X\<rbrakk> \<Longrightarrow> (A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl"
   proof-  
     fix A x assume amem:"A \<in> Pow X" and xmem:"x \<in> X"
     show "(A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" (is "?L \<longleftrightarrow> ?R")
@@ -10171,6 +10198,10 @@ proof-
          unfolding ClLim_def LimCl_def using A0 xmem R F0 F1 F2 by auto
       qed
   qed
+  also obtain "Cl \<subseteq> (Pow X) \<times> X" and "(ClLim (LimCl Cl X) X) \<subseteq> (Pow X) \<times> X"
+    unfolding ClLim_def using A0 by blast
+  then show "(ClLim (LimCl Cl X) X) = Cl"
+    using calculation by auto
   let ?q="LimCl Cl X"
   have isc:"isconvs X ?q"
     using LimCl_memD by fastforce
@@ -10214,16 +10245,16 @@ proof-
     using  isc iso cent onp by blast
 qed
 
-
 lemma LimAdh_if_pstop:
   assumes pst:"pseudotop_adh X Adh"
   shows LimAdh_if_pstop0:"isconvs X (LimAdh Adh X)" and 
         LimAdh_if_pstop1:"centered X(LimAdh Adh X)" and 
         LimAdh_if_pstop2:"isoconv X(LimAdh Adh X)" and 
         LimAdh_if_pstop3:"ufdetconv X(LimAdh Adh X)" and 
-        LimAdh_if_pstop4:"is_pseudotop X (LimAdh Adh X)" 
+        LimAdh_if_pstop4:"is_pseudotop X (LimAdh Adh X)" and
+        LimAdh_if_pstop5:"(AdhLim (LimAdh Adh X) X) = Adh"
 proof-
-  have "ufdetadh X Adh"
+  have ufd:"ufdetadh X Adh"
     using pst by auto
   then obtain ufd:"\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> Adh``{\<F>} = \<Union>{Adh``{\<U>}|\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>}"
     unfolding ufdetadh_def  by fastforce
@@ -10300,6 +10331,53 @@ proof-
   qed
   show P4:"is_pseudotop X (LimAdh Adh X)"
     by (simp add: P0 P1 P2 P3)
+  have P5:"\<And>x \<F>. (\<F>, x) \<in> AdhLim (LimAdh Adh X) X \<Longrightarrow> (\<F>, x) \<in> Adh"
+  proof-
+    fix x \<F> assume A0:"(\<F>, x) \<in> AdhLim (LimAdh Adh X) X"
+    then obtain B0:"x \<in> X" and B1:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
+      unfolding AdhLim_def by blast
+    obtain \<G> where B2:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and B3:"(\<G>, x)\<in>LimAdh Adh X" and B4:"\<G>#\<F>"
+      using A0 unfolding AdhLim_def by blast
+    obtain B5:"\<And>\<H>. \<lbrakk>\<H> \<in>pfilters_on (pwr X) (Pow X); \<H>#\<G>\<rbrakk> \<Longrightarrow> (\<H>, x)\<in>Adh"
+      using B3 unfolding LimAdh_def by blast
+    then show "(\<F>, x)\<in>Adh"
+      using B1 B4 mesh_sym by blast
+  qed
+  have P6:"\<And>x \<F>. (\<F>, x) \<in> Adh \<Longrightarrow>(\<F>, x) \<in> AdhLim (LimAdh Adh X) X "
+  proof-
+    fix x \<F> assume A0:"(\<F>, x) \<in>Adh"
+    then obtain B0:"x \<in> X" and B1:"\<F> \<in> pfilters_on (pwr X) (Pow X)"
+      using pst by blast
+    then obtain B2:"is_pfilter (pwr X) (Pow X) \<F>"
+      by (simp add: pfilters_on_iff)
+    then obtain \<U> where B3:"\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>" and B4:"x \<in> Adh``{\<U>}"
+      using ufd unfolding ufdetadh_def using A0 B1 by fastforce
+    then obtain B5:"is_ultrafilter (pwr X) (Pow X) \<U>" and B6:"\<F> \<subseteq> \<U> " and B7:"(\<U>, x)\<in>Adh"
+      by (simp add: finer_ultrafilters_def)
+    then obtain B8:"\<U>#\<F>"
+      using B1 mesh_sym pfilter_mesh1 pfilter_u3(2) pfilters_on_iff by blast
+    have B9:"(\<And>\<G>. \<lbrakk>\<G> \<in> pfilters_on (pwr X) (Pow X); \<G> #\<U>\<rbrakk> \<Longrightarrow> (\<G>, x) \<in> Adh)"
+    proof-
+      fix \<G> assume A1:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and A2:"\<G> #\<U>"
+       obtain B15:"is_pfilter (pwr X) (Pow X) \<G>" and B16:"is_pfilter (pwr X) (Pow X) \<U>"
+         using A1 B5 pfilter_u3(2) pfilters_on_iff by blast
+        define \<H> where "\<H> \<equiv> {E \<in> Pow X. \<exists>F \<in>  \<G>. \<exists>G \<in> \<U>. G \<inter> F \<subseteq> E}" 
+        then obtain B17:"is_pfilter (pwr X) (Pow X) \<H>" and B18:"\<G> \<subseteq> \<H>" and B19:"\<U> \<subseteq> \<H>"
+          using finer_proper_filter3[of X \<G> \<U>] by (simp add: A2 B15 B16 mesh_sym)  
+        have B20:"is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) \<U>"
+          using B5 is_ultrafilter_def by blast
+        obtain B21:"\<H> \<in> (pfilters_on (pwr X) (Pow X))" and B22:"(\<U>, \<H>) \<in> (pwr (Pow X))"
+          by (simp add: B17 B19 pfilters_on_iff pwr_memI1 sets_pfilter6)
+        then obtain "\<U>=\<H>"
+          by (metis B20 maximalD3)
+        then obtain "x \<in> Adh``{\<U>}" and "\<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<G>"
+          using B18 B4 B5 finer_ultrafilters_def by fastforce
+        then show  "(\<G>, x) \<in> Adh" 
+          using ufd B15 A1 by blast
+    show "(\<F>, x) \<in> AdhLim (LimAdh Adh X) X "
+    unfolding AdhLim_def LimAdh_def apply(auto)
+  show "(AdhLim (LimAdh Adh X) X) = Adh"
+
 qed
 
 lemma AdhLim_if_pstop:
