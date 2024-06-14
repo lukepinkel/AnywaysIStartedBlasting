@@ -8299,7 +8299,16 @@ proof
       by (meson B0 Inter_iff \<open>\<Inter> (finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> Pow X\<close> subsetD subsetI)
   qed
 qed
-      
+
+lemma lcro_mesh:
+  assumes A0:"A \<in> Pow X" and A1:"\<F> \<in> Pow (Pow X)" and A2:"{A}#\<F>"
+  shows lcro_mesh0:"(lcro (pwr X) (Pow X) A)#\<F>" and lcro_mesh1:"\<F>#(lcro (pwr X) (Pow X) A)"
+proof-
+  show "(lcro (pwr X) (Pow X) A)#\<F>"
+    unfolding mesh_def by (meson A0 A1 A2 lcroD1 mesh_singleE mesh_sub pwr_mem_iff) 
+  then show "\<F>#(lcro (pwr X) (Pow X) A)"
+    by (simp add: mesh_sym)
+qed
 lemma ufilter_mesh1:
   assumes A0:"is_ultrafilter (pwr X) (Pow X) \<U>" and 
           A1:"is_pfilter (pwr X) (Pow X) \<F>" and
@@ -8663,6 +8672,9 @@ lemma ufdetadhI1:
   "(\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> Adh``{\<F>} = \<Union>{Adh``{\<U>}|\<U>. \<U> \<in> finer_ultrafilters (pwr X) (Pow X) \<F>}) \<Longrightarrow> ufdetadh X Adh"
   unfolding ufdetadh_def  by blast
 
+lemma prdetadhI1:
+  "(\<And>\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<Longrightarrow> Adh``{\<F>} =\<Inter>{Adh``{lcro (pwr X) (Pow X) F}|F. F \<in> \<F>}) \<Longrightarrow> prdetadh X Adh"
+  unfolding prdetadh_def by fastforce
       
 lemma prtop_clD:
   assumes  A0:"isspmap X Cl" and 
@@ -8771,7 +8783,8 @@ qed
 lemma Nh_to_Adh:
   assumes A0:"ispsmap X N"
   shows Nh_to_Adh1:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> x\<in>(AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E> "  and
-        Nh_to_Adh2:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<E>, x)\<in>(AdhN N X) \<longleftrightarrow> (N``{x})#\<E> " 
+        Nh_to_Adh2:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<E>, x)\<in>(AdhN N X) \<longleftrightarrow> (N``{x})#\<E> "  and
+        Nh_to_Adh3:"prdet_adh X (AdhN N X)"
 proof-
   show P0:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> x\<in>(AdhN N X)``{\<E>} \<longleftrightarrow> (N``{x})#\<E> " 
   proof-
@@ -8796,38 +8809,120 @@ proof-
   qed
   show P1:"\<And>\<E> x. \<lbrakk>x \<in> X; \<E> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<E>, x)\<in>(AdhN N X) \<longleftrightarrow> (N``{x})#\<E> "
     using P0 by force
+  have P2:"isconvs X (AdhN N X)" 
+    unfolding AdhN_def by blast
+  have P3:"prdetadh X (AdhN N X)"
+  proof(rule prdetadhI1)
+    fix \<F> assume A1:"\<F> \<in> pfilters_on (pwr X) (Pow X)" 
+    have P4:"\<F> \<subseteq> Pow X"
+      using A1 pfilters_on_iff sets_pfilter6 by blast
+    show " AdhN N X `` {\<F>} = \<Inter> {AdhN N X `` {lcro (pwr X) (Pow X) F} |F. F \<in> \<F>}" (is "?L = ?R")
+    proof
+      show "?L \<subseteq> ?R"
+      proof
+        fix x assume A2:"x \<in> ?L"
+        then obtain B0:"x \<in> X" and B1:"N``{x} #\<F>"
+          unfolding AdhN_def  by (meson A2 AdhN_Im_memD P0)
+        then obtain B1:"\<And>A. A \<in> \<F> \<Longrightarrow> N``{x}#{A}"
+          by (simp add: mesh_def)
+        then obtain B2:"\<And>A. A \<in> \<F> \<Longrightarrow> {A}#N``{x}" and B3:"\<And>A. A \<in> \<F> \<Longrightarrow> A \<in> Pow X"
+          using A1 is_filterD1 mesh_sym pfilters_onD1 by blast
+        obtain B4: "N``{x} \<in> Pow (Pow X)"
+          using A0 by blast      
+        then obtain B5:"\<And>A. A \<in> \<F> \<Longrightarrow> N``{x}#(lcro (pwr X) (Pow X) A)"
+          using B2 B3 B4 lcro_mesh1[of _ X "N``{x}"]  by presburger
+        have B6:"\<And>A. A \<in> \<F> \<Longrightarrow> x \<in>  (AdhN N X)``{(lcro (pwr X) (Pow X) A)}"
+        proof-
+          fix A assume "A \<in> \<F>"
+          then obtain "(lcro (pwr X) (Pow X) A) \<in> pfilters_on (pwr X) (Pow X)"
+            by (metis A1 B3 filter_on_set_ne lorc_set_pfilter pfilters_on_iff)
+          also obtain " N``{x}#(lcro (pwr X) (Pow X) A)"
+            using B5 \<open>A \<in> \<F>\<close> by auto
+          then show  "x \<in>  (AdhN N X)``{(lcro (pwr X) (Pow X) A)}"
+            using B0 P0 calculation by auto
+        qed
+        then show "x \<in> ?R"
+          by blast
+      qed
+      next
+      show "?R \<subseteq> ?L"
+      proof
+        fix x assume A2:"x \<in> ?R"
+        then obtain B0:"\<And>A. A \<in> \<F> \<Longrightarrow> x \<in> AdhN N X `` {lcro (pwr X) (Pow X) A}"
+          by blast
+        then obtain B4:"x \<in> X"
+          unfolding AdhN_def  using A1 pfilter_on_set_obtain by force
+        have B1:"\<And>A. A \<in> \<F> \<Longrightarrow> N``{x}#(lcro (pwr X) (Pow X) A)"
+           unfolding AdhN_def  by (meson AdhN_Im_memD B0 P0)
+        have B2:"\<And>A. A \<in> \<F> \<Longrightarrow> N``{x}#{A}"
+        proof-
+          fix A assume "A \<in> \<F>"
+          then obtain "A \<in> lcro (pwr X) (Pow X) A"
+            by (meson P4 lcro_memI1 pwr_refl subsetD)
+          also obtain "N``{x}#(lcro (pwr X) (Pow X) A)"
+            using B1 \<open>A \<in> \<F>\<close> by auto
+          then show "N``{x}#{A}"
+            by (simp add: calculation mesh_def)
+        qed
+        then have B3:"N``{x}#\<F>"
+          by (simp add: mesh_def)
+        then show "x \<in> ?L"
+          using A1 B4 P0 by auto
+      qed
+    qed
+  qed
+  show P5:"prdet_adh X (AdhN N X)"
+    by (simp add: P2 P3)
 qed
 
 lemma Adh_to_Nh:
   assumes A0:"isconvs X Adh" 
-  shows "\<And>x. \<lbrakk>(converse Adh)``{x} \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> (NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
+  shows Adh_to_Nh1:"\<And>x. \<lbrakk>(converse Adh)``{x} \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> (NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}" and
+        Adh_to_Nh2:"iso_psmap X (NAdh Adh X)"
 proof-
   let ?F="pfilters_on (pwr X) (Pow X)"
-  fix x assume A1:"x \<in> X" and A2:"(converse Adh)``{x} \<noteq> {}"
-  show "(NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"(is "?L=?R") 
-  proof
-    show "?L \<subseteq> ?R"
-      using A1 A2 A0 unfolding NAdh_def grill_def by blast
-    next 
-    show "?R \<subseteq> ?L"  
-    proof-
-      let ?S="{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
-      obtain B0:"?S \<noteq> {}" 
-        using A2 by blast 
-      obtain B1:"?S \<subseteq> (Pow (Pow X))"
-        using grill_space by blast 
-      obtain B2:"?R \<subseteq> Pow X" and B3:"?L \<subseteq> Pow X" 
-        using B0 B1 unfolding NAdh_def by blast 
-      then show ?thesis
-      proof(rule contrapos_sub)
-        show "\<And>z. \<lbrakk>z \<in> Pow X; z \<notin>?L\<rbrakk>\<Longrightarrow>z \<notin> ?R"
-        proof-
-          fix E assume A3:"E \<in> Pow X" and A4:"E \<notin> ?L"
-          then show "E\<notin>?R"
-            using A1 B0 B1 B2 unfolding NAdh_def grill_def by blast
+  show P0:"\<And>x. \<lbrakk>(converse Adh)``{x} \<noteq> {}; x \<in> X\<rbrakk> \<Longrightarrow> (NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}" 
+  proof-
+    fix x assume A1:"x \<in> X" and A2:"(converse Adh)``{x} \<noteq> {}"
+    show "(NAdh Adh X)``{x} = \<Inter>{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"(is "?L=?R") 
+    proof
+      show "?L \<subseteq> ?R"
+        using A1 A2 A0 unfolding NAdh_def grill_def by blast
+      next 
+      show "?R \<subseteq> ?L"  
+      proof-
+        let ?S="{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
+        obtain B0:"?S \<noteq> {}" 
+          using A2 by blast 
+        obtain B1:"?S \<subseteq> (Pow (Pow X))"
+          using grill_space by blast 
+        obtain B2:"?R \<subseteq> Pow X" and B3:"?L \<subseteq> Pow X" 
+          using B0 B1 unfolding NAdh_def by blast 
+        then show ?thesis
+        proof(rule contrapos_sub)
+          show "\<And>z. \<lbrakk>z \<in> Pow X; z \<notin>?L\<rbrakk>\<Longrightarrow>z \<notin> ?R"
+          proof-
+            fix E assume A3:"E \<in> Pow X" and A4:"E \<notin> ?L"
+            then show "E\<notin>?R"
+              using A1 B0 B1 B2 unfolding NAdh_def grill_def by blast
+          qed
         qed
-      qed
-    qed  
+      qed  
+    qed
+  qed
+  show P1:"iso_psmap X (NAdh Adh X)"
+  proof(rule iso_psmapI1)
+    fix x assume xmem:"x \<in> X" 
+    show "is_ord_cl (Pow X) ((NAdh Adh X) `` {x}) (pwr X)"
+    proof(rule is_ord_clI1)
+      fix a b assume a0:"a \<in> (NAdh Adh X) `` {x}" and b0:"b \<in> Pow X"  and ab0:"(a, b) \<in> pwr X" 
+      then obtain B0:"\<And>\<F>. \<lbrakk>\<F> \<in> ?F; (\<F>, x)\<in> Adh\<rbrakk> \<Longrightarrow> {a}#\<F>"
+        unfolding NAdh_def by fastforce
+      then obtain B1:"\<And>\<F>. \<lbrakk>\<F> \<in> ?F; (\<F>, x) \<in> Adh\<rbrakk>\<Longrightarrow> {b}#\<F>"
+        by (meson PowI ab0 mesh_sub pfilters_on_iff pwr_memD sets_pfilter6)
+      then show "b \<in> ((NAdh Adh X) `` {x})"
+        unfolding NAdh_def using b0 xmem by blast
+     qed
   qed
 qed
 
