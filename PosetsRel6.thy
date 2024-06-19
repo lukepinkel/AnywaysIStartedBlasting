@@ -11291,6 +11291,8 @@ For Nhood Limit galois connection the fixed points in Nh and Lim are the respect
 
 *)
 
+subsection \<open>NH Cl\<close>
+
 lemma NCl_antitone:
   "antitone (pwr ((Pow X) \<times> X)) (Pow ((Pow X) \<times> X))  (pwr (X \<times> (Pow X)))  (\<lambda>Cl. NCl Cl X)"
 proof-
@@ -11349,7 +11351,13 @@ lemma NClN_ext:
 
 
 lemma NCl_galois:
-  "galois_conn (\<lambda>Cl. NCl Cl X) (pwr ((Pow X) \<times> X)) (Pow ((Pow X) \<times> X)) (\<lambda>N. ClN N X)  (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X))) "
+  "galois_conn 
+    (\<lambda>Cl. NCl Cl X) 
+    (pwr ((Pow X) \<times> X)) 
+    (Pow ((Pow X) \<times> X)) 
+    (\<lambda>N. ClN N X)  
+    (pwr (X \<times> (Pow X)))
+    (Pow (X \<times> (Pow X))) "
   apply(rule gcI)
   apply (simp add: NCl_antitone)
   using ClN_antitone apply blast
@@ -11360,11 +11368,22 @@ lemma NCl_galois:
   using pwr_antisym pwr_refl pwr_trans apply blast
   by (simp add: pwr_antisym pwr_refl pwr_trans)
 
+subsection \<open>NH Adh\<close>
 
+lemma NAdh_rng:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
+
+lemma NAdh_rng2:
+  "(\<lambda>Adh. NAdh Adh X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
+  unfolding NAdh_def mesh_def by(auto)
 
 
 lemma NAdh_antitone:
-  "antitone (pwr ((Pow (Pow X)) \<times> X)) (Pow ((Pow (Pow X)) \<times> X)) (pwr (X \<times> (Pow X)))   (\<lambda>Adh. NAdh Adh X)"
+  "antitone (pwr ((Pow (Pow X)) \<times> X)) 
+            (Pow ((Pow (Pow X)) \<times> X))
+            (pwr (X \<times> (Pow X)))  
+             (\<lambda>Adh. NAdh Adh X)"
   unfolding isotone_def NAdh_def pwr_def by auto
 
 lemma NAdh_antitone2:
@@ -11374,13 +11393,6 @@ lemma NAdh_antitone2:
              (\<lambda>Adh. NAdh Adh X)"
    unfolding isotone_def NAdh_def pwr_def by auto
 
-lemma NAdh_rng:
-  "(\<lambda>Adh. NAdh Adh X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
-  unfolding NAdh_def mesh_def by(auto)
-
-lemma NAdh_rng2:
-  "(\<lambda>Adh. NAdh Adh X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq> (Pow (X \<times> (Pow X)))"
-  unfolding NAdh_def mesh_def by(auto)
 
 lemma AdhN_rng:
   "(\<lambda>N. AdhN N X)`(Pow (X \<times> (Pow X)))  \<subseteq> (Pow ((Pow (Pow X)) \<times> X))"
@@ -11472,8 +11484,15 @@ proof(rule extensiveI1)
   unfolding NAdh_def AdhN_def pwr_def mesh_def by(auto)  
 qed
 
+
 lemma NAdh_galois:
-  "galois_conn (\<lambda>Adh. NAdh Adh X) (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (Pow (pfilters_on (pwr X) (Pow X) \<times> X)) (\<lambda>N. AdhN N X) (pwr (X \<times> (Pow X))) (Pow (X \<times> (Pow X)))"
+  "galois_conn 
+    (\<lambda>Adh. NAdh Adh X) 
+    (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) 
+    (Pow (pfilters_on (pwr X) (Pow X) \<times> X))
+    (\<lambda>N. AdhN N X) 
+    (pwr (X \<times> (Pow X)))
+    (Pow (X \<times> (Pow X)))"
   apply(rule gcI)
   apply (simp add: NAdh_antitone2)
   apply (simp add: AdhN_antitone)
@@ -11483,6 +11502,9 @@ lemma NAdh_galois:
   apply (simp add: AdhN_rng2)
   apply (simp add: pwr_antisym pwr_refl pwr_trans)
   by (simp add: pwr_antisym pwr_refl pwr_trans)
+
+subsection \<open>NH Lim\<close>
+
 
 lemma NLim_antitone2:
   "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))
@@ -11537,6 +11559,8 @@ lemma LimN_ext:
   "extensive (pwr  (pfilters_on(pwr X) (Pow X) \<times> X)) (Pow (pfilters_on(pwr X)(Pow X) \<times> X)) ((\<lambda>N. LimN N X) \<circ> (\<lambda>Lim. NLim Lim X))"
   unfolding extensive_def LimN_def NLim_def mesh_def pwr_def by(auto)
 
+
+
 lemma LimN_galois:
   "galois_conn (\<lambda>Lim. NLim Lim X)
                (pwr (pfilters_on (pwr X)(Pow X) \<times> X))
@@ -11554,6 +11578,78 @@ lemma LimN_galois:
   using pwr_antisym pwr_refl pwr_trans apply blast
   by (simp add: pwr_antisym pwr_refl pwr_trans)
 
+
+lemma ClAdh_rng:
+  "(\<lambda>Adh. ClAdh Adh X)`(Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)) \<subseteq>  (Pow ((Pow X) \<times> X))"
+  unfolding ClAdh_def by(auto)
+
+lemma ClAdh_rng2:
+  "(\<lambda>Adh. ClAdh Adh X)`(Pow ((Pow (Pow X)) \<times> X))  \<subseteq>  (Pow ((Pow X) \<times> X))"
+  unfolding ClAdh_def by(auto)
+
+lemma ClLim_rng:
+  "(\<lambda>Lim. ClLim Lim X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq>  (Pow ((Pow X) \<times> X))"
+  unfolding ClLim_def by(auto)
+
+lemma LimCl_rng:
+  "(\<lambda>Cl. LimCl Cl X)` (Pow ((Pow X) \<times> X)) \<subseteq> (Pow ((Pow (Pow X)) \<times> X))  "
+  unfolding LimCl_def pfilters_on_def is_pfilter_def is_filter_def by(auto)
+
+lemma LimCl_rng2:
+  "(\<lambda>Cl. LimCl Cl X)` (Pow ((Pow X) \<times> X)) \<subseteq> (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))"
+  unfolding LimCl_def by(auto)
+
+lemma ClLim_rng2:
+  "(\<lambda>Lim. ClLim Lim X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))  \<subseteq> (Pow ((Pow X) \<times> X))"
+  unfolding ClLim_def by(auto)
+
+lemma AdhLim_rng:
+  "(\<lambda>Lim. AdhLim Lim X)` (Pow ((Pow (Pow X)) \<times> X))  \<subseteq>  (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))"
+  unfolding AdhLim_def by(auto)
+
+lemma AdhLim_rng2:
+  "(\<lambda>Lim. AdhLim Lim X)` (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)) \<subseteq>  (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))"
+  unfolding AdhLim_def by auto
+
+
+
+
+lemma ClAdh_antitone:
+  "antitone (pwr ((Pow (Pow X)) \<times> X)) 
+            (Pow ((Pow (Pow X)) \<times> X))
+            (dual (pwr ((Pow X) \<times> X)))
+             (\<lambda>Adh. ClAdh Adh X)"
+  unfolding isotone_def ClAdh_def pwr_def by auto
+
+lemma ClAdh_antitone2:
+  "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X)) 
+            (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))
+            (dual (pwr ((Pow X) \<times> X)))
+             (\<lambda>Adh. ClAdh Adh X)"
+   unfolding isotone_def ClAdh_def pwr_def by auto
+
+
+lemma ClLim_antitone:
+  "antitone (pwr ((Pow (Pow X)) \<times> X)) 
+            (Pow ((Pow (Pow X)) \<times> X))
+            (dual (pwr ((Pow X) \<times> X)))
+             (\<lambda>Lim. ClLim Lim X)"
+  unfolding isotone_def ClLim_def pwr_def by auto
+
+
+lemma ClLim_antitone2:
+  "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))
+            (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X)) 
+            (dual (pwr ((Pow X) \<times> X)))
+            (\<lambda>Lim. ClLim Lim X)"
+  unfolding isotone_def ClLim_def pwr_def by auto
+
+lemma AdhLim_antitone2:
+  "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X))
+            (Pow ((pfilters_on (pwr X) (Pow X)) \<times> X))
+            (dual (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X)))
+            (\<lambda>Lim. AdhLim Lim X)"
+ unfolding isotone_def AdhLim_def pwr_def by(auto)
 
 
 end
