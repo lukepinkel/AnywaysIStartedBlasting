@@ -11731,4 +11731,22 @@ lemma LimAdh_ext:
   unfolding extensive_def LimAdh_def AdhLim_def pwr_def using mesh_sym by(auto)
 
 
+
+lemma LimAdh_galois:
+  "galois_conn (\<lambda>Lim. AdhLim Lim X)
+               (pwr (pfilters_on (pwr X)(Pow X) \<times> X))
+               (Pow (pfilters_on (pwr X)(Pow X) \<times> X)) 
+               (\<lambda>Adh. LimAdh Adh X) 
+               (dual (pwr (pfilters_on (pwr X)(Pow X) \<times> X)))
+               (Pow (pfilters_on (pwr X)(Pow X) \<times> X)) "
+  apply(rule gcI)
+  using AdhLim_antitone2 apply blast
+  using LimAdh_antitone2 dual_isotone apply fastforce
+  apply (simp add: AdhLim_ext)
+  using LimAdh_ext apply blast
+  using AdhLim_rng2 apply blast
+  apply (simp add: LimAdh_rng2)
+  apply (simp add: pwr_antisym pwr_refl pwr_trans)
+  by (simp add: pwr_antisym pwr_refl pwr_trans refl_dualI)
+
 end
