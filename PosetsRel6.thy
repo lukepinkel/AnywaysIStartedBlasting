@@ -2071,7 +2071,12 @@ lemma pwr_distr:
   "distributive_lattice (pwr X) (Pow X)"
 proof(rule distr_latticeI3)
   show "is_lattice (pwr X) (Pow X)"
-    by (metis Pow_not_empty empty_subsetI insert_subset lattI1 pwr_ar_inf pwr_ar_sup)
+  proof(rule lattI1)
+    show "Pow X \<noteq> {}"
+      by (simp add: Pow_not_empty)
+    show "\<And>a b. \<lbrakk>a \<in> Pow X;b \<in> Pow X\<rbrakk> \<Longrightarrow> (\<exists>x. is_inf (pwr X) (Pow X) {a, b} x) \<and> (\<exists>x. is_sup (pwr X) (Pow X) {a, b} x)"
+      by (metis empty_not_insert empty_subsetI insert_subset pwr_ar_sup pwr_ne_inf)
+  qed
   show "pord (pwr X) (Pow X)"
     by (simp add: pwr_antisym pwr_refl pwr_trans)
   show "\<And>x y z.
@@ -10459,8 +10464,10 @@ proof-
         using centeredI1[of X "LimCl Cl X"] prt ext_LimCl1[of X Cl] by presburger
       have "{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<noteq> {}"
         using prt ext_LimCl1[of X Cl] A0 by auto
+      also have "\<And>\<F>. (\<F>, x)\<in>(LimCl Cl X) \<Longrightarrow> \<F> \<subseteq> Pow X"
+        by (metis LimCl_memD pfilters_on_iff sets_pfilter6)
       then have "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> Pow X"
-        using A0 LimCl_memD[of _ x Cl X]  pfilters_on_iff[of _ "pwr X" "Pow X"] sets_pfilter6 by fastforce
+        using calculation by blast
       then show "\<Inter>{\<F>. (\<F>, x)\<in>(LimCl Cl X)} \<subseteq> (NCl Cl X)``{x}"
         using ctr2  by (meson subsetD subsetI)
     qed
