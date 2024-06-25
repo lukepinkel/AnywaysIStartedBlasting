@@ -4056,10 +4056,14 @@ proof-
           by (meson Union_least bub dual_order.trans pwr_memD)
         obtain B7:"\<And>F. F \<in> EF \<Longrightarrow> is_filter R X F" and B8:"EF \<noteq> {}"
           using Pow_neD ef0 filters_on_iff by blast
-        obtain B9:"Inf R X Fx \<in> b"
+        obtain B9:"filter_closure R X (\<Union>EF)  \<in> filters_on R X" and B10:"x \<in> X"
+          using P9 ef0 fcmen filters_onD2 by blast
+        obtain B11:"Inf R X Fx \<in> b"
           by (metis B2 B3 B5 bfil filter_inf_closed3 filters_on_iff lat latt_iff por)
+        have B12:"is_ord_cl X b R"
+          using bfil filters_onD2 by blast
         then show "x \<in> b"
-          by (meson B4 P9 bfil ef0 fcmen filters_on_iff is_filterD1 is_ord_clE1 subsetD)
+          using B11 B10  B4 is_ord_clE1[of X b R "Inf R X Fx" x] by blast
       qed
       show "(filter_closure R X (\<Union> EF), b) \<in> pwr X"
         by (meson bfil dual_order.trans fcsub filters_on_iff is_filterD1 pwr_memI)
@@ -9931,10 +9935,26 @@ proof-
         using B4 xmem amem unfolding ClAdh_def by blast
     qed
   qed
-  also obtain P1:"Cl \<subseteq> (Pow X) \<times> X" and P2:"(ClAdh (AdhCl Cl X) X) \<subseteq> (Pow X) \<times> X"
+  obtain P1:"Cl \<subseteq> (Pow X) \<times> X" and P2:"(ClAdh (AdhCl Cl X) X) \<subseteq> (Pow X) \<times> X"
     unfolding ClAdh_def using A0 by blast
+  have P3:"\<And>A x.  (A, x) \<in> Cl \<Longrightarrow>  (A, x) \<in> (ClAdh (AdhCl Cl X) X)"
+  proof-
+    fix A x assume A3:"(A, x) \<in> Cl"
+    then obtain B4:"x \<in> X" and B5:"A \<in> Pow X"
+      using P1 by blast
+    then show " (A, x) \<in> (ClAdh (AdhCl Cl X) X)"
+      using A3 P0 by blast
+  qed
+  also have P4:"\<And>A x.  (A, x) \<in> (ClAdh (AdhCl Cl X) X) \<Longrightarrow> (A, x) \<in> Cl"
+  proof-
+    fix A x assume A3:"(A, x)\<in> (ClAdh (AdhCl Cl X) X)"
+    then obtain B4:"x \<in> X" and B5:"A \<in> Pow X"
+      using P2 by blast
+    then show " (A, x) \<in>Cl"
+      using A3 P0 by blast
+  qed
   then show "ClAdh (AdhCl Cl X) X = Cl"
-    using calculation by auto
+    by (simp add: calculation subrelI subset_antisym)
 qed
 
 
