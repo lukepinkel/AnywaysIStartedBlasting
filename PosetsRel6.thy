@@ -7489,11 +7489,6 @@ lemma finer_proper_filter4:
   shows "\<exists>\<H> \<in> pfilters_on (pwr X) (Pow X). \<G> \<subseteq> \<H> \<and> \<F> \<subseteq> \<H>"
   using assms finer_proper_filter3[of X \<F> \<G>] by (meson pfilters_on_iff) 
 
-lemma finer_proper_filter5:
-  assumes A0:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"A \<in> Pow X" and A2:"\<F>#{A}"
-  shows "\<exists>\<H> \<in> pfilters_on (pwr X) (Pow X). \<F> \<subseteq>\<H> \<and> A \<in> \<H>"
-  using assms finer_proper_filter2[of X \<F> A] by (meson pfilters_on_iff)
-
 
 lemma principal_ufilter_sets:
   "x \<in> X \<Longrightarrow> is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) (lcro (pwr X) (Pow X) {x})"
@@ -7576,9 +7571,23 @@ proof-
   show P7:"antitone Ry Y Rx g"
     by(simp add:P3 isotone_def)
   show P8:"\<And>x. x \<in> X \<Longrightarrow> f (g (f x)) = f x"
-    by (meson P0 P1 P2 antisym_on_def galois_connD5 galois_connD6 is_gc pry)
+  proof-
+    fix x assume y0:"x \<in> X"
+    then obtain y1:"antisym Ry Y" and y2:"f (g (f x)) \<in> Y" and y3:"f x \<in>Y" and
+                y4:"(f (g (f x)), f x) \<in> Ry" and y5:"(f x, f (g (f x)))  \<in> Ry"
+      by (meson P0 P1 P2 galois_connD5 galois_connD6 is_gc pry)
+    then show "f (g (f x)) = f x"
+      using antisym_onD[of Y Ry "f (g (f x))" "f x"] by blast
+  qed
   show P9:"\<And>y. y \<in> Y \<Longrightarrow> g (f (g y)) = g y"
-    by (meson P0 P1 P3 antisym_on_def galois_connD5 galois_connD6 is_gc prx)
+  proof-
+    fix y assume y0:"y \<in> Y"
+    then obtain y1:"antisym Rx X" and y2:"g (f (g y)) \<in> X" and y3:"g y \<in>X" and
+                y4:"(g (f (g y)), g y) \<in> Rx" and y5:"(g y, g (f (g y)))  \<in> Rx"
+      by (meson P0 P1 P3 galois_connD5 galois_connD6 is_gc prx)
+    then show "g (f (g y)) = g y"
+      using antisym_onD[of X Rx "g (f (g y))" "g y"] by blast
+  qed
 qed
 
 lemma gcI:
@@ -8333,6 +8342,21 @@ proof
     using B1 by blast
 qed
 
+
+lemma finer_proper_filter4b:
+  assumes A0:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and A2:"\<F>#\<G>" 
+  shows "\<exists>\<H> \<in> pfilters_on (pwr X) (Pow X). \<G> \<subseteq> \<H> \<and> \<F> \<subseteq> \<H>"
+  using assms finer_proper_filter4[of \<F> X \<G>] mesh_sym by blast
+
+lemma finer_proper_filter5:
+  assumes A0:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"A \<in> Pow X" and A2:"\<F>#{A}"
+  shows "\<exists>\<H> \<in> pfilters_on (pwr X) (Pow X). \<F> \<subseteq>\<H> \<and> A \<in> \<H>"
+  using assms finer_proper_filter2[of X \<F> A] by (meson pfilters_on_iff)
+
+lemma finer_proper_filter5b:
+  assumes A0:"\<F> \<in> pfilters_on (pwr X) (Pow X)" and A1:"A \<in> Pow X" and A2:"{A}#\<F>"
+  shows "\<exists>\<H> \<in> pfilters_on (pwr X) (Pow X). \<F> \<subseteq>\<H> \<and> A \<in> \<H>"
+  using assms finer_proper_filter5[of \<F> X A] mesh_sym by blast
 
   
 
@@ -10967,6 +10991,114 @@ proof-
     show "AdhCl (ClAdh Adh X) X = Adh"
       using B0 B5 B6 by auto
   qed
+qed
+
+
+lemma AdhNh_if_prdet:
+  assumes A0:"prdet_adh X Adh" and IC1:"isconvs X Adh" and
+          IC2:"\<And>x. x \<in> X \<Longrightarrow> (converse Adh)``{x} \<noteq> {}"
+  shows  AdhNh_if_prdet0:"ispsmap X (NAdh Adh X)" and
+         AdhNh_if_prdet1:"AdhN (NAdh Adh X) X = Adh"
+proof-
+  let ?PX="Pow X" let ?RX="pwr X" let ?FIL="pfilters_on ?RX ?PX"
+  let ?NA="NAdh Adh X" let ?AN="AdhN ?NA X"
+  show P0:"ispsmap X (NAdh Adh X)"
+    unfolding NAdh_def by fastforce
+  have P1:"\<And>\<F> x. (\<F>, x) \<in> Adh \<Longrightarrow> (\<F>, x) \<in> ?AN"
+  proof-
+    fix \<F> x assume A1: "(\<F>, x) \<in> Adh"
+    then obtain A2:"\<F> \<in> ?FIL" and A3:"x \<in> X"
+      using assms by blast
+    then show "(\<F>, x) \<in> ?AN"
+    proof(rule AdhN_memI)
+      fix A assume A4:"A \<in> Pow X" and A5:"(x, A) \<in> NAdh Adh X" 
+      from A5 obtain A5:"\<And>\<E>. \<lbrakk>\<E> \<in> ?FIL;(\<E>, x) \<in> Adh\<rbrakk> \<Longrightarrow> {A}#\<E>"
+        by (simp add: NAdh_memD2)
+      then show "{A} # \<F>"
+        using A1 A2 by auto
+    qed
+  qed
+  have P2:"\<And>\<F> x. (\<F>, x) \<in> ?AN\<Longrightarrow>(\<F>, x) \<in> Adh "
+  proof-
+    fix \<F> x assume A1: "(\<F>, x) \<in> ?AN"
+    then obtain A2:"x \<in> X" and A3:"\<F>#?NA``{x}"
+      by (meson AdhN_memD Nh_to_Adh(2) P0 mesh_sym)
+    have B0:"\<F> \<in> ?FIL"
+      using A1 AdhN_memD[of \<F> x ?NA X]  by blast
+    have B1:"(?NA``{x}) \<in> Pow ?PX"
+      unfolding NAdh_def   by blast
+    have B2:"\<F> \<in> Pow ?PX"
+      by (meson B0 PowI pfilters_on_iff sets_pfilter6)
+    have B3:"(?NA``{x}) \<subseteq> grill ?PX \<F> "
+      using A3 B1 B2 mesh_iff_grill2[of \<F> X  "(?NA``{x})"] by blast
+    have B4:"grill ?PX \<F> \<in> Pow ?PX"
+      by simp
+    have B5:"is_ord_cl ?PX \<F> ?RX"
+      by (simp add: B0 is_filterD1 pfilters_onD1)
+    have B6:"grill ?PX (grill ?PX \<F>) \<subseteq> grill ?PX (?NA``{x})"
+      by (metis B1 B3 B4 grill_anti1)
+    have B7:"\<F> = grill ?PX (grill ?PX \<F>)"
+      using B2 B5 double_grill21 by blast
+    have B8:"(converse Adh)``{x} \<noteq> {}"
+      using A2 IC2 by auto
+    then obtain t where t0:"(t, x) \<in> Adh"
+      by blast
+    let ?\<AA>="{grill (Pow X) \<E>|\<E>. (\<E>, x) \<in> Adh}"
+    have B9:"(?NA``{x}) = \<Inter>?\<AA>"
+      using A2 IC1 B8 Adh_to_Nh1[of Adh X x] by fastforce
+    have B10:"?\<AA> \<in> Pow (Pow ?PX)"
+      using PowI by auto 
+    have t1:"grill ?PX t \<in> ?\<AA>"
+      using t0 by blast
+    have B11:"?\<AA> \<noteq> {}"
+      using t1 by blast
+    have B12:"\<And>\<A>. \<A> \<in> ?\<AA> \<Longrightarrow> is_ord_cl ?PX \<A> ?RX"
+    proof-
+      fix \<A> assume "\<A> \<in> ?\<AA>" 
+      then obtain \<B> where "(\<B>, x) \<in> Adh" and "grill ?PX \<B> = \<A>"  
+        by blast
+      then also obtain "\<B> \<in> Pow (Pow X)"
+        by (meson AdhN_memD P1 PowI grill_of_filter grill_space subset_trans)
+      then show "is_ord_cl ?PX \<A> ?RX"
+        using calculation(2) grill_upcl by auto
+    qed
+    have B13:"\<And>\<E>. (\<E>, x) \<in> Adh \<Longrightarrow> grill ?PX (grill ?PX \<E>) = \<E>"
+      by (meson AdhN_memD P1 Pow_iff double_grill21 is_filterD1 pfilters_onD1)
+    have B17:"\<F> \<subseteq> grill ?PX (?NA``{x})"
+      using A3 B1 B2 mesh_iff_grill1[of \<F> X "(?NA``{x})"] by blast
+    have B18:"... \<subseteq> grill (Pow X) (\<Inter>?\<AA>)"
+      by (simp add: B9)
+    have B14:"... \<subseteq>  \<Union>{grill (Pow X) \<A>|\<A>. \<A> \<in> ?\<AA>}"
+      using B10 B11 B12 grill_union_inter1[of ?\<AA> X]  by fastforce
+    have B15:"... = \<Union>{grill ?PX (grill ?PX \<E>)|\<E>. (\<E>, x) \<in> Adh}"
+      by blast
+    have B16:"... =\<Union>{\<E>|\<E>. (\<E>, x) \<in> Adh}"
+      using B13 by blast
+    have B19:"\<F> \<subseteq>\<Union>{\<E>|\<E>. (\<E>, x) \<in> Adh}"
+      using B14 B15 B16 B17 B9 by auto 
+    have B27:"\<And>A. A \<in> \<F> \<Longrightarrow> x \<in> Adh``{lcro ?RX ?PX A}"
+    proof-
+      fix A assume B20:"A \<in> \<F>"
+      then obtain \<E> where B21:"(\<E>, x) \<in> Adh" and B22:"A \<in> \<E>"
+        using B19 by(auto)
+      have B23:"\<E> \<in> ?FIL"
+        using A0 B21 by blast
+      have B24:"Adh``{\<E>} = \<Inter>{Adh``{(lcro ?RX ?PX E)}|E. E \<in> \<E>}"
+        using A0 B23 prdetadh_def by blast
+      have B25:"x \<in> Adh``{\<E>}"
+        by (simp add: B21)
+      show B26:"x \<in>  Adh``{lcro ?RX ?PX A}" 
+        using B22 B24 B25 by blast
+    qed
+    have B31:"Adh``{\<F>} = \<Inter>{Adh``{(lcro ?RX ?PX E)}|E. E \<in> \<F>}"
+      using A0 B0 prdetadh_def by blast
+    have B32:"x \<in> \<Inter>{Adh``{(lcro ?RX ?PX E)}|E. E \<in> \<F>}"
+      using B27 by blast
+    show B33:"(\<F>, x) \<in> Adh"
+      using B31 B32 by blast
+  qed
+  show P1:"AdhN (NAdh Adh X) X = Adh"
+    by (simp add: P1 P2 subrelI subset_antisym)
 qed
 
 
