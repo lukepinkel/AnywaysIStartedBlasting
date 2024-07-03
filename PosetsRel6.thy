@@ -655,7 +655,7 @@ lemma ubd_iso3:
 proof
   fix b assume A5:"b \<in> ubd R C {x2}" 
   obtain B0:"(x2,b)\<in>R" and B1:"b \<in> X" and B2:"b \<in> C"
-    using A4 A5 ubd_singleton_mem by fastforce
+    using A4 A5 ubd_singleton_mem[of b R C x2] by fastforce
   then obtain B3:"(x1,b)\<in>R" 
     using A0 A1 A2 A3 trans_onD[of X R x1 x2 b] by blast
   then show "b \<in> ubd R C {x1}"
