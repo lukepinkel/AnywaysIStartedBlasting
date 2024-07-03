@@ -10770,10 +10770,6 @@ proof-
   qed
   have P1b:"(\<And>A B. B \<in> Pow X \<Longrightarrow> A \<subseteq> B \<Longrightarrow> Cl `` {A} \<subseteq> Cl `` {B}) "
     using P1   by auto
-  have P2:"\<And>x. x \<in> X \<Longrightarrow> (lcro (pwr X) (Pow X) {x},x) \<in>LimCl Cl X"
-    by (meson A2 ext_LimCl1)
-  have P3:"\<And>x. x \<in> X \<Longrightarrow> {} \<notin> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
-    using A2 by auto 
   have P4:"\<And>\<F> \<G> x. \<lbrakk>(\<F> ,x) \<in>LimCl Cl X; \<F> \<subseteq> \<G>; \<G> \<in> pfilters_on (pwr X) (Pow X)\<rbrakk> \<Longrightarrow> (\<G>,x) \<in> LimCl Cl X"
   proof-
     fix \<G> \<F> x assume  "\<G> \<in> pfilters_on (pwr X) (Pow X)" and "(\<F>, x) \<in> LimCl Cl X"  and "\<F> \<subseteq> \<G>" 
