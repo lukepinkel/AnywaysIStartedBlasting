@@ -433,6 +433,11 @@ lemma Fpow_neD:
   "A \<in> Fpow_ne X \<Longrightarrow> finite A \<and> A \<subseteq>X \<and> A \<in> Pow X \<and> A \<noteq> {}"
   unfolding Fpow_ne_def Fpow_def by auto
 
+lemma contrapos_sub:
+  assumes A0:"A \<subseteq> X" and A1:"B \<subseteq> X" and A2:"\<And>x. \<lbrakk>x \<in> X;x \<notin> B\<rbrakk> \<Longrightarrow> x \<notin> A"
+  shows "A \<subseteq> B"
+  using A0 A2 by blast
+
 section Reflexivity
 
 lemma reflI1:
@@ -8106,7 +8111,17 @@ proof-
     by blast
   qed
   have B4:"\<And>f.  f \<in> {lcro R X x|x. x \<in> X} \<Longrightarrow> f \<in> compact_elements(pwr X) (filters_on R X) "
-     using A0 A1 principal_filters_compact[of R X top]  compact_elements_mem_iff1 A3 filters_on_def lcro_filter by fastforce 
+  proof-
+    fix f assume "f \<in> {lcro R X x|x. x \<in> X}"
+    then obtain a where "a \<in> X" and "f = lcro R X a"
+      by blast
+    then obtain "lcro R X a \<in> filters_on R X"
+      by (simp add: A3 filters_on_iff lcro_filter)
+    then obtain "is_compact (pwr X) (filters_on R X) f"
+      using A0 A1 A3 \<open>a \<in> X\<close> \<open>f = lcro R X a\<close> principal_filters_compact[of R X top "lcro R X a"]  by blast
+    then show "f \<in> compact_elements(pwr X) (filters_on R X)"
+      unfolding compact_elements_def   by simp
+  qed
   have B5:" {lcro R X x|x. x \<in> X} =  compact_elements (pwr X  )(filters_on R X)" 
     using B3 B4 by blast
   have B7:"\<And>z. \<lbrakk>z \<in> X; (lcro R X z, F)\<in>pwr X\<rbrakk> \<Longrightarrow> z \<in> F"
@@ -8324,14 +8339,16 @@ proof
       then show "\<exists>\<U> \<in> ?\<UU>. A \<notin> \<U>"
         unfolding finer_ultrafilters_def using \<open>\<F> \<subseteq> \<U>\<close> \<open>is_ultrafilter (pwr X) (Pow X) \<U>\<close> by blast
     qed
-    have "(finer_ultrafilters (pwr X) (Pow X) \<F>) \<noteq> {}"
+    have "(?\<UU>) \<noteq> {}"
       using B0 assms sets_pfilter5 by auto
-    then have "\<Inter>(finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> Pow X"
+    then have B1:"\<Inter>?\<UU> \<subseteq> Pow X"
       by (metis (no_types, lifting) CollectD Inter_subset finer_ultrafilters_def pfilter_u3(2) sets_pfilter6)
-    have "\<F> \<subseteq> Pow X"
+    have B2:"\<F> \<subseteq> Pow X"
       using assms sets_pfilter6 by auto
-    then show ?thesis
-      by (meson B0 Inter_iff \<open>\<Inter> (finer_ultrafilters (pwr X) (Pow X) \<F>) \<subseteq> Pow X\<close> subsetD subsetI)
+    have B3:"\<And>A. \<lbrakk>A \<in> Pow X; A \<notin> \<F>\<rbrakk>\<Longrightarrow> A \<notin> \<Inter>?\<UU>"
+      by (simp add: B0)
+    show ?thesis
+      using B2 B1 B3 contrapos_sub[of "\<Inter>?\<UU>" "Pow X" \<F>] by blast
   qed
 qed
 
@@ -8815,10 +8832,7 @@ qed
 section \<open>Between Convergence Relations\<close>
 
 
-lemma contrapos_sub:
-  assumes A0:"A \<subseteq> X" and A1:"B \<subseteq> X" and A2:"\<And>x. \<lbrakk>x \<in> X;x \<notin> B\<rbrakk> \<Longrightarrow> x \<notin> A"
-  shows "A \<subseteq> B"
-  using A0 A2 by blast
+
 
 lemma Cl_to_Nh:
   assumes xmem:"x \<in> X"
