@@ -1146,10 +1146,12 @@ proof(rule upper_eq_sup_eq)
             by blast
           then obtain a3:"is_sup R X Ai a"
             using anti sup_equality sups by fastforce 
-          obtain a4:"Ai \<subseteq>  (\<Union> A)" 
+          obtain a4:"Ai \<subseteq>  (\<Union> A)"  
             by (simp add: Sup_upper a1)
+          then obtain "u \<in> ubd R X Ai"
+            using ubd_snd_anti[of Ai "\<Union> A" X R] R0 sub by blast
           then show "(a,u)\<in>R"
-            using R0 a3 is_supD1 u0 ubdD2 by fastforce
+            using a3 is_supD2[of R X Ai a u]  by blast
         qed
       qed
     qed
@@ -1169,7 +1171,7 @@ lemma assoc_sup:
   shows "is_sup R X {a, b, c, d} r \<longleftrightarrow> is_sup R X  {s, t} r"
 proof-
   have B0:"{s,t}=(Sup R X)`{{a,b}, {c,d}}"
-    using por sab sup_equality tcd by force
+    using por sab tcd sup_equality[of R X] by force
   have B1:"\<Union>{{a,b}, {c,d}} = {a,b,c,d}"
     by auto
   have B2:"is_sup R X ((Sup R X)`{{a,b}, {c,d}}) r \<longleftrightarrow> (is_sup R X (\<Union>{{a,b}, {c,d}}) r)"
