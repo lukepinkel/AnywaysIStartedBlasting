@@ -11012,6 +11012,49 @@ proof-
    using A0 A2 P5 P7 by blast
 qed
       
+lemma LimNh_imp_prtop:
+  assumes A0:"\<And>A x. \<lbrakk>x \<in> X; A \<in> Pow X; (x, A) \<in>N\<rbrakk> \<Longrightarrow> x \<in> A" and
+          A1:"NLim (LimN N X) X = N" and
+          is_nh:"ispsmap X N" and
+          nontrivial:"\<And>x. x \<in> X \<Longrightarrow> N``{x} \<noteq> {}"
+  shows"prtop_nh X N"
+proof-
+  have P0:"\<And>x. x \<in> X \<Longrightarrow>  (N``{x}) \<subseteq> lcro (pwr X)(Pow X) {x}"
+  proof-
+    fix x assume A2:"x \<in> X"
+    show "(N``{x}) \<subseteq> lcro (pwr X)(Pow X) {x}"
+    proof
+      fix A assume "A \<in> N``{x}"
+      then obtain A3:"A \<in> Pow X" and A4:"(x, A) \<in> N"
+        using A1 NLim_memD by fastforce
+      then obtain "({x}, A) \<in> pwr X"
+        by (simp add: A0 A2 pwr_mem_iff)
+      then show "A \<in> lcro (pwr X) (Pow X) {x}"
+        by (metis A3 lcroI1)
+    qed
+  qed
+  have P1:"\<And>x. x \<in> X \<Longrightarrow> is_pfilter (pwr X) (Pow X) (N``{x})"
+  proof-
+    fix x assume A2:"x \<in> X"
+    let ?Nx="N``{x}"
+    have B0:"isconvs X (LimN N X)"
+      using LimN_memD by fastforce
+    have B1:"(lcro (pwr X) (Pow X) {x}, x) \<in>  (LimN N X)"
+      using A2 LimN_memI P0 pfilters_on_iff principal_pfilter_sets subsetD by fastforce
+    have B2:"(converse (LimN N X))``{x} \<noteq> {}"
+      using B1 by blast
+    then obtain B3:"(NLim (LimN N X) X)``{x} = (\<Inter>{\<E>. (\<E>, x) \<in> (LimN N X)})"
+      using B0 A2 Lim_to_Nh1[of "LimN N X" X x]  by fastforce
+    have B4:"{\<E>. (\<E>, x) \<in> (LimN N X)} \<subseteq> pfilters_on (pwr X) (Pow X)"
+      using LimN_memD by fastforce
+    have B5:"is_pfilter (pwr X) (Pow X) ((NLim (LimN N X) X)``{x})"
+      by (metis B1 B3 B4 empty_iff mem_Collect_eq set_pfilters_inter)
+    show "is_pfilter (pwr X) (Pow X) ?Nx"
+      using A1 B5 by auto
+  qed
+  show "prtop_nh X N"
+    by (meson A0 P1 pfilters_on_iff)
+qed
 
 lemma LimAdh_if_pstop:
   assumes pst:"pseudotop_adh X Adh"
