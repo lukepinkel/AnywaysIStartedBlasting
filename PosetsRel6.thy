@@ -6616,7 +6616,7 @@ proof-
       obtain B4:"is_inf R X  {x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)} m"
         using clt por B3 mrd meet_reduction3[of R X m]  by blast 
       then obtain B5:"(k,m)\<in>R"
-        using B1 B2 ex_inf3 por by fastforce
+        using B1 B2 ex_inf3[of X R "{x \<in> X. (m,x)\<in>R \<and> (m \<noteq> x)}" k] por by fastforce
       then show False
         using m0 by auto 
     qed
@@ -6780,8 +6780,12 @@ proof-
   let ?FX="(filters_on R X)" let ?RX="pwr X"
   have B0:"compactly_generated ?RX ?FX"
     by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por)  
-  obtain C1:"antisym ?RX ?FX" and C2:"refl ?RX ?FX" and C3:"trans ?RX ?FX"
-    by (meson PowI antisym_on_def filters_on_iff is_filterD1 powrel3 powrel7 powrel8 refl_def refl_on_def subsetI subset_antisym)  
+  have C1:"antisym ?RX ?FX"
+    by (simp add: filters_onD2 pwr_antisym_sub subsetI) 
+  have C2:"refl ?RX ?FX"
+    by (simp add: filters_onD2 pwr_refl_sub subsetI)
+  have C3:"trans ?RX ?FX"
+    by (simp add: filters_onD2 pwr_trans_sub subsetI)
   obtain C4:"distributive_lattice ?RX ?FX"
     by (simp add: A0 lattice_filters_distr por)  
   have B1:"is_clattice ?RX ?FX"
@@ -7947,13 +7951,16 @@ proof-
       using B24 A0 by blast
     have B26:"\<And>\<A>. \<A> \<in> \<AA> \<Longrightarrow> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> \<A>"
     proof-
-      fix \<A> assume B26A0:"\<A> \<in> \<AA>"  
-      then obtain B260:"is_ord_cl (Pow X) \<A> (pwr X)"  
-        using A2 by auto
-      also obtain B261:"f \<A> \<in> \<A>" and B262:"f \<A> \<subseteq> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>})"  
-         using B24 B26A0 by auto  
-      then show "(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> \<A>"
-        by (metis (mono_tags, lifting) B25 PowD calculation is_ord_clE1 pwr_mem_iff)
+      fix \<A> assume B26A0:"\<A> \<in> \<AA>"
+      let ?UA="(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>})"
+      have B260:"is_ord_cl (Pow X) \<A> (pwr X)"  
+        using A2 B26A0 by auto
+      obtain B261:"f \<A> \<in> \<A>" and B262:"f \<A> \<subseteq> ?UA" and  B263:"?UA \<subseteq> X"
+        using B24 B25 B26A0 by blast
+      then obtain "(f \<A>,?UA) \<in> pwr X"
+        using pwr_memI1[of "f \<A>" ?UA X]  by blast
+      then show "?UA \<in> \<A>"
+        using is_ord_clE1[of "Pow X" \<A> "pwr X" "f \<A>" ?UA] B25 B260 B261 by blast 
     qed
     then obtain B27:"(\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) \<in> (\<Inter>\<AA>)" and B28:"A \<inter> (\<Union>{f \<A> |\<A> . \<A>  \<in> \<AA>}) = {}"  
       using B24 by blast
@@ -10675,8 +10682,17 @@ proof-
     show "(A, x) \<in> (ClLim (LimCl Cl X) X) \<longleftrightarrow> (A, x) \<in> Cl" (is "?L \<longleftrightarrow> ?R")
     proof
       assume L:?L
-      then show ?R 
-        unfolding ClLim_def LimCl_def using L A0 xmem by auto
+      show ?R
+      proof-
+        obtain "A \<in> Pow X" and "x \<in> X" and "(\<exists>\<F>\<in>pfilters_on (pwr X) (Pow X). {A} # \<F> \<and> (\<F>, x) \<in> LimCl Cl X)"
+          using L unfolding ClLim_def  by fastforce 
+        then obtain \<F> where "\<F>\<in>pfilters_on (pwr X) (Pow X)" and "{A} # \<F>" and "(\<F>, x) \<in> LimCl Cl X"
+          by blast
+        then obtain "\<And>A. \<lbrakk>A \<in> Pow X; {A} # \<F>\<rbrakk> \<Longrightarrow> (A, x) \<in> Cl"
+          unfolding LimCl_def  by blast
+        then show "(A, x) \<in> Cl"
+          using \<open>{A} # \<F>\<close> amem by blast
+      qed       
       next
       assume R:?R
       define \<F> where "\<F> \<equiv> {V \<in> Pow X. x \<notin> Cl``{X-V}}"
@@ -10688,11 +10704,13 @@ proof-
         using F1a R amem xmem by presburger
       have F1:"{A} # \<F> "
         by (simp add: F1a Int_commute \<F>_def mesh_single_iff) 
-      have "\<And>E. \<lbrakk>E \<in> Pow X; {E}#\<F>\<rbrakk> \<Longrightarrow> (E, x) \<in> Cl"
+      have F2:"\<And>E. \<lbrakk>E \<in> Pow X; {E}#\<F>\<rbrakk> \<Longrightarrow> (E, x) \<in> Cl"
         unfolding \<F>_def using xmem F2  by blast
+      have F3:" (\<F>, x) \<in> LimCl Cl X"
+        unfolding LimCl_def using F0 F2 xmem by auto
       then show ?L
-         unfolding ClLim_def LimCl_def using A0 xmem R F0 F1 F2 by auto
-      qed
+        unfolding ClLim_def using F0 F1  using amem xmem by blast  
+    qed
   qed
   also obtain "Cl \<subseteq> (Pow X) \<times> X" and "(ClLim (LimCl Cl X) X) \<subseteq> (Pow X) \<times> X"
     unfolding ClLim_def using A0 by blast
@@ -10792,11 +10810,14 @@ proof-
     then show "(\<G>, x) \<in> LimCl Cl X"
       unfolding LimCl_def mesh_def  by (simp add: subset_iff) 
   qed
-  then obtain iso:"isoconv X ?LC" and isc:"isconvs X (?LC)"
-    by (metis LimCl_memD isoconvI1 mem_Sigma_iff subrelI)
-  then obtain P4b:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> ?CR \<longleftrightarrow> (\<exists>\<G> \<in> pfilters_on (pwr X) (Pow X). (\<G>, x) \<in> ?LC \<and> A \<in> \<G>)" and
-              P5b:"\<And>A. \<lbrakk>A \<in> Pow X\<rbrakk> \<Longrightarrow>?CR``{A} = \<Union>{?LC``{\<F>}|\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> A \<in> \<F>}" 
-    using Lim_to_Cl2[of ?LC X] by presburger
+  have iso:"isoconv X ?LC"
+    unfolding isoconv_def using P4 by blast
+  have isc:"isconvs X (?LC)"
+    unfolding LimCl_def by force
+  have P4b:"\<And>x A. \<lbrakk>x \<in> X; A \<in> Pow X\<rbrakk> \<Longrightarrow> (A, x) \<in> ?CR \<longleftrightarrow> (\<exists>\<G> \<in> pfilters_on (pwr X) (Pow X). (\<G>, x) \<in> ?LC \<and> A \<in> \<G>)"
+    using isc iso Lim_to_Cl20[of ?LC X] by presburger
+  have  P5b:"\<And>A. \<lbrakk>A \<in> Pow X\<rbrakk> \<Longrightarrow>?CR``{A} = \<Union>{?LC``{\<F>}|\<F>. \<F> \<in> pfilters_on (pwr X) (Pow X) \<and> A \<in> \<F>}" 
+    using isc iso Lim_to_Cl21[of ?LC X]  by presburger
   have P2:"(\<And>A B. \<lbrakk>A \<in> Pow X ;B \<in> Pow X\<rbrakk> \<Longrightarrow>  Cl``{A \<union> B}=Cl``{A} \<union> Cl``{B})"
   proof-
     fix A B assume A3:"A \<in> Pow X" and A4:"B \<in> Pow X"
@@ -11501,7 +11522,7 @@ proof-
         using B22 B24 B25 by blast
     qed
     have B31:"Adh``{\<F>} = \<Inter>{Adh``{(lcro ?RX ?PX E)}|E. E \<in> \<F>}"
-      using A0 B0 prdetadh_def by blast
+      using A0 B0 prdetadh_def[of X Adh] by blast
     have B32:"x \<in> \<Inter>{Adh``{(lcro ?RX ?PX E)}|E. E \<in> \<F>}"
       using B27 by blast
     show B33:"(\<F>, x) \<in> Adh"
@@ -12105,7 +12126,26 @@ lemma ClAdh_antitone:
             (Pow ((Pow (Pow X)) \<times> X))
             (dual (pwr ((Pow X) \<times> X)))
             (\<lambda>Adh. ClAdh Adh X)"
-  unfolding isotone_def ClAdh_def pwr_def by auto
+  unfolding isotone_def ClAdh_def pwr_def using SigmaI by auto
+
+lemma ClAdh_antitoneb:
+  "antitone (pwr ((Pow (Pow X)) \<times> X)) 
+            (Pow ((Pow (Pow X)) \<times> X))
+            (dual (pwr ((Pow X) \<times> X)))
+            (\<lambda>Adh. ClAdh Adh X)"
+proof(rule isotoneI1)
+  fix x1 x2 assume A0:"x1 \<in> Pow (Pow (Pow X) \<times> X)" and
+                   A1:"x2 \<in> Pow (Pow (Pow X) \<times> X)" and
+                   A2:"(x1, x2) \<in> pwr (Pow (Pow X) \<times> X)"
+  then obtain "x1 \<subseteq> x2" and "x2 \<subseteq> Pow (Pow X) \<times> X"
+    by (simp add: pwr_mem_iff)
+  then obtain "ClAdh x1 X \<subseteq> ClAdh x2 X" and "ClAdh x2 X  \<subseteq> (Pow X \<times> X)"
+    unfolding ClAdh_def by blast
+  then obtain "(ClAdh x1 X, ClAdh x2 X) \<in> pwr (Pow X \<times> X)"
+    by (simp add: pwr_mem_iff)
+  then show "(ClAdh x1 X, ClAdh x2 X) \<in> dual (dual (pwr (Pow X \<times> X)))"
+    by blast
+qed
 
 lemma ClAdh_antitone2:
   "antitone (pwr ((pfilters_on (pwr X) (Pow X)) \<times> X)) 
