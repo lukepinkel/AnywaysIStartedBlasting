@@ -373,8 +373,14 @@ abbreviation isspmap::"'a set \<Rightarrow> ('a set \<times> 'a) set \<Rightarro
 abbreviation is_gconv where
   "is_gconv X q \<equiv> isconvs X q \<and> centered X q \<and> isoconv X q"
 
+abbreviation gconvs_on where
+  "gconvs_on X \<equiv> {q. is_gconv X q}"
+
 abbreviation is_prtop where
   "is_prtop X q \<equiv> isconvs X q \<and> centered X q \<and> isoconv X q \<and> onpconv X q"
+
+abbreviation prtops_on where
+  "prtops_on X \<equiv> {q. is_prtop X q}"
 
 abbreviation is_pseudotop where
   "is_pseudotop X q \<equiv>  isconvs X q \<and> centered X q \<and> isoconv X q  \<and> ufdetconv X q"
@@ -3180,8 +3186,27 @@ qed
   
 
 lemma moore_clI3:
-  "C \<subseteq> Pow X \<Longrightarrow> X \<in> C \<Longrightarrow> (\<And>E. E \<subseteq> C \<Longrightarrow> E \<noteq> {} \<Longrightarrow> (\<Inter>E) \<in> C) \<Longrightarrow> clr (pwr X ) (Pow X) C"
-  by (metis Inf_insert empty_not_insert insert_subsetI moore_clI1)
+  "\<lbrakk>C \<subseteq> Pow X; X \<in> C; (\<And>E. E \<subseteq> C \<Longrightarrow> E \<noteq> {} \<Longrightarrow> (\<Inter>E) \<in> C)\<rbrakk> \<Longrightarrow> clr (pwr X ) (Pow X) C"
+proof(rule moore_clI1[of C X])
+  show "\<lbrakk>C \<subseteq> Pow X; X \<in> C; (\<And>E. E \<subseteq> C \<Longrightarrow> E \<noteq> {} \<Longrightarrow> \<Inter> E \<in> C)\<rbrakk> \<Longrightarrow> C \<subseteq> Pow X"
+    by simp
+  show "\<And>E. \<lbrakk>C \<subseteq> Pow X; X \<in> C; (\<And>F. \<lbrakk>F \<subseteq> C; F \<noteq> {}\<rbrakk> \<Longrightarrow> (\<Inter>F) \<in> C); E \<subseteq> C\<rbrakk> \<Longrightarrow> X \<inter> \<Inter> E \<in> C"
+  proof-
+    fix E assume "C \<subseteq> Pow X" and "X \<in> C" and " (\<And>F. \<lbrakk>F \<subseteq> C; F \<noteq> {}\<rbrakk> \<Longrightarrow> (\<Inter>F) \<in> C)" and "E \<subseteq> C"
+    show "X \<inter> \<Inter> E \<in> C"
+    proof(cases "E = {}")
+      case True
+      then show ?thesis
+        by (simp add: \<open>X \<in> C\<close>)
+    next
+      case False
+      then obtain " (\<Inter>E) = X \<inter>  (\<Inter>E)"
+        using \<open>C \<subseteq> Pow X\<close> \<open>E \<subseteq> C\<close> by fastforce
+      then show ?thesis
+        by (simp add: False \<open>E \<subseteq> C\<close> \<open>\<And>F. \<lbrakk>F \<subseteq> C; F \<noteq> {}\<rbrakk> \<Longrightarrow> \<Inter> F \<in> C\<close>)
+    qed
+  qed
+qed
 
 lemma clr_cinf_semilattice1:
   assumes A0:"clr R X C" and
@@ -11533,6 +11558,295 @@ proof-
 qed
 
 
+lemma isconvs_top:
+  "isconvs X ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+  by blast
+
+lemma isconvs_bot:
+  "isconvs X ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"
+  using pfilters_on_iff principal_pfilter_sets by fastforce
+
+
+lemma centered_top:
+  "centered X ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+  by (simp add: centeredI1 pfilters_on_iff principal_pfilter_sets)
+
+lemma centered_bot:
+  "centered X ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"
+  using centered_def by auto
+
+lemma centered_iff:
+   "centered X q \<longleftrightarrow> {(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X} \<subseteq> q"
+  by(simp add: centered_def subset_eq)
+
+lemma isoconv_top:
+  "isoconv X ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+proof(rule isoconvI1)
+  fix \<G> \<F> x assume "\<G> \<in> pfilters_on (pwr X) (Pow X)" and 
+                   "(\<F>, x) \<in> pfilters_on (pwr X) (Pow X) \<times> X" and
+                  "\<F> \<subseteq> \<G>" 
+  then obtain "x \<in> X"
+    by blast
+  then show "(\<G>, x) \<in> pfilters_on (pwr X) (Pow X) \<times> X"
+    by (simp add: \<open>\<G> \<in> pfilters_on (pwr X) (Pow X)\<close>)
+qed
+
+lemma isoconv_bot:
+  "isoconv X ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"
+proof(rule isoconvI1)
+  fix \<G> \<F> x assume A0:"\<G> \<in> pfilters_on (pwr X) (Pow X)" and 
+                   A1:"(\<F>, x) \<in> {(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X}" and
+                  A2:"\<F> \<subseteq> \<G>"
+   then obtain B0:"\<F>=lcro (pwr X) (Pow X) {x}" and B1:"x \<in> X" and B2:"(\<F>, \<G>) \<in> pwr(Pow X)"
+     using pfilters_on_iff pwr_memI1 sets_pfilter6 by fastforce
+   have B3:"is_maximal (pwr (Pow X)) (pfilters_on (pwr X) (Pow X)) \<F>"
+     by (simp add: B0 B1 principal_ufilter_sets1)
+   then obtain "\<F>= \<G>"
+    using A0 B2 maximalD3[of "(pwr (Pow X))" "(pfilters_on (pwr X) (Pow X))" \<F> \<G>]  by fastforce 
+   then show "(\<G>, x) \<in> {(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X}"
+     using A1 by blast
+qed
+
+
+lemma convs_inter:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow>  isconvs X q" and
+          A1:"Q \<noteq> {}"
+  shows "isconvs X (\<Inter>Q)"
+  by (simp add: A0 A1 Inter_subset)
+
+lemma convs_un:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow>  isconvs X q" and
+          A1:"Q \<noteq> {}"
+  shows "isconvs X (\<Union>Q)"
+  using A0 by blast
+
+
+lemma isoconvs_inter:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow>  isoconv X q " and
+          A1:"Q \<noteq> {}"
+  shows "isoconv X (\<Inter>Q)"
+proof(rule isoconvI1)
+  fix \<G> \<F> x assume "\<G> \<in> pfilters_on (pwr X) (Pow X)" and 
+                   " (\<F>, x) \<in> \<Inter> Q " and
+                  "\<F> \<subseteq> \<G>" 
+  have "\<And>q. q \<in> Q \<Longrightarrow> ( \<G>, x) \<in> q"
+  proof-
+    fix q assume "q \<in> Q"
+    then obtain "isoconv X q" and "(\<F>, x) \<in> q"
+      using A0 \<open>(\<F>, x) \<in> \<Inter> Q\<close> by auto
+    then show "( \<G>, x) \<in> q"
+      by (simp add: \<open>\<F> \<subseteq> \<G>\<close> \<open>\<G> \<in> pfilters_on (pwr X) (Pow X)\<close> isoconvD1)
+  qed
+  then show "(\<G>, x) \<in> \<Inter> Q"
+    by simp
+qed
+
+
+
+lemma isoconvs_un:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow>  isoconv X q " and
+          A1:"Q \<noteq> {}"
+  shows "isoconv X (\<Union>Q)"
+proof(rule isoconvI1)
+  fix \<G> \<F> x assume "\<G> \<in> pfilters_on (pwr X) (Pow X)" and 
+                   " (\<F>, x) \<in> \<Union>Q " and
+                  "\<F> \<subseteq> \<G>" 
+  then obtain q where "q \<in> Q" and "(\<F>, x) \<in> q"
+    by blast
+  also have "isoconv X q"
+    by (simp add: A0 calculation(1))
+  then obtain "(\<G>, x) \<in> q"
+    by (meson \<open>\<F> \<subseteq> \<G>\<close> \<open>\<G> \<in> pfilters_on (pwr X) (Pow X)\<close> calculation(2) isoconvD1)
+  then show "(\<G>, x) \<in> \<Union> Q"
+    using calculation(1) by blast
+qed
+
+lemma centered_inter:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow>  centered X q " and
+          A1:"Q \<noteq> {}"
+  shows "centered X (\<Inter>Q)"
+proof(rule centeredI1)
+  fix x assume "x \<in> X"
+  then obtain "\<And>q. q \<in> Q \<Longrightarrow> (lcro (pwr X) (Pow X) {x}, x) \<in> q"
+    by (simp add: A0 centeredD1)
+  then show "(lcro (pwr X) (Pow X) {x}, x) \<in> \<Inter> Q"
+    by blast
+qed
+
+lemma centered_un:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow> centered X q " and
+          A1:"Q \<noteq> {}"
+  shows "centered X (\<Union>Q)"
+  by (meson A0 A1 centered_iff less_eq_Sup)
+
+lemma gconv_extrema:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow> is_gconv X q" and
+          A1:"Q \<noteq> {}"
+  shows gconv_clat1:"is_gconv X (\<Union>Q)"  and
+        gconv_clat2:"is_gconv X (\<Inter>Q)" and
+        gconv_clat3:"is_sup {(a, b). a \<in> gconvs_on X \<and> b \<in> gconvs_on X \<and> a \<subseteq> b} (gconvs_on X) Q (\<Union>Q)" and
+        gconv_clat4:"is_inf {(a, b). a \<in> gconvs_on X \<and> b \<in> gconvs_on X \<and> a \<subseteq> b} (gconvs_on X) Q (\<Inter>Q)" 
+proof-
+  let ?top="pfilters_on (pwr X) (Pow X) \<times> X"
+  let ?bot="{(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X}"
+  let ?S=" {(a, b). a \<in> gconvs_on X \<and> b \<in> gconvs_on X \<and> a \<subseteq> b}"
+  show P0:"is_gconv X (\<Union>Q)"
+    by (simp add: A0 A1 Sup_le_iff centered_un isoconvs_un)
+  show P1:"is_gconv X (\<Inter>Q)"
+    by (simp add: A0 A1 Inter_subset centered_inter isoconvs_inter) 
+  show P23:"is_sup ?S (gconvs_on X) Q (\<Union>Q)"
+  proof(rule is_supI3)
+    show "\<Union> Q \<in> gconvs_on X"
+      by (simp add: P0)
+    show "\<And>a. a \<in> Q \<Longrightarrow> (a, \<Union> Q) \<in>?S"
+      using A0 \<open>\<Union> Q \<in> gconvs_on X\<close> by blast
+    show "\<And>b. b \<in> gconvs_on X \<Longrightarrow> (\<And>a. a \<in> Q \<Longrightarrow> (a, b) \<in> ?S) \<Longrightarrow> (\<Union> Q, b) \<in>?S"
+      using \<open>\<Union> Q \<in> gconvs_on X\<close> by fastforce
+  qed 
+  show P3:"is_inf ?S (gconvs_on X) Q (\<Inter>Q)"
+  proof(rule is_supI3)
+    show "\<Inter> Q \<in> gconvs_on X"
+      by (simp add: P1)
+    show " \<And>a. a \<in> Q \<Longrightarrow> (a, \<Inter> Q) \<in> dual ?S"
+      using A0 \<open>\<Inter> Q \<in> gconvs_on X\<close> by blast
+    show " \<And>b. b \<in> gconvs_on X \<Longrightarrow>  (\<And>a. a \<in> Q \<Longrightarrow> (a, b) \<in> dual ?S) \<Longrightarrow> (\<Inter> Q, b) \<in> dual (?S)"
+      by (simp add: Inter_greatest P1 pwr_mem_iff)
+  qed 
+qed
+
+lemma gconv_clat:
+  shows gconv_clat5:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> q \<subseteq>  ((pfilters_on (pwr X) (Pow X)) \<times> X)" and
+        gconv_clat6:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X}) \<subseteq> q" and
+        gconv_clat7:"is_least (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (gconvs_on X)  ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"  and
+        gconv_clat8:"is_greatest (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (gconvs_on X) ((pfilters_on (pwr X) (Pow X)) \<times> X) " and
+        gconv_clat9:"is_clattice {(a, b). a \<in> gconvs_on X \<and> b \<in> gconvs_on X \<and> a \<subseteq> b} (gconvs_on X)"
+proof-
+  let ?top="pfilters_on (pwr X) (Pow X) \<times> X"
+  let ?bot="{(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X}"
+  let ?R="pwr (pfilters_on (pwr X) (Pow X) \<times> X)"
+  let ?S=" {(a, b). a \<in> gconvs_on X \<and> b \<in> gconvs_on X \<and> a \<subseteq> b}"
+  show P4:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> q \<subseteq>  ?top"
+    by auto
+  have P4b:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> (q, ?top) \<in>?R"
+    using pwr_memI1 by fastforce
+  show P5:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> ?bot \<subseteq> q"
+    using centeredD1 by fastforce 
+  have P5b:"\<And>q. q \<in> (gconvs_on X) \<Longrightarrow> (?bot,q) \<in> ?R"
+    by (simp add: P5 pwr_memI1)
+  show P6:"is_least (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (gconvs_on X)  ?bot "
+  proof(rule is_leastI3)
+    show "?bot\<in> gconvs_on X"
+      by (simp add: centered_bot isconvs_bot isoconv_bot)
+    show "\<And>a. a \<in> gconvs_on X \<Longrightarrow> (?bot, a) \<in>?R"
+      using P5b by blast
+  qed
+  show P7:"is_greatest ?R (gconvs_on X) ?top "
+  proof(rule is_greatestI3)
+    show "?top\<in> gconvs_on X"
+      using centered_top isoconv_top by fastforce
+    show "\<And>a. a \<in> gconvs_on X \<Longrightarrow> (a, ?top) \<in> ?R"
+      using P4b by blast
+  qed
+  show "is_clattice ?S (gconvs_on X)"
+  proof(rule is_clatticeI2)
+    fix A assume "A \<in> Pow (gconvs_on X)" 
+    show " (\<exists>s. is_sup ?S (gconvs_on X) A s) \<and> 
+           (\<exists>i. is_inf ?S (gconvs_on X) A i)"
+    proof(cases "A={}")
+      case True
+      then obtain "A={}"
+        by auto
+      have B0:"is_sup ?S (gconvs_on X) A ?bot"
+      proof(rule is_supI3)
+        show "?bot \<in> gconvs_on X"
+          using P6 is_greatestD1 by fastforce
+        show "\<And>a. a \<in> A \<Longrightarrow> (a, ?bot) \<in> ?S"
+          by (simp add: True)
+        show "\<And>b. b \<in> gconvs_on X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (a, b) \<in>?S) \<Longrightarrow>    (?bot, b) \<in> ?S"
+          using P5 \<open>{(lcro (pwr X) (Pow X) {x}, x) |x. x \<in> X} \<in> gconvs_on X\<close> by auto
+      qed
+      also have B1:"is_inf ?S(gconvs_on X) A ?top"
+      proof(rule is_supI3)
+        show "?top \<in> gconvs_on X"
+          using P7 is_greatestD1 by force
+        show "\<And>a. a \<in> A \<Longrightarrow> (a, ?top) \<in> dual ?S"
+          by (simp add: True)
+        show "\<And>b. b \<in> gconvs_on X \<Longrightarrow> (\<And>a. a \<in> A \<Longrightarrow> (a, b) \<in> (dual ?S)) \<Longrightarrow>   (?top, b) \<in> (dual ?S)"
+          using \<open>pfilters_on (pwr X) (Pow X) \<times> X \<in> gconvs_on X\<close> by blast
+      qed
+      then show ?thesis
+        using calculation by blast
+    next
+      case False
+      then obtain A0:"\<And>q. q \<in> A \<Longrightarrow> is_gconv X q"  and A1:"A \<noteq> {}"
+        using \<open>A \<in> Pow (gconvs_on X)\<close> by fastforce
+      have "is_sup ?S (gconvs_on X) A (\<Union>A)" 
+        using A0 A1 gconv_clat3[of A X]   by blast 
+      also have "is_inf ?S (gconvs_on X) A (\<Inter>A)" 
+        using A0 A1 gconv_clat4[of A X]  by blast 
+      then show ?thesis
+        using calculation by blast
+    qed
+  qed
+qed
+
+lemma prtop_inter:
+  assumes A0:"\<And>q. q \<in> Q \<Longrightarrow> is_prtop X q" and
+          A1:"Q \<noteq> {}"
+  shows prtop_sup1:"is_prtop X (\<Inter>Q)"
+proof-
+  let ?I=" (\<Inter>Q)"
+ have B0:"isconvs X ?I"
+   using A0 A1 convs_inter[of Q X] by blast
+  have B1:"centered X ?I"
+    by (simp add: A0 A1 centered_inter)
+  have B2:"isoconv X ?I"
+    by (simp add: A0 A1 isoconvs_inter)
+  have B3:"onpconv X ?I"
+  proof(rule onpconvI1)
+    fix x assume A2:"x \<in> X"
+    have B30:"\<And>q. q \<in> Q \<Longrightarrow> (\<Inter>{\<F>. (\<F>, x) \<in> q}, x) \<in> q"
+    proof-
+      fix q assume A3:"q \<in> Q" 
+      then obtain "onpconv X q" 
+        using A0 by blast
+      then show "(\<Inter>{\<F>. (\<F>, x) \<in> q}, x) \<in> q"
+        using A2 unfolding onpconv_def by auto
+    qed
+    have B31:"\<And>q. q \<in> Q \<Longrightarrow> (\<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}, x) \<in> q"
+    proof-
+      fix q assume A4:"q \<in> Q"
+      have B310:"{\<F>. \<forall>s\<in>Q. (\<F>, x) \<in> s} \<subseteq> {\<F>. (\<F>, x) \<in> q}"
+        using A4 by blast
+      have B311:"\<Inter>{\<F>. (\<F>, x) \<in> q} \<subseteq>  \<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}"
+        using B310 by blast
+      have B312:" {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa} \<subseteq> pfilters_on (pwr X) (Pow X)"
+        using A0 A4 by blast
+      have B313:"lcro (pwr X) (Pow X) {x} \<in> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}"
+        by (simp add: A0 A2 centeredD1)
+      have B314:" {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa} \<noteq> {}"
+        using B313 by blast
+      have B315:"is_pfilter (pwr X)(Pow X) (\<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa})"
+        using B312 B314 set_pfilters_inter[of "{\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}" X] by blast
+      have B316:"(\<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa})\<in> pfilters_on (pwr X) (Pow X)"
+        by (simp add: B315 pfilters_on_iff)
+      have B317:"isoconv X q"
+        using A0 A4 by auto
+      have B318:"(\<Inter>{\<F>. (\<F>, x) \<in> q}, x) \<in> q"
+        using A4 B30 by auto
+      show B319:"(\<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}, x) \<in> q"
+        using B317 B318 B316 B311 isoconvD1[of X q "\<Inter> {\<F>. \<forall>xa\<in>Q. (\<F>, x) \<in> xa}" "\<Inter>{\<F>. (\<F>, x) \<in> q}" x] by blast
+    qed
+    then show "(\<Inter> {\<F>. (\<F>, x) \<in> ?I}, x) \<in> ?I"
+      by auto
+  qed
+  show "is_prtop X (?I)"
+    using B0 B1 B2 B3 by auto
+qed
+
+
+ (*"isconvs X q \<and> centered X q \<and> isoconv X q \<and> onpconv X q"
+*)
 section Continuity
 definition Imfil where
   "Imfil f X Y \<F> \<equiv> {E \<in> Pow Y. \<exists>F \<in> \<F>. f`F \<subseteq> E}"
