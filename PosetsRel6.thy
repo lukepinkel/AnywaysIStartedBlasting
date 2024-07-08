@@ -11575,6 +11575,21 @@ lemma centered_bot:
   "centered X ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"
   using centered_def by auto
 
+lemma onpconv_top:
+  "onpconv X ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+proof(rule onpconvI1)
+  fix x assume A0:"x \<in> X"
+  let ?S="{\<F>. (\<F>, x) \<in> pfilters_on (pwr X) (Pow X) \<times> X}"
+  obtain B0:"lcro (pwr X)(Pow X) {x} \<in> ?S"
+     by (simp add: A0 pfilters_on_iff principal_pfilter_sets) 
+  then obtain B1:"?S \<noteq> {}" and B2:"?S \<subseteq> pfilters_on (pwr X) (Pow X)"
+    by blast
+  then obtain B3:"is_pfilter (pwr X) (Pow X) (\<Inter>?S)"
+    using set_pfilters_inter by blast
+  then show "(\<Inter>?S, x) \<in> pfilters_on (pwr X) (Pow X) \<times> X"
+    by (simp add: A0 pfilters_on_iff)
+qed
+
 lemma centered_iff:
    "centered X q \<longleftrightarrow> {(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X} \<subseteq> q"
   by(simp add: centered_def subset_eq)
@@ -11590,6 +11605,12 @@ proof(rule isoconvI1)
   then show "(\<G>, x) \<in> pfilters_on (pwr X) (Pow X) \<times> X"
     by (simp add: \<open>\<G> \<in> pfilters_on (pwr X) (Pow X)\<close>)
 qed
+
+
+lemma prtop_top:
+  "is_prtop X  ((pfilters_on (pwr X) (Pow X)) \<times> X)"
+  using onpconv_top centered_top isoconv_top  by blast 
+
 
 lemma isoconv_bot:
   "isoconv X ({(lcro (pwr X) (Pow X) {x}, x)|x. x \<in> X})"
@@ -11843,6 +11864,29 @@ proof-
   show "is_prtop X (?I)"
     using B0 B1 B2 B3 by auto
 qed
+
+lemma gconv_moore:
+  "clr (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (Pow (pfilters_on (pwr X) (Pow X) \<times> X)) (gconvs_on X)"
+proof(rule moore_clI3)
+  show "(gconvs_on X) \<subseteq> (Pow (pfilters_on (pwr X) (Pow X) \<times> X))"
+    using gconv_clat5 by auto
+  show "(pfilters_on (pwr X) (Pow X) \<times> X) \<in> (gconvs_on X)"
+    using centered_top isoconv_top by fastforce
+  show "\<And>E. E \<subseteq> gconvs_on X \<Longrightarrow> E \<noteq> {} \<Longrightarrow> (\<Inter>E) \<in> (gconvs_on X)"
+    using gconv_clat2[of _ X] by(auto)
+qed
+
+lemma prtop_moore:
+  " clr (pwr (pfilters_on (pwr X) (Pow X) \<times> X)) (Pow (pfilters_on (pwr X) (Pow X) \<times> X))( prtops_on X)"
+proof(rule moore_clI3)
+ show "(prtops_on X) \<subseteq> (Pow (pfilters_on (pwr X) (Pow X) \<times> X))"
+   by blast
+ show "(pfilters_on (pwr X) (Pow X) \<times> X) \<in> (prtops_on X)"
+   using prtop_top by fastforce
+ show "\<And>E. E \<subseteq> prtops_on X \<Longrightarrow> E \<noteq> {} \<Longrightarrow> (\<Inter> E) \<in> (prtops_on X)"
+  using prtop_inter[of _ X] by(auto)
+qed
+ 
 
 
  (*"isconvs X q \<and> centered X q \<and> isoconv X q \<and> onpconv X q"
