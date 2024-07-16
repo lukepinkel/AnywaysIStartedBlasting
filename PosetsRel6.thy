@@ -1818,11 +1818,11 @@ lemma lattD22:
 
 lemma lattD32:
   "\<lbrakk>antisym R X;is_lattice R X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_sup R X {a, b} (Sup R X {a, b}) "
-  by (metis lattD22 sup_equality)
+  by (simp add: ex_supI lattD22)
 
 lemma lattD31:
   "\<lbrakk>antisym R X; is_lattice R X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_inf R X {a, b} (Inf R X {a, b})"
-  by (metis antisym_on_converse lattD21 sup_equality)
+  by (simp add: ex_infI lattD21)
 
 lemma lattD4:
   "is_lattice R X \<Longrightarrow> is_sup_semilattice R X \<and> is_inf_semilattice R X"
@@ -2079,6 +2079,11 @@ qed
 lemma distr_latticeD5:
   "distributive_lattice R X \<Longrightarrow> is_lattice R X" 
   by (simp add: distributive_lattice_def)
+
+
+lemma distr_latticeD6:
+  "\<lbrakk>antisym R X;distributive_lattice R X;  a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow>  is_sup R X {a, b} (Sup R X {a, b}) "
+  by (simp add: distr_latticeD5 lattD32)
 
 lemma pwr_distr:
   "distributive_lattice (pwr X) (Pow X)"
