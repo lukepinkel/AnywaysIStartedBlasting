@@ -46,6 +46,22 @@ OrdRel4.thy
 OrdRel5.thy
 Ord5.thy
 Ord4.thy
+Closures.thy
+Closure10.thy
+Convergence.thy
+FiltersAgain.thy
+FiltersAgain11.thy
+FiltersAgain12.thy
+Filters*.thy
+Galois*.thy
+Posets1*.thy
+Posets2*.thy
+Posets3.thy
+Posets4.thy
+Posets5.thy
+PosetsDraft.thy
+PosetsRel.thy
+Posets_Tr*.thy
 
 Posets22.thy
 Posets23.thy
