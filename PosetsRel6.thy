@@ -5375,16 +5375,18 @@ lemma elem_sup_primeI3:
   shows "elem_sup_prime R X x"
 proof(rule elem_sup_primeI1)
     fix a b assume A4:"a \<in> X" and A5:"b \<in> X" and A6:"(x, Sup R X {a, b})\<in>R" 
-    obtain B0:"Sup R X {a, b} \<in> X"
-      by (meson A0 A3 A4 A5 distr_latticeD5 is_supD1 lattD32)
-    have B1:"x = Inf R X {x, Sup R X {a, b}}"
-      by (metis A0 A1 A3 A6 B0 distr_latticeD5 lat_ge_iff3)
-    have B2:"... = Sup R X {Inf R X {x, a}, Inf R X {x, b}}"
+    have A7:"is_lattice R X"
+      by (simp add: A0 distr_latticeD5)
+    obtain B0:"Sup R X {a, b} \<in> X" and B1:"Inf R X {x, a} \<in> X" and B2:"Inf R X {x, b} \<in> X"
+      by (simp add: A7 A1 A3 A4 A5 lattD4 ssl_ex_sup5)
+    have B3:"x = Inf R X {x, Sup R X {a, b}}"
+      using A1 A3 A6 A7 B0 lat_ge_iff3 by fastforce
+    also have B4:"... = Sup R X {Inf R X {x, a}, Inf R X {x, b}}"
       by (simp add: A0 A1 A3 A4 A5 distr_latticeD3)
-    have B3:"x = Inf R X {x, a} \<or> x = Inf R X {x, b}"
-      by (metis A0 A1 A2 A3 A4 A5 B1 B2 distr_latticeD5 fin_sup_irr_def is_supD1 lattD31)
-    show "(x, a) \<in> R \<or> (x, b) \<in> R"
-      by (metis A0 A1 A3 A4 A5 B3 distr_latticeD5 lattD6)
+    then have B5:"x = Inf R X {x, a} \<or> x = Inf R X {x, b}"
+      using A2 B1 B2 B3 fin_sup_irrD1[of R X x "Inf R X {x, a}" "Inf R X {x, b}"]  by presburger
+    then show "(x, a) \<in> R \<or> (x, b) \<in> R"
+      by (metis A1 A3 A4 A5 A7 lattD6)
 qed
 
 lemma sup_inf_dual:
