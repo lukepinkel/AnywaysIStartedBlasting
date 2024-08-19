@@ -7,7 +7,7 @@ hide_const(open) List.list.Nil
 no_notation List.list.Nil ("[]")  
 no_notation Cons (infixr "#" 65) 
 hide_type list
-hide_const rev Sup Inf trans refl Greatest
+hide_const rev Sup Inf trans refl Greatest asym
 declare [[show_consts, show_results]]
 declare [[show_abbrevs=true]]
 
@@ -257,11 +257,22 @@ definition rgc_from_rel::"('a \<times> 'b) set \<Rightarrow> 'a set \<Rightarrow
 definition galois_conn::"('a \<Rightarrow> 'b) \<Rightarrow> 'a rel \<Rightarrow> 'a set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> bool" where
   "galois_conn f Rx X g Ry Y \<equiv> (f`X \<subseteq> Y) \<and> (g`Y \<subseteq> X) \<and> (\<forall>x \<in> X. \<forall>y \<in> Y.  ((x,g y)\<in>Rx \<longleftrightarrow> (y,f x)\<in>Ry))"
 
+subsection Relations
+
 abbreviation antisym where 
   "antisym R X \<equiv> antisym_on X R"
 
 abbreviation trans where 
   "trans R X \<equiv> trans_on X R"
+
+abbreviation irrefl where
+  "irrefl R X \<equiv> irrefl_on X R"
+
+abbreviation asym where
+  "asym R X \<equiv> asym_on X R"
+
+abbreviation sym where 
+  "sym R X \<equiv> sym_on X R"
 
 abbreviation ord where 
   "ord R X \<equiv> antisym R X \<and> trans R X"
@@ -269,14 +280,43 @@ abbreviation ord where
 definition refl::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
   "refl R X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (x, x) \<in> R)"
 
+
+abbreviation eqrel where 
+  "eqrel R X \<equiv> sym R X \<and> trans R X \<and> refl R X"
+
+definition eqrel_from_partition::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set" where
+  "eqrel_from_partition P X \<equiv> {(x, y) \<in> X \<times> X. \<exists>p \<in> P. x \<in> p \<and> y \<in> p}"
+
+definition eqrel_class::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a set" where
+  "eqrel_class R X x \<equiv> {y \<in> X. (x, y) \<in> R}"
+
+definition quotient_set::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> 'a set set" where
+  "quotient_set X R \<equiv> {(eqrel_class R X x)|x. x \<in> X}"
+
+definition eqrel_from_map :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<times> 'a) set" where 
+  "eqrel_from_map X f \<equiv> {(x1, x2) \<in> X \<times> X. f x1 = f x2}"
+
+
 abbreviation preord where
   "preord R X \<equiv> trans R X \<and> refl R X"
+
+abbreviation spreord where
+  "spreord R X \<equiv> trans R X \<and> irrefl R X"
 
 abbreviation pord where
   "pord R X \<equiv> trans R X \<and> antisym R X \<and> refl R X"
 
+abbreviation spord where
+  "spord R X \<equiv> trans R X \<and> asym R X \<and> irrefl R X"
+
 abbreviation dual where
   "dual R \<equiv> (converse R)"
+
+definition disjoint::"'a set set \<Rightarrow> bool" where
+  "disjoint A \<equiv> (\<forall>a \<in> A. \<forall>b \<in> A. a \<noteq> b \<longrightarrow>a \<inter> b = {})"
+
+definition partition::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "partition P X \<equiv> (\<Union>P=X) \<and> (\<forall>p \<in> P. p \<noteq> {}) \<and> disjoint P"
 
 definition diag::"'a set \<Rightarrow> 'a rel" where
   "diag X \<equiv> {(x, x). x \<in> X}"
@@ -477,6 +517,492 @@ lemma refl_iff:
 lemma refl_subset:
   "refl R X \<Longrightarrow> A \<subseteq> X \<Longrightarrow> refl R A"
   by (simp add: in_mono refl_def)
+
+lemma strict_pord_asym:
+  "spord R X \<Longrightarrow> asym R X"
+  by (simp add: asym_on_iff_irrefl_on_if_trans_on)
+
+lemma pord_to_strict:
+  assumes A0:"pord R X" 
+  defines "S \<equiv> {(x, y). (x, y) \<in> R \<and>  x \<noteq> y}"
+  shows "spord S X"
+proof(auto)
+  show "trans S X"
+  proof(rule  trans_onI)
+    fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x, y) \<in> S" and A5:"(y, z) \<in> S" 
+    then obtain B0:"(x,y)\<in>R" and B1:"x \<noteq> y" and B2:"(y, z)\<in>R" and B3:"y \<noteq> z"
+      using S_def by fastforce 
+    then obtain B4:"(x, z) \<in> R" and B5:"x \<noteq> z"
+      using A0 A1 A2 A3 antisym_onD[of X R ] trans_onD[of X R x y z]  by blast
+    then show "(x, z) \<in> S"
+      using S_def by simp
+  qed
+  show "asym S X"
+  proof(rule asym_onI)
+    fix x y assume A1:"x \<in> X" and A2:"y \<in> X" and "(x, y)\<in> S" 
+    then obtain "(x, y)\<in>R" and "x \<noteq> y"
+      using S_def by fastforce
+    then show  "(y, x)\<notin> S" 
+      unfolding S_def using A0 A1 A2 antisym_onD[of X R] by blast
+  qed
+  then show "irrefl S X"
+    by auto
+qed
+
+
+lemma strict_to_pord:
+  assumes A0:"spord R X" 
+  defines "S \<equiv> {(x, y). (x, y) \<in> R \<or> x = y}"
+  shows "pord S X"
+proof(auto)
+  show "trans S X"
+  proof(rule  trans_onI)
+    fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x, y) \<in> S" and A5:"(y, z) \<in> S" 
+    then obtain B0:"(x,y)\<in>R \<or> x = y" and B1:"(y, z)\<in>R \<or> y=z"
+      using S_def by fastforce 
+    then obtain B4:"(x, z) \<in> R \<or> x = z"
+      using A0 A1 A2 A3 trans_onD[of X R] by blast
+    then show "(x, z) \<in> S"
+      using S_def by simp
+  qed
+  show "antisym S X"
+  proof(rule antisym_onI)
+    fix x y assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"(x, y) \<in> S" and A4:"(y, x) \<in> S" 
+    then obtain "(x,y)\<in>R \<or> x=y" and "(y,x) \<in> R \<or> y=x"
+      unfolding S_def by fastforce
+    then show "x = y"
+      using A0 A1 A2 asym_onD[of X R] by blast
+  qed
+  show "refl S X"
+    by (simp add: S_def refl_def)
+qed
+
+section MiscRel
+
+lemma disjointI1:
+  "(\<And>a b. \<lbrakk>a \<in> E; b \<in> E; a \<noteq> b\<rbrakk> \<Longrightarrow> a \<inter> b = {}) \<Longrightarrow>disjoint E "
+  by (simp add: disjoint_def)
+
+lemma partitionD1:
+  "\<lbrakk>partition P X; p1 \<in> P; p2 \<in> P; p1 \<inter> p2 \<noteq> {}\<rbrakk> \<Longrightarrow> p1 = p2"
+  unfolding partition_def disjoint_def by(auto)
+
+
+lemma partitionD2:
+  "\<lbrakk>partition P X; x \<in> X\<rbrakk> \<Longrightarrow> (\<exists>p \<in> P. x \<in> p) "
+  unfolding partition_def by blast
+
+
+lemma partitionD3:
+  assumes A0:"partition P X" and A1:"x \<in> X"
+  shows "(\<exists>!p. p \<in> P \<and> x \<in> p)"
+proof(rule ex_ex1I)
+  show " \<exists>p. p \<in> P \<and> x \<in> p"
+    using A0 A1 partitionD2[of P X x] by blast
+  show "\<And>p1 p2. p1 \<in> P \<and> x \<in> p1 \<Longrightarrow> p2 \<in> P \<and> x \<in> p2 \<Longrightarrow> p1 = p2"
+    using A0 partitionD1[of P X ] by blast
+qed
+
+lemma partitionD4:
+  "partition P X \<Longrightarrow> p \<in> P \<Longrightarrow> p \<subseteq> X"
+  unfolding partition_def by blast
+  
+lemma partitionD5:
+  "partition P X \<Longrightarrow> p \<in> P \<Longrightarrow> p \<noteq> {}"
+  unfolding partition_def by blast
+  
+
+lemma eqrel_class_memI1:
+  "y \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow> y \<in> eqrel_class R X x"
+  by (simp add: eqrel_class_def)
+
+
+lemma eqrel_class_memI2:
+  "\<lbrakk>eqrel R X; y \<in> X; x \<in> X;(y, x) \<in> R\<rbrakk> \<Longrightarrow> y \<in> eqrel_class R X x"
+  by (simp add: eqrel_class_memI1 sym_on_def)
+
+lemma eqrel_classD1:
+  "\<lbrakk>eqrel R X; a \<in> X\<rbrakk> \<Longrightarrow> a \<in> eqrel_class R X a"
+  unfolding eqrel_class_def using reflD2[of R X a] by blast
+
+lemma eqrel_classD2:
+  "\<lbrakk>eqrel R X; a \<in> X\<rbrakk> \<Longrightarrow>  eqrel_class R X a \<noteq> {}"
+  using eqrel_classD1[of X R a] by blast
+
+lemma eqrel_class_props1a:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" and
+          A2:"b \<in> X" and
+          A3:"(a, b) \<in> R"
+  shows "eqrel_class R X a = eqrel_class R X b"
+proof-
+  have B0:"(b, a) \<in> R"
+    using A0 A1 A2 A3 sym_onD[of X R a b] by blast 
+  show "eqrel_class R X a = eqrel_class R X b"
+  proof
+    show "eqrel_class R X a \<subseteq> eqrel_class R X b"
+    proof
+      fix x assume A4:"x \<in> eqrel_class R X a"
+      then obtain B1:"(a, x) \<in> R" and B2:"x \<in> X"
+        by (simp add: eqrel_class_def)
+      then obtain B3:"(b, x) \<in> R"
+        using A0 A1 A2 B0 trans_onD[of X R b a x] by blast
+      show "x \<in> eqrel_class R X b"
+        using eqrel_class_memI1[of x X b R] B2 B3 by auto
+    qed
+    show "eqrel_class R X b \<subseteq> eqrel_class R X a"
+    proof
+      fix x assume A4:"x \<in> eqrel_class R X b"
+      then obtain B1:"(b, x) \<in> R" and B2:"x \<in> X"
+        by (simp add: eqrel_class_def)
+      then obtain B3:"(a, x) \<in> R"
+        using A0 A1 A2 A3 trans_onD[of X R a b x] by blast
+      show "x \<in> eqrel_class R X a"
+        using eqrel_class_memI1[of x X a R] B2 B3 by auto
+    qed 
+  qed
+qed
+
+
+lemma eqrel_class_props1b:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" and
+          A2:"b \<in> X" and
+          A3:"eqrel_class R X a = eqrel_class R X b"
+  shows "(a, b) \<in> R"
+proof-
+  from A3 obtain "a \<in> eqrel_class R X b" and "b \<in> eqrel_class R X a"
+    using A0 A1 A2 eqrel_classD1[of X R] by blast
+  then show "(a,b)\<in>R"
+    by (simp add: eqrel_class_def)
+qed
+
+lemma eqrel_class_props1:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" and
+          A2:"b \<in> X"
+  shows "(a,b) \<in> R \<longleftrightarrow> eqrel_class R X a = eqrel_class R X b"
+proof
+  show "(a, b) \<in> R \<Longrightarrow> eqrel_class R X a = eqrel_class R X b"
+    by (simp add: A0 A1 A2 eqrel_class_props1a)
+  show "eqrel_class R X a = eqrel_class R X b \<Longrightarrow> (a, b) \<in> R"
+    using A0 A1 A2 eqrel_class_props1b[of X R a b]
+    by blast
+qed
+
+lemma eqrel_class_props2:
+  "\<lbrakk>eqrel R X; a \<in> X; b \<in> X; b \<in> eqrel_class R X a\<rbrakk> \<Longrightarrow> eqrel_class R X a = eqrel_class R X b"
+  by (simp add: eqrel_class_def eqrel_class_props1)
+
+lemma eqrel_class_props3:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" and
+          A2:"b \<in> X" and
+          A3:"eqrel_class R X a \<inter> eqrel_class R X b \<noteq> {}"
+  shows "eqrel_class R X a = eqrel_class R X b" 
+proof-
+  from A3 obtain x where B0:"x \<in> eqrel_class R X a" and B1:"x \<in> eqrel_class R X b"
+    by auto
+  then obtain B2:"x \<in> X"
+    unfolding eqrel_class_def by blast
+  then obtain B3:"(a, x) \<in> R" and B4:"(b, x) \<in> R"
+    using B0 B1 unfolding eqrel_class_def by blast
+  have B5:"(x, b) \<in> R"
+    using A0 A2 B2 B4 sym_onD[of X R b x] by blast
+  from A0 B3 B5 B2 A1 A2 obtain "(a, b)\<in>R"
+    using trans_onD[of X R a x b] by blast
+  then show ?thesis
+    using A0 A1 A2 eqrel_class_props1a[of X R a b] by blast
+qed
+
+lemma quotient_setD1:
+  assumes A0:"eqrel R X" and A1:"t \<in> quotient_set X R" and A2:"a \<in> t"
+  shows "t = eqrel_class R X a"
+proof-
+  from A1 obtain x where B0:"x \<in> X" and B1:"t = eqrel_class R X x"
+    unfolding quotient_set_def by blast
+  from B1 A2 obtain B2:"a \<in> X"
+    unfolding eqrel_class_def by blast
+  then obtain "eqrel_class R X a \<inter> eqrel_class R X x \<noteq> {}"
+    using A0 A2 B1 eqrel_classD1 by fastforce
+  then obtain "eqrel_class R X a = eqrel_class R X x"
+    by (simp add: A0 B0 B2 eqrel_class_props3)
+  then show ?thesis
+    by (simp add: B1)
+qed
+
+lemma eqrel_class_props4:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" 
+  shows "\<exists>!t. t \<in> quotient_set X R \<and> a \<in> t"
+proof(rule ex_ex1I)
+  show "\<exists>t. t \<in> quotient_set X R \<and> a \<in> t"
+    using A0 A1 eqrel_classD1 quotient_set_def by fastforce
+  show "\<And>t s. t \<in> quotient_set X R \<and> a \<in> t \<Longrightarrow> s\<in> quotient_set X R \<and> a \<in> s \<Longrightarrow> t =s"
+  proof-
+    fix t s assume A2:"t \<in> quotient_set X R \<and> a \<in> t" and A3:"s \<in> quotient_set X R \<and> a \<in> s"
+    then obtain "t = eqrel_class R X a" and "s = eqrel_class R X a"
+      by (simp add: A0 quotient_setD1) 
+    then show "t = s"
+      by auto
+  qed
+qed
+
+
+lemma eqrel_class_props5:
+  assumes A0:"eqrel R X" and
+          A1:"a \<in> X" and
+          A2:"b \<in> X" and
+          A3:"eqrel_class R X a \<noteq> eqrel_class R X b"
+  shows "(a, b) \<notin> R"
+  using A0 A1 A2 A3 eqrel_class_props1a[of X R a b]  by fastforce
+  
+
+lemma quotient_partition:
+  assumes A0:"eqrel R X" and sub:"R \<subseteq> X \<times> X"
+  shows quotient_partition1:"partition (quotient_set X R) X" and
+        quotient_partition2:"(eqrel_from_partition (quotient_set X R) X)  = R"
+proof-
+  let ?XR="(quotient_set X R) "
+  let ?RP="partition (quotient_set X R) X"
+  let ?RXR="(eqrel_from_partition (?XR) X)"
+  show P1:"partition ?XR X" 
+  proof-
+    have P0:"\<Union>?XR = X"
+    proof
+      show "\<Union>?XR \<subseteq> X"
+      proof
+        fix x assume A1:"x \<in> \<Union>?XR"
+        then obtain t where B0:"t \<in> ?XR"  and B1:"x \<in> t"
+          by blast
+        then obtain a where B2:"a \<in> X" and B3:"t = eqrel_class R X a"
+          unfolding quotient_set_def by blast
+        then obtain "x \<in> eqrel_class R X a"
+          using B1 by auto
+        then show "x \<in> X"
+          unfolding eqrel_class_def by auto
+      qed
+      show "X \<subseteq> \<Union>?XR"
+      proof
+        fix x assume A1:"x \<in> X"
+        obtain t where "t\<in>?XR" and "x \<in> t"
+          using A0 A1 eqrel_class_props4[of X R x] by auto
+        then show "x \<in> \<Union>?XR"
+          by blast
+      qed
+    qed
+    have P1:"\<And>p. p\<in>quotient_set X R \<Longrightarrow> p \<noteq> {}"
+      unfolding quotient_set_def using A0 eqrel_classD1 by fastforce
+    have P2:"disjoint (quotient_set X R)"
+    proof(rule disjointI1)
+      fix t s assume A1:"t \<in> ?XR" and A2:"s \<in> ?XR" and A3:"t \<noteq> s"
+      from A1 obtain a where B2:"a \<in> X" and B3:"t = eqrel_class R X a"
+        unfolding quotient_set_def by blast
+      from A2 obtain b where B4:"b \<in> X" and B5:"s = eqrel_class R X b"
+        unfolding quotient_set_def by blast 
+      then show "t \<inter> s = {}"
+        using A0 A3 B2 B3 eqrel_class_props3[of X R a b] by fastforce
+    qed
+    show ?thesis
+      unfolding partition_def using P0 P1 P2 by auto
+  qed
+  show P2:"?RXR  = R"
+  proof
+    show "?RXR \<subseteq> R "
+    proof
+      fix xy assume A1:"xy \<in> ?RXR"
+      then obtain x y where xy_eq:"xy=(x,y)" and B0:"(x, y) \<in> X \<times> X" and B1:"\<exists>p\<in>quotient_set X R. x \<in> p \<and> y \<in> p"
+        unfolding eqrel_from_partition_def by blast
+      then obtain B2:"x \<in> X" and B3:"y \<in> X"
+        by simp
+      from B1 obtain p where B4:"p \<in> quotient_set X R" and B5:"x \<in> p" and B6:"y \<in> p"
+        by auto
+      then obtain z where B7:"z \<in> X" and B8:"p = eqrel_class R X z"
+        unfolding quotient_set_def by blast
+      then obtain B9:"p={w \<in> X. (z, w) \<in> R}"
+        unfolding  eqrel_class_def by blast 
+      then obtain B10:"(z, x) \<in> R" and B11:"(z, y) \<in> R"
+        using B5 B6 by auto
+      from B10 obtain B12:"(x,z)\<in>R"
+        using A0 B2 B7 sym_onD[of X R z x] by blast
+      from B2 B3 B7 B11 B12 A0 obtain "(x,y) \<in> R"
+        by (simp add: eqrel_class_props1)
+      then show "xy \<in> R"
+        by (simp add: xy_eq)
+    qed
+    show "R \<subseteq> ?RXR"
+    proof
+      fix xy assume A1:"xy \<in> R"
+      then obtain x y where B0:"xy=(x,y)" and B1:"(x, y)\<in> R"
+        using sub by blast 
+      then obtain B2:"x \<in> X" and B3:"y \<in> X" and B4:"(x,y)\<in>X \<times> X"
+        using sub by auto
+      let ?p="eqrel_class R X x"
+      obtain B5:"y \<in> ?p" and B6:"x \<in> ?p"
+        by (simp add: A0 B1 B2 B3 eqrel_classD1 eqrel_class_memI1)
+      obtain B7:"?p \<in> quotient_set X R"
+        unfolding quotient_set_def using B2 by blast
+      then  show "xy \<in> ?RXR"
+        unfolding eqrel_from_partition_def using B0 B4 B5 B6 B7 by blast
+    qed
+  qed
+qed
+  
+
+  
+    
+  
+
+
+lemma partition_induced_eqrel:
+  assumes A0:"partition P X"
+  shows partition_induced_is_eqrel:"eqrel (eqrel_from_partition P X) X" and
+        partition_induced_quotient:"quotient_set X (eqrel_from_partition P X) = P"
+proof-
+  let ?R="(eqrel_from_partition P X)"
+  let ?XR="quotient_set X ?R"
+  show P1:"eqrel ?R X"
+  proof
+    show "sym ?R X" 
+    proof(auto simp add:sym_on_def)
+      fix x y assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"(x, y) \<in> ?R"
+      then obtain p where "p\<in>P" and "x \<in> p" and "y \<in> p"
+        unfolding eqrel_from_partition_def by blast
+      then show "(y, x) \<in>?R"
+        unfolding eqrel_from_partition_def using A1 A2 by blast
+    qed
+    show "preord ?R  X"
+    proof
+      show "trans?R  X"
+      proof(auto simp add:trans_on_def)
+        fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x,y) \<in> ?R" and A5:"(y,z)\<in>?R"
+        from A4 obtain pxy where B0:"pxy\<in>P" and B1:"x \<in> pxy" and B2:"y \<in> pxy"
+          unfolding eqrel_from_partition_def by blast
+        from A5 obtain pyz where B3:"pyz\<in>P" and B4:"y \<in> pyz" and B5:"z \<in> pyz"
+          unfolding eqrel_from_partition_def by blast
+        from B2 B4 obtain B6:"pxy \<inter> pyz \<noteq> {}"
+          by blast
+        then obtain B7:"pxy = pyz"
+          using partitionD1[of P X pxy pyz] A0 B0 B3 by blast
+        then obtain "(x, z) \<in> X \<times> X" and "\<exists>p\<in>P. x \<in> p \<and> z \<in> p"
+          using A1 A3 B0 B1 B5 by blast
+        then show "(x,z)\<in>?R"
+          unfolding eqrel_from_partition_def by blast
+      qed
+      show "refl (eqrel_from_partition P X) X"
+      proof(rule reflI1)
+        fix x assume A1:"x \<in> X"
+        then obtain p where "p \<in> P" and "x \<in> p"
+          using A0 partitionD2[of P X x] by blast
+        then show "(x,x)\<in> ?R"
+          unfolding eqrel_from_partition_def using A1 by blast
+      qed
+    qed
+  qed
+  show P2:"?XR= P"
+  proof
+    show "?XR\<subseteq> P"
+    proof
+      fix t assume A1:"t \<in> ?XR"
+      then obtain a where B2:"a \<in> X" and B3:"t = eqrel_class ?R X a"
+        unfolding quotient_set_def by blast
+      have B4:"\<exists>!p. p \<in> P \<and> a \<in> p"
+        using A0 B2 partitionD3[of P X a] by auto
+      then obtain pa where B5:"pa \<in> P" and B6:"a \<in> pa"
+        by blast
+      have B7: "t = {x \<in> X. (a, x) \<in> ?R}"
+        by (simp add: B3 eqrel_class_def)
+      have B8:" ... = {x \<in> X. (a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)}"
+        unfolding eqrel_from_partition_def  by auto 
+      have "pa=t"
+      proof
+        show "pa \<subseteq> t"
+        proof
+          fix y assume A2:"y \<in> pa"
+          then obtain B9:"y \<in> X"
+            using B5 partition_def assms by fastforce 
+          then obtain "(a, y) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> y \<in> p)"
+            using A2 B2 B5 B6 by blast
+          then show "y \<in> t"
+            using B7 B8 by blast
+        qed
+        show "t \<subseteq> pa"
+        proof
+          fix y assume A2:"y \<in> t"
+          then obtain B10:"y \<in> X"
+            using B7 by auto
+          then obtain "(a, y) \<in> X \<times> X" and "(\<exists>p \<in> P. a \<in> p \<and> y \<in> p)"
+            using A2 B7 B8 by blast
+          then show "y \<in> pa"
+            using B4 B5 B6 by blast
+        qed
+      qed
+      then show "t \<in> P"
+        using B5 by auto
+    qed
+    show "P \<subseteq>?XR"
+    proof
+      fix t assume A1:"t \<in> P"
+      then obtain B0:"t \<noteq> {}" and B1:"t \<subseteq> X"
+        using A0  by (simp add: partitionD4 partitionD5)
+      then obtain a where B2:"a \<in> X" and B3:"a \<in> t"
+        by blast
+      have B4:"t = eqrel_class ?R X a"
+      proof
+        show "t \<subseteq> eqrel_class ?R X a"
+        proof
+          fix x assume A2:"x \<in> t"
+          then obtain C0:"x \<in> X"
+            using B1 by blast 
+          then obtain "(a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)"
+            using A1 A2 B2 B3 by blast
+          then show "x \<in>  eqrel_class ?R X a"
+            unfolding eqrel_class_def eqrel_from_partition_def by blast
+        qed
+        show " eqrel_class ?R X a \<subseteq> t"
+        proof
+          fix x assume A2:"x \<in> eqrel_class ?R X a"
+          then obtain C0:"x \<in> X"
+            by (simp add: eqrel_class_def)
+          have "(a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)"
+            using A2 unfolding eqrel_class_def eqrel_from_partition_def  by fastforce
+          then obtain p where C1:"p \<in> P" and C2:"a \<in> p" and C3:"x \<in> p"
+            by blast
+          have C4:"p \<inter> t \<noteq> {}"
+            using B3 C2 by blast
+          have "p = t"
+            using A1 C1 C4 assms partitionD1 by blast
+          then show "x \<in> t"
+            using C3 by auto
+        qed
+      qed
+      show "t \<in> ?XR"
+        using B2 B4 quotient_set_def by auto
+    qed
+  qed
+qed
+      
+
+lemma eqrel_from_map1:
+  "eqrel (eqrel_from_map X f) X"
+proof
+  show "sym (eqrel_from_map X f) X"
+  unfolding eqrel_from_map_def sym_on_def by force
+  show "preord (eqrel_from_map X f) X"
+  proof
+    show "trans (eqrel_from_map X f) X"
+      unfolding eqrel_from_map_def trans_on_def by auto
+    show "refl (eqrel_from_map X f) X"
+      unfolding eqrel_from_map_def refl_def by simp
+  qed
+qed
+  
+      
+ 
+
+
+    
+      
 
 section SubsetRelation
 
@@ -1418,7 +1944,6 @@ lemma maximalI1:
   "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; (x, a) \<in> R\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_maximal R A x"
   by(simp add:is_maximal_def)
 
-
 lemma maximalI2:
   assumes xia:"x \<in> A" and nex:"\<not>(\<exists>a \<in> A. (x, a)\<in>R \<and> x \<noteq> a)"
   shows "is_maximal R A x"
@@ -1429,6 +1954,191 @@ proof(rule maximalI1)
     using nex by blast
 qed
 
+
+lemma not_maximalD1:
+  assumes "x \<in> A" and "\<not> (is_maximal R A x)"
+  obtains a where "a \<in> A" and "(x, a) \<in> R" and "x \<noteq> a" 
+  using assms maximalI2[of x A R] by blast
+
+
+lemma not_maximalD2:
+  assumes "x \<in> A" and "\<not> (is_maximal R A x)"
+  shows " \<exists>b \<in> A. (x,b)\<in>R \<and> x \<noteq> b"
+  using assms unfolding is_maximal_def by blast
+
+
+(*
+maybe retry this with finite_empty_induct:
+*)
+lemma finite_maximal:
+  assumes "finite A" and "A \<subseteq> X" and "A \<noteq> {}" and por:"pord R X"
+  shows "\<exists>m \<in> A. is_maximal R A m"
+  using assms
+proof(induction A rule:finite_induct)
+  case empty
+  then show ?case by auto
+next
+  case (insert a F)
+  then show ?case 
+  proof(cases "F={}")
+    case True
+    then show ?thesis
+      unfolding is_maximal_def by blast
+  next
+    case False
+    then obtain B0:"F \<subseteq> X" and B1:"F \<noteq> {}"
+      using insert.prems(1) by blast
+    then obtain m where B2:"m \<in> F" and B3:"is_maximal R F m"
+      using insert.IH por by blast
+    let ?E="insert a F"
+    obtain B4:"m \<in> ?E" and B5:"m \<in> X"
+      using B0 B2 by blast
+    show ?thesis
+    proof(cases "is_maximal R ?E a")
+      case True
+      then show ?thesis
+        by auto 
+    next
+      case False
+      then obtain c where B6:"c \<in> ?E" and B7:"(a,c)\<in>R" and B8:"a \<noteq> c"
+        unfolding is_maximal_def  by blast
+      then obtain B9:"c \<in> F" and B10:"(c,a)\<notin>R" and B11:"c \<in> X"
+        using antisym_onD insert.prems(1) por by fastforce
+      have "is_maximal R ?E m"
+      using B4 proof(rule maximalI2)
+        show "\<not>(\<exists>b\<in>?E. (m, b) \<in> R \<and> m \<noteq> b)"
+        proof(rule ccontr)
+          assume C0:"\<not>\<not> (\<exists>b\<in>?E. (m, b) \<in> R \<and> m \<noteq> b)"
+          then obtain b where C1:"b \<in> ?E" and C2:"(m,b)\<in>R" and C3:"m \<noteq> b"
+            by blast
+          then obtain C4:"b \<in> X"
+            using insert.prems(1) by blast
+          have "b \<noteq> a"
+          proof(rule ccontr)
+            assume D0:"\<not> b \<noteq> a" 
+            then obtain D1:"b = a" 
+              by blast 
+            then obtain D2:"m \<noteq> c" and D3:"(m,a)\<in>R"
+              using B10 C2 by blast
+            then obtain D4:"(m,c)\<in>R"
+              using B7 trans_onD[of X R m a c]  B11 B5 C4 D1 por by fastforce
+            then obtain "\<not>is_maximal R F m"
+              using B9 D2 maximalD2 by fastforce
+            then show False
+              by (simp add: B3)
+          qed
+          then obtain "b \<in> F"
+            using C1 by blast
+          then obtain "\<not>is_maximal R F m"
+            using C2 C3 maximalD2 by fastforce
+          then show False
+            by (simp add: B3)
+        qed
+      qed
+      then show ?thesis
+        using B4 by auto
+    qed
+  qed
+qed
+
+
+lemma finite_maximal2:
+  assumes A0:"finite A" and A1:"A \<subseteq> X" and A2:"A \<noteq> {}" and A3:"pord R X" and A4:"a \<in> A"
+  shows "\<exists>m \<in> A. is_maximal R A m \<and> (a,m)\<in>R"
+proof(cases "is_maximal R A a")
+  case True
+  then show ?thesis
+  proof -
+    have "refl R A"
+      using A1 A3 pord_sub1 by blast
+    then have "(a, a) \<in> R"
+      by (simp add: A4 reflD2)
+    then show ?thesis
+      using A4 True by blast
+  qed 
+next
+  case False
+  then show ?thesis 
+  proof-
+    define E where "E \<equiv> {x \<in> A. (a,x)\<in>R \<and> a \<noteq> x}"
+    obtain "E \<noteq> {}" and "finite E" and "E \<subseteq> X" 
+      unfolding E_def using A4 False maximalI2 A0 A1 by force
+    then obtain m where B0:"m \<in> E" and  "is_maximal R E m"
+      using A3 finite_maximal[of E X R] by blast
+    obtain B1:"m \<in> A" and B2:"(a,m)\<in>R" and B3:"m \<noteq> a"
+      using E_def B0 by blast
+    have "is_maximal R A m"
+    using B1 proof(rule maximalI2)
+      show "\<not> (\<exists>a\<in>A. (m, a) \<in> R \<and> m \<noteq> a)"
+      proof(rule ccontr)
+        assume C0:"\<not>\<not> (\<exists>a\<in>A. (m, a) \<in> R \<and> m \<noteq> a)"
+        then obtain b where "b \<in> A" and B4:"(m,b)\<in>R" and B5:"m \<noteq> b"
+          by blast
+        obtain B6:"a \<in> X" and B7:"m \<in> X" and B8:"b \<in> X"
+          using A1 A4 B1 \<open>b \<in> A\<close> by blast
+        then obtain "(a,b)\<in>R" and "a \<noteq> b"
+          using A3 B2 B3 B4  trans_onD[of X R a m b]  antisym_onD by fastforce
+        then obtain "b \<in> E"
+          by (simp add: E_def \<open>b \<in> A\<close>)
+        then show False
+          using B4 B5 \<open>is_maximal R E m\<close> maximalD2 by fastforce
+      qed
+    qed
+    then show "\<exists>m\<in>A. is_maximal R A m \<and> (a, m) \<in> R"
+      using B1 B2 by blast
+  qed
+qed
+  
+
+
+lemma finite_unique_maximal:
+  assumes A0:"finite A" and
+          A1:"A \<subseteq> X" and 
+          A2:"A \<noteq> {}" and
+          A3:"pord R X" and
+          A4:"\<exists>!m \<in> A. is_maximal R A m" and
+          A5:"is_maximal R A m"
+  shows "is_greatest R A m"
+proof(rule is_greatestI3)
+  show "m \<in> A"
+    using A5 maximalD1 by fastforce
+  show "\<And>a. a \<in> A \<Longrightarrow> (a, m) \<in> R"
+  proof-
+    fix a assume A6:"a \<in> A"
+    then obtain B0:"a \<in> X"
+      using A1 by auto
+    show "(a, m) \<in> R"
+    proof(cases "a=m")
+      case True
+      then show ?thesis
+        using A3 B0 reflE1 by auto 
+    next
+      case False
+      then obtain B1:"A-{m} \<noteq> {}" and B2:"a \<in> A-{m}" and B3:"finite (A-{m})" and B4:"(A-{m}) \<subseteq> X"
+        using A0 A1 A6 by blast
+      then obtain ma where B5:"ma \<in> A-{m}" and B6:"is_maximal R (A-{m}) ma" and B7:"(a,ma)\<in>R"
+        using finite_maximal2[of "A-{m}" X R a]  A3 by blast
+      have B8:"m \<noteq> ma"
+        using B5 by blast
+      have B9:"(m, ma)\<notin>R"
+        using A5 B5 maximalD3 by fastforce
+      have B10:"(ma, m)\<in>R"
+      proof(rule ccontr)
+        assume C0:"\<not>(ma,m)\<in>R" 
+        then obtain "is_maximal R A ma"
+          by (metis B6 DiffD1 DiffI is_maximal_def singletonD)
+        then show False
+          by (metis A4 A5 B8 maximalD1)
+      qed
+      obtain "ma \<in> X" and "a \<in> X" and "m \<in> X"
+        using A1 B0 B5 \<open>m \<in> A\<close> by blast
+      then obtain "(a,m)\<in>R"
+        by (meson A3 B10 B7 trans_onD)
+      then show ?thesis
+        by auto
+    qed
+  qed 
+qed
 
 section SupSemilattices
 
@@ -10207,7 +10917,7 @@ proof-
       qed
     qed
     from P1 have P2:"\<And>A x. (A, x) \<in> (ClLim Lim X) \<Longrightarrow>  (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim)"
-      by (metis (no_types, lifting) ClLim_def CollectD case_prodD)
+      unfolding ClLim_def by auto
     from P1 have P3: "\<And>A x.   (\<exists>\<F> \<in> pfilters_on (pwr X) (Pow X). A \<in> \<F> \<and> (\<F>, x) \<in> Lim) \<Longrightarrow> (A, x) \<in> (ClLim Lim X)"
       by (meson PowI is_limit pfilters_on_iff setfilters0 setfilters3) 
     from P2 have P4:"?L\<subseteq>?R"
