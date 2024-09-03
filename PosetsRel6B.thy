@@ -144,7 +144,6 @@ lemma right_inv_target:
   "is_right_inv Y f s \<Longrightarrow> f`(s`Y) = Y"
   unfolding is_right_inv_def  by (simp add: image_comp)
 
-
 lemma rinv_l:
   "is_left_inv X f r \<Longrightarrow> is_right_inv X r f"
   by (simp add: is_left_invE1 is_right_inv_def)
@@ -179,7 +178,6 @@ proof-
   finally show "s1 y = s2 y"
     using b1 by blast
 qed
-
 
 
 definition is_disjoint::"'a set set \<Rightarrow> bool" where
@@ -420,6 +418,7 @@ lemma quotient_un:
   "is_eqrel X R \<Longrightarrow> \<Union>(quotient X R) = X"
   unfolding is_eqrel_def quotient_def refl_on_def by(auto)
 
+
 lemma quotient_disj:
   assumes A0:"is_eqrel X R" and 
           A1:"t \<in> quotient X R" and
@@ -438,31 +437,53 @@ proof-
     by (metis A0 A4 A6 eqrel_class3i)
 qed
 
+lemma classes_eq_or_disj:
+  "\<lbrakk>is_eqrel X R; t \<in> X/R; s \<in> X/R\<rbrakk> \<Longrightarrow> t \<inter> s= {} \<or>  t = s "
+  using quotient_disj3 by blast
 
-lemma unique_class:
+lemma classes_eq_or_disj2:
+  "\<lbrakk>is_eqrel X R; t \<in> X/R; s \<in> X/R; x \<in> s; x \<in> t\<rbrakk> \<Longrightarrow> t = s "
+  by (simp add: quotient_disj1 quotient_disj2)
+
+lemma classes_eqI:
+  assumes A0:"is_eqrel X R" and A1:"t\<in>X/R" and A2:"s\<in>X/R" and A3:"x\<in>t" and A4:"x\<in>s" 
+  shows "t = s"  
+  using A0 A1 A2 A3 A4 classes_eq_or_disj2[of X R t s x] by blast
+
+lemma unique_class0:
   assumes A0:"is_eqrel X R" and A1:"x \<in> X"
-  shows "\<exists>!t \<in> (X/R). x \<in> t"
+  shows "\<exists>t \<in> (X/R). x \<in> t"
 proof-
   let ?t="R``{x}"
   have B0:"?t \<in> X/R"
     by (simp add: A1 quotientI1)
   have B1:"x \<in> ?t"
     using A0 A1 eqrel_class3[of X R x] by blast
-  show ?thesis
-  proof(rule ex1I[where ?a="?t"])
-    show C0:"?t\<in> (X/R) \<and> x \<in> ?t"
-      using B0 B1 by blast
-    show "\<And>s::'a set. s \<in> X / R \<and> x \<in> s \<Longrightarrow> s = R `` {x}"
-    proof-
-      fix s assume C1:"s \<in> (X/R) \<and> x \<in> s"
-      then obtain y where "y \<in> X" and C2:"R``{y} = s"
-        using quotientE2[of s X R] by blast
-      then obtain "(x, y) \<in> R"
-        using A0 C1 is_eqrelE22 by auto
-      then show "s = R``{x}"
-        using A0 C2 by (simp add: eqrel_class3e) 
-    qed
-  qed
+  then show "\<exists>t\<in>(X/R). x \<in> t"
+    using B0 by blast
+qed
+
+lemma unique_class1:
+  assumes A0:"is_eqrel X R" and A1:"x \<in> X" 
+  shows "\<And>s::'a set. \<lbrakk>s \<in> (X/R); x\<in>s\<rbrakk> \<Longrightarrow> s = R `` {x}"
+proof-
+  fix s assume C0:"s \<in> (X/R)" and C1:"x\<in>s"
+  then obtain y where C2:"y \<in> X" and C3:"R``{y} = s"
+    using quotientE2[of s X R] by blast
+  then obtain "(x, y) \<in> R"
+    using A0 C1 is_eqrelE22 by auto
+  then show "s = R``{x}"
+    using A0 C3 by (simp add: eqrel_class3e) 
+qed
+
+lemma unique_class:
+  assumes A0:"is_eqrel X R" and A1:"x \<in> X"
+  shows "\<exists>!t \<in> (X/R). x \<in> t"
+proof(rule ex1I[where ?a="R``{x}"])
+  show C0:"(R``{x})\<in>(X/R) \<and> x\<in>(R``{x})"
+    using A0 A1 eqrel_class3[of X R x] quotientI1[of x X R] by blast
+  show "\<And>s::'a set. s \<in> X / R \<and> x \<in> s \<Longrightarrow> s = R `` {x}"
+    using A0 A1 unique_class1[of X R x] by auto
 qed
 
 lemma quotient_to_partition:
@@ -476,8 +497,6 @@ proof(rule is_partI1)
    show "{} \<notin> quotient X R"
      by (metis assms empty_iff eqrel_class3 quotientE1)
 qed
-
-
 
 abbreviation eqcls_to_eqrel:: "'a set \<Rightarrow> 'a set set \<Rightarrow> ('a \<times> 'a) set" where
   "eqcls_to_eqrel X P \<equiv> {(x, y) \<in> X \<times> X. \<exists>p \<in> P. {x,y}\<subseteq>p}"
@@ -687,7 +706,6 @@ lemma eqr_associated_mem_iff:
 definition canonical_proj::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a set"
   where "canonical_proj X R \<equiv> (\<lambda>x. THE t. t \<in> (X/R) \<and>  x \<in> t)"
 
-
 lemma canonical_proj_eq:
   assumes A0:"is_eqrel X R" and A1:"x \<in> X"
   shows "canonical_proj X R x = R``{x}"
@@ -709,41 +727,47 @@ lemma canonical_proj_props:
   shows canonical_proj_props1:"\<And>x. x \<in> X \<Longrightarrow> canonical_proj X R x \<in> X/R" and
         canonical_proj_props2:"\<And>t. t \<in> X/R \<Longrightarrow> (\<exists>x \<in> X.  canonical_proj X R x=t)" and
         canonical_proj_props3:"\<And>t. t \<in> X/R \<Longrightarrow> x \<in> t \<Longrightarrow> (canonical_proj X R x=t)" and
-        canonical_proj_props4:"surj_into  (canonical_proj X R) (X/R)"
+        canonical_proj_props4:"surj_into  (canonical_proj X R) (X/R)" and
+        canonical_proj_props5:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y)\<in>R \<longleftrightarrow> (canonical_proj X R) x = (canonical_proj X R) y"
 proof-
-  show "\<And>x. x \<in> X \<Longrightarrow> canonical_proj X R x \<in> X/R"
-    by (simp add: assms canonical_proj_eq quotientI1) 
-  show "\<And>t. t \<in> X/R \<Longrightarrow> x \<in> t \<Longrightarrow> (canonical_proj X R x=t)"
+  show P0:"\<And>x. x \<in> X \<Longrightarrow> canonical_proj X R x \<in> X/R"
+    by (simp add: assms canonical_proj_eq quotientI1)
+  show P1:"\<And>t. t \<in> X/R \<Longrightarrow> (\<exists>x \<in> X.  canonical_proj X R x=t)" 
+ proof-
+    fix t assume B0:"t \<in> X/R"
+    then obtain x where B1:"x \<in> X" and B2:"t = R``{x}" 
+      using quotientE2[of t X R] by blast
+    then obtain "canonical_proj X R x = R``{x}"
+      using A0 B1 canonical_proj_eq[of X R x] by blast
+    then show "\<exists>x \<in> X. canonical_proj X R x=t"
+      using B1 B2 by auto
+  qed
+  show P2:"\<And>t. t \<in> X/R \<Longrightarrow> x \<in> t \<Longrightarrow> (canonical_proj X R x=t)"
   proof-
-    fix t assume "t \<in> X/R" and "x \<in> t"
+    fix t assume B0:"t \<in> X/R" and B1:"x \<in> t"
     show "(canonical_proj X R x=t)"
-  show "\<And>t. t \<in> X/R \<Longrightarrow> (\<exists>x \<in> X.  canonical_proj X R x=t)" 
-    using assms canonical_proj_eq[of X R] quotientE1[of _ X R]
-  
-  show "surj_into  (canonical_proj X R) (X/R)"
-  
+    unfolding canonical_proj_def 
+    proof(rule the_equality)
+      show " t \<in> X / R \<and> x \<in> t"
+        by (simp add: B0 B1)
+      show "\<And>s.  s\<in>(X/R) \<and> x\<in>s \<Longrightarrow> s=t"
+        using A0 B0 B1 classes_eqI[of X R t _ x] by blast
+      qed
+   qed
+   show "surj_into (canonical_proj X R) (X/R)"
+     using P1 surj_intoI[of "X/R"  "(canonical_proj X R)"] by auto
+   show "\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y)\<in>R \<longleftrightarrow> (canonical_proj X R) x = (canonical_proj X R) y"
+     using A0 canonical_proj_eq[of X R] eqrel_class3e[of X R] by auto
+qed
 
-lemma eqr_associated_mem_iff2:
-  " (eqr_associated X f) = (relcomp ((graph f X)) (converse (graph f X)))"
-  unfolding graph_def eqr_associated_def eqr_associated_def by(auto)
- 
 lemma eqr_associated_mem_iff_singleton:
   "(x, y)\<in> (eqr_associated X f) \<longleftrightarrow> (eqr_associated X f)``{x}=(eqr_associated X f)``{y} \<and> x \<in> X \<and> y \<in> X"
   by (simp add: eqrel_class3e eqr_associated_is_eqr)
 
-definition canonical_proj::"('a \<times> 'b) set \<Rightarrow> 'a \<Rightarrow> 'b set" where 
-  "canonical_proj R \<equiv> (\<lambda>x. R``{x})"
-
-
-
 
 lemma prj_compat:
-  "is_eqrel X R \<Longrightarrow> is_eqr_compat X R (canonical_proj R)"
-  by (simp add: canonical_proj_def is_eqr_compatI2)
-
-lemma prj_surj:
-  "is_eqrel X R \<Longrightarrow> (surj_into (canonical_proj R) (X/R))"
-  unfolding canonical_proj_def surj_into_def using quotientE3 by blast
+  "is_eqrel X R \<Longrightarrow> is_eqr_compat X R (canonical_proj X R)"
+  by (simp add: canonical_proj_props5 is_eqr_compat_def)
 
 
 lemma is_eqr_compat1:
@@ -787,12 +811,9 @@ proof-
   qed
 qed
 
-definition section where
-  "section f X P \<equiv> (\<lambda>y. "
-
 
 lemma section_existence_concrete2:
-  assumes fmap:"f`X \<subseteq> Z" and gsurj:"surj f X Y" and compat:"(\<forall>x \<in> X. \<forall>y \<in> X. g x = g y \<longrightarrow> f x = f y)"
+  assumes fmap:"f`X \<subseteq> Z" and gsurj:"surj_into f Y" and compat:"(\<forall>x \<in> X. \<forall>y \<in> X. g x = g y \<longrightarrow> f x = f y)"
   defines "h \<equiv> (\<lambda>y. f (SOME x. x \<in> X \<and> g x =y))"
   shows "\<And>x. x\<in>X \<Longrightarrow> f x = h (g x)"
 proof-
