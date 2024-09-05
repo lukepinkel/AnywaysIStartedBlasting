@@ -458,6 +458,23 @@ lemma quotient_un:
   unfolding is_eqrel_def quotient_def refl_on_def by(auto)
 
 
+lemma quotient_mem_elem:
+  assumes A0:"is_eqrel X R" and 
+          A1:"t \<in> quotient X R" and
+          A2:"x \<in> t" and
+          A3:"y \<in> t"
+  shows "(x, y) \<in> R"
+proof-
+  obtain z where "z \<in> X" and "R``{z} = t"
+    using A0 A1 quotientE2 by blast  
+  then obtain "(z, x) \<in> R" and rzy:"(z, y) \<in> R" 
+    using A2 A3 by blast
+  then obtain "(x, z) \<in> R" 
+    using A0 is_eqrelE22 by fastforce 
+  then show "(x, y) \<in> R"
+    using A0  rzy transD[of R x z y] unfolding is_eqrel_def by blast
+qed
+
 lemma quotient_disj:
   assumes A0:"is_eqrel X R" and 
           A1:"t \<in> quotient X R" and
@@ -736,7 +753,14 @@ lemma is_eqr_compatI1:
 lemma is_eqr_compatI2:
   "is_eqrel X R \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X; R``{x}=R``{y}\<rbrakk> \<Longrightarrow> f x = f y) \<Longrightarrow> is_eqr_compat X R f"
   by (meson eqrel_class3e is_eqr_compatI1)
+
+lemma is_eqr_compatE1:
+  "is_eqrel X R \<Longrightarrow> is_eqr_compat X R f \<Longrightarrow> (x, y) \<in> R \<Longrightarrow> f x = f y"
+  by (simp add: eqrelE4 is_eqr_compat_def)
                                                       
+lemma is_eqr_compatE2:
+  "is_eqrel X R \<Longrightarrow> is_eqr_compat X R f \<Longrightarrow> t \<in> (X/R) \<Longrightarrow> x \<in> t \<Longrightarrow> y \<in> t \<Longrightarrow> f x = f y"
+  using quotient_mem_elem[of X R t x y] is_eqr_compatE1[of X R f x y] by blast
 
 lemma is_eqr_compat_iff:
   "is_eqrel X R \<Longrightarrow> ((\<forall>x \<in> X. \<forall>y \<in> X. R``{x}=R``{y} \<longrightarrow> f x = f y)) \<longleftrightarrow> is_eqr_compat X R f "
@@ -925,6 +949,11 @@ lemma proj_section2:
   shows "\<And>t. t \<in>(X/R) \<Longrightarrow> (proj_section X R) t \<in> X"
   by (simp add: canonical_proj_props4 canonical_proj_props6 eqr proj_section_def section_is_into)
 
+
+lemma proj_section2b:
+  "is_eqrel X R \<Longrightarrow> (proj_section X R)`(X/R) \<subseteq> X"
+  by (simp add: image_subsetI proj_section2)
+
 lemma proj_section3:
   assumes eqr:"is_eqrel X R"
   shows "\<And>t. t \<in>(X/R) \<Longrightarrow>  (canonical_proj X R) ((proj_section X R) t) = t"
@@ -1077,7 +1106,7 @@ qed
 
 
 lemma eqr_inj:
-  assumes A0:"f`X \<subseteq> X" 
+  assumes A0:"f`X \<subseteq> Y" 
   defines "R \<equiv> eqr_associated X f"
   defines "\<pi> \<equiv> canonical_proj X R"
   defines "s \<equiv> proj_section X R"
@@ -1109,89 +1138,193 @@ proof-
   then show ?thesis
     by (simp add: inj_onI)
 qed
-  
-lemma quotient_surj:
-  "is_eqrel X R \<Longrightarrow> (\<lambda>x. R``{x})`X = quotient X R"
-  unfolding quotient_def by (simp add: UNION_singleton_eq_range)
-    
-lemma is_eqr_compat2:
-  assumes A0:"is_eqrel X R" and A1:"f`X \<subseteq> Y"
-  shows "is_eqr_compat X R f \<longleftrightarrow> (\<exists>h. (\<forall>x \<in> X. h (R``{x}) = f x))"
-  using A0 A1 is_eqr_compat_iff[of X R f] quotient_surj[of X R] section_existence_alt[of f X Y  "\<lambda>x::'a. R``{x}" "quotient X R"]
-  by presburger
 
-lemma is_eqr_compat_obtains:
-  assumes A0:"is_eqrel X R" and A1:"f`X \<subseteq> Y" and A2:"is_eqr_compat X R f"
-  obtains h where "\<forall>x \<in> X. h (R``{x}) = f x"
-  using A0 A2 is_eqr_compat2 by blast
 
-lemma is_eqr_compat_concrete:
-  assumes A0:"is_eqrel X R" and A1:"is_eqr_compat X R f"
-  defines  "\<pi> \<equiv> (\<lambda>x. R``{x})"
-  defines  "h \<equiv> (\<lambda>t. f (SOME x. x \<in> X \<and> R``{x} =t))"
-  shows "(\<And>x. x \<in> X \<Longrightarrow>  h (\<pi> x) = f x)"
+
+definition fun_induced_quotient::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b" where
+  "fun_induced_quotient X R f \<equiv> f \<circ> (proj_section X R)"
+
+lemma eqr_inj2:
+   "inj_on (fun_induced_quotient X (eqr_associated X f) f)  (X/(eqr_associated X f))"
 proof-
-  fix x assume A3:"x \<in> X"
-  show "h (\<pi> x) = f x"
-   unfolding \<pi>_def h_def
-  proof(rule someI2_ex)
-    show "\<exists>a::'a. a \<in> X \<and> R `` {a} = R `` {x}"
-      using A3 by blast
-    show "\<And>xa::'a. xa \<in> X \<and> R `` {xa} = R `` {x} \<Longrightarrow> f xa = f x"
-      using A0 A1 A3 is_eqr_compat_iff by blast
+  let ?R="eqr_associated X f"
+  let ?p="canonical_proj X ?R"
+  let ?s="proj_section X ?R"
+  let ?h="fun_induced_quotient X ?R f"
+  obtain A1:"is_eqrel X ?R"
+    by (simp add:  eqr_associated_is_eqr)
+  obtain A5:"is_eqr_compat X ?R f"
+    by (simp add:  eqr_associated_compat)
+  have B0:"\<And>t1 t2. \<lbrakk>t1 \<in> (X/?R); t2 \<in> (X/?R); ?h t1 = ?h t2\<rbrakk> \<Longrightarrow> t1 = t2  "
+  proof-
+    fix t1 t2 assume A2:"t1 \<in> X/?R" and A3:"t2 \<in>X/?R" and A4:"?h t1 = ?h t2"
+    have B0:"\<And>t. t \<in> (X/?R) \<Longrightarrow>?h (?p (?s t)) = ?h t"
+      by (simp add: A1  proj_section3 )
+    then obtain B1:"f (?s (?p (?s t1))) = f (?s (?p (?s t2)))"
+      using A2 A3 A4 unfolding fun_induced_quotient_def by auto
+    then obtain x1 x2 where B2: "x1 \<in> t1" and B3:"x2 \<in> t2" and B4:"?s t1 = x1" and B5:"?s t2 = x2"
+      using A1 A2 A3 proj_section4 by blast 
+    then obtain B6:"?s(?p (?s t1)) = x1" and "?s (?p (?s t2)) = x2"
+      using A1 A2 A3 proj_section3 by fastforce
+    then obtain B7:"f x1 = f x2"
+      using B1 by auto
+    have B8:"\<And>x y. \<lbrakk>x \<in> t1; y \<in> t2\<rbrakk> \<Longrightarrow> f x = f y"
+      by (metis A1 A2 A3 B2 B3 B7 eqr_associated_mem_iff quotient_disj2)
+    show "t1 = t2"
+      by (metis A1 A2 A3 B2 B3 B4 B5 B7 eqr_associated_mem_iff proj_section2 quotient_disj1)
   qed
+  then show ?thesis
+    by (simp add: inj_onI)
 qed
 
 
 
+
+lemma fun_induced_quotient_im:
+  assumes eqr:"is_eqrel X R" and compat:"is_eqr_compat X R f" and img:"f`X=Y"
+  shows "(fun_induced_quotient X R f)`(X/R) = Y"
+proof-
+  let ?h="fun_induced_quotient X R f"
+  let ?s="proj_section X R"
+  let ?p="canonical_proj X R"
+  have "\<And>y. y \<in> Y \<Longrightarrow> (\<exists>t \<in> (X/R). ?h t = y)"
+  proof-
+    fix y assume yin:"y \<in> Y"
+    then obtain x where xin:"x \<in> X" and fxy:"f x = y"
+      using img by blast
+    obtain t where tin:"t \<in> X/R" and teq:"t = ?p x"
+      by (simp add: \<open>(x::'a) \<in> (X::'a set)\<close> canonical_proj_props1 eqr)
+    then obtain xin2:"x \<in> t"
+      using eqr xin canonical_proj_eq[of X R x] eqrel_class3[of X R x] by blast
+    obtain z where rin1:"z \<in> X" and req1:"?s t = z"
+      using eqr proj_section2 tin by auto
+    have zin2:"z \<in> t"
+      using eqr proj_section4 req1 tin by auto
+    have fzx:"f z = f x"
+      using eqr is_eqr_compatE2[of X R f t z x] compat tin xin2 zin2 by blast
+    have "?h t =  f (?s t)"
+       by (simp add: fun_induced_quotient_def)
+    also have "... = f z"
+      by (simp add: req1)
+    also have "... = y"
+      by (simp add: fxy fzx)
+    finally show " (\<exists>t \<in> (X/R). ?h t = y)"
+      using tin by auto
+  qed
+  then obtain "Y \<subseteq> ?h`(X/R)"
+    by blast
+  also have "?h`(X/R) \<subseteq> Y"
+    unfolding fun_induced_quotient_def using proj_section2b[of X R] img eqr by auto
+  then show ?thesis
+    using calculation by blast
+qed
+
+
+lemma fun_induced_quotient_val:
+  assumes eqr:"is_eqrel X R" and compat:"is_eqr_compat X R f"
+  shows "\<And>t. t \<in> X/R \<Longrightarrow> x \<in> t  \<Longrightarrow> (fun_induced_quotient X R f) t=f x"
+proof-
+ let ?s="proj_section X R"
+  let ?h="fun_induced_quotient X R f"
+  fix t assume tin:"t \<in> X/R" and xin:"x \<in> t"
+  obtain z where rin1:"z \<in> X" and req1:"?s t = z"
+     using eqr proj_section2 tin by auto
+  have zin2:"z \<in> t"
+    using eqr proj_section4 req1 tin by auto
+  have fzx:"f z = f x"
+     using eqr is_eqr_compatE2[of X R f t z x] compat tin xin zin2 by blast
+  then show "?h t = f x"
+    by (simp add: fun_induced_quotient_def req1)
+qed
+  
+
+lemma is_eqr_compat_concrete:
+  assumes A0:"is_eqrel X R" and A1:"is_eqr_compat X R f"
+  shows "\<And>x. x \<in> X \<Longrightarrow>   (fun_induced_quotient X R f) ((canonical_proj X R) x) = f x"
+proof-
+  let ?p="(canonical_proj X R)"
+  let ?s="proj_section X R"
+  let ?h="fun_induced_quotient X R f"
+  fix x assume xin:"x \<in> X"
+  obtain t where tin:"t \<in> X/R" and xin:"x \<in> t"
+    by (meson A0 unique_class0 xin)
+  then obtain peq:"?p x = t"
+    by (simp add: A0 canonical_proj_props3)
+  obtain z where rin1:"z \<in> X" and req1:"?s t = z"
+    using A0 proj_section2 tin by auto
+  have zin2:"z \<in> t"
+    using A0 proj_section4 req1 tin by auto
+  have fzx:"f z = f x"
+     using A0 is_eqr_compatE2[of X R f t z x] A1 tin xin zin2 by blast
+  have "?h (?p x) = ?h t"
+    using peq by auto
+  also have "... = f (?s t)"
+    by (simp add: fun_induced_quotient_def)
+  also have "... = f z"
+    by (simp add: req1)
+  finally show "?h (?p x) = f x"
+    using fzx by auto
+qed
+
+
 lemma quotient_of_quotient:
   assumes A0:"is_eqrel X R" and A1:"is_eqrel X S" and A2:"S \<subseteq> R"
-  defines  "f \<equiv> (\<lambda>x. R``{x})" 
-  defines  "g \<equiv> (\<lambda>x. S``{x})" 
-  defines  "h \<equiv> (\<lambda>t. f (SOME x. x \<in> X \<and> S``{x} =t))"
-  defines "R_mod_S \<equiv> kernel (X/S) h"
-  shows quotient_of_quotient1:"\<And>x y. (x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> R_mod_S" and 
+  defines "f \<equiv>canonical_proj X R"  (*X \<longrightarrow> X/R*)
+  defines "g \<equiv>canonical_proj X S"  (*X \<longrightarrow> X/S*)
+  defines "h \<equiv> fun_induced_quotient X S f" (*X/S \<longrightarrow> X/R*)
+  defines "T \<equiv> eqr_associated (X/S) h" (*(X/S) / (R / S) or (R /S)*)
+  defines "h1 \<equiv> canonical_proj (X/S) T" (*(X/S) \<longrightarrow> (X/S) / (R /S)*)
+  defines "h2 \<equiv> fun_induced_quotient (X/S) T h" (* (X/S) / (R /S) \<longrightarrow> (X / R)*)
+  shows quotient_of_quotient1:"\<And>x y. (x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> T \<and> x \<in> X \<and> y \<in> X" and 
         quotient_of_quotient2:"\<And>x. x \<in> X \<Longrightarrow>h (g x) = f x" and
         quotient_of_quotient3:"\<And>t. t \<in> X/R\<Longrightarrow> (\<exists>x \<in> X/S. t = h x)" and
         quotient_of_quotient4:"\<And>t. t \<in> X/S\<Longrightarrow> (\<exists>x \<in> X. t = g x)" and
-        quotient_of_quotient4:"\<And>t s. \<lbrakk>t \<in> X/R; s \<in> X/R; h t = h s \<rbrakk>\<Longrightarrow> (\<exists>x \<in> X. t = g x)" 
+        quotient_of_quotient5:"\<And>t. t \<in> (X/S) \<Longrightarrow> (h2(h1 t))=h t" and
+        quotient_of_quotient6:"inj_on h2 ((X/S)/T)" and
+        quotient_of_quotient7:"surj_into  h2 (X/R)"
 proof-
   obtain B0:"is_eqr_compat X R f" and B1:"is_eqr_compat X S g"
     by (simp add: A0 A1 f_def g_def prj_compat)
   then obtain B2:"is_eqr_compat X S f"
     using A0 A1 A2 is_eqr_compat_finer by blast
   have B3:"\<And>x y. (x,y)\<in>R  \<longleftrightarrow> f x = f y \<and>  x \<in> X \<and> y \<in> X"
-    by (simp add: A0 eqrel_class3e f_def)
+    using A0 canonical_proj_props5[of X R] eqrelE4[of X R] f_def by blast
   have B4:"\<And>x y. (x,y)\<in>S  \<longleftrightarrow> g x = g y \<and>  x \<in> X \<and> y \<in> X"
-    by (simp add: A1 eqrel_class3e g_def)
-  have B5:"\<And>x y. (x,y)\<in>R_mod_S  \<longleftrightarrow> h x = h y \<and>  x \<in> (X / S) \<and> y \<in> (X / S)"
-    unfolding R_mod_S_def using kernel_mem_iff[of _ _ "X/S" h] by auto
+    using A1 canonical_proj_props5[of X S] eqrelE4[of X S] g_def by blast
+  have B5:"\<And>x y. (x,y)\<in>T  \<longleftrightarrow> h x = h y \<and>  x \<in> (X / S) \<and> y \<in> (X / S)"
+    unfolding T_def  by (simp add: eqr_associated_mem_iff)
   have B6:"\<And>x. x \<in> X \<Longrightarrow>  h (g x) = f x"
     using is_eqr_compat_concrete[of X S f ] A1 B2 g_def h_def by presburger
   have B7:"\<And>x. x \<in> X \<Longrightarrow> g x \<in> X / S"
-    by (simp add: g_def quotientI1)
-  have B8:"\<And>x. g x \<in> X / S \<Longrightarrow> x \<in> X"
-    by (metis A1 B4 eqrel_class4 g_def quotientE1)
-  show P0:"\<And>x y. (x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> R_mod_S"
+    by (simp add: A1 canonical_proj_props1 g_def)
+  show P0:"\<And>x y. (x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> T \<and> x \<in> X \<and> y \<in> X"
   proof-
     fix x y 
     have "(x,y) \<in> R \<longleftrightarrow> f x = f y  \<and>  x \<in> X \<and> y \<in> X"
       by (simp add: B3)
     also have "... \<longleftrightarrow> h (g x) =  h (g y)  \<and>  x \<in> X \<and> y \<in> X"
       using B6 by blast
-    also have "... \<longleftrightarrow>(g x, g y) \<in> R_mod_S "
-      using B5 B7 B8 by blast
-    finally show "(x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> R_mod_S"
+    also have "... \<longleftrightarrow>(g x, g y) \<in> T \<and> x \<in> X \<and> y \<in> X "
+      using B5 B7 by blast
+    finally show "(x, y) \<in> R \<longleftrightarrow> (g x, g y) \<in> T \<and> x \<in> X \<and> y \<in> X "
       by auto
   qed 
   show P1:"\<And>x. x \<in> X \<Longrightarrow>h (g x) = f x"
     by (simp add: B6)
-  show P2:"\<And>t. t \<in> quotient X S \<Longrightarrow> (\<exists>x \<in> X. t = g x)" 
+  show P2:"\<And>t. t \<in> X/R\<Longrightarrow> (\<exists>x \<in> X/S. t = h x)"
+    by (metis A0 B7 P1 canonical_proj_props2 f_def)
+  show P3:"\<And>t. t \<in> X/S \<Longrightarrow> (\<exists>x \<in> X. t = g x)" 
   proof-
     fix t assume C0:"t \<in> quotient X S"
     show "(\<exists>x \<in> X. t = g x)"
-      unfolding g_def using C0 quotientE1[of _ X S] by auto
+      using A1 C0 canonical_proj_props2 g_def by blast
   qed
+  show P4:"\<And>t. t \<in> (X/S) \<Longrightarrow> (h2(h1 t))=h t"
+    by (simp add: T_def eqr_associated_compat eqr_associated_is_eqr h1_def h2_def is_eqr_compat_concrete) 
+  show P5:"inj_on h2 ((X/S)/T)"
+    by (simp add: T_def eqr_inj2 h2_def)
+  show P6:"surj_into  h2 (X/R)"
+    by (metis P2 P4 surj_intoI)
 qed
 
 
