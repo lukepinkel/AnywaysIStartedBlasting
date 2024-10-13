@@ -211,6 +211,14 @@ definition meet_reducible::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Right
 abbreviation meet_irr where 
   "meet_irr R X x \<equiv> \<not>(meet_reducible R X x)"
 
+abbreviation larger_meet_irr where
+  "larger_meet_irr R X a \<equiv> {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
+
+abbreviation larger_prime_fil where
+  "larger_prime_fil R X F \<equiv> {Fm \<in> filters_on R X. sup_prime R X Fm \<and> (F, Fm)\<in>pwr X}"
+
+
+
 subsection Functions
 definition isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel  \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where 
   "isotone Rx X Ry f \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1, x2) \<in> Rx \<longrightarrow> (f x1, f x2) \<in> Ry)"
@@ -280,23 +288,6 @@ abbreviation ord where
 definition refl::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
   "refl R X \<equiv> (\<forall>x. x \<in> X \<longrightarrow> (x, x) \<in> R)"
 
-
-abbreviation eqrel where 
-  "eqrel R X \<equiv> sym R X \<and> trans R X \<and> refl R X"
-
-definition eqrel_from_partition::"'a set set \<Rightarrow> 'a set \<Rightarrow> ('a \<times> 'a) set" where
-  "eqrel_from_partition P X \<equiv> {(x, y) \<in> X \<times> X. \<exists>p \<in> P. x \<in> p \<and> y \<in> p}"
-
-definition eqrel_class::"('a \<times> 'a) set \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a set" where
-  "eqrel_class R X x \<equiv> {y \<in> X. (x, y) \<in> R}"
-
-definition quotient_set::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> 'a set set" where
-  "quotient_set X R \<equiv> {(eqrel_class R X x)|x. x \<in> X}"
-
-definition eqrel_from_map :: "'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<times> 'a) set" where 
-  "eqrel_from_map X f \<equiv> {(x1, x2) \<in> X \<times> X. f x1 = f x2}"
-
-
 abbreviation preord where
   "preord R X \<equiv> trans R X \<and> refl R X"
 
@@ -326,6 +317,13 @@ definition ord_embedding::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Ri
 
 definition ord_isomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
   "ord_isomorphism Rx X Ry Y f \<equiv> ord_embedding Rx X Ry f \<and> f`X=Y"
+
+definition meet_homomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
+  "meet_homomorphism Rx X Ry Y f \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> f (Inf Rx X {x1, x2}) = Inf Ry Y {f x1, f x2})"
+
+
+definition join_homomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
+  "join_homomorphism Rx X Ry Y f \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> f (Sup Rx X {x1, x2}) = Sup Ry Y {f x1, f x2})"
 
 definition fne_sup_cl::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow>  'a set" where
   "fne_sup_cl R X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x}"
@@ -583,426 +581,6 @@ lemma disjointI1:
   "(\<And>a b. \<lbrakk>a \<in> E; b \<in> E; a \<noteq> b\<rbrakk> \<Longrightarrow> a \<inter> b = {}) \<Longrightarrow>disjoint E "
   by (simp add: disjoint_def)
 
-lemma partitionD1:
-  "\<lbrakk>partition P X; p1 \<in> P; p2 \<in> P; p1 \<inter> p2 \<noteq> {}\<rbrakk> \<Longrightarrow> p1 = p2"
-  unfolding partition_def disjoint_def by(auto)
-
-
-lemma partitionD2:
-  "\<lbrakk>partition P X; x \<in> X\<rbrakk> \<Longrightarrow> (\<exists>p \<in> P. x \<in> p) "
-  unfolding partition_def by blast
-
-
-lemma partitionD3:
-  assumes A0:"partition P X" and A1:"x \<in> X"
-  shows "(\<exists>!p. p \<in> P \<and> x \<in> p)"
-proof(rule ex_ex1I)
-  show " \<exists>p. p \<in> P \<and> x \<in> p"
-    using A0 A1 partitionD2[of P X x] by blast
-  show "\<And>p1 p2. p1 \<in> P \<and> x \<in> p1 \<Longrightarrow> p2 \<in> P \<and> x \<in> p2 \<Longrightarrow> p1 = p2"
-    using A0 partitionD1[of P X ] by blast
-qed
-
-lemma partitionD4:
-  "partition P X \<Longrightarrow> p \<in> P \<Longrightarrow> p \<subseteq> X"
-  unfolding partition_def by blast
-  
-lemma partitionD5:
-  "partition P X \<Longrightarrow> p \<in> P \<Longrightarrow> p \<noteq> {}"
-  unfolding partition_def by blast
-  
-
-lemma eqrel_class_memI1:
-  "y \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow> y \<in> eqrel_class R X x"
-  by (simp add: eqrel_class_def)
-
-
-lemma eqrel_class_memI2:
-  "\<lbrakk>eqrel R X; y \<in> X; x \<in> X;(y, x) \<in> R\<rbrakk> \<Longrightarrow> y \<in> eqrel_class R X x"
-  by (simp add: eqrel_class_memI1 sym_on_def)
-
-lemma eqrel_classD1:
-  "\<lbrakk>eqrel R X; a \<in> X\<rbrakk> \<Longrightarrow> a \<in> eqrel_class R X a"
-  unfolding eqrel_class_def using reflD2[of R X a] by blast
-
-lemma eqrel_classD2:
-  "\<lbrakk>eqrel R X; a \<in> X\<rbrakk> \<Longrightarrow>  eqrel_class R X a \<noteq> {}"
-  using eqrel_classD1[of X R a] by blast
-
-lemma eqrel_class_props1a:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" and
-          A2:"b \<in> X" and
-          A3:"(a, b) \<in> R"
-  shows "eqrel_class R X a = eqrel_class R X b"
-proof-
-  have B0:"(b, a) \<in> R"
-    using A0 A1 A2 A3 sym_onD[of X R a b] by blast 
-  show "eqrel_class R X a = eqrel_class R X b"
-  proof
-    show "eqrel_class R X a \<subseteq> eqrel_class R X b"
-    proof
-      fix x assume A4:"x \<in> eqrel_class R X a"
-      then obtain B1:"(a, x) \<in> R" and B2:"x \<in> X"
-        by (simp add: eqrel_class_def)
-      then obtain B3:"(b, x) \<in> R"
-        using A0 A1 A2 B0 trans_onD[of X R b a x] by blast
-      show "x \<in> eqrel_class R X b"
-        using eqrel_class_memI1[of x X b R] B2 B3 by auto
-    qed
-    show "eqrel_class R X b \<subseteq> eqrel_class R X a"
-    proof
-      fix x assume A4:"x \<in> eqrel_class R X b"
-      then obtain B1:"(b, x) \<in> R" and B2:"x \<in> X"
-        by (simp add: eqrel_class_def)
-      then obtain B3:"(a, x) \<in> R"
-        using A0 A1 A2 A3 trans_onD[of X R a b x] by blast
-      show "x \<in> eqrel_class R X a"
-        using eqrel_class_memI1[of x X a R] B2 B3 by auto
-    qed 
-  qed
-qed
-
-
-lemma eqrel_class_props1b:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" and
-          A2:"b \<in> X" and
-          A3:"eqrel_class R X a = eqrel_class R X b"
-  shows "(a, b) \<in> R"
-proof-
-  from A3 obtain "a \<in> eqrel_class R X b" and "b \<in> eqrel_class R X a"
-    using A0 A1 A2 eqrel_classD1[of X R] by blast
-  then show "(a,b)\<in>R"
-    by (simp add: eqrel_class_def)
-qed
-
-lemma eqrel_class_props1:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" and
-          A2:"b \<in> X"
-  shows "(a,b) \<in> R \<longleftrightarrow> eqrel_class R X a = eqrel_class R X b"
-proof
-  show "(a, b) \<in> R \<Longrightarrow> eqrel_class R X a = eqrel_class R X b"
-    by (simp add: A0 A1 A2 eqrel_class_props1a)
-  show "eqrel_class R X a = eqrel_class R X b \<Longrightarrow> (a, b) \<in> R"
-    using A0 A1 A2 eqrel_class_props1b[of X R a b]
-    by blast
-qed
-
-lemma eqrel_class_props2:
-  "\<lbrakk>eqrel R X; a \<in> X; b \<in> X; b \<in> eqrel_class R X a\<rbrakk> \<Longrightarrow> eqrel_class R X a = eqrel_class R X b"
-  by (simp add: eqrel_class_def eqrel_class_props1)
-
-lemma eqrel_class_props3:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" and
-          A2:"b \<in> X" and
-          A3:"eqrel_class R X a \<inter> eqrel_class R X b \<noteq> {}"
-  shows "eqrel_class R X a = eqrel_class R X b" 
-proof-
-  from A3 obtain x where B0:"x \<in> eqrel_class R X a" and B1:"x \<in> eqrel_class R X b"
-    by auto
-  then obtain B2:"x \<in> X"
-    unfolding eqrel_class_def by blast
-  then obtain B3:"(a, x) \<in> R" and B4:"(b, x) \<in> R"
-    using B0 B1 unfolding eqrel_class_def by blast
-  have B5:"(x, b) \<in> R"
-    using A0 A2 B2 B4 sym_onD[of X R b x] by blast
-  from A0 B3 B5 B2 A1 A2 obtain "(a, b)\<in>R"
-    using trans_onD[of X R a x b] by blast
-  then show ?thesis
-    using A0 A1 A2 eqrel_class_props1a[of X R a b] by blast
-qed
-
-lemma quotient_setD1:
-  assumes A0:"eqrel R X" and A1:"t \<in> quotient_set X R" and A2:"a \<in> t"
-  shows "t = eqrel_class R X a"
-proof-
-  from A1 obtain x where B0:"x \<in> X" and B1:"t = eqrel_class R X x"
-    unfolding quotient_set_def by blast
-  from B1 A2 obtain B2:"a \<in> X"
-    unfolding eqrel_class_def by blast
-  then obtain "eqrel_class R X a \<inter> eqrel_class R X x \<noteq> {}"
-    using A0 A2 B1 eqrel_classD1 by fastforce
-  then obtain "eqrel_class R X a = eqrel_class R X x"
-    by (simp add: A0 B0 B2 eqrel_class_props3)
-  then show ?thesis
-    by (simp add: B1)
-qed
-
-lemma eqrel_class_props4:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" 
-  shows "\<exists>!t. t \<in> quotient_set X R \<and> a \<in> t"
-proof(rule ex_ex1I)
-  show "\<exists>t. t \<in> quotient_set X R \<and> a \<in> t"
-    using A0 A1 eqrel_classD1 quotient_set_def by fastforce
-  show "\<And>t s. t \<in> quotient_set X R \<and> a \<in> t \<Longrightarrow> s\<in> quotient_set X R \<and> a \<in> s \<Longrightarrow> t =s"
-  proof-
-    fix t s assume A2:"t \<in> quotient_set X R \<and> a \<in> t" and A3:"s \<in> quotient_set X R \<and> a \<in> s"
-    then obtain "t = eqrel_class R X a" and "s = eqrel_class R X a"
-      by (simp add: A0 quotient_setD1) 
-    then show "t = s"
-      by auto
-  qed
-qed
-
-
-lemma eqrel_class_props5:
-  assumes A0:"eqrel R X" and
-          A1:"a \<in> X" and
-          A2:"b \<in> X" and
-          A3:"eqrel_class R X a \<noteq> eqrel_class R X b"
-  shows "(a, b) \<notin> R"
-  using A0 A1 A2 A3 eqrel_class_props1a[of X R a b]  by fastforce
-  
-
-lemma quotient_partition:
-  assumes A0:"eqrel R X" and sub:"R \<subseteq> X \<times> X"
-  shows quotient_partition1:"partition (quotient_set X R) X" and
-        quotient_partition2:"(eqrel_from_partition (quotient_set X R) X)  = R"
-proof-
-  let ?XR="(quotient_set X R) "
-  let ?RP="partition (quotient_set X R) X"
-  let ?RXR="(eqrel_from_partition (?XR) X)"
-  show P1:"partition ?XR X" 
-  proof-
-    have P0:"\<Union>?XR = X"
-    proof
-      show "\<Union>?XR \<subseteq> X"
-      proof
-        fix x assume A1:"x \<in> \<Union>?XR"
-        then obtain t where B0:"t \<in> ?XR"  and B1:"x \<in> t"
-          by blast
-        then obtain a where B2:"a \<in> X" and B3:"t = eqrel_class R X a"
-          unfolding quotient_set_def by blast
-        then obtain "x \<in> eqrel_class R X a"
-          using B1 by auto
-        then show "x \<in> X"
-          unfolding eqrel_class_def by auto
-      qed
-      show "X \<subseteq> \<Union>?XR"
-      proof
-        fix x assume A1:"x \<in> X"
-        obtain t where "t\<in>?XR" and "x \<in> t"
-          using A0 A1 eqrel_class_props4[of X R x] by auto
-        then show "x \<in> \<Union>?XR"
-          by blast
-      qed
-    qed
-    have P1:"\<And>p. p\<in>quotient_set X R \<Longrightarrow> p \<noteq> {}"
-      unfolding quotient_set_def using A0 eqrel_classD1 by fastforce
-    have P2:"disjoint (quotient_set X R)"
-    proof(rule disjointI1)
-      fix t s assume A1:"t \<in> ?XR" and A2:"s \<in> ?XR" and A3:"t \<noteq> s"
-      from A1 obtain a where B2:"a \<in> X" and B3:"t = eqrel_class R X a"
-        unfolding quotient_set_def by blast
-      from A2 obtain b where B4:"b \<in> X" and B5:"s = eqrel_class R X b"
-        unfolding quotient_set_def by blast 
-      then show "t \<inter> s = {}"
-        using A0 A3 B2 B3 eqrel_class_props3[of X R a b] by fastforce
-    qed
-    show ?thesis
-      unfolding partition_def using P0 P1 P2 by auto
-  qed
-  show P2:"?RXR  = R"
-  proof
-    show "?RXR \<subseteq> R "
-    proof
-      fix xy assume A1:"xy \<in> ?RXR"
-      then obtain x y where xy_eq:"xy=(x,y)" and B0:"(x, y) \<in> X \<times> X" and B1:"\<exists>p\<in>quotient_set X R. x \<in> p \<and> y \<in> p"
-        unfolding eqrel_from_partition_def by blast
-      then obtain B2:"x \<in> X" and B3:"y \<in> X"
-        by simp
-      from B1 obtain p where B4:"p \<in> quotient_set X R" and B5:"x \<in> p" and B6:"y \<in> p"
-        by auto
-      then obtain z where B7:"z \<in> X" and B8:"p = eqrel_class R X z"
-        unfolding quotient_set_def by blast
-      then obtain B9:"p={w \<in> X. (z, w) \<in> R}"
-        unfolding  eqrel_class_def by blast 
-      then obtain B10:"(z, x) \<in> R" and B11:"(z, y) \<in> R"
-        using B5 B6 by auto
-      from B10 obtain B12:"(x,z)\<in>R"
-        using A0 B2 B7 sym_onD[of X R z x] by blast
-      from B2 B3 B7 B11 B12 A0 obtain "(x,y) \<in> R"
-        by (simp add: eqrel_class_props1)
-      then show "xy \<in> R"
-        by (simp add: xy_eq)
-    qed
-    show "R \<subseteq> ?RXR"
-    proof
-      fix xy assume A1:"xy \<in> R"
-      then obtain x y where B0:"xy=(x,y)" and B1:"(x, y)\<in> R"
-        using sub by blast 
-      then obtain B2:"x \<in> X" and B3:"y \<in> X" and B4:"(x,y)\<in>X \<times> X"
-        using sub by auto
-      let ?p="eqrel_class R X x"
-      obtain B5:"y \<in> ?p" and B6:"x \<in> ?p"
-        by (simp add: A0 B1 B2 B3 eqrel_classD1 eqrel_class_memI1)
-      obtain B7:"?p \<in> quotient_set X R"
-        unfolding quotient_set_def using B2 by blast
-      then  show "xy \<in> ?RXR"
-        unfolding eqrel_from_partition_def using B0 B4 B5 B6 B7 by blast
-    qed
-  qed
-qed
-  
-
-  
-    
-  
-
-
-lemma partition_induced_eqrel:
-  assumes A0:"partition P X"
-  shows partition_induced_is_eqrel:"eqrel (eqrel_from_partition P X) X" and
-        partition_induced_quotient:"quotient_set X (eqrel_from_partition P X) = P"
-proof-
-  let ?R="(eqrel_from_partition P X)"
-  let ?XR="quotient_set X ?R"
-  show P1:"eqrel ?R X"
-  proof
-    show "sym ?R X" 
-    proof(auto simp add:sym_on_def)
-      fix x y assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"(x, y) \<in> ?R"
-      then obtain p where "p\<in>P" and "x \<in> p" and "y \<in> p"
-        unfolding eqrel_from_partition_def by blast
-      then show "(y, x) \<in>?R"
-        unfolding eqrel_from_partition_def using A1 A2 by blast
-    qed
-    show "preord ?R  X"
-    proof
-      show "trans?R  X"
-      proof(auto simp add:trans_on_def)
-        fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x,y) \<in> ?R" and A5:"(y,z)\<in>?R"
-        from A4 obtain pxy where B0:"pxy\<in>P" and B1:"x \<in> pxy" and B2:"y \<in> pxy"
-          unfolding eqrel_from_partition_def by blast
-        from A5 obtain pyz where B3:"pyz\<in>P" and B4:"y \<in> pyz" and B5:"z \<in> pyz"
-          unfolding eqrel_from_partition_def by blast
-        from B2 B4 obtain B6:"pxy \<inter> pyz \<noteq> {}"
-          by blast
-        then obtain B7:"pxy = pyz"
-          using partitionD1[of P X pxy pyz] A0 B0 B3 by blast
-        then obtain "(x, z) \<in> X \<times> X" and "\<exists>p\<in>P. x \<in> p \<and> z \<in> p"
-          using A1 A3 B0 B1 B5 by blast
-        then show "(x,z)\<in>?R"
-          unfolding eqrel_from_partition_def by blast
-      qed
-      show "refl (eqrel_from_partition P X) X"
-      proof(rule reflI1)
-        fix x assume A1:"x \<in> X"
-        then obtain p where "p \<in> P" and "x \<in> p"
-          using A0 partitionD2[of P X x] by blast
-        then show "(x,x)\<in> ?R"
-          unfolding eqrel_from_partition_def using A1 by blast
-      qed
-    qed
-  qed
-  show P2:"?XR= P"
-  proof
-    show "?XR\<subseteq> P"
-    proof
-      fix t assume A1:"t \<in> ?XR"
-      then obtain a where B2:"a \<in> X" and B3:"t = eqrel_class ?R X a"
-        unfolding quotient_set_def by blast
-      have B4:"\<exists>!p. p \<in> P \<and> a \<in> p"
-        using A0 B2 partitionD3[of P X a] by auto
-      then obtain pa where B5:"pa \<in> P" and B6:"a \<in> pa"
-        by blast
-      have B7: "t = {x \<in> X. (a, x) \<in> ?R}"
-        by (simp add: B3 eqrel_class_def)
-      have B8:" ... = {x \<in> X. (a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)}"
-        unfolding eqrel_from_partition_def  by auto 
-      have "pa=t"
-      proof
-        show "pa \<subseteq> t"
-        proof
-          fix y assume A2:"y \<in> pa"
-          then obtain B9:"y \<in> X"
-            using B5 partition_def assms by fastforce 
-          then obtain "(a, y) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> y \<in> p)"
-            using A2 B2 B5 B6 by blast
-          then show "y \<in> t"
-            using B7 B8 by blast
-        qed
-        show "t \<subseteq> pa"
-        proof
-          fix y assume A2:"y \<in> t"
-          then obtain B10:"y \<in> X"
-            using B7 by auto
-          then obtain "(a, y) \<in> X \<times> X" and "(\<exists>p \<in> P. a \<in> p \<and> y \<in> p)"
-            using A2 B7 B8 by blast
-          then show "y \<in> pa"
-            using B4 B5 B6 by blast
-        qed
-      qed
-      then show "t \<in> P"
-        using B5 by auto
-    qed
-    show "P \<subseteq>?XR"
-    proof
-      fix t assume A1:"t \<in> P"
-      then obtain B0:"t \<noteq> {}" and B1:"t \<subseteq> X"
-        using A0  by (simp add: partitionD4 partitionD5)
-      then obtain a where B2:"a \<in> X" and B3:"a \<in> t"
-        by blast
-      have B4:"t = eqrel_class ?R X a"
-      proof
-        show "t \<subseteq> eqrel_class ?R X a"
-        proof
-          fix x assume A2:"x \<in> t"
-          then obtain C0:"x \<in> X"
-            using B1 by blast 
-          then obtain "(a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)"
-            using A1 A2 B2 B3 by blast
-          then show "x \<in>  eqrel_class ?R X a"
-            unfolding eqrel_class_def eqrel_from_partition_def by blast
-        qed
-        show " eqrel_class ?R X a \<subseteq> t"
-        proof
-          fix x assume A2:"x \<in> eqrel_class ?R X a"
-          then obtain C0:"x \<in> X"
-            by (simp add: eqrel_class_def)
-          have "(a, x) \<in> X \<times> X \<and> (\<exists>p \<in> P. a \<in> p \<and> x \<in> p)"
-            using A2 unfolding eqrel_class_def eqrel_from_partition_def  by fastforce
-          then obtain p where C1:"p \<in> P" and C2:"a \<in> p" and C3:"x \<in> p"
-            by blast
-          have C4:"p \<inter> t \<noteq> {}"
-            using B3 C2 by blast
-          have "p = t"
-            using A1 C1 C4 assms partitionD1 by blast
-          then show "x \<in> t"
-            using C3 by auto
-        qed
-      qed
-      show "t \<in> ?XR"
-        using B2 B4 quotient_set_def by auto
-    qed
-  qed
-qed
-      
-
-lemma eqrel_from_map1:
-  "eqrel (eqrel_from_map X f) X"
-proof
-  show "sym (eqrel_from_map X f) X"
-  unfolding eqrel_from_map_def sym_on_def by force
-  show "preord (eqrel_from_map X f) X"
-  proof
-    show "trans (eqrel_from_map X f) X"
-      unfolding eqrel_from_map_def trans_on_def by auto
-    show "refl (eqrel_from_map X f) X"
-      unfolding eqrel_from_map_def refl_def by simp
-  qed
-qed
-  
-      
- 
-
-
-    
-      
 
 section SubsetRelation
 
@@ -1955,6 +1533,16 @@ proof(rule maximalI1)
 qed
 
 
+lemma maximalI3:
+  assumes A0:"x \<in> A" and A1:"\<And>a. \<lbrakk>(x, a) \<in> R; x \<noteq> a\<rbrakk> \<Longrightarrow> a \<notin> A"
+  shows "is_maximal R A x"
+  using assms unfolding is_maximal_def by auto
+
+lemma maximalI4:
+  assumes A0:"m \<in> A" and A2:"A \<subseteq> X" and A2:"\<And>x. \<lbrakk>x \<in> X; (m, x) \<in> R; m \<noteq> x\<rbrakk> \<Longrightarrow> x \<notin> A" 
+  shows "is_maximal R A m"
+  using assms unfolding is_maximal_def  by blast
+
 lemma not_maximalD1:
   assumes "x \<in> A" and "\<not> (is_maximal R A x)"
   obtains a where "a \<in> A" and "(x, a) \<in> R" and "x \<noteq> a" 
@@ -2140,6 +1728,60 @@ proof(rule is_greatestI3)
   qed 
 qed
 
+
+lemma no_maximal:
+  assumes A0:"\<not>(\<exists>m \<in> A. is_maximal R A m)" and A1:"a \<in> A" and A2:"pord R X" and A3:"A \<subseteq> X"
+  shows "\<not>(\<exists>m \<in> (A-{a}). is_maximal R (A-{a}) m)"
+proof-
+  have A4:"a \<in> X"
+    using A1 A3 by blast
+  have B0:"\<not>(\<exists>m \<in> A. is_maximal R A m) \<longleftrightarrow> (\<forall>m \<in> A. \<exists>a \<in>A. (m, a)\<in>R \<and> m \<noteq> a)"
+    unfolding is_maximal_def by blast
+  then obtain B1:"\<And>m. m \<in> A \<Longrightarrow>  \<exists>x \<in>A. (m, x)\<in>R \<and> m \<noteq> x"
+    using A0 by blast
+  show ?thesis
+  proof(rule ccontr)
+    assume con:"\<not> \<not> (\<exists>m\<in>A - {a}. is_maximal R (A - {a}) m)"
+    then obtain "\<exists>m \<in> (A-{a}). is_maximal R (A - {a}) m"
+      by blast
+    then obtain m where B2:"m \<in> A-{a}" and B3:"is_maximal R (A-{a}) m"
+      by blast
+    obtain B4:"m \<in> A" and B4b:"m \<in> X"
+      using A3 B2 by blast
+    from B1 B4 obtain B5:"\<exists>x \<in> A. (m, x)\<in>R \<and> m \<noteq> x"
+      by blast
+     have B6:"\<not>(\<exists>x \<in> A-{a}. (m, x)\<in>R \<and> m \<noteq> x)"
+       by (simp add: B3 maximalD4)
+     then obtain B7:"(m, a)\<in>R \<and> m \<noteq> a"
+       using B5 by blast
+     have B8:"\<And>x. \<lbrakk>(m, x) \<in> R; m \<noteq> x\<rbrakk> \<Longrightarrow> x \<notin> A-{a}"
+       using B6 by blast
+     have B9:"is_maximal R A a"
+     using A1 A3 proof(rule maximalI4)
+      fix x assume C0:"x \<in> X" and C1:"(a, x)\<in>R" and C2:"a \<noteq> x"
+      then obtain C3:"(m, x)\<in>R"
+        using A2 A4 B4b B7 trans_onD[of X R m a x] by blast
+      have C4:"x \<noteq> m"
+      proof(rule ccontr)
+        assume "\<not>(x \<noteq>m)" then obtain C5:"x=m"
+          by simp
+        then obtain C6:"(a, m)\<in>R" and C7:"(m, a)\<in>R"
+          using B7 C1 by auto
+        then obtain C8:"a=m"
+          using A2 A4 B4b antisym_onD[of X R a m] by blast
+        then show False
+          using B7 by auto
+      qed
+      then obtain " x \<notin> A-{a}"
+        using B6 C3 by blast
+      then show "x \<notin> A"
+        using C2 by blast
+      qed
+    then show False
+      using A0 A1 by blast
+  qed
+qed
+
 section SupSemilattices
 
 lemma sup_semilatticeI1:
@@ -2227,6 +1869,43 @@ proof-
   show P6:"Sup R X {a,b}=Sup R X {b,a}"
     by (simp add: insert_commute)
 qed
+
+
+lemma inf_semilattice_ex_inf:
+  assumes ant:"antisym R X" and 
+          ssl:"is_inf_semilattice R X" and 
+          aix:"a\<in>X" and 
+          bix:"b\<in>X" 
+  shows isl_ex_sup0:"\<And>x. x \<in>{a,b} \<Longrightarrow> (Inf  R X {a,b}, x)\<in>R" and
+        isl_ex_sup0a:"(Inf  R X {a,b}, a)\<in>R" and
+        isl_ex_sup0b:"(Inf R X {a,b}, b)\<in>R" and
+        isl_ex_sup1:"Inf R X {a,b} \<in> lbd R X {a,b}" and
+        isl_ex_sup2:"\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> {a,b} \<Longrightarrow> (z,x)\<in>R) \<Longrightarrow> (z, Inf R X {a,b})\<in>R" and
+        isl_ex_sup3:"\<And>z. z \<in> lbd R X {a,b} \<Longrightarrow> (z, Inf R X {a,b})\<in>R" and
+        isl_ex_sup4:"is_greatest R (lbd R X {a,b}) (Inf R X {a,b})" and
+        isl_ex_sup5:"Inf R X {a,b} \<in> X" and
+        isl_ex_sup6:"Inf R X {a,b} = Inf R X {b,a}"
+proof-
+  show "\<And>x. x \<in>{a,b} \<Longrightarrow> (Inf  R X {a,b}, x)\<in>R"
+    by (simp add: aix ant bix ex_inf0 ssl sup_semilattice_ex1)
+  show "(Inf  R X {a,b}, a)\<in>R"
+    using \<open>\<And>x. x \<in> {a, b} \<Longrightarrow> (Inf R X {a, b}, x) \<in> R\<close> by auto 
+  show"(Inf R X {a,b}, b)\<in>R"
+    by (simp add: \<open>\<And>x. x \<in> {a, b} \<Longrightarrow> (Inf R X {a, b}, x) \<in> R\<close>) 
+  show"Inf R X {a,b} \<in> lbd R X {a,b}"
+    by (simp add: aix ant bix ssl ssl_ex_sup1) 
+  show "\<And>z. z \<in> X \<Longrightarrow> (\<And>x. x \<in> {a,b} \<Longrightarrow> (z,x)\<in>R) \<Longrightarrow> (z, Inf R X {a,b})\<in>R"
+    by (meson aix ant antisym_on_converse bix converseD converseI ssl ssl_ex_sup2) 
+  show "\<And>z. z \<in> lbd R X {a,b} \<Longrightarrow> (z, Inf R X {a,b})\<in>R"
+    by (simp add: aix ant bix ex_inf3 ssl sup_semilattice_ex1) 
+  show "is_greatest R (lbd R X {a,b}) (Inf R X {a,b})"
+    by (simp add: \<open>Inf R X {a, b} \<in> lbd R X {a, b}\<close> \<open>\<And>z. z \<in> lbd R X {a, b} \<Longrightarrow> (z, Inf R X {a, b}) \<in> R\<close> is_greatestI3) 
+  show "Inf R X {a,b} \<in> X"
+    by (meson \<open>Inf R X {a, b} \<in> lbd R X {a, b}\<close> ubdD1) 
+  show "Inf R X {a,b} = Inf R X {b,a}"
+    by (simp add: insert_commute)
+qed
+
 
 lemma bsup_eqs:
   assumes ord:"ord R X" and
@@ -2344,6 +2023,18 @@ proof-
     then show "Sup R X {a,b} = a"
       using P0[of b a] por ssl ssl_ex_sup6[of X R ] by simp
   qed
+qed
+
+lemma binf_or:
+  assumes por:"pord R X" and
+          ssl:"is_inf_semilattice R X"
+  shows binf_or1:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a" and
+        binf_or2:"\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b" 
+proof-
+  show "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (a,b)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = a"
+    by (simp add: bsup_or2 por refl_dualI ssl)
+  show "\<And>a b. \<lbrakk>a\<in>X;b\<in>X; (b,a)\<in>R\<rbrakk>\<Longrightarrow> Inf R X {a,b} = b"
+    by (simp add: bsup_or1 por refl_iff ssl) 
 qed
 
 lemma sup_iso:
@@ -2503,6 +2194,7 @@ lemma semilattice_assoc_inf:
           ax:"a \<in> X" and bx:"b \<in> X" and cx:"c \<in> X" and dx:"d \<in> X"
   shows "Inf R X {Inf R X {a,b}, Inf R X {c,d}} = Inf R X {a,b,c,d}"
   by (simp add: ax bx cx dx por refl_dualI sem semilattice_assoc_sup)
+
 
 section Lattices
 
@@ -3385,6 +3077,8 @@ lemma pow_is_clattice:
   "is_clattice (pwr X) (Pow X)"
   by (meson Pow_not_empty is_clattice_def pwr_ar_sup)
 
+
+
 section Isotonicity
 
 lemma isotoneI1:
@@ -3464,6 +3158,68 @@ lemma is_iso_sup:
 lemma is_iso_inf:
   "isotone R X R f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> is_inf R X A x \<Longrightarrow> is_inf R (f`X) (f`A) y  \<Longrightarrow> (f x,y)\<in>R"
   using  dual_isotone[of R X R f] is_iso_sup[of "dual R" X f A x y] by blast
+
+lemma join_homomorphismI:
+  "(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow>f (Sup Rx X {x1, x2}) = Sup Ry Y {f x1, f x2}) \<Longrightarrow> join_homomorphism Rx X Ry Y f"
+  by (simp add: join_homomorphism_def)
+
+lemma join_homomorphismIE1:
+  "\<lbrakk>join_homomorphism Rx X Ry Y f; x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> f (Sup Rx X {x1, x2}) = Sup Ry Y {f x1, f x2} "
+  by (simp add: join_homomorphism_def)
+
+lemma ord_embeddingI:
+  "(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> ((x1,x2)\<in>Rx  \<longleftrightarrow> (f x1,f x2)\<in>Ry)) \<Longrightarrow> ord_embedding Rx X Ry f"
+  by (simp add: ord_embedding_def)
+
+lemma join_homomorphism_ord_iso:
+  assumes A0:"is_sup_semilattice Rx X" and A1:"is_sup_semilattice Ry Y" and A3:"pord Rx X" and A4:"pord Ry Y" and 
+   jh:" join_homomorphism Rx X Ry Y f" and im:"f`X \<subseteq> Y"
+  shows "isotone Rx X Ry f"
+proof(rule isotoneI1)
+  fix x1 x2 assume x1m:"x1 \<in> X" and x2m:"x2 \<in> X" and x1x2:"(x1, x2)\<in> Rx"
+  then obtain seq:"Sup Rx X {x1, x2} = x2" 
+    by (simp add: A0 A3 bsup_or1)
+  obtain y1:"f x1 \<in> Y" and y2:"f x2 \<in> Y"
+    using im x1m x2m by blast
+  have B0:"f (Sup Rx X {x1, x2}) = f x2"
+    by (simp add: seq)
+  have B1:"f (Sup Rx X {x1, x2}) = Sup Ry Y {f x1, f x2}"
+    by (simp add: jh join_homomorphismIE1 x1m x2m)
+  have B2:"(f x1, Sup Ry Y {f x1, f x2}) \<in> Ry"
+    by (simp add: A1 A4 ssl_ex_sup0a y1 y2)
+  show "(f x1, f x2) \<in> Ry"
+    using B1 B2 seq by auto
+qed
+
+lemma meet_homomorphismI:
+  "(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow>f (Inf Rx X {x1, x2}) = Inf Ry Y {f x1, f x2}) \<Longrightarrow> meet_homomorphism Rx X Ry Y f"
+  by (simp add: meet_homomorphism_def)
+
+
+lemma meet_homomorphismIE1:
+  "\<lbrakk>meet_homomorphism Rx X Ry Y f; x1 \<in> X; x2 \<in> X\<rbrakk> \<Longrightarrow> f (Inf Rx X {x1, x2}) = Inf Ry Y {f x1, f x2} "
+  by (simp add: meet_homomorphism_def)
+
+
+lemma meet_homomorphism_ord_iso:
+  assumes A0:"is_inf_semilattice Rx X" and A1:"is_inf_semilattice Ry Y" and A3:"pord Rx X" and A4:"pord Ry Y" and 
+   jh:"meet_homomorphism Rx X Ry Y f" and im:"f`X \<subseteq> Y"
+  shows "isotone Rx X Ry f"
+proof(rule isotoneI1)
+  fix x1 x2 assume x1m:"x1 \<in> X" and x2m:"x2 \<in> X" and x1x2:"(x1, x2)\<in> Rx"
+  then obtain seq:"Inf Rx X {x1, x2} = x1" 
+    by (simp add: A0 A3 binf_or1)
+  obtain y1:"f x1 \<in> Y" and y2:"f x2 \<in> Y"
+    using im x1m x2m by blast
+  have B0:"f (Inf Rx X {x1, x2}) = f x1"
+    by (simp add: seq)
+  have B1:"f (Inf Rx X {x1, x2}) = Inf Ry Y {f x1, f x2}"
+    by (simp add: jh meet_homomorphismIE1 x1m x2m)
+  have B2:"(Inf Ry Y {f x1, f x2}, f x2) \<in> Ry"
+    by (simp add: A1 A4 isl_ex_sup0b y1 y2)
+  show "(f x1, f x2) \<in> Ry"
+    using B1 B2 seq by auto
+qed
 
 section Idempotency
 
@@ -4180,6 +3936,11 @@ lemma is_pfilterD2:
   by(simp add:is_pfilter_def)
 
 
+lemma is_pfilterD3:
+  "\<lbrakk>is_least R X bot; is_pfilter R X A\<rbrakk> \<Longrightarrow>  bot \<notin> A "
+  by (metis is_filterD1 is_leastD1 is_ord_clE1 is_pfilter_def subsetI subset_antisym)
+
+
 lemma pfilters_onD2:
   "F \<in> pfilters_on R X \<Longrightarrow> X \<noteq> F"
   by (simp add: is_pfilterD2 pfilters_on_iff)
@@ -4835,6 +4596,103 @@ lemma distr_lattice_filters:
   "\<lbrakk>pord R X ;distributive_lattice R X\<rbrakk> \<Longrightarrow> is_lattice (pwr X) (filters_on R X)"
   by (simp add: distributive_lattice_def latt_iff lattice_filters_isl2 lattice_filters_isl6)
 
+
+lemma contained_in_ultrafilter:
+  assumes pord:"pord R X" and bot:"is_least R X bot" and fil:"is_pfilter R X F" 
+  shows "\<exists>U \<in> ultrafilters_on R X. F \<subseteq> U"
+proof-
+  let ?G="(finer_pfilters R X F)"
+  have "\<And>\<C>. subset.chain ?G \<C> \<Longrightarrow> \<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+  proof-
+    fix \<C> assume A1:"subset.chain ?G \<C>"
+    show "\<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+    proof(cases "\<C> = {}")
+      case True
+      then show ?thesis
+      proof -
+        show ?thesis
+          using True assms finer_pfilters_def by fastforce
+      qed 
+    next
+      case False
+      have B0:"\<C> \<subseteq> (finer_pfilters R X F)"
+          using A1 unfolding subset.chain_def by blast
+      have B1:"\<And>A B. \<lbrakk>A \<in> \<C>; B \<in> \<C>\<rbrakk> \<Longrightarrow> (A \<subseteq> B) \<or> (B \<subseteq> A)"
+        using A1 unfolding subset.chain_def  by blast
+      have B2:"\<And>C. C \<in> \<C> \<Longrightarrow> is_pfilter R X C \<and> F \<subseteq> C"
+          using B0 unfolding finer_pfilters_def by blast
+      have B3:"\<And>C. C \<in> \<C> \<Longrightarrow> bot \<notin> C"
+        by (meson B2 bot is_pfilterD3)
+      have B4:"\<And>C. C \<in> \<C> \<Longrightarrow> C \<noteq> {} \<and> C \<subseteq>X"
+        using B2 is_filterD1 is_pfilter_def by blast
+      let ?D="\<Union>\<C>"
+      have "is_pfilter R X ?D"
+      proof(rule is_pfilterI1)
+        show "X\<noteq> ?D"
+          by (metis B3 UnionE bot is_leastD1)
+        show "is_filter R X (\<Union> \<C>)"
+        proof(rule is_filterI1)
+          show "?D \<noteq> {}"
+            by (simp add: B4 False)
+          show "?D \<subseteq> X"
+            by (simp add: B4 Union_least)
+          show "is_dir (\<Union> \<C>) (dual R)"
+          proof(rule is_dirI1)
+            fix a b assume "a \<in> ?D" and "b \<in> ?D"
+            then obtain Ca Cb where "Ca \<in> \<C>" and "a \<in> Ca" and "Cb \<in> \<C>" and "b \<in> Cb"
+              by blast
+            then obtain "(a \<in> Cb) \<or> (b \<in> Ca)"
+              using B1 by blast
+            obtain "is_dir Ca (dual R)" and "is_dir Cb (dual R)"
+              by (meson B2 \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> is_filterD1 is_pfilterD1)
+            then obtain c where "(a,c)\<in>(dual R)" and "(b,c)\<in>(dual R)" and "c \<in> Ca \<or> c \<in> Cb"
+              by (metis \<open>a \<in> Ca\<close> \<open>a \<in> Cb \<or> b \<in> Ca\<close> \<open>b \<in> Cb\<close> is_dirE1)
+            then show "\<exists>c \<in> ?D. (a,c)\<in>(dual (R)) \<and> (b,c)\<in>(dual (R))"
+              using \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> by blast
+          qed
+          show "is_ord_cl X ?D R"
+          proof(rule is_ord_clI1)
+            fix a b assume "a \<in> ?D" and "b \<in> X" and "(a, b) \<in> R"
+            then obtain Ca where "Ca \<in> \<C>" and "a \<in> Ca"
+              by blast
+            then obtain "b \<in> Ca"
+              by (metis B2 \<open>(a, b) \<in> R\<close> \<open>b \<in> X\<close> is_filterD1 is_ord_clE1 is_pfilterD1)
+            then show "b \<in> ?D"
+              using \<open>Ca \<in> \<C>\<close> by auto
+          qed
+        qed
+      qed
+      then obtain "?D \<in> ?G"
+        by (simp add: B2 False finer_pfilters_def less_eq_Sup)
+      then show ?thesis
+        by blast
+    qed
+  qed
+  then have "\<exists>U\<in>?G. \<forall>G\<in>?G. U \<subseteq> G \<longrightarrow> G = U"
+    using subset_Zorn[of ?G] by blast
+  then obtain U where B5:"U\<in>?G" and B6:"\<And>G. \<lbrakk>G \<in> ?G;  U \<subseteq> G\<rbrakk> \<Longrightarrow> G = U"
+    by auto
+  then have "F \<subseteq> U"
+    unfolding finer_pfilters_def by blast
+  have B7:"U \<in> pfilters_on R X"
+    using B5 unfolding finer_pfilters_def  by (simp add: pfilters_on_def) 
+  have B8:"\<And>a. \<lbrakk>a \<in> pfilters_on R X; (U, a) \<in> pwr X\<rbrakk> \<Longrightarrow> a = U"
+  proof-
+    fix a assume B9:"a \<in> pfilters_on R X" and "(U, a) \<in> pwr X"
+    then obtain "U \<subseteq> a"
+      by (simp add: powrel8)
+    then obtain "a \<in> ?G"
+      unfolding finer_pfilters_def using B9 \<open>F \<subseteq> U\<close> pfilters_on_def by fastforce
+    then show "a = U"
+      by (simp add: B6 \<open>U \<subseteq> a\<close>)
+  qed
+  then have "is_ultrafilter R X U"
+    by (simp add: B7 is_ultrafilter_def maximalI1)
+  then show ?thesis
+    by (metis CollectI \<open>F \<subseteq> U\<close> ultrafilters_on_def)
+qed
+  
+  
 
 section FiltersAndDirectedUnions
 
@@ -6439,6 +6297,19 @@ lemma distr_lattice_maximal_prime2:
   "\<lbrakk>distributive_lattice R X; pord R X; is_ultrafilter R X U\<rbrakk> \<Longrightarrow> sup_prime R X U"
   using distr_lattice_maximal_prime is_ultrafilter_def by blast
 
+
+lemma distr_lattice_contained_in_primefilter:
+  assumes dis:"distributive_lattice R X" and por:"pord R X" and fil:"is_pfilter R X F" and bot:"is_least R X bot" 
+  shows "\<exists>U. is_pfilter R X U \<and> sup_prime R X U \<and> F \<subseteq> U"
+proof-
+  obtain U where "U \<in> ultrafilters_on R X" and "F \<subseteq> U"
+    by (meson bot contained_in_ultrafilter fil por)
+  then obtain "sup_prime R X U"
+    by (simp add: dis distr_lattice_maximal_prime2 por ultrafilters_on_def)
+  then show ?thesis
+    by (metis \<open>F \<subseteq> U\<close> \<open>U \<in> ultrafilters_on R X\<close> is_ultrafilter_def maximalD1 mem_Collect_eq pfilters_on_iff ultrafilters_on_def)
+qed
+
 section FiltersOnLattice
 
 (*
@@ -7372,7 +7243,8 @@ lemma mirred_rep2:
           por:"pord R X" and
           a0:"a \<in> X"
   shows mirr4:"\<And>b. \<lbrakk>b \<in>X;(b,a)\<notin>R\<rbrakk> \<Longrightarrow>(\<exists>m. m\<in>X \<and> meet_irr R X m \<and>(a,m)\<in>R \<and>(b,m)\<notin>R)" and
-        mirr5:"a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}"
+        mirr5:"a = Inf R X {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R}" and
+        mirr6:"is_inf R X  {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R} a"
 proof-
   show P0:"\<And>b. \<lbrakk>b \<in>X;(b,a)\<notin>R\<rbrakk> \<Longrightarrow>(\<exists>m. m\<in>X \<and> meet_irr R X m \<and>(a,m)\<in>R \<and>(b,m)\<notin>R)"
   proof-
@@ -7431,6 +7303,8 @@ proof-
      then show ?thesis
        using idef inf_equality por by force  
    qed
+  show "is_inf R X  {m \<in> X. meet_irr R X m \<and> (a, m)\<in>R} a"
+    by (metis (no_types, lifting) CollectD P1 clatD22 clt converse_converse ex_inf4 is_supI1 por subsetI)
 qed
 
 lemma meet_irr_imp_fmeet_irr:
@@ -7448,6 +7322,53 @@ proof(rule fin_inf_irrI1)
     by blast
 qed
 
+
+lemma pfilter_meet_of_primes0:
+  assumes A0:"distributive_lattice R X" and 
+          A1:"is_greatest R X top" and
+          A2:"F \<in> pfilters_on R X" and
+          por:"pord R X"
+  shows pfilter_meet_of_primes01:"is_inf (pwr X) (filters_on R X) (larger_meet_irr (pwr X) (filters_on R X) F) F" and
+        pfilter_meet_of_primes02:"F = Inf (pwr X) (filters_on R X) (larger_meet_irr (pwr X) (filters_on R X) F)" and
+        pfilter_meet_of_primes03:"F =\<Inter>(larger_meet_irr (pwr X) (filters_on R X) F)"
+proof-
+  let ?FX="(filters_on R X)" let ?RX="pwr X" let ?M="(larger_meet_irr ?RX ?FX F)" let ?I="\<Inter>?M"
+  have B0:"compactly_generated ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por) 
+  have B1:"is_clattice ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por) 
+  have B2:"F \<in> ?FX"
+    by (simp add: A2 filters_on_iff pfilters_onD1)
+  have B3:"pord (pwr X) (filters_on R X)"
+    by (meson dual_order.refl powrel6 pwr_refl_sub pwr_trans_sub sub_filters_onD1)
+  show P0:"is_inf (pwr X) (filters_on R X) (larger_meet_irr (pwr X) (filters_on R X) F) F"
+    using B0 B1 B2 B3 mirr6[of ?RX ?FX F] by blast
+  show P1:"F = Inf (pwr X) (filters_on R X) (larger_meet_irr (pwr X) (filters_on R X) F)"
+    by (simp add: B0 B1 B2 B3 mirr5)
+  have B4:"\<And>m. m \<in> ?M \<Longrightarrow> F \<subseteq> m"
+    using powrel8 by fastforce
+  have B5:"F \<subseteq> ?I"
+    using B4 by blast
+  have B6:"X \<in> ?M"
+  proof(auto)
+    show " X \<in> filters_on R X"
+      unfolding filters_on_def is_filter_def apply(auto)
+      using A0 distr_latticeD5 lattD1 apply auto[1]
+      using A0 distr_latticeD5 inf_dwdir latt_iff apply blast
+      by (simp add: is_ord_cl_def)
+    show " meet_reducible (pwr X) (filters_on R X) X \<Longrightarrow> False"
+      by (meson B3 \<open>X \<in> filters_on R X\<close> filters_onD2 is_greatestI3 mredD2 pwr_memI1)
+    show " (F, X) \<in> pwr X"
+      by (meson B2 \<open>X \<in> filters_on R X\<close> filters_onD2 pwr_memI)
+  qed
+  have B7:" ?M\<in> Pow_ne (filters_on R X)"
+    by (metis (no_types) B6 Collect_restrict Pow_neI1 emptyE)
+  have B8:"is_inf (pwr X) (filters_on R X) ?M (\<Inter>?M)"
+    using A0 A1 B7 distr_latticeD5 filters_inf_semilattice_inf latt_iff por by fastforce
+  show "F =\<Inter>(larger_meet_irr (pwr X) (filters_on R X) F)"
+    using B3 B8 P1 inf_equality by fastforce
+qed
+
 lemma pfilter_meet_of_primes:
   assumes A0:"distributive_lattice R X" and 
           A1:"is_greatest R X top" and
@@ -7455,31 +7376,7 @@ lemma pfilter_meet_of_primes:
           por:"pord R X"
   obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " 
                   and "F = Inf (pwr X) (filters_on R X) M"
-proof-
-  let ?FX="(filters_on R X)" let ?RX="pwr X"
-  have B0:"compactly_generated ?RX ?FX"
-    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por) 
-  have B1:"is_clattice ?RX ?FX"
-    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por) 
-  have B2:"F \<in> ?FX"
-    using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast
-  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}" 
-  proof(rule mirr5)
-    show "is_clattice (pwr X) (filters_on R X)"
-      by (simp add: B1)
-    show "compactly_generated (pwr X) (filters_on R X)"
-      using B0 by blast
-    show "pord (pwr X) (filters_on R X)"
-      by (meson equalityD2 pwr_antisym_sub pwr_refl_sub pwr_trans_sub sub_filters_onD1)
-    show "F \<in> filters_on R X"
-      by (simp add: B2)
-  qed
-  have B4:"\<forall>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F,Fm)\<in>?RX} \<longrightarrow> Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm "  
-    by fastforce
-  then show ?thesis  
-    using B3 that by blast
-qed
-
+  by (metis (mono_tags, lifting) A0 A1 A2 CollectD pfilter_meet_of_primes02 por)
 
 
 lemma sup_prime_pfilterI3:
@@ -7510,6 +7407,94 @@ lemma prime_filter_irr3_converse:
   "\<lbrakk>distributive_lattice R X; antisym R X; trans R X; refl R X; fin_inf_irr (pwr X) (filters_on R X) F; is_pfilter R X F\<rbrakk> \<Longrightarrow> sup_prime R X F"  
   by (simp add: is_pfilterI1 sup_prime_pfilterI3)
 
+
+lemma pfilters_meet_of_primes1:
+  assumes A0:"distributive_lattice R X" and
+          A1:"is_greatest R X top" and
+          A2:"F \<in> pfilters_on R X" and
+          por:"pord R X"
+  shows pfilter_meet_of_primes11:"is_inf (pwr X) (filters_on R X) (larger_prime_fil R X F) F" and
+        pfilter_meet_of_primes12:"F = Inf (pwr X) (filters_on R X) (larger_prime_fil R X F)" and
+        pfilter_meet_of_primes13:"F =\<Inter>((larger_prime_fil R X F))"
+proof-
+  let ?M="(larger_prime_fil R X F)"
+  let ?FX="(filters_on R X)" let ?RX="pwr X"
+  let ?M1="(larger_meet_irr (pwr X) (filters_on R X) F)"
+  have B0:"compactly_generated ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por)  
+  have C1:"antisym ?RX ?FX"
+    by (simp add: filters_onD2 pwr_antisym_sub subsetI) 
+  have C2:"refl ?RX ?FX"
+    by (simp add: filters_onD2 pwr_refl_sub subsetI)
+  have C3:"trans ?RX ?FX"
+    by (simp add: filters_onD2 pwr_trans_sub subsetI)
+  obtain C4:"distributive_lattice ?RX ?FX"
+    by (simp add: A0 lattice_filters_distr por)  
+  have B1:"is_clattice ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por)  
+  have B2:"F \<in> ?FX"
+    by (simp add: A2 filters_on_iff pfilters_onD1)
+  have B3:"\<And>Fm. Fm \<in> ?M1 \<Longrightarrow> Fm \<in> ?FX \<and> sup_prime R X Fm"
+  proof-
+    fix Fm assume fmem:"Fm \<in> ?M1"
+   have B40:"Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm"
+     using fmem by auto  
+    have B41:"fin_inf_irr ?RX ?FX Fm"
+      by (simp add: B1 B40 C1 C2 C3 clat_lattice meet_irr_imp_fmeet_irr)
+    have B43:"is_greatest ?RX ?FX X"  
+    proof-
+      have B430:"X \<in> ?FX"
+        by (simp add: A0 bot_filters1 distr_latticeD5 filters_on_def lattD4)
+      have B431:"X \<in> ubd ?RX ?FX ?FX"
+        by (meson B430 C2 pwr_mem_iff reflE1 ubdI1)  
+      show ?thesis   
+        by (simp add: B431 is_greatest_def)
+    qed
+    have B44:"sup_prime R X Fm"
+    proof(cases "is_pfilter R X Fm")
+      case True then show ?thesis
+        by (simp add: A0 B41 por sup_prime_pfilterI3)
+    next
+      case False obtain B45:"Fm = X"
+        using B40 False filters_on_iff is_pfilter_def by blast 
+      then show ?thesis
+        by (simp add: sup_primeI1) 
+    qed
+    show "Fm \<in> ?FX \<and> sup_prime R X Fm" 
+       by (simp add: B40 B44)
+  qed
+  have B4:"?M1 \<subseteq> ?M"
+    using B3 by blast
+  have B5:"?M \<subseteq> ?FX"
+    by simp
+  have B6:"(Inf ?RX ?FX ?M, Inf ?RX ?FX ?M1) \<in> ?RX"
+   by (simp add: B1 B4 C1 C3 inf_iso1)
+  have B7:"F \<in> lbd ?RX ?FX ?M"
+    using B2 ubdI1 by fastforce
+  have B8:"(F, Inf ?RX ?FX ?M)\<in>?RX"
+    by (simp add: B1 B7 C1 C3 clatD22 ex_inf3)
+  have B9:"F = Inf ?RX ?FX ?M1"
+    by (simp add: B0 B1 B2 C1 C2 C3 mirr5)
+  have B10:"(Inf ?RX ?FX ?M1, Inf ?RX ?FX ?M) \<in> ?RX"
+    using B8 B9 by fastforce
+  have B11:"Inf ?RX ?FX ?M1 = Inf ?RX ?FX ?M"
+    by (metis (no_types, lifting) B1 B2 B5 B6 B8 B9 C1 C3 antisym_onD antisym_on_converse clatD22 clatD32 ex_sup1 ubd_empty)
+  show P0:"is_inf ?RX ?FX ?M F"
+    by (metis (no_types, lifting) B1 B11 B5 B7 B9 C1 C3 antisym_on_converse clatD4 cltdual is_supI4 trans_on_converse)
+  show P1:"F = Inf ?RX ?FX ?M"
+    using B11 B9 by blast
+  have B12:" ?M\<in> Pow_ne (filters_on R X)"
+  proof(rule Pow_neI1)
+     show "?M \<subseteq> ?FX"
+       by blast
+     show "larger_prime_fil R X F \<noteq> {}"
+       by (metis (no_types, lifting) B2 B4 B6 C1 P0 P1 bot.extremum_uniqueI converse_converse empty_iff is_sup_def mem_Collect_eq mredD2 ubd_empty)
+  qed
+  have B8:"is_inf (pwr X) (filters_on R X) ?M (\<Inter>?M)"
+    using A0 A1 B12 distr_latticeD5 filters_inf_semilattice_inf latt_iff por by fastforce
+  show "F =\<Inter>((larger_prime_fil R X F))"
+    using B8 C1 P1 sup_equality by fastforce
+qed
 
 lemma pfilters_meet_of_primes2:
   assumes A0:"distributive_lattice R X" and
@@ -7569,6 +7554,67 @@ proof-
     using B3 that by blast
 qed
 
+
+
+lemma pfilters_meet_of_primes3:
+  assumes A0:"distributive_lattice R X" and
+          A1:"is_greatest R X top" and
+          A2:"F \<in> pfilters_on R X" and
+          por:"pord R X"
+  shows pfilters_meet_of_primes31:"\<And>Fm.  Fm \<in> {Fm \<in> (filters_on R X). meet_irr (pwr X) (filters_on R X) Fm \<and> (F, Fm)\<in>pwr X} \<Longrightarrow> Fm \<in> (filters_on R X) \<and> sup_prime R X Fm" and
+        pfilters_meet_of_primes32:"is_inf (pwr X) (filters_on R X)  {Fm \<in> (filters_on R X). meet_irr (pwr X) (filters_on R X) Fm \<and> (F, Fm)\<in>pwr X} F"
+proof-
+  let ?FX="(filters_on R X)" let ?RX="pwr X"
+  have B0:"compactly_generated ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 filters_on_lattice_compactgen por)  
+  have C1:"antisym ?RX ?FX"
+    by (simp add: filters_onD2 pwr_antisym_sub subsetI) 
+  have C2:"refl ?RX ?FX"
+    by (simp add: filters_onD2 pwr_refl_sub subsetI)
+  have C3:"trans ?RX ?FX"
+    by (simp add: filters_onD2 pwr_trans_sub subsetI)
+  obtain C4:"distributive_lattice ?RX ?FX"
+    by (simp add: A0 lattice_filters_distr por)  
+  have B1:"is_clattice ?RX ?FX"
+    by (meson A0 A1 distr_latticeD5 lattice_filters_complete por)  
+  have B2:"F \<in> ?FX"
+    using A2 filters_on_iff is_pfilterD1 pfilters_on_iff by blast 
+  have B3:"F = Inf ?RX ?FX {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX}"
+    by (simp add: B0 B1 B2 C1 C2 C3 mirr5) 
+  have B4:"\<And>Fm.  Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and> (F, Fm)\<in>?RX} \<Longrightarrow> Fm \<in> ?FX \<and> sup_prime R X Fm " 
+  proof-
+    fix Fm assume A6:"Fm \<in> {Fm \<in> ?FX. meet_irr ?RX ?FX Fm \<and>(F, Fm)\<in>?RX}" 
+    have B40:"Fm \<in> ?FX \<and> meet_irr ?RX ?FX Fm"  
+      using A6 by blast
+    have B41:"fin_inf_irr ?RX ?FX Fm"
+      by (simp add: B1 B40 C1 C2 C3 clat_lattice meet_irr_imp_fmeet_irr)
+    have B43:"is_greatest ?RX ?FX X"  
+    proof-
+      have B430:"X \<in> ?FX"
+        by (simp add: A0 bot_filters1 distr_latticeD5 filters_on_def lattD4)
+      have B431:"X \<in> ubd ?RX ?FX ?FX"
+        by (meson B430 C2 pwr_mem_iff reflE1 ubdI1)  
+      show ?thesis   
+        by (simp add: B431 is_greatest_def)
+    qed
+    have B44:"sup_prime R X Fm"
+    proof(cases "is_pfilter R X Fm")
+      case True then show ?thesis
+        by (simp add: A0 B41 por sup_prime_pfilterI3)
+    next
+      case False obtain B45:"Fm = X"
+        using B40 False filters_on_iff is_pfilter_def by blast 
+      then show ?thesis
+        by (simp add: sup_primeI1) 
+    qed
+    show "Fm \<in> ?FX \<and> sup_prime R X Fm" 
+       by (simp add: B40 B44)
+  qed
+  show "\<And>Fm.  Fm \<in> {Fm \<in> (filters_on R X). meet_irr (pwr X) (filters_on R X) Fm \<and> (F, Fm)\<in>pwr X} \<Longrightarrow> Fm \<in> (filters_on R X) \<and> sup_prime R X Fm"
+    using B4 by blast
+  show "is_inf (pwr X) (filters_on R X)  {Fm \<in> (filters_on R X). meet_irr (pwr X) (filters_on R X) Fm \<and> (F, Fm)\<in>pwr X} F"
+    by (simp add: B0 B1 B2 C1 C2 C3 mirr6)
+qed
 
 
 lemma principal_filters_compact:
@@ -7740,6 +7786,7 @@ proof-
   then show ?thesis
     using B21 by blast
 qed 
+
 
 
 
@@ -8403,6 +8450,66 @@ proof-
   by (simp add: galois_conn_def map1 map2)
 qed
 
+
+lemma ulbd_upclosed:
+  assumes A0:"pord R X" and A1:"A \<subseteq> X"
+  shows "is_ord_cl X (ubd R X (lbd R X A)) R"
+proof(rule is_ord_clI1)
+  fix a b assume A2:"a \<in> ubd R X (lbd R X A)" and A3:" b \<in> X" and A4:"(a, b) \<in> R" 
+  obtain aix:"a \<in> X"
+    using A2 ubdD1[of a R X "(lbd R X A)"] by auto
+  show  "b \<in> ubd R X (lbd R X A)"
+  using A3 proof(rule ubdI1)
+    show "\<And>l. l \<in> lbd R X A \<Longrightarrow> (l, b) \<in> R"
+    proof-
+      fix l assume A5:"l \<in> lbd R X A"
+      obtain lix:"l \<in> X"
+        using A5 ubdD1[of l "dual R" X A] by auto
+      then obtain "(l, a)\<in>R"
+        using A2 A5 ubdD2[of a R X "lbd R X A" l] by blast
+      then show "(l, b)\<in>R"
+        using A0 A3 A4 aix lix trans_onD[of X R l a b] by blast
+    qed
+  qed
+qed
+  
+
+lemma ulbd_filter:
+  assumes A0:"pord R X" and isl:"is_inf_semilattice R X" and A1:"A \<subseteq> X" and ne:"(ubd R X (lbd R X A)) \<noteq> {}"
+  shows "is_filter R X (ubd R X (lbd R X A))"
+  using ne proof(rule is_filterI1)
+  show sub:"ubd R X (lbd R X A) \<subseteq> X"
+    by (simp add: ubd_space)
+  show "is_dir (ubd R X (lbd R X A)) (dual R)"
+  proof(rule is_dirI1)
+    fix a b assume A2:"a \<in>  (ubd R X (lbd R X A))" and A3:"b \<in> ubd R X (lbd R X A)" 
+    then obtain B0:"a \<in> X" and B1:"b \<in> X"
+      using sub by blast
+    define c where B2:"c =Inf R X {a,b}"
+    then obtain B3:"c \<in> X" and B4:"(c, a) \<in>R" and B5:"(c, b)\<in>R"
+      by (simp add: A0 B0 B1 isl isl_ex_sup0a isl_ex_sup0b isl_ex_sup5)
+    have B6:"c \<in> ubd R X (lbd R X A)"
+    using B3 proof(rule ubdI1)
+      show "\<And>l. l \<in> lbd R X A \<Longrightarrow> (l,c) \<in> R"
+      proof-
+        fix l assume A4:"l \<in> lbd R X A"
+        then obtain B6:"l \<in> X"
+          using ubdD1[of l "dual R" X A] by blast
+        then obtain B7:"(l, a)\<in>R" and B8:"(l,b)\<in>R"
+          using A2 A3 A4 ubdD2[of a R X " lbd R X A" l] ubdD2[of b R X " lbd R X A" l] by blast
+        then obtain B9:"l \<in> lbd R X {a,b}"
+          unfolding ubd_def using B6 by blast
+        then show "(l, c)\<in>R"
+          by (simp add: A0 B0 B1 B2 isl isl_ex_sup3)
+      qed
+    qed
+    then show " \<exists>c\<in>ubd R X (lbd R X A). (a, c) \<in> dual R \<and> (b, c) \<in> dual R"
+      using B4 B5 by blast
+  qed
+  show "is_ord_cl X (ubd R X (lbd R X A)) R"
+    by (simp add: A0 A1 ulbd_upclosed)
+qed
+
 section Grills
 
 
@@ -9057,6 +9164,108 @@ qed
   
   
    
+
+
+lemma finer_ultrafilters2:
+  assumes A0:"is_pfilter R X F" and
+          A3:"is_least R X bot" and
+          por:"pord R X"
+  shows "\<exists>U. is_ultrafilter R X U \<and> F\<subseteq> U"
+proof-
+  let ?G="(finer_pfilters R X F)"
+  have "\<And>\<C>. subset.chain ?G \<C> \<Longrightarrow> \<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+  proof-
+    fix \<C> assume A1:"subset.chain ?G \<C>"
+    show "\<exists>U\<in>?G. \<forall>c\<in>\<C>. c \<subseteq> U"
+    proof(cases "\<C> = {}")
+      case True
+      then show ?thesis
+      proof -
+        show ?thesis
+          using True assms finer_pfilters_def by fastforce
+      qed 
+    next
+      case False
+      have B0:"\<C> \<subseteq> (finer_pfilters R X F)"
+          using A1 unfolding subset.chain_def by blast
+      have B1:"\<And>A B. \<lbrakk>A \<in> \<C>; B \<in> \<C>\<rbrakk> \<Longrightarrow> (A \<subseteq> B) \<or> (B \<subseteq> A)"
+        using A1 unfolding subset.chain_def  by blast
+      have B2:"\<And>C. C \<in> \<C> \<Longrightarrow> is_pfilter R X C \<and> F \<subseteq> C"
+          using B0 unfolding finer_pfilters_def by blast
+      have B3:"\<And>C. C \<in> \<C> \<Longrightarrow> bot \<notin> C"
+        using B2 A3 is_pfilterD3[of R X bot] by blast
+      have B3b:"bot \<in> X"
+        using A3 is_leastD1 by fastforce
+      have B4:"\<And>C. C \<in> \<C> \<Longrightarrow> C \<noteq> {} \<and> C \<subseteq> X"
+        using B2 is_filterD1 is_pfilterD1 by blast
+      let ?D="\<Union>\<C>"
+      have "is_pfilter R X ?D"
+      proof(rule is_pfilterI1)
+        show "X \<noteq> ?D"
+          using B3 B3b by auto
+        show "is_filter R X (\<Union> \<C>)"
+        proof(rule is_filterI1)
+          show "?D \<noteq> {}"
+            by (simp add: B4 False)
+          show "?D \<subseteq> X"
+            by (simp add: B4 Union_least)
+          show "is_dir (\<Union> \<C>) (dual R)"
+          proof(rule is_dirI1)
+            fix a b assume "a \<in> ?D" and "b \<in> ?D"
+            then obtain Ca Cb where "Ca \<in> \<C>" and "a \<in> Ca" and "Cb \<in> \<C>" and "b \<in> Cb"
+              by blast
+            then obtain "(a \<in> Cb) \<or> (b \<in> Ca)"
+              using B1 by blast
+            obtain "is_dir Ca (dual R)" and "is_dir Cb (dual R)"
+              by (meson B2 \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> is_filterD1 is_pfilterD1)
+            then obtain c where "(a,c)\<in>(dual (R))" and "(b,c)\<in>(dual (R))" and "c \<in> Ca \<or> c \<in> Cb"
+              by (metis \<open>a \<in> Ca\<close> \<open>a \<in> Cb \<or> b \<in> Ca\<close> \<open>b \<in> Cb\<close> is_dirE1)
+            then show "\<exists>c \<in> ?D. (a,c)\<in>(dual R) \<and> (b,c)\<in>(dual R)"
+              using \<open>Ca \<in> \<C>\<close> \<open>Cb \<in> \<C>\<close> by blast
+          qed
+          show "is_ord_cl X ?D R"
+          proof(rule is_ord_clI1)
+            fix a b assume "a \<in> ?D" and "b \<in> X" and "(a, b) \<in> R"
+            then obtain Ca where "Ca \<in> \<C>" and "a \<in> Ca"
+              by blast
+            then obtain "b \<in> Ca"
+              by (meson B2 \<open>(a, b) \<in> R\<close> \<open>b \<in> X\<close> is_filterD1 is_ord_clE1 is_pfilterD1)
+            then show "b \<in> ?D"
+              using \<open>Ca \<in> \<C>\<close> by auto
+          qed
+        qed
+      qed
+      then obtain "?D \<in> ?G"
+        by (simp add: B2 False finer_pfilters_def less_eq_Sup)
+      then show ?thesis
+        by blast
+    qed
+  qed
+  then have "\<exists>U\<in>?G. \<forall>G\<in>?G. U \<subseteq> G \<longrightarrow> G = U"
+    using subset_Zorn[of ?G] by blast
+  then obtain U where B5:"U\<in>?G" and B6:"\<And>G. \<lbrakk>G \<in> ?G;  U \<subseteq> G\<rbrakk> \<Longrightarrow> G = U"
+    by auto
+  then have "F \<subseteq> U"
+    unfolding finer_pfilters_def by blast
+  have B7:"U \<in> pfilters_on R X"
+    using B5 unfolding finer_pfilters_def  by (simp add: pfilters_on_def) 
+  have B8:"\<And>a. \<lbrakk>a \<in> pfilters_on R X; (U, a) \<in> pwr X\<rbrakk> \<Longrightarrow> a = U"
+  proof-
+    fix a assume B9:"a \<in> pfilters_on R X" and "(U, a) \<in> pwr X"
+    then obtain "U \<subseteq> a"
+      by (simp add: powrel8)
+    then obtain "a \<in> ?G"
+      unfolding finer_pfilters_def using B9 \<open>F \<subseteq> U\<close> pfilters_on_def by fastforce
+    then show "a = U"
+      by (simp add: B6 \<open>U \<subseteq> a\<close>)
+  qed
+  then have "is_ultrafilter R X U"
+    by (simp add: B7 is_ultrafilter_def maximalI1)
+  then show ?thesis
+    using \<open>F \<subseteq> U\<close> by blast
+qed
+  
+  
 
 lemma filter_meet_finer_ultra:
   assumes A0:"is_pfilter (pwr X) (Pow X) \<F>"
@@ -13394,8 +13603,6 @@ lemma LimAdh_ext:
             ((\<lambda>Lim. AdhLim Lim X) \<circ> (\<lambda>Adh. LimAdh Adh X))"
   unfolding extensive_def LimAdh_def AdhLim_def pwr_def using mesh_sym by(auto)
 
-
-
 lemma LimAdh_galois:
   "galois_conn (\<lambda>Lim. AdhLim Lim X)
                (pwr (pfilters_on (pwr X)(Pow X) \<times> X))
@@ -13412,5 +13619,41 @@ lemma LimAdh_galois:
   apply (simp add: LimAdh_rng2)
   apply (simp add: pwr_antisym pwr_refl pwr_trans)
   by (simp add: pwr_antisym pwr_refl pwr_trans refl_dualI)
+
+
+
+locale poset=
+  fixes R::"'a rel" and X::"'a set"
+  assumes trn:"trans R X" and
+          asy:"antisym R X" and
+          ref:"refl R X"
+
+interpretation powerset: poset "pwr X"  "Pow X"
+  by (simp add: poset_def pwr_antisym pwr_refl pwr_trans)
+
+locale poset_sup_semilattice=poset+
+  assumes isl:"is_sup_semilattice R X"
+
+locale poset_inf_semilattice=poset+
+  assumes isl:"is_inf_semilattice R X"
+
+locale poset_lattice=poset+
+  assumes ila:"is_lattice R X"
+
+locale poset_dist_lattice=poset+
+    assumes ila:"is_lattice R X" and
+            dis:"(\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}})"
+
+locale poset_csup_semilattice=poset+
+  assumes ics:"is_csup_semilattice R X"
+
+locale poset_cinf_semilattice=poset+
+  assumes ici:"is_cinf_semilattice R X"
+
+
+locale poset_clattice=poset+
+  assumes icl:"is_clattice R X"
+
+
 
 end
