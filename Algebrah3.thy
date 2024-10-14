@@ -1783,6 +1783,8 @@ lemma id_elem_linj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_
 lemma id_elem_rinj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (r_trans e) X " unfolding inj_on_def r_trans_def id_elem_def by(auto)
 end
 
+section Submagma
+
 locale submagma=magma X "(\<cdot>)" for A and X and magma_law (infixl "\<cdot>" 70)+
   assumes submem:"A \<subseteq> X" and
           subfun:"\<lbrakk>x \<in>A; y \<in> A\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> A" 
@@ -1903,6 +1905,32 @@ end
 
 section QuotientMagma
 
+definition l_cong::"'a set\<Rightarrow>('a\<Rightarrow>'b\<Rightarrow>'b)\<Rightarrow>('b\<times>'b) set \<Rightarrow> bool" where "l_cong X f R \<equiv> (\<forall>a \<in> X. \<forall>(x,y)\<in>R.  (f a x, f a y) \<in> R)"
+definition r_cong::"'a set\<Rightarrow>('b\<Rightarrow>'a\<Rightarrow>'b)\<Rightarrow>('b\<times>'b) set \<Rightarrow> bool" where "r_cong X f R \<equiv> (\<forall>a \<in> X. \<forall>(x,y)\<in>R.  (f x a, f y a) \<in> R)"
+definition cong::"'a set\<Rightarrow>('a\<Rightarrow>'a\<Rightarrow>'a)\<Rightarrow>('a\<times>'a) set \<Rightarrow> bool" where "cong X f R \<equiv> (\<forall>(x1, x2) \<in> R. \<forall>(y1, y2) \<in> R.  (f x1 y1, f x2 y2) \<in> R)"
+
+lemma l_congI1:"(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R) \<Longrightarrow> l_cong X f R" using l_cong_def by fastforce
+lemma r_congI1:"(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R) \<Longrightarrow> r_cong X f R" using r_cong_def by fastforce
+lemma congI1:"(\<And>x1 x2 y1 y2. (x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (f x1 y1 , f x2 y2) \<in> R) \<Longrightarrow> cong X f R" using cong_def by fastforce
+
+lemma l_congD1:"l_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R" using l_cong_def by fastforce
+lemma r_congD1:"r_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R" using r_cong_def by fastforce
+lemma congDR:"refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R"  proof-  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"  then have B0:"(a,a)\<in>R"   by (simp add: refl_onD)  then show "(f x a, f y a) \<in> R"  using A0 cong_def by fastforce qed
+lemma congDL:"refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R"  proof-  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"  then have B0:"(a,a)\<in>R"   by (simp add: refl_onD)  then show "(f a x, f a y) \<in> R"  using A0 cong_def by fastforce qed
+lemma l_congI2:"equivalence_relation X R \<Longrightarrow> cong X f R \<Longrightarrow>l_cong X f R"  by (metis congDL equivalence_relation.is_eqrel is_eqrel_def l_congI1)  
+lemma r_congI2:"equivalence_relation X R \<Longrightarrow> cong X f R \<Longrightarrow>r_cong X f R"  by (metis congDR equivalence_relation.is_eqrel is_eqrel_def r_congI1)  
+lemma congI2:"equivalence_relation X R \<Longrightarrow> l_cong X f R \<Longrightarrow> r_cong X f R \<Longrightarrow> cong X f R"
+proof- 
+  assume A0:"equivalence_relation X R" "l_cong X f R" "r_cong X f R"
+  show "cong X f R"
+  proof(rule congI1)
+    fix x1 x2 y1 y2 assume A1:"(x1, x2) \<in> R" "(y1, y2) \<in> R" 
+    then obtain B0:"x1 \<in> X" "x2 \<in> X""y1 \<in> X" "y1 \<in> X"  by (meson A0(1) eqrelE4 equivalence_relation_def)
+    then obtain "(f x1 y1, f x1 y2) \<in> R" and "(f x1 y2, f x2 y2) \<in> R"  by (meson A0 A1 eqrelE4 equivalence_relation_def l_congD1 r_congD1)
+    then show "(f x1 y1, f x2 y2) \<in> R" using A0 eqrel_class3e equivalence_relation.is_eqrel by fastforce
+  qed
+qed
+
 locale quotient_magma=
   magma X "(\<cdot>)" + 
   equivalence_relation X R
@@ -1912,52 +1940,85 @@ locale quotient_magma=
   assumes compatible:"(x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (x1\<cdot>y1 , x2\<cdot>y2) \<in> R"
 begin
 lemma op_compat1:"proj x1 = proj x2 \<Longrightarrow>proj y1 = proj y2 \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> y1 \<in> X \<Longrightarrow> y2 \<in> X \<Longrightarrow> proj (x1 \<cdot>y1) = proj (x2 \<cdot> y2)"  by (simp add: closed compatible projE2)
+lemma left_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y) \<in> R" using compatible projE2 by blast
+lemma right_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (x\<cdot>a, y\<cdot>a) \<in> R" using compatible projE2 by blast
+lemma left_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (l_trans a x, l_trans a y)\<in>R" unfolding l_trans_def using left_compatible eqrelE4 is_eqrel by fastforce 
+lemma right_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (r_trans a x, r_trans a y)\<in>R" unfolding r_trans_def using right_compatible eqrelE4 is_eqrel by fastforce 
 
 definition quotient_law  (infixl "\<bullet>" 70) where "quotient_law \<equiv> (\<lambda>t \<in> X/R. \<lambda>s \<in> X/R.  proj (f (psec t) (psec s)))"
 
 lemma psecE3:"t \<in> X/R \<Longrightarrow> s \<in> X/R \<Longrightarrow> f (psec t) (psec s) \<in> X" using closed psecE2 by blast
-
-lemma qlaw1:"t \<in> X/R \<Longrightarrow> s \<in> X/R  \<Longrightarrow> t\<bullet>s \<in> X/R"
-  by (simp add: closed projE3 psecE2 quotient_law_def restrict_def)
-
-lemma qlaw2:
-  assumes mem:"x1 \<in> X" "x2 \<in> X"  and rel:"y1 \<in> proj x1" "y2 \<in> proj x2"
-  shows "y1\<cdot>y2 \<in> proj (x1 \<cdot> x2)"  by (simp add: compatible mem projE4 projE5 rel)
-
-lemma qlaw3:
-  assumes mem:"x \<in> X" "y \<in> X" 
-  shows "(proj x)\<bullet>proj(y) = proj(x \<cdot> y)"
-proof-
-  let ?t="(proj x)" and ?s="(proj y)"
-  obtain a b where A0:"a \<in> X" and A1:"b \<in> X" and "a = psec ?t" and "b = psec ?s" and "proj a = ?t" and "proj b = ?s"
-    by (simp add: mem projE3 psecE1 psecE2)
-  then obtain B0:"psec (proj a) = a"  "psec  (proj b) = b"  "proj x = proj a"  "proj y = proj b"
-    by force
-  have "(proj x)\<bullet>proj(y) =  proj (f (psec (proj x)) (psec (proj y)))"
-    by (simp add: mem projE3 quotient_law_def restrict_def)
-  also have "... = proj (a\<cdot>b)"
-    by(simp add:B0)
-  also have "... = proj (x \<cdot> y)"
-    using B0(3,4)  A0 A1 mem op_compat1 by blast
-  finally show ?thesis
-    by blast
+lemma qlaw1:"t \<in> X/R \<Longrightarrow> s \<in> X/R  \<Longrightarrow> t\<bullet>s \<in> X/R"  by (simp add: closed projE3 psecE2 quotient_law_def restrict_def)
+lemma qlaw2: assumes mem:"x1 \<in> X" "x2 \<in> X"  and rel:"y1 \<in> proj x1" "y2 \<in> proj x2" shows "y1\<cdot>y2 \<in> proj (x1 \<cdot> x2)"  by (simp add: compatible mem projE4 projE5 rel)
+lemma qlaw3:  assumes mem:"x \<in> X" "y \<in> X" shows "(proj x)\<bullet>proj(y) = proj(x \<cdot> y)"
+proof- 
+  let ?t="(proj x)" and ?s="(proj y)"  
+  obtain a b where A0:"a \<in> X" and A1:"b \<in> X" and "a = psec ?t" and "b = psec ?s" and "proj a = ?t" and "proj b = ?s" by (simp add: mem projE3 psecE1 psecE2)
+  then obtain B0:"psec (proj a) = a"  "psec  (proj b) = b"  "proj x = proj a"  "proj y = proj b"  by force
+  have "(proj x)\<bullet>proj(y) =  proj (f (psec (proj x)) (psec (proj y)))"   by (simp add: mem projE3 quotient_law_def restrict_def)
+  also have "... = proj (a\<cdot>b)"    by(simp add:B0)
+  also have "... = proj (x \<cdot> y)"   using B0(3,4)  A0 A1 mem op_compat1 by blast
+  finally show ?thesis  by blast
 qed
 
-sublocale qmag: magma "X/R" quotient_law  by (simp add: magma.intro qlaw1)
+sublocale quotient: magma "X/R" quotient_law  by (simp add: magma.intro qlaw1)
 
-lemma proj_homomorphism:"homomorphism X f (X/R) quotient_law proj"
-  by (simp add: homomorphism.intro homomorphism_axioms_def magma_axioms projE3 qlaw3 qmag.magma_axioms)
+lemma proj_homomorphism:"homomorphism X f (X/R) quotient_law proj"  by (simp add: homomorphism.intro homomorphism_axioms_def magma_axioms projE3 qlaw3 quotient.magma_axioms)
 
 lemma proj_hom:"proj \<in> hom X (X/R)"  by (metis (no_types, lifting) canonical_proj_def hom_memI local.proj_def projE3 restrict_apply)
 
-lemma hom_magma:"hom_magma X f (X/R) quotient_law proj" by (simp add: hom_magma_axioms_def hom_magma_def magma_axioms proj_hom qlaw3 qmag.magma_axioms)
-sublocale projection_is_magma_hom:hom_magma X f "(X/R)" quotient_law proj by (simp add: hom_magma)
+lemma hom_magma:"hom_magma X f (X/R) quotient_law proj" by (simp add: hom_magma_axioms_def hom_magma_def magma_axioms proj_hom qlaw3 quotient.magma_axioms)
+sublocale proj:hom_magma X f "(X/R)" quotient_law proj by (simp add: hom_magma)
 
 end
 
+lemma quotient_magmaI:
+  fixes X::"'a set" and R::"'a rel" and f::"'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<cdot>" 70)
+  assumes A0:"magma X (\<cdot>)" and A1:"equivalence_relation X R" and
+         lc:"\<And>a x y. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y)\<in>R" and
+         rc:"\<And>a x y. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (x\<cdot>a, y\<cdot>a)\<in>R"
+  shows compatible:"\<And>x1 x2 y1 y2. (x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (x1\<cdot>y1 , x2\<cdot>y2) \<in> R"
+proof -
+  fix x1 x2 y1 y2 assume x1Rx2: "(x1, x2) \<in> R" assume y1Ry2: "(y1, y2) \<in> R"
+  obtain B0:"x1 \<in> X" and B1:"y2 \<in> X"  by (metis A1 eqrelE4 equivalence_relation.is_eqrel x1Rx2 y1Ry2)
+  have B2: "R `` {x1 \<cdot> y1} = R `` {x1 \<cdot> y2} \<and> x1 \<cdot> y1 \<in> X \<and> x1 \<cdot> y2 \<in> X"  by (meson A1 B0 eqrel_class3e equivalence_relation_def lc y1Ry2)
+  have B3:"R `` {x1 \<cdot> y2} = R `` {x2 \<cdot> y2} \<and> x1 \<cdot> y2 \<in> X \<and> x2 \<cdot> y2 \<in> X"  by (meson A1 B1 eqrel_class3e equivalence_relation.is_eqrel rc x1Rx2)
+  then show "(x1 \<cdot> y1, x2 \<cdot> y2) \<in> R"  using A1 eqrel_class3e equivalence_relation.is_eqrel B2 by fastforce
+qed
+
+
+lemma quotient_magmaI12:
+  fixes X::"'a set" and R::"'a rel" and f::"'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<cdot>" 70)
+  assumes A0:"magma X (\<cdot>)" and A1:"equivalence_relation X R" and A2:"cong X f R"
+  shows "quotient_magma X f R"
+  using A0 A1 A2 cong_def quotient_magma.intro quotient_magma_axioms_def by fastforce
+
+lemma quotient_magmaI13:
+  fixes X::"'a set" and R::"'a rel" and f::"'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<cdot>" 70)
+  assumes A0:"magma X (\<cdot>)" and A1:"equivalence_relation X R" and A2:"l_cong X f R"  and  A3:"r_cong X f R"
+  shows "quotient_magma X f R"
+  by (simp add: assms congI2 quotient_magmaI12)
+
+lemma quotiet_magma_magma:"quotient_magma X f R \<Longrightarrow> magma (X/R) (quotient_magma.quotient_law X f R)" by (simp add: magma.intro quotient_magma.qlaw1)
+lemma quotiet_magma_hom:"quotient_magma X f R \<Longrightarrow> hom_magma X f (X/R) (quotient_magma.quotient_law X f R) (equivalence_relation.proj X R)"  by (simp add: quotient_magma.hom_magma) 
+
+
+section ProductMagma
+locale product_magma=
+   p1:magma X1 f1 + p2:magma X2 f2 for
+   X1::"'a set" and f1::"'a \<Rightarrow> 'a \<Rightarrow>'a" and
+   X2::"'a set" and f2::"'a \<Rightarrow> 'a \<Rightarrow>'a" 
+begin
+definition prod_set where "prod_set \<equiv> X1 \<times> X2"
+definition prod_law where "prod_law \<equiv> (\<lambda>(x1, x2) (y1, y2). (f1 x1 y1, f2 x2 y2))"
+sublocale binary_product:magma prod_set prod_law by(unfold_locales, auto simp add:prod_set_def prod_law_def p1.closed p2.closed)
+end
+  
+  
 
 section Semigroup
-locale semigroup=magma+ assumes associative[ac_simps]:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)"
+locale semigroup=magma+
+  assumes associative[ac_simps]:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)"
 begin
 lemma associate2: "\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk> \<Longrightarrow> (x\<cdot>y)\<cdot>z = x \<cdot> y \<cdot> z" by simp
 lemma associate3:  assumes mem:"x \<in> X" "y \<in> X""z \<in> X" and xy:"x \<cdot> y = y \<cdot> x"  shows "x\<cdot>(y\<cdot>z) = (y\<cdot>x)\<cdot>z" 
@@ -1970,9 +2031,21 @@ proof-
   also have "... = (y \<cdot> z) \<cdot> x" by (simp add: associative mem xz)
   finally show ?thesis by simp
 qed
+lemma assoc4:"\<lbrakk>a\<in>X;b\<in>X;c\<in>X;d\<in>X\<rbrakk> \<Longrightarrow> (a\<cdot>b)\<cdot>(c\<cdot>d) = a\<cdot>(b\<cdot>c)\<cdot>d" using associative closed by auto
 
 lemma semigroupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
                   (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow> semigroup X f" using semigroup_axioms by blast
+
+
+lemma ltranslation_comp1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>  \<Longrightarrow> compose X (l_trans x) (l_trans y) z = l_trans (x \<cdot> y) z"  by (simp add: associative closed compose_def l_trans_def)
+lemma rtranslation_comp1:"\<lbrakk>x \<in> X; y \<in> X; z \<in> X\<rbrakk>  \<Longrightarrow> compose X (r_trans y) (r_trans x) z = r_trans (x \<cdot> y) z"  by (simp add: associative closed compose_def r_trans_def) 
+
+lemma ltranslation_comp:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (l_trans x) (l_trans y) = l_trans (x \<cdot> y)"
+  using fun_eqI[of "compose X (l_trans x) (l_trans y)" X X "l_trans (x \<cdot> y)" X]
+  by (metis closed hom2 l_trans_hom ltranslation_comp1)
+lemma rtranslation_comp:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (r_trans y) (r_trans x) = r_trans (x \<cdot> y)"
+  using fun_eqI[of "compose X (r_trans y) (r_trans x)" X X "r_trans (x \<cdot> y)" X]
+  by (metis closed hom2 r_trans_hom rtranslation_comp1)
 
 end
 
@@ -1982,7 +2055,7 @@ end
 
 
 
-section FOld
+section Fold
 (*
 
 
@@ -2348,23 +2421,28 @@ section QuotientSemigroup
 locale quotient_semigroup=semigroup  X "(\<cdot>)"  + quotient_magma X "(\<cdot>)" R for X::"'a set" and f (infixl "\<cdot>" 70) and R
 begin
 
-lemma qassociative1:
-  assumes A0:"x \<in> X" and A1:"y \<in> X" and A2:"z \<in> X"
-  shows "((proj x)\<bullet>(proj y))\<bullet>(proj z) = (proj x)\<bullet>((proj y)\<bullet>(proj z))"
-  by (simp add: A0 A1 A2 associative closed qlaw3)
+lemma qassociative1: assumes A0:"x \<in> X" and A1:"y \<in> X" and A2:"z \<in> X" shows "((proj x)\<bullet>(proj y))\<bullet>(proj z) = (proj x)\<bullet>((proj y)\<bullet>(proj z))" by (simp add: A0 A1 A2 associative closed qlaw3)
+lemma qassociate2: assumes A0:"t \<in> X / R"  and A1:"s \<in> X / R" and A2 :"r \<in> X / R"  shows  "(t\<bullet>s)\<bullet>r = t\<bullet>(s\<bullet>r)"  by (metis (full_types) A0 A1 A2 psecE1 psecE2 qassociative1)
+sublocale quotient:semigroup "X/R" "(\<bullet>)" using Algebrah3.semigroup.intro qassociate2 quotient.magma_axioms semigroup_axioms_def by blast
 
-lemma qassociate2:
-  assumes A0:"t \<in> X / R"  and A1:"s \<in> X / R" and A2 :"r \<in> X / R"  shows 
-  "(t\<bullet>s)\<bullet>r = t\<bullet>(s\<bullet>r)"
-  by (metis (full_types) A0 A1 A2 psecE1 psecE2 qassociative1)
 end
 
 locale comm_semigroup=semigroup+
   assumes commutative:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow>x\<cdot>y = y\<cdot>x"
 begin
+lemma lcom:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow> y\<cdot>(x\<cdot>z) = x \<cdot> (y \<cdot> z) "  by (metis associative commutative)
+end
 
-lemma lcom:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow> y\<cdot>(x\<cdot>z) = x \<cdot> (y \<cdot> z) "
-  by (metis associative commutative)
+section ProductSemigroup
+locale product_semigroup=  
+   p1:semigroup X1 f1 + p2:semigroup X2 f2 for
+   X1::"'a set" and f1::"'a \<Rightarrow> 'a \<Rightarrow>'a" and
+   X2::"'a set" and f2::"'a \<Rightarrow> 'a \<Rightarrow>'a" 
+begin
+definition prod_set where "prod_set \<equiv> X1 \<times> X2"
+definition prod_law where "prod_law \<equiv> (\<lambda>(x1, x2) (y1, y2). (f1 x1 y1, f2 x2 y2))"
+sublocale prod_magma:product_magma X1 f1 X2 f2  by (simp add: p1.magma_axioms p2.magma_axioms product_magma_def)
+sublocale product:semigroup prod_set prod_law by(unfold_locales, auto simp add:prod_set_def prod_law_def p1.closed p2.closed p1.associative p2.associative)
 
 end
 
@@ -2383,15 +2461,21 @@ lemma monoidI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarr
 
 lemma monoidI2:"semigroup X f \<Longrightarrow> e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow> monoid X f e" using monoid_axioms by blast
 
+lemma ltranslation_id:"l_trans e = Id X "  by (simp add: id_elem_def id_elem_id_map(1) idmem leftid rightid)
+lemma rtranslation_id:"r_trans e = Id X "  by (simp add: id_elem_def id_elem_id_map(2) idmem leftid rightid)
+
 end
 
-locale submonoid=monoid X "(\<cdot>)" e for A and X and f (infixl "\<cdot>" 70) and unit ("e") +
+
+section Submonoid
+locale submonoid=monoid X "(\<cdot>)" e 
+  for A and X and f (infixl "\<cdot>" 70) and unit ("e") +
   assumes setsub:"A \<subseteq> X" and 
           opsub:"\<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> a \<cdot> b \<in> A" and
           idsub:"e \<in> A"
 begin
 lemma subD[intro,simp]:"a \<in> A \<Longrightarrow> a \<in> X" using setsub by auto  
-sublocale sub:monoid A "(\<cdot>)" e using subD opsub idsub leftid rightid by (simp add: monoid_axioms_def monoid_def semigroup.intro associative magma_def semigroup_axioms_def) 
+sublocale sub:monoid A "(\<cdot>)" e by (simp add: monoid_axioms_def monoid_def semigroup.intro associative idsub leftid magma_def opsub rightid semigroup_axioms_def)
 end
 
 lemma submonoid_submagma:"submonoid A X f e \<Longrightarrow> submagma A X f"  by (simp add: monoid_def semigroup.axioms(1) submagmaI submonoid.opsub submonoid.setsub submonoid_def)
@@ -2433,7 +2517,6 @@ end
 
 section InversionInMonoids
 context monoid begin
-
 definition invertible where "u \<in> X \<Longrightarrow> invertible u \<longleftrightarrow> (\<exists>v \<in> X. u \<cdot> v = e \<and> v \<cdot> u = e)"
 definition inv_elem where "inv_elem = (\<lambda>u \<in> X. THE v. v \<in>X \<and> u \<cdot> v = e \<and> v \<cdot> u = e)"
 
@@ -2468,6 +2551,12 @@ lemma invid:"invertible e" using idmem rightid by auto
 lemma inv_right_cancel:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> (inv_elem x \<cdot> y) = y" by (simp add: associate3 leftid)
 lemma inv_left_cancel:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> inv_elem x \<cdot> (x \<cdot> y) = y" by (metis associative invertible_inverse_closed invertible_left_inverse leftid) 
 
+lemma l_trans_inv1:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (l_trans x) (l_trans (inv_elem x)) = Id X"  by (simp add: ltranslation_comp ltranslation_id)
+lemma l_trans_inv2:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (l_trans (inv_elem x)) (l_trans x) = Id X"  by (simp add: ltranslation_comp ltranslation_id) 
+
+lemma r_trans_inv1:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (r_trans x) (r_trans (inv_elem x)) = Id X"  by (simp add: rtranslation_comp rtranslation_id) 
+lemma r_trans_inv2:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (r_trans (inv_elem x)) (r_trans x) = Id X"  using rtranslation_comp rtranslation_id by auto 
+
 end
 
 section InversionInSubmonoids
@@ -2476,43 +2565,71 @@ lemma submonoid_invertible [intro, simp]:  "\<lbrakk> sub.invertible u; u \<in> 
 lemma submonoid_inverse_closed [intro, simp]:  "\<lbrakk> sub.invertible u; u \<in> A \<rbrakk> \<Longrightarrow> inv_elem u \<in> A"using inverse_equality by auto
 end
 
+locale quotient_monoid=
+  monoid X "(\<cdot>)" e + 
+  quotient_semigroup X "(\<cdot>)" R for
+  X::"'a set" and
+  f::"'a \<Rightarrow> 'a \<Rightarrow>'a" (infixl "\<cdot>" 70) and
+  R::"('a \<times> 'a) set" and
+  e::"'a"
+begin
+lemma quotient_lid:"\<And>t. t \<in> X / R \<Longrightarrow> (proj e) \<bullet> t = t"  by (metis idmem leftid proj.mhom psecE1 psecE2)
+lemma quotient_rid:"\<And>t. t \<in> X / R \<Longrightarrow> t \<bullet> (proj e) = t"  by (metis idmem rightid proj.mhom psecE1 psecE2)
+sublocale quotient: monoid "X/R" "(\<bullet>)" "proj e" by(unfold_locales, simp add: idmem, simp add: quotient_lid,simp add: quotient_rid)
+end
+
+
+section product_monoid
+locale product_monoid=  
+   p1:monoid X1 f1 e1 + p2:monoid X2 f2 e2 for
+   X1::"'a set" and f1::"'a \<Rightarrow> 'a \<Rightarrow>'a" and
+   X2::"'a set" and f2::"'a \<Rightarrow> 'a \<Rightarrow>'a" and 
+   e1::"'a" and e2::"'a"
+begin
+definition prod_set where "prod_set \<equiv> X1 \<times> X2"
+definition prod_law where "prod_law \<equiv> (\<lambda>(x1, x2) (y1, y2). (f1 x1 y1, f2 x2 y2))"
+definition prod_ide where "prod_ide \<equiv> (e1, e2)"
+sublocale prod_magma:product_magma X1 f1 X2 f2  by (simp add: p1.magma_axioms p2.magma_axioms product_magma_def)
+sublocale prod_semigroup:product_semigroup X1 f1 X2 f2 by (simp add: p1.semigroup_axioms p2.semigroup_axioms product_semigroup_def)  
+sublocale product:monoid prod_set prod_law prod_ide 
+  apply(unfold_locales)
+  apply(auto simp add:prod_set_def prod_law_def p1.closed p2.closed p1.associative p2.associative)
+  apply (simp add: p1.idmem p2.idmem prod_ide_def)
+  apply (simp add: p1.leftid p2.leftid prod_ide_def)
+  by (simp add: p1.rightid p2.rightid prod_ide_def)
+
+end
+
 
 section Group
 locale group = 
   monoid X "(\<cdot>)" e for X and f (infixl "\<cdot>" 70) and unit ("e") + 
   assumes invertible [simp, intro]: "u \<in> X \<Longrightarrow> invertible u"
 begin
-lemma groupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
-              (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow>
-              e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow>
-              (\<And>x. x \<in> X \<Longrightarrow> invertible x) \<Longrightarrow>
-              group X f e" using group_axioms by blast 
+lemma groupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow>  (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow> e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow>(\<And>x. x \<in> X \<Longrightarrow> invertible x) \<Longrightarrow>  group X f e" using group_axioms by blast 
+lemma left_cancellation:"\<lbrakk>a \<in> X; x \<in> X; y \<in> X; a\<cdot>x=a\<cdot>y\<rbrakk> \<Longrightarrow> x = y " by simp
+lemma right_cancellation:"\<lbrakk>b \<in> X; x \<in> X; y \<in> X;x\<cdot>b=y\<cdot>b\<rbrakk> \<Longrightarrow> x = y " by simp
+lemma double_inv_prod:"\<lbrakk>a \<in> X; b \<in> X\<rbrakk> \<Longrightarrow> inv_elem (a \<cdot> inv_elem b) \<in> X" using closed by fastforce
+lemma insert_id1:"\<lbrakk>a\<in>X;b\<in>X;c\<in>X\<rbrakk> \<Longrightarrow> a \<cdot> b = a \<cdot> (c \<cdot> inv_elem c) \<cdot>b " using rightid by fastforce 
+lemma insert_id2:"\<lbrakk>a\<in>X;b\<in>X;c\<in>X\<rbrakk> \<Longrightarrow> a \<cdot> b = a \<cdot> (inv_elem c \<cdot> c) \<cdot>b " using rightid by fastforce 
+lemma remove_id1:"\<lbrakk>a\<in>X;b\<in>X;c\<in>X\<rbrakk> \<Longrightarrow> (a \<cdot> inv_elem c) \<cdot> (c \<cdot> b) = a \<cdot>b " by (simp add: assoc4 rightid)
+lemma remove_id2:"\<lbrakk>a\<in>X;b\<in>X;c\<in>X\<rbrakk> \<Longrightarrow> (a \<cdot> c) \<cdot> (inv_elem c \<cdot> b) = a \<cdot>b " by (simp add: assoc4 rightid)
+
 end
 
-section Subgroup
-locale subgroup=submonoid A X "(\<cdot>)" e + sub: group A "(\<cdot>)" e  for A and X and composition (infixl "\<cdot>" 70) and unit ("e")
+section Monoid_subgroup
+locale monoid_subgroup= submonoid A X "(\<cdot>)" e + sub: group A "(\<cdot>)" e for A and X and f (infixl "\<cdot>" 70) and unit ("e")
 begin
-lemma subgroup_inverse_equality [simp]:  "u \<in> A \<Longrightarrow> inv_elem u = sub.inv_elem u" by (simp add: inverse_equality)
-lemma subgroup_inverse_iff [simp]: "\<lbrakk>invertible x; x \<in> X \<rbrakk> \<Longrightarrow> inv_elem x \<in> A\<longleftrightarrow> x \<in> A"using invertible_inverse_inverse sub.invertible_inverse_closed by fastforce
+lemma monoid_subgroup_inverse_equality [simp]:  "u \<in> A \<Longrightarrow> inv_elem u = sub.inv_elem u" by (simp add: inverse_equality)
+lemma monoid_subgroup_inverse_iff [simp]: "\<lbrakk>invertible x; x \<in> X \<rbrakk> \<Longrightarrow> inv_elem x \<in> A\<longleftrightarrow> x \<in> A"using invertible_inverse_inverse sub.invertible_inverse_closed by fastforce
+
 end 
 
-lemma subgroup_transitive [trans]:
-  assumes "subgroup K H f e"
-    and "subgroup H G f e"
-  shows "subgroup K G f e"
-proof -
-  interpret K: subgroup K H f e by fact
-  interpret H: subgroup H G f e by fact
-  show ?thesis
-    by (meson H.submonoid_axioms K.sub.group_axioms K.submonoid_axioms subgroup.intro submonoid_transitive) 
-qed
-
-
-lemma subgroup_submonoid:"subgroup H G f e \<Longrightarrow> submonoid H G f e" by (simp add: subgroup.axioms(1))  
+lemma monoid_subgroup_transitive [trans]:  assumes "monoid_subgroup K H f e" and "monoid_subgroup H G f e" shows "monoid_subgroup K G f e" proof- interpret K: monoid_subgroup K H f e by fact  interpret H: monoid_subgroup H G f e by fact show ?thesis  by (meson H.submonoid_axioms K.sub.group_axioms K.submonoid_axioms monoid_subgroup.intro submonoid_transitive)  qed
+lemma monoid_subgroup_submonoid:"monoid_subgroup H G f e \<Longrightarrow> submonoid H G f e" by (simp add: monoid_subgroup.axioms(1))  
 
 context monoid begin
-
-lemma subgroupI:" submonoid H X f e \<Longrightarrow> e \<in> H \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow>  monoid.invertible H (\<cdot>) e x)  \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow> inv_elem  x \<in> H) \<Longrightarrow> subgroup H X f e" 
+lemma monoid_subgroupI:" submonoid H X f e \<Longrightarrow> e \<in> H \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow>  monoid.invertible H (\<cdot>) e x)  \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow> inv_elem  x \<in> H) \<Longrightarrow> monoid_subgroup H X f e" 
   apply(unfold_locales)
   apply (simp add: submonoid.setsub)
   apply (simp add: submonoid.opsub)
@@ -2526,14 +2643,14 @@ definition "Units = {u \<in> X. invertible u}"
 lemma mem_UnitsI: "\<lbrakk> invertible u; u \<in> X \<rbrakk> \<Longrightarrow> u \<in> Units"  unfolding Units_def by clarify
 lemma mem_UnitsD:  "\<lbrakk> u \<in> Units \<rbrakk> \<Longrightarrow> invertible u \<and> u \<in> X"  unfolding Units_def by clarify
 
-lemma subgroupI2:
+lemma monoid_subgroupI2:
   fixes A
   assumes subset [THEN subsetD, intro]: "A \<subseteq> X"
     and [intro]: "e \<in> A"
     and [intro]: "\<And>g h. \<lbrakk> g \<in> A; h \<in> A\<rbrakk> \<Longrightarrow> g \<cdot> h \<in> A"
     and [intro]: "\<And>g. g \<in> A \<Longrightarrow> invertible g"
     and [intro]: "\<And>g. g \<in> A \<Longrightarrow> inv_elem g \<in> A"
-  shows "subgroup A X (\<cdot>) e"
+  shows "monoid_subgroup A X (\<cdot>) e"
 proof -
 interpret sub: monoid A "(\<cdot>)" e  by (simp add: monoid_axioms_def monoid_def semigroup.intro assms(2) assms(3) associative leftid magma_def rightid semigroup_axioms_def subset)
   show ?thesis
@@ -2544,29 +2661,50 @@ interpret sub: monoid A "(\<cdot>)" e  by (simp add: monoid_axioms_def monoid_de
   using invertible_left_inverse invertible_right_inverse by blast
 qed
 
-
-
-interpretation units: subgroup Units X f e
-  apply(rule subgroupI2)
+interpretation units: monoid_subgroup Units X f e
+  apply(rule monoid_subgroupI2)
   using mem_UnitsD apply blast
   using idmem leftid mem_UnitsI apply blast
   apply (metis closed invprod(1) mem_UnitsD mem_UnitsI)
   using mem_UnitsD apply auto[1]
   using mem_UnitsD mem_UnitsI by blast
 
-lemma "group Units f e" by (simp add: units.sub.group_axioms)
+lemma group_of_units:"group Units f e" by (simp add: units.sub.group_axioms)
 
+lemma composition_invertible [simp, intro]:  "\<lbrakk> invertible x; invertible y; x \<in> X; y \<in>X \<rbrakk> \<Longrightarrow> invertible (x \<cdot> y)" using invprod(1) by presburger 
+lemma invertible_right_inverse2:  "\<lbrakk> invertible u; u \<in> X; v \<in> X\<rbrakk> \<Longrightarrow> u \<cdot> ((inv_elem u) \<cdot> v) = v"  using inv_right_cancel by blast
+lemma invertible_left_inverse2: "\<lbrakk> invertible u; u \<in> X; v\<in>X\<rbrakk> \<Longrightarrow> (inv_elem u) \<cdot> (u \<cdot> v) = v" by (simp add: monoid.inv_left_cancel monoid_axioms)
+lemma inverse_composition_commute: assumes [simp]: "invertible x" "invertible y" "x \<in> X" "y \<in> X"  shows "inv_elem (x \<cdot> y) = inv_elem y \<cdot> inv_elem x"  by (simp add: monoid.invprod(2) monoid_axioms)
 end
 
-locale quotient_group=group X "(\<cdot>)" e + quotient_semigroup X "(\<cdot>)" R for
-        X::"'a set" and
-        f::"'a \<Rightarrow> 'a \<Rightarrow>'a" (infixl "\<cdot>" 70) and
-        R::"('a \<times> 'a) set" and
-        e::"'a"
+context compositional_monoid
 begin
+lemma invertible_is_bijective:assumes dom: "u \<in> hom E E" shows "invertible u \<longleftrightarrow> bij_betw u E E" proof-  from dom interpret fun_map u E E by(unfold_locales,simp add:hom9, meson hom10)  show ?thesis using bij_betw_iff_has_inverse fun_map_in_hom by blast  qed
+lemma Units_bijective:  "Units = {u \<in>  hom E E. bij_betw u E E}"  unfolding Units_def by (auto simp add: invertible_is_bijective)
+lemma Units_bij_betwI [intro, simp]: "u \<in> Units \<Longrightarrow> bij_betw u E E" by (simp add: Units_bijective)
+lemma Units_bij_betwD [dest, simp]: "\<lbrakk>u \<in> hom E E; bij_betw u E E \<rbrakk> \<Longrightarrow> u \<in> Units" unfolding Units_bijective by simp
+sublocale symmetric: group "Units" "compose E" "Id E" by (fact group_of_units)
+end
 
+
+
+locale compositional_group = compositional_monoid M E+monoid_subgroup M Units "compose E" "Id E" for M and E
+begin
+lemma compositional_group_closed [intro, simp]: "\<lbrakk>u \<in> M; x \<in> E\<rbrakk> \<Longrightarrow> u x \<in> E" using bij_betwE by blast
+lemma compositional_group_undef [intro, simp]:  "\<lbrakk>u \<in> M; x \<notin> E\<rbrakk> \<Longrightarrow> u x = undefined"  by simp
+end
+
+
+section QuotientGroup
+locale quotient_group=
+  group X "(\<cdot>)" e + 
+  quotient_monoid X "(\<cdot>)" R e for
+  X::"'a set" and
+  f::"'a \<Rightarrow> 'a \<Rightarrow>'a" (infixl "\<cdot>" 70) and
+  R::"('a \<times> 'a) set" and
+  e::"'a"
+begin
 definition "H \<equiv> proj e"
-
 lemma equivalent_iff:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y) \<in> R \<longleftrightarrow> (inv_elem x) \<cdot> y \<in> H"
 proof-
   fix x y assume xmem:"x \<in> X" and ymem:"y \<in> X"
@@ -2605,10 +2743,8 @@ proof-
     by (simp add: H_def projE5)
 qed
 
-
-
-lemma id_image_subgroup:"subgroup H X f e"
-proof(rule subgroupI)
+lemma id_image_monoid_subgroup:"monoid_subgroup H X f e"
+proof(rule monoid_subgroupI)
   show "submonoid H X (\<cdot>) e"
   proof(rule submonoidI)
     show "monoid X (\<cdot>) e"
@@ -2635,10 +2771,186 @@ proof(rule subgroupI)
 qed
 
 
+
+print_facts!
+lemma quotient_rinv:"x \<in> X \<Longrightarrow> (proj x)\<bullet>(proj (inv_elem x)) = proj e" by (simp add: qlaw3)
+lemma quotient_linv:"x \<in> X \<Longrightarrow> (proj (inv_elem x))\<bullet>(proj x ) = proj e"  by (metis invertible invertible_inverse_closed invertible_left_inverse proj.mhom) 
+lemma quotient_elem_inv:"x \<in> X \<Longrightarrow>  quotient.invertible (proj x) " by (meson invertible invertible_inverse_closed projE3 quotient.invertibleI quotient_linv quotient_rinv)  
+lemma quotient_eqcl_inv:"t \<in> (X/R) \<Longrightarrow>  quotient.invertible t " by (metis psecE1 psecE2 quotient_elem_inv)
+lemma quotient_inv_comp:"x \<in> X \<Longrightarrow>  quotient.inv_elem (proj x) = proj (inv_elem x)"  by (simp add: quotient.inverse_equality quotient_linv quotient_rinv) 
+
+sublocale quotient:group "X/R" "(\<bullet>)" "proj e" by(unfold_locales,simp add: quotient_eqcl_inv)
 end
 
+locale group_product=
+   p1:group X1 f1 e1 + p2:group X2 f2 e2 for
+   X1::"'a set" and f1::"'a \<Rightarrow> 'a \<Rightarrow>'a" and e1::"'a" and 
+   X2::"'a set" and f2::"'a \<Rightarrow> 'a \<Rightarrow>'a" and e2::"'a"
+begin
+definition prod_set where "prod_set \<equiv> X1 \<times> X2"
+definition prod_law where "prod_law \<equiv> (\<lambda>(x11, x21) (x12, x22). (f1 x11 x12, f2 x21 x22))"
+definition prod_ide where "prod_ide \<equiv> (e1, e2)"
+end
+
+section LiftingLawToSets
+
+definition set_prod ::"('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set"  where "set_prod f H K = (\<Union>h\<in>H. \<Union>k\<in>K. {f h k})"
+
+lemma set_prod_memI:"\<exists>h \<in> H. \<exists>k \<in> K. y = f h k \<Longrightarrow> y \<in> set_prod f H K" by(auto simp add:set_prod_def)
+lemma set_prod_memD:" y \<in> set_prod f H K \<Longrightarrow> (\<exists>h \<in> H. \<exists>k \<in> K. y = f h k)" by(auto simp add:set_prod_def)
+lemma set_prod_singletonD1:" y \<in> set_prod f {x} K \<Longrightarrow> (\<exists>k \<in> K. y= f x k)" by(auto simp add:set_prod_def)
+lemma set_prod_singletonD2:" y \<in> set_prod f H {x} \<Longrightarrow> (\<exists>h \<in> H. y= f h x)" by(auto simp add:set_prod_def)
+lemma set_prod_singleton_memI1:"(\<exists>k \<in> K. y= f x k) \<Longrightarrow>  y \<in> set_prod f {x} K" by(auto simp add:set_prod_def)
+lemma set_prod_singleton_memI2:"(\<exists>h \<in> H. y= f h x) \<Longrightarrow>  y \<in> set_prod f H {x}" by(auto simp add:set_prod_def)
+lemma set_prod_singleton_mem_iff:" y \<in> set_prod f {x} K \<longleftrightarrow> (\<exists>k \<in> K. y= f x k)" by(auto simp add:set_prod_def)
+lemma set_prod_singleton_mem1:" set_prod f {x} K = {f x k|k. k \<in> K}" by(auto simp add:set_prod_def)
+lemma set_prod_singleton_mem2:" set_prod f H {x} = {f h x|h. h \<in> H}" by(auto simp add:set_prod_def)
 
 
+context magma 
+begin
+lemma set_prod_closed:"A \<subseteq> X \<Longrightarrow> B \<subseteq> X \<Longrightarrow> set_prod f A B \<subseteq> X" by(auto simp add:closed set_prod_def subsetD)
+definition l_coset (infixl "\<cdot>|" 70) where "x \<cdot>| H \<equiv> {x \<cdot>h |h. h \<in> H}"
+definition r_coset (infixl "|\<cdot>" 70) where "H |\<cdot> x \<equiv> {h \<cdot>x |h. h \<in> H}"
+
+lemma l_coset_memI[intro]:"h \<in> H \<Longrightarrow> x \<cdot> h \<in> x \<cdot>| H" unfolding l_coset_def  by blast
+lemma r_coset_memI[intro]:"h \<in> H \<Longrightarrow> h \<cdot> x \<in> H |\<cdot> x" unfolding r_coset_def by blast
+lemma l_coset_memE[elim]:"a \<in> x\<cdot>|H \<Longrightarrow> (\<And>h. \<lbrakk>h\<in>H;a=x\<cdot>h\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P" unfolding l_coset_def  by blast
+lemma r_coset_memE[elim]:"a \<in> H|\<cdot>x \<Longrightarrow> (\<And>h. \<lbrakk>h\<in>H;a=h\<cdot>x\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P" unfolding r_coset_def  by blast
+lemma l_coset_prod:"x\<cdot>|H = set_prod f {x} H"  using set_prod_singleton_mem1 by fastforce
+lemma r_coset_prod:"H|\<cdot>x = set_prod f H {x}"  using set_prod_singleton_mem2 by fastforce
+
+end
+
+context semigroup begin
+lemma set_prod_assoc:"A \<subseteq> X \<Longrightarrow> B \<subseteq> X \<Longrightarrow> C \<subseteq> X \<Longrightarrow> set_prod f(set_prod f A B) C= set_prod f A (set_prod f B C) " 
+proof-
+  assume A0:"A \<subseteq> X" "B \<subseteq> X" "C \<subseteq> X "
+  let ?AB="set_prod f A B" let ?BC="set_prod f B C" 
+  let ?L="set_prod f ?AB C" let ?R="set_prod f A ?BC"
+  show "?L= ?R"
+  proof
+    show "?L \<subseteq> ?R"
+    proof
+      fix x assume A1:"x \<in> ?L"
+      then obtain a b c where B0: "a\<in>A" "b\<in>B" "c\<in>C" "x = (a\<cdot>b)\<cdot>c" unfolding set_prod_def by blast
+      then obtain "x = a\<cdot>(b\<cdot>c)" using A0 associative by blast
+      then show "x \<in> ?R"  unfolding set_prod_def using B0 by blast
+    qed
+    next show "?R \<subseteq> ?L"
+    proof
+      fix x assume A1:"x \<in>?R"
+      then obtain a b c where B0: "a\<in>A" "b\<in>B" "c\<in>C" "x = a\<cdot>(b\<cdot>c)" unfolding set_prod_def by blast
+      then obtain "x = (a\<cdot>b)\<cdot>c" using A0 by (simp add: associative in_mono) 
+      then show "x \<in>?L"  unfolding set_prod_def using B0 by blast
+    qed
+  qed
+qed
+end
+
+context monoid begin
+
+lemma set_prod_lid:"A \<subseteq> X \<Longrightarrow> set_prod f {e} A = A" 
+  apply(auto simp add:set_prod_singleton_mem1)
+  apply (simp add: leftid subset_eq)
+  using leftid by force
+
+lemma set_prod_rid:"A \<subseteq> X \<Longrightarrow> set_prod f A {e} = A" 
+  apply(auto simp add:set_prod_singleton_mem2)
+  apply (simp add: rightid subset_eq)
+  using rightid by force
+end
+
+  
+
+lemma quotient_by_monoid_subgroup_eqr:
+  fixes G::"'a set" and  H::"'a set" 
+  fixes f (infixl "\<cdot>" 70) 
+  assumes A0:"group G f e" and A1:"monoid_subgroup H G f e"
+  defines "RL \<equiv> {(x, y) \<in> G \<times> G. (monoid.inv_elem G f e x) \<cdot> y \<in> H}"
+  defines "RR \<equiv> {(x, y) \<in> G \<times> G. y \<cdot> (monoid.inv_elem G f e x) \<in> H}"
+  shows "is_eqrel G RL" and "is_eqrel G RR"  
+proof-
+  let ?inv="monoid.inv_elem G (\<cdot>) e"
+  show "is_eqrel G RL"
+  apply(auto simp add:is_eqrel_def RL_def refl_on_def sym_def trans_def)
+  apply (metis A0 A1 group.axioms(1) group.invertible monoid.invertible_left_inverse monoid_subgroup_submonoid submonoid.idsub)
+  proof-
+     show "\<And>(x::'a) y::'a. x \<in> G \<Longrightarrow> y \<in> G \<Longrightarrow>(?inv x) \<cdot> y \<in> H \<Longrightarrow> (?inv y) \<cdot> x \<in> H"
+     proof-
+      fix x y assume A3:"x \<in> G" "y \<in> G" "(?inv x) \<cdot> y \<in> H"
+      have "(?inv y) \<cdot> x = ?inv ((?inv x) \<cdot> y)"   by (simp add: A0 A3(1) A3(2) group.axioms(1) group.invertible monoid.invertible_inverse_closed monoid.invertible_inverse_inverse monoid.invprod(2))
+      also have "... \<in> H"  by (meson A1 A3(3) group.invertible monoid_subgroup.axioms(1) monoid_subgroup.axioms(2) submonoid.submonoid_inverse_closed)
+      finally show "?inv y \<cdot> x \<in> H" by simp
+     qed
+    show "\<And>x y z.  \<lbrakk>x \<in> G; y \<in> G; z \<in> G;?inv x \<cdot> y \<in> H;  ?inv y \<cdot> z \<in> H\<rbrakk> \<Longrightarrow> ?inv x \<cdot> z \<in> H"
+    proof-
+      fix x y z assume A2:"x \<in> G" "y \<in> G"  "(?inv x) \<cdot> y \<in> H"  "z \<in> G" "(?inv y) \<cdot> z \<in> H "  
+       have B0:"(?inv x) \<cdot> z = ((?inv x) \<cdot> y) \<cdot> ((?inv y) \<cdot> z)" using A0 A1 A2 group.axioms(1) monoid_def group.invertible monoid.inv_right_cancel monoid.invertible_inverse_closed semigroup.associative monoid_subgroup.axioms(1) submonoid.subD by fastforce
+      show "(?inv x) \<cdot> z \<in> H" by (metis A1 A2(3) A2(5) B0 monoid_subgroup_submonoid submonoid.opsub)
+    qed
+  qed
+  show "is_eqrel G RR"
+  apply(auto simp add:is_eqrel_def RR_def refl_on_def sym_def trans_def)
+  apply (metis A0 A1 Algebrah3.group.axioms(1) group.invertible monoid.invertible_right_inverse monoid_subgroup_submonoid submonoid.idsub)
+  proof-
+     show "\<And>x y. x \<in> G \<Longrightarrow> y \<in> G \<Longrightarrow>y \<cdot> (?inv x) \<in> H \<Longrightarrow> x \<cdot> (?inv y)  \<in> H"
+     proof-
+      fix x y assume A3:"x \<in> G" "y \<in> G" "y \<cdot>(?inv x) \<in> H"
+      have "x \<cdot> (?inv y) = ?inv (y \<cdot>(?inv x))" by (simp add: A0 A3(1) A3(2) group.axioms(1) group.invertible monoid.invertible_inverse_closed monoid.invertible_inverse_inverse monoid.invprod(2))  
+      also have "... \<in> H"  by (meson A1 A3(3) group.invertible monoid_subgroup.axioms(1) monoid_subgroup.axioms(2) submonoid.submonoid_inverse_closed)
+      finally show "x \<cdot> (?inv y) \<in> H" by simp
+    qed
+    show "\<And>x y z.  \<lbrakk>x \<in> G; y \<in> G; z \<in> G; y \<cdot> ?inv x \<in> H;  z \<cdot> ?inv y \<in> H\<rbrakk> \<Longrightarrow>z \<cdot> ?inv x  \<in> H"
+    proof-
+      fix x y z assume A2:"x \<in> G" "y \<in> G"  "z \<in> G" "y \<cdot> (?inv x) \<in> H"  "z \<cdot> (?inv y) \<in> H "  
+      have B0:"z \<cdot> (?inv x) = (z \<cdot> (?inv y)) \<cdot> ((y \<cdot> ?inv x))"  using A0 A1 A2 group.axioms(1,2) group_axioms_def monoid_def monoid.inv_left_cancel monoid.invertible_inverse_closed semigroup.associative monoid_subgroup_submonoid submonoid.subD by fastforce
+      show "z \<cdot> (?inv x)\<in> H"  by (metis A1 A2(4) A2(5) B0 monoid_subgroup.axioms(1) submonoid.opsub) 
+    qed
+  qed
+qed
+
+lemma quotient_by_monoid_subgroup:
+  fixes G::"'a set" and  H::"'a set" 
+  fixes f (infixl "\<cdot>" 70) 
+  assumes A0:"group G f e" and A1:"monoid_subgroup H G f e"
+  defines "RL \<equiv> {(x, y) \<in> G \<times> G. (monoid.inv_elem G f e x) \<cdot> y \<in> H}"
+  defines "RR \<equiv> {(x, y) \<in> G \<times> G. y \<cdot>(monoid.inv_elem G f e x) \<in> H}"
+  shows "\<And>a x y. a \<in> G \<Longrightarrow> (x, y) \<in> RL \<Longrightarrow>  (a\<cdot>x , a\<cdot>y) \<in> RL"  and "\<And>a x y. a \<in> G \<Longrightarrow> (x, y) \<in> RR \<Longrightarrow>  (x\<cdot>a , y\<cdot>a) \<in> RR"
+proof-
+  let ?inv="monoid.inv_elem G (\<cdot>) e"
+  show "\<And>a x y. a \<in> G \<Longrightarrow> (x, y) \<in> RL\<Longrightarrow> (a\<cdot> x , a\<cdot> y) \<in> RL"
+  proof-
+    fix a x y assume A2:"a \<in> G" "(x, y) \<in> RL"
+    obtain B0:"(?inv x) \<cdot> y \<in> H" and B1:"x \<in> G" and B2:"y \<in> G"    using A2 RL_def by blast  
+    obtain B3:"(?inv x) \<in> G" and B4:"(?inv a) \<in> G"  by (simp add: A0 A2(1) Algebrah3.group.axioms(1) B1 group.invertible monoid.invertible_inverse_closed)
+    then obtain B5:"(a \<cdot> x) \<in> G" "a \<cdot>y \<in> G" by (meson A0 A2(1) group.axioms(1) monoid_def semigroup_def B1 B2 magma.closed)
+    have B6:"((?inv x)\<cdot>(?inv a)) = ?inv (a \<cdot> x)" by (simp add: A0 A2(1) Algebrah3.group.axioms(1) B1 group.invertible monoid.invprod(2))
+    have B7:"(?inv x) \<cdot> y = (?inv x) \<cdot> ((?inv a) \<cdot> a) \<cdot> y"  by (metis A0 A2(1) group.axioms(1) B1 group.invertible monoid.invertible_inverse_closed monoid.invertible_left_inverse monoid.rightid) 
+    also have "... = (((?inv x)\<cdot>(?inv a)) \<cdot> a) \<cdot> y"  using A0 A2(1) Algebrah3.group.axioms(1) Algebrah3.monoid_def B3 B4 semigroup.associative by fastforce  
+    also have "... = ((?inv x)\<cdot>(?inv a)) \<cdot> (a \<cdot> y) " by (metis A0 A2(1) group.axioms(1) monoid_def semigroup_def B2 B3 B4 magma.closed semigroup.associative)
+    also have "... = monoid.inv_elem G (\<cdot>) e (a \<cdot> x) \<cdot> (a \<cdot> y)"   by (simp add: B6)
+    also have "... \<in> H"  using B0 calculation by auto
+    then have "?inv (a \<cdot> x) \<cdot> (a \<cdot> y) \<in> H" by blast
+    then show " (a\<cdot> x , a\<cdot> y) \<in> RL"   using B5 unfolding RL_def by blast
+  qed
+  show "\<And>a x y. a \<in> G \<Longrightarrow> (x, y) \<in> RR\<Longrightarrow> (x\<cdot>a , y\<cdot>a) \<in> RR"
+  proof-
+    fix a x y assume A2:"a \<in> G" "(x, y) \<in> RR"
+    obtain B0:"y\<cdot>(?inv x)\<in> H" and B1:"x \<in> G" and B2:"y \<in> G"  using A2 RR_def by blast  
+    obtain B3:"(?inv x) \<in> G" and B4:"(?inv a) \<in> G"  by (simp add: A0 A2(1) Algebrah3.group.axioms(1) B1 group.invertible monoid.invertible_inverse_closed)
+    then obtain B5:"(x\<cdot>a) \<in> G" "y\<cdot>a \<in> G" by (meson A0 A2(1) group.axioms(1) monoid_def semigroup_def B1 B2 magma.closed)
+    have B6:"((?inv a)\<cdot>(?inv x)) = ?inv (x\<cdot>a)" by (simp add: A0 A2(1) Algebrah3.group.axioms(1) B1 group.invertible monoid.invprod(2))
+    have B7:"y\<cdot>(?inv x) =y\<cdot>(a\<cdot>(?inv a))\<cdot>(?inv x)" by (metis A0 A2(1) group.axioms(1) B2 group.invertible monoid.invertible_right_inverse monoid.rightid) 
+    also have "... = ((y\<cdot>a) \<cdot>(?inv a)) \<cdot> (?inv x)"  using A0 A2(1) group.axioms(1) monoid_def B2 B4 semigroup.associative by fastforce
+    also have "... = (y\<cdot>a) \<cdot> ((?inv a)\<cdot>(?inv x)) " using A0 group.axioms(1) monoid_def B3 B4 B5(2) semigroup.associative by fastforce
+    also have "... = (y\<cdot>a) \<cdot> (?inv (x\<cdot>a))"   by (simp add: B6)
+    also have "... \<in> H"  using B0 calculation by auto
+    then have "(y\<cdot>a) \<cdot> (?inv (x\<cdot>a)) \<in> H" by blast
+    then show " (x\<cdot>a ,y\<cdot>a) \<in> RR"  using B5 unfolding RR_def by blast
+  qed
+qed
+ 
 locale commutative_semigroup=semigroup X "(\<cdot>)" for X and f (infixl "\<cdot>" 70)+
   assumes commutes:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y = y \<cdot> x"
 begin
@@ -2652,6 +2964,8 @@ lemma commutative_semigroupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk>
 
 end
 
+
+section ExponentsAndOrder
 context monoid begin
 
 definition finprod::"'b set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "finprod I x = (if finite I then foldD X (comp f x) e I else e)"
@@ -2915,18 +3229,34 @@ lemma commute_ords:
         "elem_ord (a \<cdot> b) dvd (lcm (elem_ord a) (elem_ord b))"
 proof-
   let ?\<alpha>="elem_ord a" let ?\<beta>="elem_ord b" 
-  have "elem_ord (a \<cdot> b) \<noteq> 0" by (simp add: aford amem bford bmem commute fin_prod_ord)
-  have "(a \<cdot> b)^?\<beta> = a ^ ?\<beta>"  using commute commute_pow3 elem_ord_exp pow_closed rightid amem bmem by presburger
-  then have "elem_ord ((a \<cdot> b)^?\<beta>) = elem_ord (a ^ ?\<beta>)" by simp
-  also have "... = ?\<alpha> div (gcd ?\<alpha> ?\<beta>)" using aford amem bford ord_pow1 by auto
-  also have "elem_ord ((a \<cdot> b)^?\<beta>) dvd (elem_ord (a \<cdot> b))"  by (metis One_nat_def Suc_le_eq \<open>elem_ord ((a::'a) \<cdot> (b::'a)) \<noteq> (0::nat)\<close> amem bford bmem bot_nat_0.not_eq_extremum closed dvd_div_mult_self dvd_mult2 gcd_dvd1 gcd_nat.refl ord_pow1)
-  then have B0:"?\<alpha> div (gcd ?\<alpha> ?\<beta>) dvd (elem_ord (a \<cdot> b))" by (simp add: \<open>((a::'a) \<cdot> (b::'a)) ^ elem_ord b = a ^ elem_ord b\<close> \<open>elem_ord ((a::'a) ^ elem_ord (b::'a)) = elem_ord a div gcd (elem_ord a) (elem_ord b)\<close>)
-  have B1:"(a \<cdot> b)^?\<alpha> = b ^ ?\<alpha>"   using amem bmem commute commute_pow3 elem_ord_exp leftid pow_closed by presburger 
-  then have B2:"elem_ord ((a \<cdot> b)^?\<alpha>) = elem_ord (b ^ ?\<alpha>)" by simp
-  have B3:"... = ?\<beta> div (gcd ?\<alpha> ?\<beta>)"  by (metis aford bford bmem gcd.bottom_right_bottom gcd.commute gcd_le1_nat ord_pow1) 
-  have B4:"elem_ord ((a \<cdot> b)^?\<alpha>) dvd (elem_ord (a \<cdot> b))"  by (metis One_nat_def Suc_le_eq \<open>elem_ord ((a::'a) \<cdot> (b::'a)) \<noteq> (0::nat)\<close> aford amem bmem bot_nat_0.not_eq_extremum closed dvd_div_mult_self dvd_mult2 gcd_dvd1 gcd_nat.refl ord_pow1) 
-  then have B5:"?\<beta> div (gcd ?\<alpha> ?\<beta>) dvd (elem_ord (a \<cdot> b))"   by (simp add: B1 B3) 
-  
+  have B0:"elem_ord (a \<cdot> b) \<noteq> 0" by (simp add: aford amem bford bmem commute fin_prod_ord)
+  have B1:"(a \<cdot> b)^?\<beta> = a ^ ?\<beta>"  using commute commute_pow3 elem_ord_exp pow_closed rightid amem bmem by presburger
+  then have B2:"elem_ord ((a \<cdot> b)^?\<beta>) = elem_ord (a ^ ?\<beta>)" by simp
+  also have B3:"... = ?\<alpha> div (gcd ?\<alpha> ?\<beta>)" using aford amem bford ord_pow1 by auto
+  also have B4:"elem_ord ((a \<cdot> b)^?\<beta>) dvd (elem_ord (a \<cdot> b))"  by (metis One_nat_def Suc_le_eq \<open>elem_ord ((a::'a) \<cdot> (b::'a)) \<noteq> (0::nat)\<close> amem bford bmem bot_nat_0.not_eq_extremum closed dvd_div_mult_self dvd_mult2 gcd_dvd1 gcd_nat.refl ord_pow1)
+  then have B5:"?\<alpha> div (gcd ?\<alpha> ?\<beta>) dvd (elem_ord (a \<cdot> b))" by (simp add: \<open>((a::'a) \<cdot> (b::'a)) ^ elem_ord b = a ^ elem_ord b\<close> \<open>elem_ord ((a::'a) ^ elem_ord (b::'a)) = elem_ord a div gcd (elem_ord a) (elem_ord b)\<close>)
+  have B6:"(a \<cdot> b)^?\<alpha> = b ^ ?\<alpha>"   using amem bmem commute commute_pow3 elem_ord_exp leftid pow_closed by presburger 
+  then have B7:"elem_ord ((a \<cdot> b)^?\<alpha>) = elem_ord (b ^ ?\<alpha>)" by simp
+  have B8:"... = ?\<beta> div (gcd ?\<alpha> ?\<beta>)"  by (metis aford bford bmem gcd.bottom_right_bottom gcd.commute gcd_le1_nat ord_pow1) 
+  have B9:"elem_ord ((a \<cdot> b)^?\<alpha>) dvd (elem_ord (a \<cdot> b))"  by (metis One_nat_def Suc_le_eq \<open>elem_ord ((a::'a) \<cdot> (b::'a)) \<noteq> (0::nat)\<close> aford amem bmem bot_nat_0.not_eq_extremum closed dvd_div_mult_self dvd_mult2 gcd_dvd1 gcd_nat.refl ord_pow1) 
+  then have B10:"?\<beta> div (gcd ?\<alpha> ?\<beta>) dvd (elem_ord (a \<cdot> b))"  by (simp add: B6 B8) 
+  have B11:"gcd (?\<beta> div (gcd ?\<alpha> ?\<beta>)) (?\<alpha> div (gcd ?\<alpha> ?\<beta>)) = 1"
+  proof -
+    have "gcd (elem_ord a) (elem_ord b) * 1 = gcd (elem_ord a) (elem_ord b) * gcd (elem_ord a div gcd (elem_ord a) (elem_ord b)) (elem_ord b div gcd (elem_ord a) (elem_ord b))"
+      by (metis (no_types) dvd_mult_div_cancel gcd_dvd1 gcd_dvd2 gcd_mult_distrib_nat mult.right_neutral)
+    then show ?thesis
+      by (metis (no_types) aford gcd.commute gcd_eq_0_iff mult_left_cancel)
+  qed
+  have B12:"coprime (?\<alpha> div (gcd ?\<alpha> ?\<beta>)) (?\<beta> div (gcd ?\<alpha> ?\<beta>))"  using aford div_gcd_coprime by blast
+  have B13:"((?\<alpha>*?\<beta>) div ((gcd ?\<alpha> ?\<beta>)*(gcd ?\<alpha> ?\<beta>))) dvd  (elem_ord (a \<cdot> b))"  by (metis B10 B12 B5 div_mult_div_if_dvd divides_mult gcd_dvd1 gcd_dvd2)
+  have B14:"(?\<alpha>*?\<beta>) div ((gcd ?\<alpha> ?\<beta>)*(gcd ?\<alpha> ?\<beta>)) = (lcm ?\<alpha> ?\<beta>) div (gcd ?\<alpha> ?\<beta>)"  using div_mult2_eq lcm_nat_def by presburger
+  show "(lcm (elem_ord a) (elem_ord b)) div (gcd (elem_ord a) (elem_ord b)) dvd elem_ord (a \<cdot> b)"   by (metis B13 B14)  
+  show "elem_ord (a \<cdot> b) dvd (lcm (elem_ord a) (elem_ord b))"   by (metis (no_types, lifting) B0 B6 B8 aford amem bford bmem bot_nat_0.not_eq_extremum closed div_greater_zero_iff div_mult_swap elem_ord_exp elem_pow_eq_id gcd_dvd2 gcd_le2_nat gcd_pos_nat lcm_nat_def)
+qed
+
+definition set_exponents where "set_exponents A \<equiv> {n::nat. 0<n \<and> (\<forall>a. a \<in> A \<longrightarrow> a^n = e)}"
+
+
 end
 
 
@@ -3208,35 +3538,277 @@ end
 
 declare [[show_hyps=true,show_main_goal=true, thy_output_display=true,trace_locales=false]]
 
+locale subgroup=group G "(\<cdot>)" e for H and G and f (infixl "\<cdot>" 70) and unit ("e")+
+  assumes subset:"H \<subseteq> G" and
+          closed:"\<lbrakk>a \<in> H; b \<in> H\<rbrakk> \<Longrightarrow> a\<cdot>b \<in> H" and
+          id_mem:"e \<in> H" and
+          inv_cl:"a \<in> H \<Longrightarrow> inv_elem a \<in> H"
+begin
+lemma sub_mem[intro,simp]:"a \<in> H \<Longrightarrow> a \<in> G" using subset by auto
+sublocale sub:group H "(\<cdot>)" e  by (metis closed group.invertible group_axioms id_mem inv_cl monoid_subgroup.axioms(2) monoid_subgroupI2 sub_mem subset) 
+sublocale submonoid:submonoid H G f e  by (simp add: id_mem monoid_axioms sub.closed submonoidI subset)
+lemma subgroup_inverse_equality [simp]: "u \<in> H \<Longrightarrow> inv_elem u = sub.inv_elem u"  by (simp add: inverse_equality)
+end
+
 context group
 begin
 
-
-lemma ord_pow:"\<lbrakk>a \<in> X; elem_ord a \<noteq> 0; (1::nat) \<le> (k::nat); k < elem_ord a\<rbrakk> \<Longrightarrow> elem_ord (a ^ k) = (elem_ord a) div (gcd( elem_ord a) k) "
+lemma subgroupI1:
+  assumes subset: "H \<subseteq> X" and non_empty: "H \<noteq> {}"
+    and closed: "\<And>a b. \<lbrakk>a \<in> H; b \<in> H\<rbrakk> \<Longrightarrow> a\<cdot>b \<in> H"
+    and inv_cl: "\<And>a. a \<in> H \<Longrightarrow> inv_elem a \<in> H"
+  shows "subgroup H X f e"
+  apply(unfold_locales)
+  apply(auto simp add:subset closed inv_cl)
 proof-
-  let ?b="a^k" let ?n="elem_ord a" let ?j="?n div (gcd ?n k)"
-  assume amem:"a \<in> X" and nzo:"elem_ord a \<noteq> 0" and kgeq1:"1 \<le> k" and lto:"k < elem_ord a"
-  have B0:"\<And>m. m>0 \<Longrightarrow> (?b ^ m =e) \<longleftrightarrow> ?n dvd k*m" using amem elem_pow_eq_id kgeq1 nzo by auto
-  also have "\<And>m. m>0 \<Longrightarrow> ?n dvd k*m \<longleftrightarrow>?j dvd ((k * m) div ((gcd ?n k)))" by simp
-  also have "\<And>m. m>0 \<Longrightarrow> ?j dvd ((k * m) div ((gcd ?n k))) \<longleftrightarrow> ?j dvd m"   by (simp add: div_dvd_iff_mult gcd_mult_distrib_nat mult.commute nzo)
-  then have B1:"\<And>m. m>0 \<Longrightarrow>  (?b ^ m =e) \<longleftrightarrow>  ?j dvd m"  using calculation by blast
-  then have B2:"?j \<in> elem_exponents ?b"  by (simp add: div_greater_zero_iff elem_exponents_def nzo)
-  have B3:"\<And>m. m \<in> elem_exponents ?b \<Longrightarrow> ?j dvd m"  using B1 elem_exponents_def by auto
-  then have B4:"\<And>m. m \<in> elem_exponents ?b \<Longrightarrow>  ?j \<le> m" using dvd_imp_le elem_exponents_def by blast
-  have B5:"Least (\<lambda>i::nat. i \<in> elem_exponents ?b) = ?j "
-    unfolding elem_ord_def  
-    apply(rule Least_equality)  
-    using B2 elem_ord_def apply force
-    using B4 elem_ord_def by force
-  show "elem_ord ?b = ?j"  by (metis B2 B5 elem_ord_def empty_iff)
+  obtain a where A0:"a \<in> H"  using non_empty by auto 
+  then obtain A1:"inv_elem a \<in> H"  using inv_cl by auto
+  have "e = a \<cdot> inv_elem a"  using A0 A1 subset by auto
+  also have "... \<in> H" using A0 A1 closed by blast
+  finally show "e \<in> H" by blast
 qed
-print_facts
+
+lemma subgroupE1:
+  assumes "subgroup H X f e"
+  shows "H \<subseteq> X" and "H \<noteq> {}" and "\<And>a. a \<in> H \<Longrightarrow> inv_elem a \<in> H" and "\<And>a b. \<lbrakk>a \<in> H; b \<in> H\<rbrakk> \<Longrightarrow> a \<cdot> b \<in> H"
+  using assms unfolding subgroup_def subgroup_axioms_def by(auto)+
+  
+
+end
+
+section Subgroups
+context subgroup
+begin
+
+
+lemma assoc_cancel:"a \<in> G \<Longrightarrow> b \<in> G \<Longrightarrow> h \<in> H \<Longrightarrow> (b \<cdot> inv_elem a) \<cdot> (a \<cdot> h) = b \<cdot> h"  using remove_id1 by blast
+
+lemma lcoset_absorb:"g \<in> G \<Longrightarrow> g \<in> l_coset g H" by (metis id_mem l_coset_memI rightid) 
+lemma rcoset_absorb:"g \<in> G \<Longrightarrow> g \<in> r_coset H g" by (metis id_mem r_coset_memI leftid) 
+lemma l_coset_sub:"g \<in> G \<Longrightarrow> l_coset g H \<subseteq> G" by (simp add: l_coset_prod set_prod_closed subset)
+lemma r_coset_sub:"g \<in> G \<Longrightarrow> r_coset H g \<subseteq> G" by (simp add: r_coset_prod set_prod_closed subset)
+lemma l_coset_sub_mem:"g \<in> G \<Longrightarrow> b \<in> l_coset g H \<Longrightarrow> b \<in>  G" using l_coset_sub by blast
+lemma r_coset_sub_mem:"g \<in> G \<Longrightarrow> b \<in> r_coset H g \<Longrightarrow> b \<in>  G" using r_coset_sub by blast
+
+lemma l_coset_absorb_iff:
+  assumes "a \<in> G"
+  shows "l_coset a H = H \<longleftrightarrow> a \<in> H" and  "r_coset H a = H \<longleftrightarrow> a \<in> H"
+proof-
+  show  "l_coset a H = H \<longleftrightarrow> a \<in> H"
+  proof
+    assume A0:"l_coset a H = H"
+    have "a = a \<cdot> e" by (simp add: assms rightid)
+    also have "... \<in> l_coset a H"  by (simp add: id_mem l_coset_memI)
+    finally show "a \<in> H" by (simp add:A0)
+    next
+    assume A0:"a \<in> H"
+    show "l_coset a H = H"
+    proof
+      show "l_coset a H \<subseteq> H"    using A0 sub.closed by auto
+      next 
+      show "H \<subseteq> l_coset a H"
+      proof
+        fix h assume "h \<in> H"
+        then obtain "inv_elem a \<cdot> h \<in> H"  using A0 sub.closed by auto
+        then have "h = e \<cdot> h" using \<open>(h::'a) \<in> (H::'a set)\<close> sub.leftid by presburger
+        also have "... = (a \<cdot> inv_elem a) \<cdot> h"   by (simp add: assms)
+        also have "... = a \<cdot> (inv_elem a \<cdot> h)"   by (meson A0 \<open>(h::'a) \<in> (H::'a set)\<close> inv_cl sub.associative)
+        also have "... \<in> l_coset a H" using \<open>inv_elem (a::'a) \<cdot> (h::'a) \<in> (H::'a set)\<close> by blast
+        finally show "h \<in> l_coset a H" by simp
+      qed
+    qed
+  qed
+  show  "r_coset H a = H \<longleftrightarrow> a \<in> H"
+  proof
+    assume A0:"r_coset H a = H"
+    have "a = e \<cdot> a" by (simp add: assms leftid)
+    also have "... \<in> r_coset H a"  by (simp add: id_mem r_coset_memI)
+    finally show "a \<in> H" by (simp add:A0)
+    next
+    assume A0:"a \<in> H"
+    show "r_coset H a = H"
+    proof
+      show "r_coset H a \<subseteq> H" using A0 sub.closed by auto
+      next 
+      show "H \<subseteq> r_coset H a"
+      proof
+        fix h assume "h \<in> H"
+        then obtain "h \<cdot> inv_elem a  \<in> H" using A0 sub.closed by auto
+        then have "h = h \<cdot> e" using \<open>(h::'a) \<in> (H::'a set)\<close> sub.rightid by presburger
+        also have "... = h \<cdot>(inv_elem a \<cdot> a)"   by (simp add: assms)
+        also have "... = (h \<cdot> inv_elem a) \<cdot> a"   by (simp add: \<open>(h::'a) \<in> (H::'a set)\<close> assms associative)  
+        also have "... \<in> r_coset H a"   by (simp add: \<open>(h::'a) \<cdot> inv_elem (a::'a) \<in> (H::'a set)\<close> r_coset_memI) 
+        finally show "h \<in> r_coset H a " by simp
+      qed
+    qed
+  qed
+qed
+
+
+lemma coset_assoc:
+  assumes A0:"a \<in> G" "b \<in> G"
+  shows "l_coset (a \<cdot> b) H = l_coset a (l_coset b H)" and "r_coset H  (a \<cdot> b) = r_coset (r_coset H a) b"
+proof-
+  have "\<And>x. x \<in> l_coset (a \<cdot> b) H \<longleftrightarrow> x \<in> l_coset a (l_coset b H)"
+  proof-
+    fix x
+    have  "x \<in>l_coset (a \<cdot> b) H \<longleftrightarrow> (\<exists>h \<in> H. x =(a \<cdot> b) \<cdot> h)" by blast
+    also have "... \<longleftrightarrow> (\<exists>h \<in> H. x = a \<cdot> (b \<cdot> h))"  by (simp add: assms(1) assms(2) associative)
+    also have "... \<longleftrightarrow> (\<exists>bh \<in> (l_coset b H). x = a \<cdot> bh)" by blast
+    also have "... \<longleftrightarrow> x \<in>l_coset a (l_coset b H)" by blast
+    finally show "x \<in> l_coset (a \<cdot> b) H \<longleftrightarrow> x \<in> l_coset a (l_coset b H)" by simp
+  qed
+  then show "l_coset (a \<cdot> b) H = l_coset a (l_coset b H)" by auto
+  have  "\<And>x. x \<in> r_coset H  (a \<cdot> b) \<longleftrightarrow> x \<in> r_coset (r_coset H a) b"
+  proof-
+    fix x
+    have  "x \<in> r_coset H  (a \<cdot> b) \<longleftrightarrow> (\<exists>h \<in> H. x =h \<cdot> (a \<cdot> b))" by blast
+    also have "... \<longleftrightarrow> (\<exists>h \<in> H. x = (h \<cdot>a) \<cdot> b)"  by (simp add: assms(1) assms(2) associative)
+    also have "... \<longleftrightarrow> (\<exists>ha \<in> (r_coset H a). x = ha \<cdot> b)" by blast
+    also have "... \<longleftrightarrow> x \<in>r_coset (r_coset H a) b" by blast
+    finally show "x \<in> r_coset H  (a \<cdot> b) \<longleftrightarrow> x \<in> r_coset (r_coset H a) b" by simp
+  qed
+  then show  "r_coset H  (a \<cdot> b) = r_coset (r_coset H a) b" by blast
+qed
+
+lemma lcoset_mem:"\<And>x y. \<lbrakk>x \<in> G; y \<in> G\<rbrakk> \<Longrightarrow> (f (inv_elem x) y \<in> H)  \<longleftrightarrow> (y \<in> (l_coset x H))"
+proof-
+  fix x y assume A0:"x \<in> G" "y \<in> G" 
+  obtain A1:"inv_elem x \<in> G" using A0 by blast
+  then have "(f (inv_elem x)  y) \<in> H \<longleftrightarrow> f x (f (inv_elem x)  y) \<in> l_coset x H"  by (metis A0 inv_left_cancel invertible invertible_right_inverse2 l_coset_memE l_coset_memI sub_mem)
+  also have "... \<longleftrightarrow> f (f x (inv_elem x)) y \<in> (l_coset x H)"  using A0 A1 associative by presburger
+  also have "... \<longleftrightarrow> y \<in> (l_coset x H)"   by (simp add: A0 leftid)
+  finally show "(f (inv_elem x) y \<in> H)  \<longleftrightarrow> (y \<in> (l_coset x H))" by blast
+qed
+
+lemma rcoset_mem:"\<And>x y. \<lbrakk>x \<in> G; y \<in> G\<rbrakk> \<Longrightarrow> (f y (inv_elem x) \<in> H)  \<longleftrightarrow> (y \<in> (r_coset H x))"
+proof-
+  fix x y assume A0:"x \<in> G" "y \<in> G" 
+  obtain A1:"inv_elem x \<in> G" using A0 by blast
+  then have " (f y (inv_elem x) \<in> H) \<longleftrightarrow> f (f y (inv_elem x)) x \<in> r_coset H x "  by (smt (verit) A0(1) A0(2) Algebrah3.group_def associative invertible invertible_right_inverse monoid.invertible_left_inverse r_coset_memE r_coset_memI rightid sub_mem subgroup.axioms(1) subgroup_axioms)
+  also have "... \<longleftrightarrow> f y (f (inv_elem x) x) \<in> (r_coset H x)"  using A0 A1 associative by presburger
+  also have "... \<longleftrightarrow> y \<in> (r_coset H x)"  by (simp add: A0 rightid)
+  finally show "(f y (inv_elem x) \<in> H) \<longleftrightarrow> y \<in> (r_coset H x)" by blast
+qed
+
+
+lemma l_coset_bij:"g \<in> G \<Longrightarrow> bij_betw (\<lambda>x. g\<cdot>x) H (l_coset g H)" by(auto simp add:bij_betw_def, auto intro: inj_onI)
+lemma r_coset_bij:"g \<in> G \<Longrightarrow> bij_betw (\<lambda>x. x\<cdot>g) H (r_coset H g)" by(auto simp add:bij_betw_def, auto intro: inj_onI)
+
+
+
+lemma l_coset_inj:
+  assumes A0:"a \<in> G" and A1:"b \<in> G"
+  shows "inj_on (\<lambda>x. inv_elem (a \<cdot> inv_elem b) \<cdot> x)  (l_coset a H)" and
+        "inj_on (\<lambda>x. inv_elem (a \<cdot> inv_elem b) \<cdot> x)  (l_coset b H)" and
+        "inj_on (\<lambda>x. (b \<cdot> inv_elem a) \<cdot> x)  (l_coset a H)" and
+        "inj_on (\<lambda>x. (b \<cdot> inv_elem a) \<cdot> x)  (l_coset b H)"
+proof-
+  let ?c="inv_elem (a \<cdot> inv_elem b)"
+  obtain B0:"?c\<in>G" using A0 A1 double_inv_prod by blast
+  show P0:"inj_on (\<lambda>x. inv_elem (a \<cdot> inv_elem b) \<cdot> x)  (l_coset a H)"
+  proof(rule inj_onI)
+    fix x y assume A2:"x \<in> l_coset a H" and A3:" y \<in>l_coset a H" and  A4:"?c \<cdot> x = ?c \<cdot> y"
+    then show "x = y" using left_cancellation[of ?c x y]  A0 B0 l_coset_sub_mem by blast
+  qed
+  show P1:"inj_on (\<lambda>x. inv_elem (a \<cdot> inv_elem b) \<cdot> x)  (l_coset b H)"
+  proof(rule inj_onI)
+    fix x y assume A2:"x \<in> l_coset b H" and A3:" y \<in>l_coset b H" and  A4:"?c \<cdot> x = ?c \<cdot> y"
+    then show "x = y" using left_cancellation[of ?c x y] A1 B0 l_coset_sub_mem by presburger 
+  qed
+  have B1:"inv_elem (a \<cdot> inv_elem b) = (b \<cdot> inv_elem a)"  by (simp add: A0 A1 invprod)
+  show P2:"inj_on (\<lambda>x. (b \<cdot> inv_elem a) \<cdot> x)  (l_coset a H)" using B1 P0 by presburger 
+  show P2:"inj_on (\<lambda>x. (b \<cdot> inv_elem a) \<cdot> x)  (l_coset b H)" using B1 P1 by presburger 
+qed
+  
+
+lemma coset_bij1: 
+  assumes A0:"a \<in> G"
+  shows "bij_betw (\<lambda>x. inv_elem x) (l_coset a H) (r_coset H (inv_elem a))"
+proof(auto simp add:bij_betw_def)
+  show "inj_on inv_elem (l_coset a H)"  by (metis A0 inj_onI invertible invertible_inverse_inverse l_coset_sub_mem)
+  show "\<And>x. x \<in> (l_coset a H) \<Longrightarrow> inv_elem x \<in> (r_coset H (inv_elem a))" using assms monoid.invprod(2) monoid_axioms by fastforce
+  show "\<And>x. x \<in> r_coset H( inv_elem a) \<Longrightarrow> x \<in> inv_elem ` (l_coset a H)"   by (metis assms imageI inv_cl invertible invertible_inverse_closed invertible_inverse_inverse invprod(2) lcoset_mem r_coset_sub_mem rcoset_mem)
+qed
+lemma coset_bij2: 
+  assumes A0:"a \<in> G" and A1:"b \<in> G"
+  shows "bij_betw (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) (l_coset a H) (l_coset b H)"
+proof(auto simp add:bij_betw_def)
+  show "inj_on (\<lambda>x. b \<cdot> inv_elem a \<cdot> x)  (l_coset a H)"  by (simp add: A0 A1 l_coset_inj(3))
+  show "\<And>x. x \<in> (l_coset a H) \<Longrightarrow> b \<cdot> inv_elem a \<cdot> x \<in> (l_coset b H)"
+  proof-
+    fix x assume "x \<in> (l_coset a H) " then obtain h where "h \<in> H" and "x = a \<cdot> h" by auto
+    then have "(b \<cdot> inv_elem a) \<cdot> x = (b \<cdot> inv_elem a) \<cdot> (a \<cdot> h)" by blast
+    also have "... = b \<cdot> h"   using A0 A1 \<open>(h::'a) \<in> (H::'a set)\<close> remove_id1 by blast
+    also have "... \<in> l_coset b H" using \<open>(h::'a) \<in> (H::'a set)\<close> by auto
+    finally show "b \<cdot> inv_elem a \<cdot> x \<in> (l_coset b H)" by blast
+  qed
+  show "\<And>x. x \<in> l_coset b H \<Longrightarrow> x \<in> (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) ` (l_coset a H)"
+  proof-
+    fix x assume B0:"x \<in> (l_coset b H) " then obtain h where B1:"h \<in> H" and B2:"x = b \<cdot> h" by auto
+    then have "b \<cdot> h = b \<cdot> (inv_elem a \<cdot> a) \<cdot> h"  by (simp add: A0 A1 rightid)
+    also have "... = (b \<cdot> inv_elem a) \<cdot> (a \<cdot> h)"using A0 A1 B1 calculation remove_id1 sub_mem by presburger
+    also have "... \<in> (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) ` (l_coset a H)" using B1 by blast
+    finally show "x \<in> (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) ` (l_coset a H)"  using B2 by fastforce
+  qed
+qed
+
+lemma coset_bij:"a \<in> G \<Longrightarrow>b \<in> G \<Longrightarrow> bij_betw (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) (l_coset a H) (l_coset b H)" 
+  apply(auto simp add:bij_betw_def)
+  apply(rule inj_onI)
+  apply (metis in_mono invertible invertible_left_cancel l_coset_sub magma.closed magma_axioms monoid.invertible_inverse_closed monoid_axioms)
+  
+
+
+lemma l_coset_eq_iff1:"\<lbrakk>a\<in>G;b\<in>G\<rbrakk> \<Longrightarrow> l_coset a H = l_coset b H \<longleftrightarrow>  a \<in> l_coset b H" by (metis coset_assoc(1) l_coset_absorb_iff(1) l_coset_memE lcoset_absorb sub_mem)
+lemma l_coset_eq_iff2:"\<lbrakk>a\<in>G;b\<in>G\<rbrakk> \<Longrightarrow> l_coset a H = l_coset b H \<longleftrightarrow> inv_elem a \<cdot> b \<in> H" by (metis l_coset_eq_iff1 lcoset_mem)
+lemma r_coset_eq_iff1:"\<lbrakk>a\<in>G;b\<in>G\<rbrakk> \<Longrightarrow> r_coset H a = r_coset H b \<longleftrightarrow> b \<in> r_coset H a"  by (metis coset_assoc(2) l_coset_absorb_iff(2) r_coset_memE rcoset_absorb sub_mem)
+lemma r_coset_eq_iff2:"\<lbrakk>a\<in>G;b\<in>G\<rbrakk> \<Longrightarrow> r_coset H a = r_coset H b \<longleftrightarrow> b\<cdot> inv_elem a  \<in> H" by (metis r_coset_eq_iff1 rcoset_mem)
+
+lemma l_coset_eq_or_disjoint: assumes A0:"a \<in> G" "b \<in> G" "l_coset a H \<inter> l_coset b H \<noteq> {}" shows "l_coset a H = l_coset b H"proof- obtain c where B0:"c \<in> l_coset a H \<inter> l_coset b H" and B1:"c \<in> G" using assms l_coset_sub in_mono by blast then obtain "l_coset c H = l_coset a H" and "l_coset c H = l_coset b H" by (meson Int_iff assms l_coset_eq_iff1)   then show ?thesis by blast qed
+lemma r_coset_eq_or_disjoint: assumes A0:"a \<in> G" "b \<in> G" "r_coset H a \<inter> r_coset H b \<noteq> {}" shows "r_coset H a = r_coset H b"proof- obtain c where B0:"c \<in> r_coset H a \<inter> r_coset H b" and B1:"c \<in> G" using assms r_coset_sub in_mono by blast then obtain "r_coset H c = r_coset H a" and "r_coset H c = r_coset H b" by (metis IntE assms(1,2) r_coset_eq_iff1) then show ?thesis by blast qed
+
+
+lemma r_coset_cardinality:  "\<lbrakk> x \<in> G; y \<in> G \<rbrakk> \<Longrightarrow> card (r_coset H x) = card (r_coset H y)"
+  by (fast intro: bij_betw_same_card Right_Coset_bij)
+
+text \<open>p 52, l 27\<close>
+theorem Right_Coset_unit:
+  "H |\<cdot> \<one> = H"
+  by (force simp add: Right_Coset_def)
+
+text \<open>p 52, l 27\<close>
+theorem Right_Coset_cardinality:
+  "x \<in> G \<Longrightarrow> card (H |\<cdot> x) = card H"
+  using Right_Coset_unit Right_Cosets_cardinality unit_closed by presburger
+
+text \<open>p 52, ll 31--32\<close>
+definition "index = card orbit.Partition"
+
+text \<open>Theorem 1.5\<close>
+text \<open>p 52, ll 33--35; p 53, ll 1--2\<close>
+theorem lagrange:
+  "finite G \<Longrightarrow> card G = card H * index"
+  unfolding index_def
+
+
+end
+
+context group
+begin
 
 end 
 
 
+lemma monoid_subgroupD:
+  assumes "group G f e" and "monoid_subgroup H G f e"
+  shows "H \<subseteq> G" and "\<And>h1 h2. \<lbrakk>h1 \<in> H; h2 \<in> H\<rbrakk> \<Longrightarrow> f h1 h2 \<in> H" and "e \<in> H"
+  apply (meson assms(2) monoid_subgroup_submonoid submonoid.setsub)
+  apply (meson assms(2) monoid_subgroup_submonoid submonoid.opsub)
+  by (meson assms(2) monoid_subgroup_submonoid submonoid.idsub)
 
 
-locale_deps
+
+
 end
 
