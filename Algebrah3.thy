@@ -2969,13 +2969,9 @@ section ExponentsAndOrder
 context monoid begin
 
 definition finprod::"'b set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "finprod I x = (if finite I then foldD X (comp f x) e I else e)"
-
 lemma finprod_empty[simp]:"finprod {} x = e"by (simp add: finprod_def idmem)  
-
 lemma finprod_infinite[simp]: "\<not> finite I \<Longrightarrow> finprod I x = e" by (simp add: finprod_def)
-
 definition pow:: "'a \<Rightarrow> nat \<Rightarrow> 'a" where  "pow x  n  \<equiv> if n=(0::nat) then e else finprod {..n-1} (\<lambda>i. x)"
-
 primrec pow_nat  (infixr "^" 80)where
    pow_0:"x ^ 0 = e " 
  | pow_Suc:"x ^ Suc n = x \<cdot> (x ^ n)"
@@ -3730,6 +3726,7 @@ proof(auto simp add:bij_betw_def)
   show "\<And>x. x \<in> (l_coset a H) \<Longrightarrow> inv_elem x \<in> (r_coset H (inv_elem a))" using assms monoid.invprod(2) monoid_axioms by fastforce
   show "\<And>x. x \<in> r_coset H( inv_elem a) \<Longrightarrow> x \<in> inv_elem ` (l_coset a H)"   by (metis assms imageI inv_cl invertible invertible_inverse_closed invertible_inverse_inverse invprod(2) lcoset_mem r_coset_sub_mem rcoset_mem)
 qed
+
 lemma coset_bij2: 
   assumes A0:"a \<in> G" and A1:"b \<in> G"
   shows "bij_betw (\<lambda>x. b \<cdot> inv_elem a \<cdot> x) (l_coset a H) (l_coset b H)"
