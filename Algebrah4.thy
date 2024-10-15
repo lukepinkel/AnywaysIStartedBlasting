@@ -99,7 +99,20 @@ lemma id1[simp]:"Id X x = (if x \<in> X then x else undefined)" by (simp add:Id_
 lemma hom1:"hom {} Y = {\<lambda>x. undefined}"  by(auto simp add:hom_def) 
 lemma hom2:"f \<in> hom A B \<Longrightarrow> g \<in> hom B C \<Longrightarrow> compose A g f \<in> hom A C" by(auto simp add:hom_def compose_def)
 lemma hom3:"f \<in> hom A B \<Longrightarrow> compose A h (compose A g f) = compose A (compose B h g) f" by(auto simp add:hom_def fun_eq_iff compose_def)
-lemma fun_eqI:"f \<in> hom A Y \<Longrightarrow> g \<in> hom A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g" by(force simp add:fun_eq_iff hom_def)
+
+lemma f_eqI:
+  assumes A0:"f \<in> hom A Y" and A1:"g \<in> hom A Z" and A2:"(\<And>x. x \<in> A \<Longrightarrow> f x = g x)"
+  shows "f = g"
+proof(auto simp add: fun_eq_iff)
+  fix x show "f x = g x"
+  proof(cases "x \<in> A")
+    case True then show ?thesis using A2 by auto
+  next
+    case False then obtain "f x = undefined" and "g x = undefined" using A0 A1 by (meson hom_memD1 maps_on_memD)
+    then show ?thesis by simp
+  qed
+qed
+lemma fun_eqI:"f \<in> hom A Y \<Longrightarrow> g \<in> hom A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g"  using f_eqI by blast 
 lemma hom5:"f \<in> hom A B \<Longrightarrow> compose A (Id B) f = f" by(auto simp add:fun_eq_iff compose_def hom_def)
 lemma hom6:"f \<in> hom A B  \<Longrightarrow> compose A f (Id A) = f" by(auto simp add:fun_eq_iff compose_def hom_def)
 lemma hom7:"(Id A) \<in> hom A A" unfolding hom_def by(auto)
@@ -262,13 +275,9 @@ lemma is_partI1:  "\<Union>P=X \<Longrightarrow> is_disjoint P \<Longrightarrow>
 lemma is_partE1:  assumes A0:"is_part X P" and A1:"x \<in> X" obtains p where "p \<in> P" and "x \<in> p"  by (metis A0 A1 UnionE is_part_def)
 lemma is_partE2: "\<lbrakk>is_part X P; p \<in> P\<rbrakk> \<Longrightarrow> p \<subseteq> X"  unfolding is_part_def by auto
 lemma is_part_ex1:  "\<lbrakk>is_part X P; x \<in>X\<rbrakk> \<Longrightarrow> (\<exists>p \<in> P. x \<in> p)" by (meson is_partE1)
+lemma is_part_ex2: "\<lbrakk>is_part X P; x \<in>X; p \<in> P; x \<in> p; q \<in> P; x \<in> q \<rbrakk> \<Longrightarrow> p=q"  unfolding is_part_def is_disjoint_def by auto
 
-lemma is_part_ex2:
-  "\<lbrakk>is_part X P; x \<in>X; p \<in> P; x \<in> p; q \<in> P; x \<in> q \<rbrakk> \<Longrightarrow> p=q"
-  unfolding is_part_def is_disjoint_def by auto
-
-lemma is_part_unique:
-  "\<lbrakk>is_part X P; x \<in>X\<rbrakk> \<Longrightarrow> (\<exists>!p \<in> P. x \<in> p)"
+lemma is_part_unique: "\<lbrakk>is_part X P; x \<in>X\<rbrakk> \<Longrightarrow> (\<exists>!p \<in> P. x \<in> p)"
 proof(rule ex_ex1I)
   show "is_part X P \<Longrightarrow> x \<in> X \<Longrightarrow> \<exists>p. p \<in> P \<and> x \<in> p"
     using is_part_ex1[of X P x] by auto
@@ -276,23 +285,14 @@ proof(rule ex_ex1I)
     using is_part_ex2[of X P x ] by presburger
 qed
 
-abbreviation map_prod_notation::"('a \<Rightarrow> 'c) \<Rightarrow> ('b \<Rightarrow> 'd) \<Rightarrow> 'a \<times> 'b \<Rightarrow> 'c \<times> 'd" (infixl "(\<otimes>)" 50) where "f\<otimes>g \<equiv> map_prod f g"
-
-
-
 
 section EquivalenceRelation
 subsection EquivalenceClasses
-definition is_eqrel::"'a set \<Rightarrow> 'a rel \<Rightarrow> bool" where
-  "is_eqrel X R \<equiv> refl_on X R \<and> sym R \<and> trans R"
+definition is_eqrel::"'a set \<Rightarrow> 'a rel \<Rightarrow> bool" where "is_eqrel X R \<equiv> refl_on X R \<and> sym R \<and> trans R"
 
-lemma converse_fst_snd:
-  "fst`R=snd`(converse R)"
-  by (simp add: fst_eq_Domain snd_eq_Range)
+lemma converse_fst_snd:  "fst`R=snd`(converse R)" by (simp add: fst_eq_Domain snd_eq_Range)
 
-lemma is_eqrelI1:
-  "\<lbrakk>refl_on X R; sym R; trans R\<rbrakk> \<Longrightarrow> is_eqrel X R"
-  using is_eqrel_def by blast
+lemma is_eqrelI1:  "\<lbrakk>refl_on X R; sym R; trans R\<rbrakk> \<Longrightarrow> is_eqrel X R" using is_eqrel_def by blast
 
 lemma is_eqrelI2:
   assumes A0:"fst`R=X" and A1:"R=converse R" and A2:"(relcomp R R) = R"
@@ -481,8 +481,7 @@ lemma quotient_mem_elem:
           A3:"y \<in> t"
   shows "(x, y) \<in> R"
 proof-
-  obtain z where "z \<in> X" and "R``{z} = t"
-    using A0 A1 quotientE2 by blast  
+  obtain z where "z \<in> X" and "R``{z} = t"  by (metis A1 quotientE4)
   then obtain "(z, x) \<in> R" and rzy:"(z, y) \<in> R" 
     using A2 A3 by blast
   then obtain "(x, z) \<in> R" 
