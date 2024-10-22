@@ -3223,11 +3223,40 @@ lemma generate_into: "a \<in> magma_generated (X \<inter> A) \<Longrightarrow> a
 
 definition cl_magma :: "'a set \<Rightarrow> 'a set"  where "cl_magma S = magma_generated (X \<inter> S)"
 
-lemma cl_magma_sub: "cl_magma H \<subseteq> X" using cl_magma_def generate_into by auto
+lemma cl_magma_sub:"cl_magma H \<subseteq> X" using cl_magma_def generate_into by auto
+lemma cl_submgama: "submagma (cl_magma H) X (\<cdot>)"  by (metis cl_magma_def cl_magma_sub magma_generated.opc magma_axioms submagmaI)
 
-lemma cl_subgroup: "submagma (cl_magma H) X (\<cdot>)"  by (metis cl_magma_def cl_magma_sub magma_generated.opc magma_axioms submagmaI)
+lemma cl_magma_ub:
+  assumes A0:"A \<subseteq> B" and A1:"submagma B X (\<cdot>)" 
+  shows "cl_magma A \<subseteq> B"
+proof
+  fix x assume "x \<in> cl_magma A"
+  then show "x \<in> B"
+    unfolding cl_magma_def
+    apply(induction rule: magma_generated.induct)
+    using A0 apply blast
+    by (meson A1 submagma.subfun)
+qed
 
+lemma cl_magma_iso:
+  assumes A0:"A \<subseteq> B"  shows "cl_magma A \<subseteq> cl_magma B"
+proof
+  fix x assume "x \<in> cl_magma A"
+  then show "x \<in> cl_magma B" unfolding cl_magma_def
+   apply(induction rule: magma_generated.induct)
+    using assms magma_generated.iso apply auto[1]
+    using magma_generated.opc by auto
+qed
 
+lemma cl_magma_extensive:
+   assumes A0:"A \<subseteq> X" shows "A \<subseteq>cl_magma A"
+proof
+  fix x assume "x \<in> A" then show "x \<in>cl_magma A"  unfolding cl_magma_def  by (simp add: assms inf_absorb2 magma_generated.iso)
+qed
+
+lemma cl_magma_idempotent:
+  assumes A0:"A \<subseteq> X" shows "cl_magma A = cl_magma (cl_magma A)"
+  by (simp add: cl_magma_extensive cl_magma_sub cl_magma_ub cl_submgama subset_antisym)
 
 end
       
