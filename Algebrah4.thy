@@ -1376,7 +1376,7 @@ proof-
     by (simp add: T_def eqr_associated_compat eqr_associated_is_eqr h1_def h2_def is_eqr_compat_concrete) 
   show P5:"inj_on h2 ((X/S)/T)"
     by (simp add: T_def eqr_inj2 h2_def)
-  show P6:"surj  h2 (X/R)" by (metis Algebrah4.surj_def P2 P4)  
+  show P6:"surj  h2 (X/R)" by (metis surj_def P2 P4)  
 qed
 
 
@@ -2210,7 +2210,7 @@ proof-
   proof
     assume L:?LHS
     then obtain "(inv_elem x \<cdot> x, inv_elem x \<cdot> y) \<in> R"
-      using compatible projE2 xmem by blast
+      using invertible invertible_inverse_closed left_compatible xmem by presburger
     then obtain "(e, inv_elem x \<cdot> y) \<in> R"
       by (simp add: xmem)
     then show ?RHS
@@ -3085,9 +3085,15 @@ lemma l_cosets_card:"t \<in> l_cosets \<Longrightarrow> card t = card H" using l
 lemma r_cosets_un:"\<Union>r_cosets = G" apply(rule order_antisym) using r_cosets_memD3 apply blast  using r_cosets_memD2 r_cosets_memI1 by blast
 lemma l_cosets_un:"\<Union>l_cosets = G" apply(rule order_antisym) using l_cosets_memD3 apply blast  using l_cosets_memD2 l_cosets_memI1 by blast
 
-lemma lagrange_fin:
-  "finite G \<Longrightarrow> (card H) * (card r_cosets) = card G"
-   by (metis card_partition finite_UnionD r_cosets_card r_cosets_disj r_cosets_un) 
+
+lemma lagrange_l:
+  "(card H) * (card r_cosets) = card G"
+  by (metis (no_types, lifting) card_eq_0_iff card_partition finite_Union finite_UnionD mult.commute mult_0_right r_cosets_card r_cosets_disj r_cosets_un)
+
+lemma lagrange_r:
+  "(card H) * (card l_cosets) = card G"
+  by (metis card.infinite card_partition finite_Union finite_UnionD l_cosets_card l_cosets_disj l_cosets_un mult_is_0)
+
 
 
 
@@ -3203,7 +3209,78 @@ lemma card_eq:"card X = card Y" using bij_betw_same_card by blast
 
 end
 
+
+context magma
+begin
+inductive_set magma_generated::"'a set \<Rightarrow> 'a set" for A where
+ iso:"a \<in> A \<Longrightarrow> a \<in> magma_generated A"
+ |opc:"a \<in> magma_generated A \<Longrightarrow> b \<in> magma_generated A \<Longrightarrow> a\<cdot>b \<in> magma_generated A"
+
+lemma generate_into: "a \<in> magma_generated (X \<inter> A) \<Longrightarrow> a \<in> X"
+  apply (induction rule: magma_generated.induct)
+  apply simp
+  by (simp add: closed)
+
+definition cl_magma :: "'a set \<Rightarrow> 'a set"  where "cl_magma S = magma_generated (X \<inter> S)"
+
+lemma cl_magma_sub: "cl_magma H \<subseteq> X" using cl_magma_def generate_into by auto
+
+lemma cl_subgroup: "submagma (cl_magma H) X (\<cdot>)"  by (metis cl_magma_def cl_magma_sub magma_generated.opc magma_axioms submagmaI)
+
+
+
+end
+      
+
+
+context group
+begin
+inductive_set generated::"'a set \<Rightarrow> 'a set" for A where
+  idm:"e \<in> generated A"
+ |iso:"a \<in> A \<Longrightarrow> a \<in> generated A"
+ |inv:"a \<in> A \<Longrightarrow> inv_elem a \<in> generated A"
+ |opc:"a \<in> generated A \<Longrightarrow> b \<in> generated A \<Longrightarrow> a\<cdot>b \<in> generated A"
+
+lemma generate_into: "a \<in> generated (X \<inter> A) \<Longrightarrow> a \<in> X"
+  apply (induction rule: generated.induct)
+  apply (simp add: idmem)
+  apply simp
+  apply simp
+  by (simp add: closed) 
+
+
+definition cl :: "'a set \<Rightarrow> 'a set"  where "cl S = generated (X \<inter> S)"
+
+lemma inverse_in_cl: "a \<in> cl H \<Longrightarrow> inv_elem a \<in> cl H"
+  unfolding cl_def
+apply(induction rule: generated.induct)
+  apply (simp add: generated.idm)
+  using generated.inv apply force
+  using generated.iso apply force
+  by (simp add: generate_into generated.opc invprod(2))
+
+lemma cl_monoid: "monoid (cl H) (\<cdot>) e"
+  unfolding cl_def monoid_def semigroup_def magma_def semigroup_axioms_def monoid_axioms_def
+  apply(auto)
+  using generated.opc apply auto[1]
+  apply (simp add: associative generate_into)
+  apply (simp add: generated.idm)
+  apply (simp add: generate_into leftid)
+  by (simp add: generate_into rightid)
+  
+lemma cl_sub: "cl H \<subseteq> X" using cl_def generate_into by auto
+
+lemma cl_subgroup: "subgroup (cl H) X (\<cdot>) e"
+  apply(rule subgroupI1)
+  apply (simp add: cl_sub)
+  using cl_def generated.idm apply auto[1]
+  apply (simp add: cl_def generated.opc)
+  by (simp add: inverse_in_cl)
+
+
+end
       
 
 end
 
+ 
