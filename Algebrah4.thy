@@ -3258,6 +3258,17 @@ lemma cl_magma_idempotent:
   assumes A0:"A \<subseteq> X" shows "cl_magma A = cl_magma (cl_magma A)"
   by (simp add: cl_magma_extensive cl_magma_sub cl_magma_ub cl_submgama subset_antisym)
 
+lemma cl_magma_moore1:
+  assumes A0:"A \<subseteq> X" 
+  shows "cl_magma A = \<Inter>{C. submagma C X (\<cdot>) \<and> A \<subseteq> C}" (is "?LHS = ?RHS")
+proof
+  show "?LHS \<subseteq> ?RHS"
+    by (metis (mono_tags, lifting) Inf_greatest cl_magma_ub mem_Collect_eq)
+next
+  show "?RHS \<subseteq> ?LHS"
+    by (simp add: Inter_lower assms cl_magma_extensive cl_submgama)
+qed
+
 end
       
 
