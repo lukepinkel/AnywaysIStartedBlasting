@@ -616,6 +616,77 @@ lemma rinv_inv_set_morphisms:
   "f`A=B \<Longrightarrow> rinv f A B \<in> set_morphisms B A"
   by (simp add: hom_memI2 rinv_in_maps_on rinv_map_to)
 
+
+lemma inj_implies_factors_concrete:
+  fixes X::"'a set" and Y::"'b set" and Z::"'c set" and f::"'a \<Rightarrow> 'b" and g::"'c \<Rightarrow> 'b"
+  assumes A0:"f \<in> set_morphisms X Y" and A1:"g \<in> set_morphisms Z Y" and A2:"inj_on g Z" and A3:"(f`X) \<subseteq> (g`Z)"
+  shows "\<And>x. x \<in> X \<Longrightarrow> f x = g (rinv g Z Y (f x))" and 
+        "compose X (rinv g Z Y) f \<in> set_morphisms X Z" and 
+        "compose X g (compose X (rinv g Z Y) f) \<in> set_morphisms X Y" and
+        "\<And>x. x \<in> X \<Longrightarrow> f x = compose X g (compose X (rinv g Z Y) f) x" and
+        "f = compose X g (compose X (rinv g Z Y) f)" and
+       "\<And>h. \<lbrakk>h \<in> set_morphisms X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
+proof-
+  show P0:"\<And>x. x \<in> X \<Longrightarrow> f x = g (rinv g Z Y (f x))"
+  proof-
+    let ?r="rinv g Z Y"
+    fix x assume A4:"x \<in> X" then obtain B0:"f x \<in> Y" 
+      using A0 A4 hom9[of f X Y] by blast 
+    let ?z="?r (f x)"
+    obtain B1:"?z \<in> Z"
+      by (meson A1 A3 A4 imageI in_mono rinv_into_into)
+    then show B2:"f x = g ?z"
+      using A1 A2 A3 A4 hom_memD2 into_rinv_f by fastforce
+  qed
+  show P1:"compose X (rinv g Z Y) f \<in> set_morphisms X Z"
+    unfolding set_morphisms_def apply(auto)
+    apply (meson compose_maps_on maps_on_memD)
+    by (metis A1 A3 compose_eq image_subset_iff rinv_into_into)
+  show P2:"compose X g (compose X (rinv g Z Y) f) \<in> set_morphisms X Y"
+    using A1 P1 hom2 by blast
+  show P3:"\<And>x. x \<in> X \<Longrightarrow> f x = compose X g (compose X (rinv g Z Y) f) x"
+    by (metis P0 compose_eq)
+  show P3:"f = compose X g (compose X (rinv g Z Y) f)"
+    using A0 P2 P3 fun_eqI by blast
+  show P4:"\<And>h. \<lbrakk>h \<in> set_morphisms X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
+    by (simp add: A1 A2 hom3 hom5 hom_memD2 inv_rinv)
+qed
+
+
+lemma surj_implies_factors_concrete:
+  fixes X::"'a set" and Y::"'b set" and Z::"'c set" and f::"'a \<Rightarrow> 'b" and g::"'a \<Rightarrow> 'c"
+  assumes A0:"f \<in> set_morphisms X Y" and A1:"g \<in> set_morphisms X Z" and A2:"g`X=Z" and A3:"ker_pair X g \<subseteq> ker_pair X f"
+  shows "\<And>x. x \<in> X \<Longrightarrow> f x = f (rinv g X Z (g x))" and
+        "compose Z f (rinv g X Z) \<in> set_morphisms Z Y" and
+        "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (compose Z f (rinv g X Z)) g x"
+        "f = compose X (compose Z f (rinv g X Z)) g" and
+        "\<And>h. \<lbrakk>h \<in> set_morphisms Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
+proof-
+  have P0:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X; g x = g y\<rbrakk> \<Longrightarrow> f x = f y"
+    using A3 unfolding ker_pair_def by blast
+  show P1:"\<And>x. x \<in> X \<Longrightarrow> f x = f (rinv g X Z (g x))" 
+  proof-
+    let ?s="rinv g X Z"
+    fix x assume A4:"x \<in> X" then obtain B1:"g x \<in> Z" 
+      using A2 by blast 
+    let ?x="?s (g x)"
+    obtain B2:"?x\<in> X"
+      by (simp add: rinv_closed A2 B1)
+    then obtain B3:"g x = g ?x"
+      by (simp add: B1 rinv_into_f A2)
+    then show "f x = f ?x" 
+      using B2 A4 P0[of x ?x] by blast
+  qed
+  show P2:"compose Z f (rinv g X Z) \<in> set_morphisms Z Y"
+    using A0 A2 hom2 rinv_inv_set_morphisms by blast
+  show P3: "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (compose Z f (rinv g X Z)) g x"
+    by (metis A1 P1 compose_eq hom9)
+  show P4:"f = compose X (compose Z f (rinv g X Z)) g"
+    using A0 A1 P2 P3 fun_eqI hom2 by blast
+  show P5:"\<And>h. \<lbrakk>h \<in> set_morphisms Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
+    by (metis A2 compose_assoc hom6 rinv_inv rinv_map_to)
+qed
+
 lemma rinv_unique_on1:
   assumes A0:"f`A=B" and A1:"is_right_inv B f s" and A2:"s`B=(rinv f A B)`B" and A3:"s \<in> set_morphisms B A"
   shows "s=rinv f A B"
@@ -656,7 +727,9 @@ proof-
     by (simp add: B0 rinv_into_f surj)
   then show "f x = f ?y" 
       using compat A0 B1 by blast
-  qed
+qed
+
+
 
 lemma surj_implies_factors2:
   assumes surj:"g`X=Y" and compat:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X; g x = g y\<rbrakk> \<Longrightarrow> f x = f y"
@@ -697,6 +770,12 @@ proof
       by (metis compose_maps_on fmap hom_memD1 maps_on_memD) 
   qed
 qed
+
+
+lemma surj_implies_factors5:
+  assumes surj:"g`X=Y" and compat:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X; g x = g y\<rbrakk> \<Longrightarrow> f x = f y" and mem:"x \<in> X"
+  shows "f x = compose Y f (rinv g X Y) (g x)"
+  by (metis compat mem surj surj_implies_factors2)
 
 lemma left_inv_target: "is_left_inv X f r \<Longrightarrow> r`(f`X) = X "
   by (metis image_ident image_restrict_eq is_left_inv_def surj_compose)  
@@ -1167,6 +1246,20 @@ lemma psecE1:"t \<in> X/R \<Longrightarrow> p (pinv t) = t"
 
 end
 
+lemma is_eqrelE1:"is_eqrel X R \<Longrightarrow> R \<subseteq> X \<times> X"  by (simp add: is_eqrel_def refl_on_def)
+lemma is_eqrelE2:"is_eqrel X R \<Longrightarrow>x \<in> X \<Longrightarrow> (x,x)\<in>R"  by (simp add: is_eqrel_def refl_on_def)
+lemma is_eqrelE3:"is_eqrel X R \<Longrightarrow>(x,y)\<in>R \<Longrightarrow> (y,x)\<in>R"  by (meson is_eqrel_def symE) 
+lemma is_eqrelE4:"is_eqrel X R \<Longrightarrow>(x,y)\<in>R \<Longrightarrow> (y, z)\<in>R \<Longrightarrow> (x,z)\<in>R"  by (meson is_eqrel_def transE)  
+
+lemma equivalence_relationI:
+  assumes "is_eqrel X R"
+  shows "equivalence_relation X R"
+  apply(rule equivalence_relation.intro)
+  using assms is_eqrelE1 apply blast
+  apply (meson assms is_eqrelE2)
+  apply (meson assms is_eqrelE3)
+  by (meson assms is_eqrelE4)
+
 locale kernel_pair_notation=fixes X::"'a set"
 begin
 definition kernel_pair_object ("Ker'(_')") where
@@ -1409,6 +1502,7 @@ interpretation ex1b:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<inter> B)" apply
 interpretation ex2a:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x+y)"  by (simp add: magma.intro)
 interpretation ex2b:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x*y)"  by (simp add: magma.intro)
 
+
 subsection \<open>Submagma Locale\<close>
 locale submagma=magma X "(\<cdot>)" for A and X and magma_law (infixl "\<cdot>" 70)+
   assumes submem:"A \<subseteq> X" and 
@@ -1473,6 +1567,7 @@ locale magma_homomorphism=set_morphism f X Y+ dom:magma X "(\<cdot>)" + cod:magm
   assumes cmp:"\<lbrakk>x \<in> X; y \<in> X \<rbrakk> \<Longrightarrow> f (x \<cdot> y) = (f x) \<star> (f y)"
 begin
 
+
 lemma imag_comp:"submagma A X (\<cdot>) \<Longrightarrow> x \<in> f ` A \<Longrightarrow> y \<in> f ` A \<Longrightarrow> x \<star> y \<in> f ` A"
 proof-
   fix x y assume A0:"submagma A X (\<cdot>)" "x \<in> f ` A" "y \<in> f `A" then obtain a b where A1:"a \<in> A" "b \<in> A" "x = f a" "y = f b"  by blast
@@ -1496,8 +1591,14 @@ proof-
 qed
 
 sublocale ker:kernel_pair f X Y  by (simp add: kernel_pair_def set_morphism_axioms)
+definition kernel where "kernel \<equiv> ker.kernel_pair_object f"
 notation ker.kernel_pair_object ("R'(_')")
 sublocale im:submagma "f`X" Y "(\<star>)" by (simp add: dom.closed dom.magma_axioms submagma1 submagmaI)
+
+lemma kernel_ref:"refl_on X kernel"  by (simp add: kernel_def refl_on_def)
+lemma kernel_sym:"sym kernel"   by (simp add: ker.eqr.sym kernel_def symI) 
+lemma kernel_trn:"trans  kernel" unfolding kernel_def using ker.eqr.trn transI  by auto
+lemma eqr_kernel:"is_eqrel X  kernel" unfolding is_eqrel_def using kernel_ref kernel_sym kernel_trn by auto
 
 end
 
@@ -1538,19 +1639,57 @@ subsection \<open>Quotient Magma Locale\<close>
 
 definition l_cong::"'a set\<Rightarrow>('a\<Rightarrow>'b\<Rightarrow>'b)\<Rightarrow>('b\<times>'b) set \<Rightarrow> bool" where
   "l_cong X f R \<equiv> (\<forall>a \<in> X. \<forall>(x,y)\<in>R.  (f a x, f a y) \<in> R)"
+
 definition r_cong::"'a set\<Rightarrow>('b\<Rightarrow>'a\<Rightarrow>'b)\<Rightarrow>('b\<times>'b) set \<Rightarrow> bool" where
   "r_cong X f R \<equiv> (\<forall>a \<in> X. \<forall>(x,y)\<in>R.  (f x a, f y a) \<in> R)"
+
 definition cong::"'a set\<Rightarrow>('a\<Rightarrow>'a\<Rightarrow>'a)\<Rightarrow>('a\<times>'a) set \<Rightarrow> bool" where
   "cong X f R \<equiv> (\<forall>(x1, x2) \<in> R. \<forall>(y1, y2) \<in> R.  (f x1 y1, f x2 y2) \<in> R)"
 
-lemma l_congI1:"(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R) \<Longrightarrow> l_cong X f R" using l_cong_def by fastforce
-lemma r_congI1:"(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R) \<Longrightarrow> r_cong X f R" using r_cong_def by fastforce
-lemma congI1:"(\<And>x1 x2 y1 y2. (x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (f x1 y1 , f x2 y2) \<in> R) \<Longrightarrow> cong X f R" using cong_def by fastforce
-lemma congD1:"cong X f R \<Longrightarrow> (x1,x2)\<in>R \<Longrightarrow> (y1,y2) \<in> R \<Longrightarrow> (f x1 y1, f x2 y2) \<in> R"  using cong_def by fastforce
-lemma l_congD1:"l_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R" using l_cong_def by fastforce
-lemma r_congD1:"r_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R" using r_cong_def by fastforce
-lemma congDR:"refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R"  proof-  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"  then have B0:"(a,a)\<in>R"   by (simp add: refl_onD)  then show "(f x a, f y a) \<in> R"  using A0 cong_def by fastforce qed
-lemma congDL:"refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R"  proof-  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"  then have B0:"(a,a)\<in>R"   by (simp add: refl_onD)  then show "(f a x, f a y) \<in> R"  using A0 cong_def by fastforce qed
+lemma l_congI1:
+  "(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R) \<Longrightarrow> l_cong X f R" 
+  using l_cong_def by fastforce
+
+lemma r_congI1:
+  "(\<And>a x y. a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R) \<Longrightarrow> r_cong X f R"
+  using r_cong_def by fastforce
+
+lemma congI1:
+  "(\<And>x1 x2 y1 y2. (x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (f x1 y1 , f x2 y2) \<in> R) \<Longrightarrow> cong X f R"
+  using cong_def by fastforce
+
+lemma congD1:
+  "cong X f R \<Longrightarrow> (x1,x2)\<in>R \<Longrightarrow> (y1,y2) \<in> R \<Longrightarrow> (f x1 y1, f x2 y2) \<in> R" 
+  using cong_def by fastforce
+
+lemma l_congD1:
+  "l_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R" 
+  using l_cong_def by fastforce
+
+lemma r_congD1:
+  "r_cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R" 
+  using r_cong_def by fastforce
+
+lemma congDR:
+  "refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f x a, f y a) \<in> R" 
+proof-  
+  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"  
+  then have B0:"(a,a)\<in>R"   
+    by (simp add: refl_onD)  
+  then show "(f x a, f y a) \<in> R"  
+    using A0 cong_def by 
+fastforce
+qed
+lemma congDL:
+  "refl_on X R \<Longrightarrow> cong X f R \<Longrightarrow> a \<in> X \<Longrightarrow> (x, y) \<in> R \<Longrightarrow>  (f a x, f a y) \<in> R"
+proof-  
+  assume A0:"refl_on X R" "cong X f R" "a \<in> X" "(x,y)\<in>R"
+  then have B0:"(a,a)\<in>R"   
+    by (simp add: refl_onD)  
+  then show "(f a x, f a y) \<in> R"  
+    using A0 cong_def by fastforce 
+qed
+
 lemma l_congI2:
   assumes A0:"equivalence_relation X R" and A1:"cong X f R" 
   shows "l_cong X f R" 
@@ -1561,6 +1700,7 @@ proof(rule l_congI1)
   then show "(f a x, f a y) \<in> R"
     using A1 xy congD1[of X f R a a x y] by blast
 qed
+
 lemma r_congI2:
   assumes A0:"equivalence_relation X R" and A1:"cong X f R" 
   shows "r_cong X f R" 
@@ -1586,6 +1726,23 @@ proof-
   qed
 qed
 
+context magma_homomorphism
+begin
+lemma ker_cong:"cong X (\<cdot>) kernel"
+proof(rule congI1)
+  fix x1 x2 y1 y2 assume x12:"(x1, x2) \<in> kernel" and  y12:"(y1, y2) \<in> kernel" 
+  then obtain px12:"f x1 = f x2" and py12:"f y1 = f y2" and x1:"x1 \<in> X" and y1:"y1 \<in> X" and x2:"x2 \<in> X" and y2:"y2 \<in> X"          
+    using ker.eqr.l_closed ker.eqr.p_eq1 ker.eqr.r_closed ker.h_eq kernel_def by force
+  then obtain "f (x1 \<cdot> y1) = (f x1) \<star> f(y1)" and "f (x2 \<cdot> y2) = (f x2) \<star> f(y2)"
+    using cmp by force 
+  then obtain "f (x1 \<cdot> y1) = f (x2 \<cdot> y2)"
+    using px12 py12 by auto
+  then show "(x1 \<cdot> y1, x2 \<cdot> y2) \<in> kernel"
+    by (simp add: dom.closed ker.kernel_memI kernel_def x1 x2 y1 y2)
+qed
+
+end
+
 locale quotient_magma=
   magma X "(\<cdot>)" + 
   equivalence_relation X R
@@ -1597,9 +1754,8 @@ begin
 
 notation pinv ("\<sigma>")
 notation p ("\<pi>")
-definition quotient_law (infixl "\<bullet>" 70) where
-  "quotient_law \<equiv> (\<lambda>t \<in> X/R. \<lambda>s \<in> X/R.  \<pi> ((\<sigma> t) \<cdot> (\<sigma> s)))"
-lemma op_compat1:"\<lbrakk>\<pi> x1=\<pi> x2;\<pi> y1 = \<pi> y2; x1 \<in> X; x2 \<in> X;y1 \<in> X; y2 \<in> X\<rbrakk> \<Longrightarrow> \<pi> (x1 \<cdot>y1) = \<pi> (x2 \<cdot> y2)" 
+definition quotient_law (infixl "\<bullet>" 70) where "quotient_law \<equiv> (\<lambda>t \<in> X/R. \<lambda>s \<in> X/R. \<pi> (f (\<sigma> t) (\<sigma> s)) )"
+lemma op_compat1:"\<lbrakk>\<pi> x1=\<pi> x2;\<pi> y1=\<pi> y2; x1\<in>X; x2\<in>X;y1\<in>X; y2\<in>X\<rbrakk> \<Longrightarrow> \<pi> (x1 \<cdot>y1) = \<pi> (x2 \<cdot> y2)" 
   by (meson closed p_equivalence quotient_magma.compatible quotient_magma_axioms) 
 
 lemma left_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y) \<in> R"  using compatible by auto 
@@ -1689,30 +1845,640 @@ next
           quotient_magma_axioms_def by fastforce
 qed
 
+
 context magma_homomorphism
 begin
-lemma first_isomorphism_magmas1:"submagma (f`X) Y (\<star>)"  by (simp add: im.submagma_axioms)
-lemma first_isomorphism_magams2:"cong X (\<cdot>) R(f)"
-proof(rule congI1)
-  fix x1 x2 y1 y2 assume  A0:"(x1, x2) \<in> R(f)" and A1:"(y1, y2) \<in> R(f)" 
-  then obtain A2:"x1 \<in> X" and A3:"x2 \<in> X" and A4:"y1 \<in> X" and A5:"y2 \<in> X" and A6:"ker.eqr.p x1=ker.eqr.p x2" and A7:"ker.eqr.p y1=ker.eqr.p y2"
-    using A0 A1 ker.eqr.p_eq1 by blast
-  then obtain "f x1 = f x2" and "f y1 = f y2"  and "f (x1 \<cdot> y1) = (f x1) \<star> (f y1)" and "f (x2 \<cdot> y2) = (f x2) \<star> (f y2)"
-    by (simp add: ker.h_eq A2 A3 A4 A5 cmp)
-  then obtain "f (x1 \<cdot> y1) =  f (x2 \<cdot> y2)" and "x1 \<cdot> y1 \<in> X " and "x2 \<cdot> y2 \<in> X"
-    using A2 A3 A4 A5 dom.closed by presburger
-  then show "(x1 \<cdot> y1, x2 \<cdot> y2) \<in> R(f)"
-    using ker.kernel_memI[of "x1 \<cdot> y1" "x2 \<cdot> y2"]
-    by blast 
-qed
-lemma quotient_magma:"quotient_magma X (\<cdot>) R(f)"
-  apply(unfold_locales)
-  using congD1[of X "(\<cdot>)" "R(f)"] first_isomorphism_magams2 by auto
 
-lemma isomorphism:"magma_isomorphism (qmap X R f) (X/R(f)) (quotient_magma.quotient_law X (\<cdot>) R) (X/R(f)) (\<star>) (f`X)"
+lemma quotient_magma:"quotient_magma X (\<cdot>) R(f)"
+  using congD1 dom.magma_axioms ker.eqr.equivalence_relation_axioms ker_cong kernel_def quotient_magma.intro quotient_magma_axioms_def by fastforce
+end
+
+
+subsection \<open>First Isomorphism For Magmas\<close>
+locale magma_homomorphism_fundamental=magma_homomorphism 
+begin
+sublocale quotient:quotient_magma X "(\<cdot>)" "R(f)"  by (simp add: quotient_magma)
+notation quotient.quotient_law (infixl "(\<bullet>)" 70)
+lemma first_isomorphism_magmas1:"submagma (f`X) Y (\<star>)"  by (simp add: im.submagma_axioms)
+lemma first_isomorphism_magmas2:"cong X (\<cdot>) R(f)"  using ker_cong kernel_def by force
+lemma first_isomorphism_magmas3a:"magma_homomorphism (ker.h) (X/R(f)) (\<bullet>) (f`X) (\<star>)"  
+ apply(unfold_locales)
+  using ker.quotient_map.dom apply blast
+  apply auto
+  using cmp dom.closed quotient.qlaw3 by fastforce
+
+lemma first_isomorphism_magmas3b:"magma_isomorphism ker.h (X/R(f)) (\<bullet>) (f`X) (\<star>)"
+  apply(unfold_locales)
+  using ker.quotient_map.dom apply blast
+    apply(auto)
+  apply (metis ker.eqr.elem_ex2 ker.factorization2 inj_on_imp_bij_betw ker.quotient_map.inj surj_compose)
+  using cmp dom.closed quotient.qlaw3 by fastforce
+
+sublocale induced:magma_isomorphism ker.h "X/R(f)" "(\<bullet>)" "f`X" "(\<star>)"
+  by (simp add: first_isomorphism_magmas3b)
+
+lemma first_isomorphism_magmas:
+  shows "submagma (f`X) Y (\<star>)" and 
+        "cong X (\<cdot>) R(f)" and
+        "magma_isomorphism ker.h (X/R(f)) (\<bullet>) (f`X) (\<star>)"
+  apply (simp add: first_isomorphism_magmas1)
+  apply (simp add: first_isomorphism_magmas2)
+  by (simp add: first_isomorphism_magmas3b)
+
+lemma third_isomorphism_magmas2:
+  assumes A0:"submagma B Y (\<star>)" and A1:"(vimage f B) \<subseteq> X"
+  shows "vimage f B = (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
+proof-
+  let ?A="vimage f B"
+  have B0:"\<And>x. x \<in>?A \<Longrightarrow> ker.eqr.p x \<subseteq>?A"
+  proof-
+    fix x assume x0:"x \<in> ?A" then obtain x1:"x \<in> X"
+      using A1 by blast 
+    show "ker.eqr.p x \<subseteq> ?A "
+    proof
+      fix y assume y0:"y \<in> ker.eqr.p x"
+      then obtain "f x = f y"
+        by (meson ker.h_eq ker.eqr.p_D1 ker.eqr.p_closed1 ker.eqr.p_eq1 x1)
+      then show "y \<in> ?A"
+        using x0 by auto
+    qed
+  qed
+  then have B1:"(\<Union>x \<in> (vimage f B). ker.eqr.p x) \<subseteq> ?A"
+    by blast
+  have B2:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> ker.eqr.p x"
+    using A1 by force
+  then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
+    by blast
+  then show ?thesis
+    using B1 by blast
+qed
+
+lemma third_isomorphism_magmas:
+  shows "\<And>A. submagma A X (\<cdot>) \<Longrightarrow> submagma (f`A) Y (\<star>)" and
+        "\<And>B. submagma B Y (\<star>) \<Longrightarrow> (vimage f B) \<subseteq> X \<Longrightarrow> submagma (vimage f B) X (\<cdot>) \<and> 
+             (vimage f B) = (\<Union>x \<in> (vimage f B). ker.eqr.p x)" 
+  apply (simp add: submagma1)
+  using submagma12 third_isomorphism_magmas2 by presburger
 
 end
 
+
+subsection \<open>Magma Epimorphism Factoring\<close>
+
+
+locale magma_epimorphism_factoring=
+  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)" +epi:magma_epimorphism g X "(\<cdot>)" Z "(\<bullet>)"
+  for f and g and X and Y and Z and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and law3 (infixl "\<bullet>" 70)+
+  assumes ker_sub:"ker_pair X g \<subseteq> ker_pair X f"
+begin
+
+definition "h \<equiv> compose Z f (rinv g X Z)"
+
+lemma h_set_hom:"h \<in>set_morphisms Z Y"
+  by (metis h_def hom2 map.mem_hom epi.right_inv_is_set_morphism epi.right_inverse_def)
+
+lemma hg_set_hom:"compose X h g \<in> set_morphisms X Y"  using h_set_hom hom2 epi.mem_hom by blast 
+lemma compat:"\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X;g x1 = g x2\<rbrakk> \<Longrightarrow> f x1 = f x2"  using ker_sub unfolding ker_pair_def by auto
+
+
+lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
+  unfolding h_def using compat epi.sur surj_implies_factors2[of g X Z f] by blast
+
+lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X h g) x"
+  by (simp add: compose_eq h_eq1)
+
+lemma h_eq3:"compose X h g = f"
+proof-
+  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
+    by (simp add: map.mem_hom epi.mem_hom) 
+  then show ?thesis
+    by (metis fun_eqI h_eq2 hg_set_hom)
+qed  
+
+lemma magma_hom0:"\<And>x1 x2. \<lbrakk>x1\<in>X;x2\<in>X\<rbrakk> \<Longrightarrow>h ((g x1) \<bullet> (g x2)) = (h (g x1))\<star>(h (g x2)) "
+  using h_eq1 map.cmp map.dom.closed epi.cmp by force
+
+lemma magma_hom1:"\<And>z1 z2. \<lbrakk>z1\<in>Z;z2\<in>Z\<rbrakk> \<Longrightarrow>h (z1\<bullet>z2) = (h z1) \<star> (h z2) "
+proof-
+  fix z1 z2 assume z10:"z1 \<in> Z" and z20:"z2 \<in> Z"
+  then obtain x1 x2 where "x1 \<in> X" and "z1 = g x1" and "x2 \<in> X" and "z2 = g x2"
+    using epi.sur by blast
+  then show "h (z1\<bullet>z2) = (h z1) \<star> (h z2) "
+    by (simp add: magma_hom0)
+qed
+
+end
+
+subsection \<open>Magma Monomorphism Factoring\<close>
+locale magma_monomorphism_factoring=
+  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)" +mono:magma_monomorphism g Z "(\<bullet>)" Y "(\<star>)"
+  for f and g and X and Y and Z and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and law3 (infixl "\<bullet>" 70)+
+  assumes im_sub:"f`X \<subseteq> g`Z"
+begin
+
+definition "h \<equiv> compose X (rinv g Z Y) f"
+
+lemma g_inj:"inj_on g Z"
+  by simp
+
+lemma h_set_hom:"h \<in>set_morphisms X Z"
+  by (simp add: h_def inj_implies_factors_concrete(2) im_sub map.mem_hom mono.mem_hom)
+
+lemma gh_set_hom:"compose X g h \<in> set_morphisms X Y"
+  using h_set_hom hom2 mono.mem_hom by blast 
+
+lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = g (compose X (rinv g Z Y) f x) "
+proof-
+  fix x assume x0:"x \<in> X"
+  then have "f x = g ((rinv g Z Y) (f x))"
+    by (meson g_inj im_sub inj_implies_factors_concrete(1) map.mem_hom mono.mem_hom)
+  also have "... = g (compose X (rinv g Z Y) f x)"
+    by (simp add: compose_eq x0)
+  finally show "f x = g (compose X (rinv g Z Y) f x)"
+    by blast
+qed
+
+lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = g (h x)"
+  using h_def h_eq1 by force
+
+lemma h_eq3:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X g h) x"
+  by (simp add: compose_eq h_eq2)
+
+lemma h_eq4:"compose X g h = f"
+proof-
+  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms Z Y"
+    by (simp add: map.mem_hom mono.mem_hom) 
+  then show ?thesis
+    by (metis g_inj h_def im_sub inj_implies_factors_concrete(5))
+qed  
+
+
+lemma magma_hom1:"\<And>x1 x2. \<lbrakk>x1\<in>X;x2\<in>X\<rbrakk> \<Longrightarrow>h (x1\<cdot>x2) = (h x1) \<bullet> (h x2) "
+proof-
+  fix x1 x2 assume x10:"x1 \<in> X" and x20:"x2 \<in> X"
+  then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and h0:"h x1 \<in> Z" and h1:"h x2 \<in> Z"
+    by (meson h_set_hom hom9 map.mem_hom) 
+  let ?r="rinv g Z Y"
+  have B0:"h  (x1\<cdot>x2) = ?r (f(x1 \<cdot> x2))"
+    by (simp add: compose_eq h_def map.dom.closed x10 x20)
+  also have B1:"... = ?r ((f x1) \<star> (f x2))"
+    by (simp add: map.cmp x10 x20)
+  also have "... = ?r ((g (h x1)) \<star>( g (h x2)))"
+    using h_eq2 x10 x20 by force
+  also have "... = ?r (g ((h x1) \<bullet> (h x2)))"
+    by (simp add: h0 h1 mono.cmp)
+   also have "... = ((h x1) \<bullet> h (x2))"
+     using h0 h1 mono.dom.closed mono.left_inverse_comp3 mono.left_inverse_def by force
+  finally show "h (x1\<cdot>x2) = (h x1) \<bullet> (h x2) "
+    by simp
+qed
+
+
+end
+
+
+
+subsection \<open>Preimage of Magma Congruence\<close>
+
+locale magma_epimorphism_congruence_image_=
+  map:magma_epimorphism f X "(\<cdot>)" Y "(\<star>)"+eqr:quotient_magma X "(\<cdot>)" R
+  for f and X and Y and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and R+
+  assumes sub:"(ker_pair X f ) \<subseteq> R"
+begin
+notation local.map.ker.kernel_pair_object ("R'(_')")
+notation eqr.quotient_law ("\<bullet>")
+
+lemma f_ker_coarser:"ker_pair X f \<subseteq> ker_pair X eqr.p"
+  using eqr.eqr_eq_proj_ker sub by auto
+
+sublocale magma_epimorphism_factoring eqr.p f X "X/R" Y "(\<cdot>)" "(\<bullet>)" "(\<star>)"
+  by(unfold_locales;simp add:f_ker_coarser)
+
+definition factor_map where "factor_map \<equiv> compose Y eqr.p (rinv f X Y)"
+
+definition "Q\<equiv> {(f x, f y)|x y. (x,y) \<in> R}"
+
+lemma Q_memE:assumes "(y1, y2)\<in>Q"
+  obtains x1 x2 where "x1 \<in> X" and "x2 \<in> X" and "y1 = f x1" and "y2 = f x2" and "(x1, x2)\<in>R"
+  using assms Q_def by auto
+
+lemma Q_refl_on:"refl_on Y Q"
+  unfolding refl_on_def Q_def using map.sur by(blast)
+
+lemma Q_sym:"sym Q"
+  unfolding Q_def sym_def using eqr.sym by(blast)
+
+lemma Q_trans:"trans Q"
+proof(rule transI)
+  fix y1 y2 y3 assume xy:"(y1, y2) \<in> Q" and yz:"(y2, y3) \<in> Q" 
+  then obtain x1 x2 x3 where "x1 \<in> X" and "x2 \<in> X" and "x3 \<in> X" and y1:"y1 = f x1" and "y2 = f x2" and
+                             y3:"y3 = f x3"
+    by (meson Q_memE)
+  then obtain x12:"(x1, x2)\<in>R" and x23:"(x2, x3)\<in>R"
+    by (metis Q_memE compat eqr.p_equivalence xy yz)
+  then obtain "(x1, x3)\<in>R"
+    using eqr.trn by blast
+  then show "(y1, y3) \<in> Q"
+    using Q_def y1 y3 by auto
+qed
+
+lemma q_eqr:"is_eqrel Y Q"
+  by (simp add: Q_refl_on Q_sym Q_trans is_eqrel_def) 
+
+lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
+  using factor_map_def h_def h_eq3 by auto
+
+lemma q_eq_ker_factor:"Q = ker_pair Y (factor_map)"
+proof 
+  show " Q \<subseteq> ker_pair Y factor_map"
+  proof
+    fix u assume "u \<in> Q" then obtain x1 x2 where "(x1, x2)\<in>R" and u:"u=(f x1, f x2)"
+      using Q_def by auto
+    then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and "factor_map (f x1) = factor_map (f x2)"
+      by (metis compose_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
+     then have "(f x1, f x2) \<in> ker_pair Y (factor_map)"
+       unfolding ker_pair_def by blast
+     then show "u \<in> ker_pair Y (factor_map)"
+       by (simp add: u)
+   qed
+   show "ker_pair Y factor_map \<subseteq> Q"
+   proof
+     fix u assume "u \<in> ker_pair Y factor_map"
+   then obtain y1 y2 where "y1 \<in> Y" and "y2 \<in> Y" and eq:"factor_map y1 = factor_map y2" and u:"u=(y1,y2)"
+     unfolding ker_pair_def by blast
+   then obtain x1 x2 where "x1 \<in> X" and "x2 \<in> X" and y1:"y1 = f x1" and y2:"y2 = f x2"
+     using map.sur by blast 
+   then obtain "(x1, x2)\<in>R"
+     by (metis compose_eq eq eqr.p_equivalence factor_maps_factors)
+   then show "u \<in> Q"
+     using Q_def u y1 y2 by auto
+ qed
+qed
+
+lemma q_eqr2:"equivalence_relation Y Q"
+  by (simp add: equivalence_relationI q_eqr)
+
+lemma q_cong:"cong Y (\<star>) Q"
+proof(rule congI1)
+  fix y1 y2 y3 y4 assume "(y1, y2) \<in> Q" and "(y3, y4) \<in> Q"
+  then obtain x1 x2 x3 x4 where "x1 \<in> X" and "x2 \<in> X" and "x3 \<in> X" and "x4 \<in> X"and 
+    y1:"y1 = f x1" and y2:"y2 = f x2" and y3:"y3 = f x3" and y4:"y4 = f x4" and  "(x1, x2)\<in>R" and "(x3, x4)\<in>R"
+    by (meson Q_memE)
+  then obtain "(x1 \<cdot> x3, x2 \<cdot> x4) \<in> R" and "f (x1 \<cdot> x3) = y1 \<star> y3" and "f (x2 \<cdot> x4) = y2 \<star> y4"
+    using eqr.compatible map.cmp by presburger
+  then show "(y1 \<star> y3, y2 \<star> y4) \<in> Q"
+    using Q_def by fastforce
+qed
+
+
+sublocale domain_eqr:equivalence_relation X R
+  by (simp add: eqr.equivalence_relation_axioms)
+
+sublocale codomain_ker:kernel_pair factor_map Y "X/R"
+  using factor_map_def h_def h_set_hom kernel_pair.intro set_morphismI1 by fastforce
+
+sublocale codom_hom:magma_homomorphism "factor_map" Y "(\<star>)" "X/R" "(\<bullet>)"
+  apply(unfold_locales)
+  using factor_map_def h_def magma_hom1 by presburger
+
+sublocale codom_quotient:quotient_magma Y "(\<star>)" Q
+  using codom_hom.quotient_magma codomain_ker.ker_pair_ker q_eq_ker_factor by auto
+
+notation codom_quotient.quotient_law ("\<otimes>")
+
+sublocale magma_homomorphism "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
+  using codom_hom.magma_homomorphism_axioms by blast
+
+sublocale first_isomorphism:magma_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
+  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
+
+lemma epi_then_iso:
+  assumes A0:"f`X=Y"
+  shows "magma_isomorphism codomain_ker.h (Y/Q) (\<otimes>) (X/R) (\<bullet>)"
+  apply(unfold_locales)
+  apply (simp add: codomain_ker.ker_pair_ker first_isomorphism.induced.dom q_eq_ker_factor)
+  apply (simp add: codomain_ker.ker_pair_ker q_eq_ker_factor)
+  apply (metis assms codomain_ker.ker_pair_ker eqr.proj_epi.sur factor_maps_factors first_isomorphism.induced.iso q_eq_ker_factor surj_compose)
+  using codomain_ker.ker_pair_ker first_isomorphism.induced.cmp q_eq_ker_factor by force
+
+
+end
+
+
+subsection \<open>Image of Magma Congruence\<close>
+locale magma_congruence_vimage_=
+  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)"+eqr:quotient_magma Y "(\<star>)" S
+  for f and X and Y and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and S
+begin
+notation local.map.ker.kernel_pair_object ("R'(_')")
+notation eqr.quotient_law ("\<bullet>")
+
+lemma ker_pair_eq:"S = ker_pair Y (eqr.p)"  using eqr.eqr_eq_proj_ker by blast
+
+definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
+
+lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
+  apply(auto simp add:Q_def ker_pair_def)
+  apply (simp add: compose_eq eqr.p_eq1)
+  apply (simp add: compose_eq eqr.p_eq1)
+  by (simp add: compose_eq eqr.p_equivalence)
+
+lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
+  using eqr.sym apply presburger
+  by (meson eqr.trn)
+
+lemma q_eqr2:"equivalence_relation X Q"
+  apply(unfold_locales)
+  using Q_def apply force
+  apply (simp add: Q_def)
+  apply (simp add: Q_def eqr.sym)
+  by (simp add: ker_pair_def q_vimage_comp)
+
+lemma q_cong:"cong X (\<cdot>) Q"
+  unfolding Q_def
+  apply(rule congI1)
+  using eqr.compatible map.cmp map.dom.closed by auto
+
+lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
+
+sublocale domain_eqr:equivalence_relation X Q 
+  by (simp add: q_eqr2)
+
+sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
+  using eqr.proj_hom2 hom2 kernel_pair_def map.mem_hom set_morphismI1 by blast  
+
+sublocale codom_hom:magma_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
+  apply(unfold_locales)
+  by (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
+
+sublocale dom_quotient:quotient_magma X "(\<cdot>)" Q
+  using codom_hom.quotient_magma domain_ker.ker_pair_ker q_vimage_comp by auto
+
+notation dom_quotient.quotient_law ("\<otimes>")
+
+sublocale magma_homomorphism "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
+  using codom_hom.magma_homomorphism_axioms by blast
+
+sublocale first_isomorphism:magma_homomorphism_fundamental "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
+  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
+
+lemma epi_then_iso:
+  assumes A0:"f`X=Y"
+  shows "magma_isomorphism domain_ker.h (X/Q) (\<otimes>) (Y/S) (\<bullet>)"
+  apply(unfold_locales)
+  using domain_ker.ker_pair_ker domain_ker.quotient_map.dom q_vimage_comp apply presburger
+  apply (simp add: domain_ker.ker_pair_ker q_vimage_comp)
+  apply (metis assms domain_ker.ker_pair_ker eqr.proj_epi.sur_locale_axioms first_isomorphism.induced.iso q_vimage_comp sur_locale.sur surj_compose)
+  using domain_ker.ker_pair_ker first_isomorphism.induced.cmp q_vimage_comp by force
+
+
+end
+
+
+
+locale magma_homomorphism_factoring=
+  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)" +sur:magma_epimorphism g X "(\<cdot>)" Z "(\<bullet>)"
+  for f and g and X and Y and Z and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and law3 (infixl "\<bullet>" 70)
+begin
+
+notation local.map.ker.kernel_pair_object ("R'(_')")
+
+lemma factorsD:
+  assumes "\<exists>h \<in> set_morphisms Z Y. compose X h g = f"
+  shows "R(g) \<subseteq> R(f)"
+proof-
+  obtain h where "h \<in> set_morphisms Z Y" and  "compose X h g = f"
+    using assms by blast
+  then obtain "\<And>x y. x \<in>X \<Longrightarrow> y \<in> X \<Longrightarrow> g x = g y \<Longrightarrow>f x = f y"
+    by (metis compose_eq)
+  then obtain "\<And>x y.  (x,y) \<in> R(g) \<Longrightarrow> (x, y) \<in> R(f)"
+    by (meson map.ker.kernel_memI sur.ker.h_eq sur.ker.eqr.l_closed sur.ker.eqr.p_eq1 sur.ker.eqr.r_closed)
+  then show ?thesis
+    by force
+qed
+
+
+lemma factorsI:
+  assumes "R(g) \<subseteq> R(f)"
+  shows "\<exists>h \<in> set_morphisms Z Y. compose X h g = f"
+proof-
+  define h where "h \<equiv> compose Z f (rinv g X Z)"
+  then obtain B0:"h \<in> set_morphisms Z Y"
+    by (metis compose_maps_on hom_memI2 map.mem_maps_to maps_to_comp rinv_map_to sur.sur)
+  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
+    by (simp add: map.mem_hom sur.mem_hom) 
+  then obtain B7:"compose X h g \<in> set_morphisms X Y" 
+    by (simp add: B0 hom2)
+  have B1:"g`X=Z"
+    by (simp add: sur.sur)
+  have B2:" (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> g x = g y \<Longrightarrow>f x = f y)"
+    by (meson assms map.ker.h_eq map.ker.eqr.p_eq1 subset_iff sur.ker.kernel_memI)
+  then have B3:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
+    using B1 surj_implies_factors2[of g X Z f] unfolding h_def by blast
+  then have B4:"f = compose X h g" 
+    using B5 B7 by (simp add: compose_eq fun_eqI) 
+  then show ?thesis
+    using B0  by blast
+qed
+
+lemma factor_map_hom:"compose Z f (rinv g X Z) \<in> set_morphisms Z Y"
+  by (metis hom2 map.mem_hom sur.right_inv_is_set_morphism sur.right_inverse_def)
+
+lemma factorsI2:
+  assumes "R(g) \<subseteq> R(f)"
+  shows " compose X (compose Z f (rinv g X Z)) g = f "
+  by (metis assms factorsI hom3 sur.mem_hom sur.right_inv_is_set_morphism sur.right_inverse_def sur.sur surj_implies_factors4)
+ 
+end
+
+
+locale magma_congruence_vimage_=
+  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)"+eqr:quotient_magma Y "(\<star>)" S
+  for f and X and Y and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and S
+begin
+notation local.map.ker.kernel_pair_object ("R'(_')")
+notation eqr.quotient_law ("\<bullet>")
+
+lemma ker_pair_eq:"S = ker_pair Y (eqr.p)"  using eqr.eqr_eq_proj_ker by blast
+
+definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
+
+lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
+  apply(auto simp add:Q_def ker_pair_def)
+  apply (simp add: compose_eq eqr.p_eq1)
+  apply (simp add: compose_eq eqr.p_eq1)
+  by (simp add: compose_eq eqr.p_equivalence)
+
+lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
+  using eqr.sym apply presburger
+  by (meson eqr.trn)
+
+lemma q_eqr2:"equivalence_relation X Q"
+  apply(unfold_locales)
+  using Q_def apply force
+  apply (simp add: Q_def)
+  apply (simp add: Q_def eqr.sym)
+  by (simp add: ker_pair_def q_vimage_comp)
+
+lemma q_cong:"cong X (\<cdot>) Q"
+  unfolding Q_def
+  apply(rule congI1)
+  using eqr.compatible map.cmp map.dom.closed by auto
+
+lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
+
+sublocale domain_eqr:equivalence_relation X Q 
+  by (simp add: q_eqr2)
+
+sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
+  using eqr.proj_hom2 hom2 kernel_pair_def map.mem_hom set_morphismI1 by blast  
+
+sublocale codom_hom:magma_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
+  apply(unfold_locales)
+  by (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
+
+sublocale dom_quotient:quotient_magma X "(\<cdot>)" Q
+  using codom_hom.quotient_magma domain_ker.ker_pair_ker q_vimage_comp by auto
+
+notation dom_quotient.quotient_law ("\<otimes>")
+
+sublocale magma_homomorphism "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
+  using codom_hom.magma_homomorphism_axioms by blast
+
+sublocale chicanery:magma_homomorphism_fundamental "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
+  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
+
+lemma epi_then_iso:
+  assumes A0:"f`X=Y"
+  shows "magma_isomorphism domain_ker.h (X/Q) (\<otimes>) (Y/S) (\<bullet>)"
+  by (metis assms domain_ker.ker_pair_ker eqr.proj_epi.sur chicanery.induced.magma_isomorphism_axioms
+      q_vimage_comp surj_compose)
+end
+
+
+
+
+
+locale magma_congruence_image_=
+  map:magma_epimorphism f X "(\<cdot>)" Y "(\<star>)"+eqr:quotient_magma X "(\<cdot>)" R
+  for f and X and Y and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and R+
+  assumes sub:"(ker_pair X f ) \<subseteq> R"
+begin
+notation local.map.ker.kernel_pair_object ("R'(_')")
+notation eqr.quotient_law ("\<bullet>")
+
+sublocale magma_homomorphism_factoring eqr.p f X "X/R" Y "(\<cdot>)" "(\<bullet>)" "(\<star>)"
+  by(unfold_locales)
+
+definition factor_map where "factor_map \<equiv> compose Y eqr.p (rinv f X Y)"
+
+lemma ker_pair_eq:"R = ker_pair X (eqr.p)"  using eqr.eqr_eq_proj_ker by blast
+
+lemma ker_sub:"R(f) \<subseteq> R(eqr.p)"
+  using eqr.proj.ker.ker_pair_ker ker_pair_eq map.ker.ker_pair_ker sub by blast
+
+definition "Q\<equiv> {(f x, f y)|x y. (x,y) \<in> R}"
+
+lemma Q_memE:assumes "(y1, y2)\<in>Q"
+  obtains x1 x2 where "x1 \<in> X" and "x2 \<in> X" and "y1 = f x1" and "y2 = f x2" and "(x1, x2)\<in>R"
+  using assms Q_def by auto
+
+lemma Q_refl_on:"refl_on Y Q"
+  unfolding refl_on_def Q_def using map.sur by(blast)
+
+lemma Q_sym:"sym Q"
+  unfolding Q_def sym_def using eqr.sym by(blast)
+
+lemma Q_trans:"trans Q"
+proof(rule transI)
+  fix y1 y2 y3 assume xy:"(y1, y2) \<in> Q" and yz:"(y2, y3) \<in> Q" 
+  then obtain x1 x2 x3 where "x1 \<in> X" and "x2 \<in> X" and "x3 \<in> X" and y1:"y1 = f x1" and "y2 = f x2" and
+                             y3:"y3 = f x3" and "(x1, x2)\<in>R" and "(x2, x3)\<in>R"
+    by (metis Q_memE compose_eq eqr.p_D1 eqr.p_I1 factorsI ker_sub)
+  then obtain "(x1, x3)\<in>R"
+    by (meson eqr.equivalence_relation_axioms equivalence_relation.trn)
+  then show "(y1, y3) \<in> Q"
+    using Q_def y1 y3 by auto
+qed
+
+lemma q_eqr:"is_eqrel Y Q"
+  by (simp add: Q_refl_on Q_sym Q_trans is_eqrel_def) 
+
+lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
+  by (simp add: factor_map_def factorsI2 ker_sub)
+
+lemma q_eq_ker_factor:"Q = ker_pair Y (factor_map)"
+proof 
+  show " Q \<subseteq> ker_pair Y factor_map"
+  proof
+    fix u assume "u \<in> Q" then obtain x1 x2 where "(x1, x2)\<in>R" and u:"u=(f x1, f x2)"
+      using Q_def by auto
+    then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and "factor_map (f x1) = factor_map (f x2)"
+      by (metis compose_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
+     then have "(f x1, f x2) \<in> ker_pair Y (factor_map)"
+       unfolding ker_pair_def by blast
+     then show "u \<in> ker_pair Y (factor_map)"
+       by (simp add: u)
+   qed
+   show "ker_pair Y factor_map \<subseteq> Q"
+   proof
+     fix u assume "u \<in> ker_pair Y factor_map"
+   then obtain y1 y2 where "y1 \<in> Y" and "y2 \<in> Y" and eq:"factor_map y1 = factor_map y2" and u:"u=(y1,y2)"
+     unfolding ker_pair_def by blast
+   then obtain x1 x2 where "x1 \<in> X" and "x2 \<in> X" and y1:"y1 = f x1" and y2:"y2 = f x2"
+     using map.sur by blast 
+   then obtain "(x1, x2)\<in>R"
+     by (metis compose_eq eq eqr.p_equivalence factor_maps_factors)
+   then show "u \<in> Q"
+     using Q_def u y1 y2 by auto
+ qed
+qed
+
+lemma q_eqr2:"equivalence_relation Y Q"
+  by (simp add: equivalence_relationI q_eqr)
+
+lemma q_cong:"cong Y (\<star>) Q"
+proof(rule congI1)
+  fix y1 y2 y3 y4 assume "(y1, y2) \<in> Q" and "(y3, y4) \<in> Q"
+  then obtain x1 x2 x3 x4 where "x1 \<in> X" and "x2 \<in> X" and "x3 \<in> X" and "x4 \<in> X"and 
+    y1:"y1 = f x1" and y2:"y2 = f x2" and y3:"y3 = f x3" and y4:"y4 = f x4" and  "(x1, x2)\<in>R" and "(x3, x4)\<in>R"
+    by (meson Q_memE)
+  then obtain "(x1 \<cdot> x3, x2 \<cdot> x4) \<in> R" and "f (x1 \<cdot> x3) = y1 \<star> y3" and "f (x2 \<cdot> x4) = y2 \<star> y4"
+    using eqr.compatible map.cmp by presburger
+  then show "(y1 \<star> y3, y2 \<star> y4) \<in> Q"
+    using Q_def by fastforce
+qed
+
+
+sublocale domain_eqr:equivalence_relation X R
+  by (simp add: eqr.equivalence_relation_axioms)
+
+sublocale codomain_ker:kernel_pair factor_map Y "X/R"
+  by (simp add: factor_map_def factor_map_hom kernel_pair.intro set_morphismI1)
+
+sublocale codom_hom:magma_homomorphism "factor_map" Y "(\<star>)" "X/R" "(\<bullet>)"
+  apply(unfold_locales)
+  by (smt (verit) compose_eq eqr.qlaw3 factor_maps_factors map.cmp map.dom.closed map.mem_hom map.right_inverse_comp3 map.right_inverse_def map.sur rinv_into_into)
+
+sublocale codom_quotient:quotient_magma Y "(\<star>)" Q
+  using codom_hom.quotient_magma codomain_ker.ker_pair_ker q_eq_ker_factor by auto
+
+notation codom_quotient.quotient_law ("\<otimes>")
+
+sublocale magma_homomorphism "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
+  using codom_hom.magma_homomorphism_axioms by blast
+
+sublocale chicanery:magma_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
+  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
+
+lemma epi_then_iso:
+  assumes A0:"f`X=Y"
+  shows "magma_isomorphism codomain_ker.h (Y/Q) (\<otimes>) (X/R) (\<bullet>)"
+  by (metis assms chicanery.induced.magma_isomorphism_axioms codomain_ker.ker_pair_ker eqr.proj_epi.sur factor_maps_factors q_eq_ker_factor surj_compose)
+
+
+end
+  
 
 section \<open>Semigroup\<close>
 subsection \<open>Semigroup Loale\<close>
@@ -4839,189 +5605,7 @@ end
 
 
 
-locale magma_homomorphism_fundamental=magma_homomorphism 
-begin
-sublocale quotient:quotient_magma X "(\<cdot>)" "R(f)"  by (simp add: quotient_magma)
-notation quotient.quotient_law (infixl "(\<bullet>)" 70)
 
-sublocale induced:magma_isomorphism ker.h "X/R(f)" "(\<bullet>)" "f`X" "(\<star>)"
-  apply(unfold_locales)
-  using ker.quotient_map.dom apply blast
-  using ker.h_simp apply blast
-  apply (metis ker.eqr.elem_ex2 ker.factorization2 inj_on_imp_bij_betw ker.quotient_map.inj surj_compose)
-  using cmp dom.closed quotient.qlaw3 by fastforce
-
-lemma first_isomorphism_magmas:
-  shows "submagma (f`X) Y (\<star>)" and 
-        "cong X (\<cdot>) R(f)" and
-        "magma_isomorphism ker.h (X/R(f)) (\<bullet>) (f`X) (\<star>)"
-  apply (simp add: first_isomorphism_magmas1)
-  apply (simp add: first_isomorphism_magams2)
-  by (simp add: induced.magma_isomorphism_axioms)
-
-
-lemma third_isomorphism_magmas2:
-  assumes A0:"submagma B Y (\<star>)" and A1:"(vimage f B) \<subseteq> X"
-  shows "vimage f B = (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
-proof-
-  let ?A="vimage f B"
-  have B0:"\<And>x. x \<in>?A \<Longrightarrow> ker.eqr.p x \<subseteq>?A"
-  proof-
-    fix x assume x0:"x \<in> ?A" then obtain x1:"x \<in> X"
-      using A1 by blast 
-    show "ker.eqr.p x \<subseteq> ?A "
-    proof
-      fix y assume y0:"y \<in> ker.eqr.p x"
-      then obtain "f x = f y"
-        by (meson ker.h_eq ker.eqr.p_D1 ker.eqr.p_closed1 ker.eqr.p_eq1 x1)
-      then show "y \<in> ?A"
-        using x0 by auto
-    qed
-  qed
-  then have B1:"(\<Union>x \<in> (vimage f B). ker.eqr.p x) \<subseteq> ?A"
-    by blast
-  have B2:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> ker.eqr.p x"
-    using A1 by force
-  then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
-    by blast
-  then show ?thesis
-    using B1 by blast
-qed
-
-lemma third_isomorphism_magmas:
-  shows "\<And>A. submagma A X (\<cdot>) \<Longrightarrow> submagma (f`A) Y (\<star>)" and
-        "\<And>B. submagma B Y (\<star>) \<Longrightarrow> (vimage f B) \<subseteq> X \<Longrightarrow> submagma (vimage f B) X (\<cdot>) \<and> 
-             (vimage f B) = (\<Union>x \<in> (vimage f B). ker.eqr.p x)" 
-  apply (simp add: submagma1)
-  using submagma12 third_isomorphism_magmas2 by presburger
-
-
-end
-
-
-locale magma_homomorphism_factoring=
-  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)" +sur:magma_epimorphism g X "(\<cdot>)" Z "(\<bullet>)"
-  for f and g and X and Y and Z and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and law3 (infixl "\<bullet>" 70)
-begin
-
-notation local.map.ker.kernel_pair_object ("R'(_')")
-
-lemma factorsD:
-  assumes "\<exists>h \<in> set_morphisms Z Y. compose X h g = f"
-  shows "R(g) \<subseteq> R(f)"
-proof-
-  obtain h where "h \<in> set_morphisms Z Y" and  "compose X h g = f"
-    using assms by blast
-  then obtain "\<And>x y. x \<in>X \<Longrightarrow> y \<in> X \<Longrightarrow> g x = g y \<Longrightarrow>f x = f y"
-    by (metis compose_eq)
-  then obtain "\<And>x y.  (x,y) \<in> R(g) \<Longrightarrow> (x, y) \<in> R(f)"
-    by (meson map.ker.kernel_memI sur.ker.h_eq sur.ker.eqr.l_closed sur.ker.eqr.p_eq1 sur.ker.eqr.r_closed)
-  then show ?thesis
-    by force
-qed
-
-
-lemma factorsI:
-  assumes "R(g) \<subseteq> R(f)"
-  shows "\<exists>h \<in> set_morphisms Z Y. compose X h g = f"
-proof-
-  define h where "h \<equiv> compose Z f (rinv g X Z)"
-  then obtain B0:"h \<in> set_morphisms Z Y"
-    by (metis compose_maps_on hom_memI2 map.mem_maps_to maps_to_comp rinv_map_to sur.sur)
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
-    by (simp add: map.mem_hom sur.mem_hom) 
-  then obtain B7:"compose X h g \<in> set_morphisms X Y" 
-    by (simp add: B0 hom2)
-  have B1:"g`X=Z"
-    by (simp add: sur.sur)
-  have B2:" (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> g x = g y \<Longrightarrow>f x = f y)"
-    by (meson assms map.ker.h_eq map.ker.eqr.p_eq1 subset_iff sur.ker.kernel_memI)
-  then have B3:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
-    using B1 surj_implies_factors2[of g X Z f] unfolding h_def by blast
-  then have B4:"f = compose X h g" 
-    using B5 B7 by (simp add: compose_eq fun_eqI) 
-  then show ?thesis
-    using B0  by blast
-qed
- 
-end
-
-
-locale magma_congruence_vimage_=
-  map:magma_homomorphism f X "(\<cdot>)" Y "(\<star>)"+eqr:quotient_magma Y "(\<star>)" S
-  for f and X and Y and law1 (infixl "\<cdot>" 70) and law2 (infixl "\<star>" 70) and S
-begin
-notation local.map.ker.kernel_pair_object ("R'(_')")
-notation eqr.quotient_law ("\<bullet>")
-
-lemma mongo_chumba:"S = ker_pair Y (eqr.p)"  using eqr.eqr_eq_proj_ker by blast
-
-definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
-
-lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
-  apply(auto simp add:Q_def ker_pair_def)
-  apply (simp add: compose_eq eqr.p_eq1)
-  apply (simp add: compose_eq eqr.p_eq1)
-  by (simp add: compose_eq eqr.p_equivalence)
-
-
-
-lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
-  using eqr.sym apply presburger
-  by (meson eqr.trn)
-
-lemma q_eqr2:"equivalence_relation X Q"
-  apply(unfold_locales)
-  using Q_def apply force
-  apply (simp add: Q_def)
-  apply (simp add: Q_def eqr.sym)
-  by (simp add: ker_pair_def q_vimage_comp)
-
-lemma q_cong:"cong X (\<cdot>) Q"
-  unfolding Q_def
-  apply(rule congI1)
-  using eqr.compatible map.cmp map.dom.closed by auto
-
-lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
-
-sublocale domain_eqr:equivalence_relation X Q  by (simp add: q_eqr2)
-sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
- using eqr.proj_hom2 hom2 kernel_pair_def map.mem_hom set_morphismI1 by blast  
-sublocale codom_hom:magma_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
-  apply(unfold_locales)
-  by (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
-
-sublocale dom_quotient:quotient_magma X "(\<cdot>)" Q
-  using codom_hom.quotient_magma domain_ker.ker_pair_ker q_vimage_comp by auto
-
-notation dom_quotient.quotient_law ("\<otimes>")
-
-sublocale magma_homomorphism "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
-  using codom_hom.magma_homomorphism_axioms by blast
-
-sublocale chicanery:magma_homomorphism_fundamental "(compose X eqr.p f)" "X" "(\<cdot>)" "(Y/S)" "(\<bullet>)"
-  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
-
-lemma epi_then_iso:
-  assumes A0:"f`X=Y"
-  shows "magma_isomorphism domain_ker.h (X/Q) (\<otimes>) (Y/S) (\<bullet>)"
-  by (metis assms domain_ker.ker_pair_ker eqr.proj_epi.sur chicanery.induced.magma_isomorphism_axioms
-      q_vimage_comp surj_compose)
-
- (*
-  too lazy to finish but if f is surjective and R(f) \<subseteq> S then Q=(f \<times> f) (S) is compatible with the 
-  codomain law and Y/Q \<cong> X/S and we obtain an order isomorphism between equivalences on X 
-  finer than R(f) and those Y
-  
-   Take p: X \<longrightarrow> X/S then \<exists>h:Y\<longrightarrow>X/S such that p=hf (f \<times> f) (S) = ker(h) 
-  (x,y) \<in> S \<Longrightarrow> hf(x) = p(x) = p(y) = hf(y) \<Longrightarrow> (f x, f y) \<in> ker (h) while
-  (x,y) \<in> ker (h) \<Longrightarrow> \<exists>(a,b)\<in>S: (x,y) = (f a, f b) 
-  then Y/Q \<cong> h(X) = p(X)
-
-*)
-
-end
-  
 
 
 end
