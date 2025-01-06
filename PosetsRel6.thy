@@ -13654,6 +13654,89 @@ locale poset_cinf_semilattice=poset+
 locale poset_clattice=poset+
   assumes icl:"is_clattice R X"
 
+definition equiv_rel_lattice where "equiv_rel_lattice X \<equiv> {R \<in> Pow (X \<times> X). equiv X R}"
+
+lemma equiv_rel_lattice_simp1:"R \<in> equiv_rel_lattice X \<Longrightarrow> Relation.sym R \<and> Relation.trans_on UNIV R \<and> refl_on X R"
+  by (simp add: equiv_def equiv_rel_lattice_def)
+
+lemma equiv_rel_lattice_simp2:"R \<in> equiv_rel_lattice X \<Longrightarrow> trans_on X R"
+  using equiv_rel_lattice_simp1 trans_on_subset by blast
+
+lemma equiv_rel_lattice_bot:"\<And>R. R \<in> equiv_rel_lattice X \<Longrightarrow>  {(x ,x)|x. x \<in> X} \<subseteq> R"
+proof-
+  fix R assume "R \<in> equiv_rel_lattice X"
+  then show "{(x ,x)|x. x \<in> X} \<subseteq> R"
+    using equiv_class_eq_iff equiv_rel_lattice_def by fastforce 
+qed
+
+lemma equiv_rel_lattice_top:"\<And>R. R \<in>equiv_rel_lattice X \<Longrightarrow> R \<subseteq> X \<times> X "
+proof-
+  fix R assume "R \<in> equiv_rel_lattice X"
+  then show "R \<subseteq> X \<times> X"
+    using equiv_rel_lattice_simp1 refl_on_def by blast
+qed
+
+
+
+lemma equiv_rel_lattice_memI:"equiv X R \<Longrightarrow> R \<in> equiv_rel_lattice X"
+  unfolding equiv_rel_lattice_def by (simp add: equiv_type)
+
+lemma equiv_rel_lattice_top2:"X \<times> X \<in> equiv_rel_lattice X"
+proof(rule equiv_rel_lattice_memI)
+  have B0:"refl_on X (X \<times> X)"
+    unfolding refl_on_def by auto
+  have B1:"Relation.sym (X \<times> X)"
+    unfolding Relation.sym_def by(auto) 
+  have B2: "trans (X \<times> X) UNIV"
+    unfolding Relation.trans_on_def by(auto)
+  show "equiv X (X \<times> X)"
+    using B0 B1 B2 unfolding equiv_def by auto
+qed
+  
+
+
+lemma refl_on_int_closed:"\<And>\<R>. \<R> \<noteq> {} \<Longrightarrow> (\<And>R. R \<in> \<R> \<Longrightarrow> refl_on X R) \<Longrightarrow>  refl_on X (\<Inter>\<R>)"
+  unfolding refl_on_def by blast
+
+lemma sym_int_closed:"\<And>\<R>. \<R> \<noteq> {} \<Longrightarrow> (\<And>R. R \<in> \<R> \<Longrightarrow> Relation.sym R) \<Longrightarrow>  Relation.sym (\<Inter>\<R>)"
+  unfolding Relation.sym_def by blast
+
+lemma trans_int_closed:"\<And>\<R>. \<R> \<noteq> {} \<Longrightarrow> (\<And>R. R \<in> \<R> \<Longrightarrow> Relation.trans_on UNIV R) \<Longrightarrow>  Relation.trans_on UNIV (\<Inter>\<R>)"
+  unfolding Relation.trans_on_def by blast
+
+
+
+lemma equiv_rel_lattice_ne_int:"\<And>\<R>. \<R> \<in> Pow_ne (equiv_rel_lattice X) \<Longrightarrow> \<Inter>\<R> \<in> (equiv_rel_lattice X)"
+proof-
+  fix \<R> assume A0:"\<R> \<in> Pow_ne (equiv_rel_lattice X)"
+  let ?R="\<Inter>\<R>"
+  from A0 obtain B0:"\<R> \<noteq> {}" and B1:"\<And>R. R \<in> \<R> \<Longrightarrow> R \<in> equiv_rel_lattice X"
+    using Pow_neD by auto
+  have B2:"\<And>R. R \<in> \<R> \<Longrightarrow> refl_on X R"
+    by (simp add: B1 equiv_rel_lattice_simp1)
+  have B3:"\<And>R. R \<in> \<R> \<Longrightarrow> Relation.sym R"
+    using B1 equiv_rel_lattice_simp1 by auto
+  have B4:"\<And>R. R \<in> \<R> \<Longrightarrow> Relation.trans_on UNIV R"
+    using B1 equiv_rel_lattice_simp1 by auto
+  show "\<Inter>\<R> \<in> (equiv_rel_lattice X)"
+  proof(rule equiv_rel_lattice_memI)
+    show "equiv X ?R"
+      by (simp add: B0 B2 B3 B4 equiv_def refl_on_int_closed sym_int_closed trans_int_closed)
+  qed
+qed
+
+
+lemma equiv_rel_clr:"clr (pwr (X \<times> X)) (Pow (X \<times> X)) (equiv_rel_lattice X)"
+proof(rule moore_clI3)
+  show "equiv_rel_lattice X \<subseteq> Pow (X \<times> X)"
+    using equiv_rel_lattice_top by fastforce
+  show "X \<times> X \<in> equiv_rel_lattice X"
+    using equiv_rel_lattice_top2 by auto
+  show "\<And>E. E \<subseteq> equiv_rel_lattice X \<Longrightarrow> E \<noteq> {} \<Longrightarrow> \<Inter> E \<in> equiv_rel_lattice X"
+    by (simp add: Pow_ne_iff equiv_rel_lattice_ne_int)
+qed
+
+
 
 
 end
