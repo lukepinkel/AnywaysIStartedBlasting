@@ -303,6 +303,9 @@ abbreviation spord where
 abbreviation dual where
   "dual R \<equiv> (converse R)"
 
+definition covers::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
+    "covers R X x y \<equiv> (x \<in> X \<and> y \<in> X \<and> (x,y) \<in> R \<and> x \<noteq> y \<and> (\<forall>z \<in> X. (x, z) \<in> R \<and> (z, y) \<in> R \<longrightarrow> x = z \<or> y =z ))"
+
 definition disjoint::"'a set set \<Rightarrow> bool" where
   "disjoint A \<equiv> (\<forall>a \<in> A. \<forall>b \<in> A. a \<noteq> b \<longrightarrow>a \<inter> b = {})"
 
@@ -7376,7 +7379,7 @@ lemma pfilter_meet_of_primes:
           por:"pord R X"
   obtains M where "\<forall>Fm. Fm \<in> M \<longrightarrow> Fm \<in> filters_on R X \<and> meet_irr (pwr X) (filters_on R X) Fm " 
                   and "F = Inf (pwr X) (filters_on R X) M"
-  by (metis (mono_tags, lifting) A0 A1 A2 CollectD pfilter_meet_of_primes02 por)
+  using assms pfilter_meet_of_primes02[of R X top F]  by (metis (no_types, lifting) mem_Collect_eq)
 
 
 lemma sup_prime_pfilterI3:
@@ -7483,15 +7486,12 @@ proof-
     by (metis (no_types, lifting) B1 B11 B5 B7 B9 C1 C3 antisym_on_converse clatD4 cltdual is_supI4 trans_on_converse)
   show P1:"F = Inf ?RX ?FX ?M"
     using B11 B9 by blast
-  have B12:" ?M\<in> Pow_ne (filters_on R X)"
-  proof(rule Pow_neI1)
-     show "?M \<subseteq> ?FX"
-       by blast
-     show "larger_prime_fil R X F \<noteq> {}"
-       by (metis (no_types, lifting) B2 B4 B6 C1 P0 P1 bot.extremum_uniqueI converse_converse empty_iff is_sup_def mem_Collect_eq mredD2 ubd_empty)
-  qed
+  have B12:"larger_prime_fil R X F \<noteq> {}"
+    using B2 B4 B8 C1 P0 P1 mredD2[of ?FX ?RX] ubd_empty[of "dual ?RX" ?FX] ex_inf4[of ?FX ?RX] by fastforce
+  have B13:"?M\<in> Pow_ne (filters_on R X)"
+    using B12 Pow_ne_iff by blast
   have B8:"is_inf (pwr X) (filters_on R X) ?M (\<Inter>?M)"
-    using A0 A1 B12 distr_latticeD5 filters_inf_semilattice_inf latt_iff por by fastforce
+    using A0 A1 B13 distr_latticeD5 filters_inf_semilattice_inf latt_iff por by fastforce
   show "F =\<Inter>((larger_prime_fil R X F))"
     using B8 C1 P1 sup_equality by fastforce
 qed
@@ -13736,7 +13736,59 @@ proof(rule moore_clI3)
     by (simp add: Pow_ne_iff equiv_rel_lattice_ne_int)
 qed
 
+lemma coversI:
+  "\<lbrakk>x\<in>X; y\<in>X; (x,y) \<in> R \<and> x \<noteq> y; (\<And>z. \<lbrakk>z\<in>X;(x,z)\<in>R;(z,y)\<in>R\<rbrakk> \<Longrightarrow> x=z \<or> y=z)\<rbrakk> \<Longrightarrow> covers R X x y" 
+  by(simp add:covers_def) 
+
+lemma coversE:
+  assumes "covers R X x y" 
+  obtains "x\<in>X" "y\<in>X" "(x,y) \<in> R"  "x \<noteq> y" "(\<And>z. \<lbrakk>z\<in>X;(x,z)\<in>R;(z,y)\<in>R\<rbrakk> \<Longrightarrow> x=z \<or> y=z)"
+  using assms unfolding covers_def by blast
 
 
+lemma covers_equiv:
+  assumes A0:"x\<in>X" and A1:"y\<in>X" and A2:"(x,y)\<in>R" and A3:"x\<noteq>y"
+  shows "covers R X x y \<longleftrightarrow> (\<forall>z \<in> X. (x, z) \<in> R \<and> z\<noteq>y \<and> (z, y) \<in> R \<longrightarrow> x = z)"
+  using assms unfolding covers_def by auto
+
+lemma knaster_tarski1:
+  assumes A0:"is_clattice R X" and A1:"isotone R X R f" and A2:"f`X \<subseteq> X" and A3:"pord R X"
+  shows "f (Sup R X {x \<in> X. (x, f x) \<in> R}) = Sup R X {x \<in> X. (x, f x) \<in> R}" and 
+        "\<And>x. \<lbrakk>x \<in> X; f x = x\<rbrakk> \<Longrightarrow> (x, Sup R X {x \<in> X. (x, f x) \<in> R}) \<in> R"
+proof-
+  let ?L="{x \<in> X. (x, f x) \<in> R}"
+  obtain s where B0:"s \<in> X" and B1:"s = Sup R X ?L"
+    by (simp add: A0 A3 clatD21 ex_sup5)
+  have B2:"\<And>x. x \<in> ?L \<Longrightarrow> (x, s) \<in> R \<and> (x, f x) \<in> R"
+    by (simp add: A0 A3 B1 clatD21 ex_sup0)
+  have B3:"\<And>x. x \<in> ?L \<Longrightarrow> (f x, f s) \<in> R"
+    using A1 B0 B2 isotoneD1 by fastforce
+  have B4:"\<And>x. x \<in> ?L \<Longrightarrow> (x, f s) \<in> R"
+  proof-
+    fix x assume A4:"x \<in> ?L" 
+    then obtain "(x, f x) \<in> R" and "(f x, f s) \<in> R" and "f x \<in> X" and "f s \<in> X"
+      using A2 B0 B3 by blast
+    then show "(x, f s) \<in> R"
+      using A3 A4 trans_onD[of X R x "f x" "f s"] by blast
+  qed
+  have B5:"f s \<in> X"
+    using A2 B0 by blast
+  have B6:"f s \<in> ubd R X ?L"
+    using B4 B5 ubdI1[of "f s" X ?L R] by blast
+  have B7:"(s, f s) \<in> R"
+    using A0 A3 B1 B6 clatD4 by fastforce
+  have B8:"(f s, f (f s)) \<in> R"
+    using A1 B0 B5 B7 isotoneD1 by fastforce
+  have B9:"f s \<in> ?L"
+    by (simp add: B5 B8)
+  have B10:"(f s, s) \<in> R"
+    using B2 B9 by blast
+  have B11:"f s = s"
+    using A3 B0 B10 B5 B7 antisym_onD[of X R "f s" s] by blast
+  show "f (Sup R X {x \<in> X. (x, f x) \<in> R}) = Sup R X {x \<in> X. (x, f x) \<in> R}"
+    using B1 B11 by blast
+  show "\<And>x. \<lbrakk>x \<in> X; f x = x\<rbrakk> \<Longrightarrow> (x, Sup R X {x \<in> X. (x, f x) \<in> R}) \<in> R"
+    using A3 B1 B2 reflD2 by fastforce
+qed
 
 end
