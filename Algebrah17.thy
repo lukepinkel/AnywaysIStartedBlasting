@@ -1,15 +1,9 @@
-theory Algebrah16
+theory Algebrah17
   imports Main
 begin
 
-declare [[show_consts, show_results, show_types]]
-declare [[show_abbrevs=true]]
-print_options
-hide_const map dom
-hide_const partition
-hide_const monoid
-hide_const group
-hide_const inverse
+declare [[show_consts, show_results, show_types, show_abbrevs]]
+hide_const map dom partition monoid group inverse
 no_notation power (infixr "^" 80)
 hide_const power
 no_notation divide (infixl "'/" 70)
@@ -22,43 +16,276 @@ definition Pi::"'a set \<Rightarrow> ('a \<Rightarrow> 'b set) \<Rightarrow> ('a
 definition maps_to::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set"  
   where "maps_to A B \<equiv> {f. (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B)}"
 
+
+lemma maps_to_memI1:"(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B" by (simp add: maps_to_def)
+lemma maps_to_memI2:"f`A \<subseteq> B \<Longrightarrow> f \<in> maps_to A B"  by (simp add: image_subset_iff maps_to_def)
+lemma maps_to_memE1:"f \<in> maps_to A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"  by (simp add: maps_to_def)
+lemma maps_to_memE2:"f \<in> maps_to A B \<Longrightarrow>f`A \<subseteq> B"  by (simp add: image_subsetI maps_to_memE1) 
+
 definition maps_on::"'a set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
   where "maps_on A \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined)}"
 
-definition set_morphisms::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
-  where "set_morphisms A B \<equiv> {f. ((\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B))}"
+lemma fun_eqI1:"(\<And>x. f x = g x) \<Longrightarrow> f = g" by auto
+
+
+lemma maps_on_memI1:"(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> f \<in> maps_on A"
+  by (simp add: maps_on_def)
+
+lemma maps_on_memE1:"f \<in> maps_on A \<Longrightarrow> x \<notin> A \<Longrightarrow> f x =undefined"
+  by (simp add: maps_on_def)
+
+lemma maps_on_eqI1:
+  assumes A0:"f \<in> maps_on A" and 
+          A1:"g \<in> maps_on A" and 
+          A2:" \<And>x. x \<in> A \<Longrightarrow> f x = g x"
+  shows "f = g"
+proof(rule fun_eqI1)
+  fix x show "f x = g x"
+  proof(cases "x \<in> A")
+    case True
+    then show ?thesis
+      by (simp add: A2)
+  next
+    case False
+    then obtain "f x = undefined" and "g x = undefined" 
+      using A0 A1 maps_on_memE1[of f A x] maps_on_memE1[of g A x] by auto
+    then show ?thesis
+      by simp 
+  qed
+qed
+
+definition set_mor::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
+  where "set_mor A B \<equiv> {f. ((\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B))}"
+
+lemma set_morphisms_memI1:"(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> set_mor A B"
+  by (simp add: set_mor_def)
+
+lemma set_morphisms_memI2:"\<lbrakk>f \<in> maps_to A B; f \<in> maps_on A\<rbrakk> \<Longrightarrow> f \<in> set_mor A B"
+  by (simp add: maps_on_def maps_to_def set_mor_def)
+
+lemma set_morphisms_memE2:"f \<in> set_mor A B\<Longrightarrow> f \<in> maps_to A B"
+  by (simp add: maps_on_def maps_to_def set_mor_def)
+
+lemma set_morphisms_memE3:"f \<in> set_mor A B\<Longrightarrow> f \<in> maps_on A"
+  by (simp add: maps_on_def maps_to_def set_mor_def)
+
+lemma set_mor1:"set_mor A B \<subseteq> maps_on A"
+  using set_morphisms_memE3 by blast
+
+lemma set_mor2:"set_mor A B \<subseteq> maps_to A B"
+  by (simp add: set_morphisms_memE2 subsetI)
+
+
+definition surj::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set   \<Rightarrow> 'b set \<Rightarrow> bool" 
+  where"surj f X Y \<equiv> f`X=Y"
+
+lemma surjI0:"f`X = Y \<Longrightarrow> surj f X Y" by(simp add:surj_def)
+
+lemma image_if_ex:"(\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. f x =y) \<Longrightarrow> Y \<subseteq> f`X"
+  by blast
+
+lemma image_if_exE:"Y \<subseteq> f`X \<Longrightarrow> y \<in> Y \<Longrightarrow> (\<exists>x \<in> X. f x =y)"
+  by blast
+
+lemma surjI1:"f`X \<subseteq> Y \<Longrightarrow> Y \<subseteq> f`X \<Longrightarrow> surj f X Y" 
+  by(simp add:surj_def)
+
+lemma surjI2:"f`X \<subseteq> Y \<Longrightarrow> (\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. f x =y) \<Longrightarrow> surj f X Y"
+  by(simp add:surjI1 image_if_ex)
+
+lemma surjI3:"f \<in> maps_to X Y \<Longrightarrow> (\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. f x =y) \<Longrightarrow> surj f X Y"
+  by (simp add: maps_to_memE2 surjI2)
+
+lemma surjI4:"(\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y) \<Longrightarrow> (\<And>y. y \<in> Y \<Longrightarrow> \<exists>x \<in> X. f x =y) \<Longrightarrow> surj f X Y"
+  by (simp add: maps_to_memI1 surjI3)
+
+
+lemma surjE0:"surj f X Y \<Longrightarrow> f`X = Y " 
+  by(simp add:surj_def)
+
+lemma surjE1:"surj f X Y \<Longrightarrow> x \<in> X \<Longrightarrow> f x \<in> Y"
+  using surjE0 by fastforce
+
+lemma surjE2:assumes "surj f X Y" obtains "f`X \<subseteq> Y" and "Y \<subseteq> f`X"
+  using assms surjE0 by auto
+
+lemma surjE3: "surj f X Y \<Longrightarrow>y \<in> Y \<Longrightarrow> (\<exists>x \<in> X. f x =y)"
+  using surjE0 by fastforce
+
+lemma surjE4:assumes "surj f X Y" and "y \<in> Y" 
+  obtains x where "x \<in> X" and "f x =y"
+  using assms surjE3[of f X Y y] by auto
+
+lemma surjE5:"surj f X Y \<Longrightarrow> X \<noteq> {}\<Longrightarrow>Y \<noteq> {} \<Longrightarrow> (\<And>x y. y \<in> Y \<Longrightarrow>  y = f x \<Longrightarrow> P) \<Longrightarrow> P"
+  using surjE1[of f X Y] by blast
+
+lemma surj_on_inverseI: "(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y) \<Longrightarrow> surj f (s`Y) Y"
+  by (simp add: image_subset_iff surjI2)
+
+lemma bij_betwI1:"surj f X Y \<Longrightarrow> inj_on f X \<Longrightarrow> bij_betw f X Y"
+  by (simp add: bij_betw_def surjE0)
 
 definition surjectives::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
-  where "surjectives A B \<equiv> {f. f`A = B}"
+  where "surjectives A B \<equiv> {f. surj f A B}"
+
+lemma surjectives_memI1:"f`A = B \<Longrightarrow> f \<in> surjectives A B"
+  by (simp add: surj_def surjectives_def)
+
+lemma surjectives_memE1:" f \<in> surjectives A B \<Longrightarrow> f`A = B "
+  by (simp add: surj_def surjectives_def)
 
 definition injectives::"'a set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
   where "injectives A \<equiv> {f. inj_on f A}"
 
+lemma injectives_memI1:"inj_on f A \<Longrightarrow> f \<in> injectives A"
+  by (simp add: injectives_def)
+
+lemma injectives_memE1:" f \<in> injectives A \<Longrightarrow> inj_on f A "
+  by (simp add: injectives_def)
+
 definition bijectives::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
   where "bijectives A B \<equiv> {f. bij_betw f A B}"
 
-definition set_epimorphisms::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set "
-  where "set_epimorphisms A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> f`A = B}"
+lemma bijectives_memE2:" f \<in> bijectives A B \<Longrightarrow> inj_on f A"
+  by (simp add: bij_betw_imp_inj_on bijectives_def)
 
-definition set_monomorphisms::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
-  where "set_monomorphisms A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> (\<forall>x1 \<in> A. \<forall>x2 \<in> A. f x1 = f x2 \<longrightarrow> x1 = x2)}"
+lemma bijectives_memE3:" f \<in> bijectives A B \<Longrightarrow> f`A=B"
+  by (simp add: bij_betw_def bijectives_def)
 
-definition set_isomorphisms::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set"  
-  where "set_isomorphisms A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> (\<forall>x1 \<in> A. \<forall>x2 \<in> A. f x1 = f x2 \<longrightarrow> x1 = x2) \<and> (f`A=B)}"
+lemma bijectives_memI1:"bij_betw f A B \<Longrightarrow> f \<in> bijectives A B"
+  by (simp add: bijectives_def)
+
+lemma bijectives_memE1:" f \<in> bijectives A B \<Longrightarrow> bij_betw f A B"
+  by (simp add: bijectives_def)
+
+lemma bijectives_memI2:"\<lbrakk>inj_on f A; f`A=B\<rbrakk> \<Longrightarrow> f \<in> bijectives A B"
+  by (simp add: bij_betw_imageI bijectives_memI1)
+
+lemma bijectives1:"bijectives A B \<subseteq> injectives A"
+  by (simp add: bijectives_memE2 injectives_memI1 subsetI)
+
+lemma bijectives2:"bijectives A B \<subseteq> surjectives A B"
+  by (simp add: bijectives_memE3 subsetI surj_def surjectives_def)
+
+definition set_epi::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set "
+  where "set_epi A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> f`A = B}"
+
+lemma set_epi_memI1:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B); f`A = B\<rbrakk> \<Longrightarrow> f \<in> set_epi A B"
+  by (simp add: set_epi_def)
+
+lemma set_epi_memE1:"f \<in> set_epi A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined"
+  by (simp add: set_epi_def)
+
+lemma set_epi_memE2:"f \<in> set_epi A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
+  by (simp add: set_epi_def)
+
+lemma set_epi1:"set_epi A B \<subseteq> set_mor A B"
+  unfolding set_epi_def set_mor_def by fastforce
+
+lemma set_epi2:"set_epi A B \<subseteq> surjectives A B"
+  unfolding set_epi_def surjectives_def surj_def by fastforce
+
+definition set_mono::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
+  where "set_mono A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> (\<forall>x1 \<in> A. \<forall>x2 \<in> A. f x1 = f x2 \<longrightarrow> x1 = x2)}"
+
+
+lemma set_mono_memI1:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B); inj_on f A\<rbrakk> \<Longrightarrow> f \<in> set_mono A B"
+  by (simp add: inj_on_def set_mono_def)
+
+lemma set_mono_memI1b:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B); (\<And>x x'. \<lbrakk>x \<in> A; x' \<in> A; f x=f x'\<rbrakk> \<Longrightarrow> x = x')\<rbrakk> \<Longrightarrow> f \<in> set_mono A B"
+  by (simp add: inj_on_def set_mono_def)
+
+lemma set_mono_memE1:"f \<in> set_mono A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined"
+  by (simp add: set_mono_def)
+
+lemma set_mono_memE2:"f \<in> set_mono A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
+  by (simp add: set_mono_def)
+
+lemma set_mono_memE3:"f \<in> set_mono A B \<Longrightarrow> inj_on f A"
+  by (simp add: inj_on_def set_mono_def)
+
+lemma set_mono1:"set_mono A B \<subseteq> set_mor A B"
+  unfolding set_mono_def set_mor_def by fastforce
+
+lemma set_mono2:"set_mono A B \<subseteq> injectives A"
+  by (simp add: injectives_memI1 set_mono_memE3 subsetI)
+
+definition set_iso::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set"  
+  where "set_iso A B \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B) \<and> (\<forall>x1 \<in> A. \<forall>x2 \<in> A. f x1 = f x2 \<longrightarrow> x1 = x2) \<and> (f`A=B)}"
+
+
+lemma set_iso_memI1:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B); inj_on f A; f`A=B\<rbrakk> \<Longrightarrow> f \<in> set_iso A B"
+  by (simp add: inj_on_def set_iso_def)
+
+lemma set_iso_memI1b:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B); (\<And>x x'. \<lbrakk>x \<in> A; x' \<in> A; f x=f x'\<rbrakk> \<Longrightarrow> x = x'); f`A=B\<rbrakk> \<Longrightarrow> f \<in> set_iso A B"
+  by (simp add: inj_on_def set_iso_def)
+
+lemma set_iso_memE1:"f \<in> set_iso A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined"
+  by (simp add: set_iso_def)
+
+lemma set_iso_memE2:"f \<in> set_iso A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
+  by (simp add: set_iso_def)
+
+lemma set_iso_memE3:"f \<in> set_iso A B \<Longrightarrow> inj_on f A"
+  by (simp add: inj_on_def set_iso_def)
+
+lemma set_iso_memE4:"f \<in> set_iso A B \<Longrightarrow>f`A=B"
+  by (simp add: set_iso_def)
+
+lemma set_iso1:"set_iso A B \<subseteq> set_mor A B"
+  unfolding set_iso_def set_mor_def by fastforce
+
+lemma set_iso2:"set_iso A B \<subseteq> injectives A"
+  by (simp add: injectives_memI1 set_iso_memE3 subsetI)
+
+lemma set_iso3:"set_iso A B \<subseteq> surjectives A B"
+  by (simp add: surjectives_memI1 set_iso_memE4 subsetI)
 
 definition "restrict" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'b" where
   "restrict f A = (\<lambda>x. if x \<in> A then f x else undefined)"
 
+
 syntax "_lam" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b)"  ("(3\<lambda>_\<in>_./ _)" [0,0,3] 3)
 translations "\<lambda>x\<in>A. f" \<rightleftharpoons> "CONST restrict (\<lambda>x. f) A"
+
+lemma restrict_cong: "I = J \<Longrightarrow> (\<And>i. i \<in> J =simp=> f i = g i) \<Longrightarrow> restrict f I = restrict g J" 
+  by (auto simp: restrict_def fun_eq_iff simp_implies_def)
+
+lemma restrictI1: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> Pi A B"
+  by (simp add: Pi_def restrict_def)
+
+lemma restrictI2: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> maps_to A B" 
+  by (simp add: maps_to_def restrict_def)
+
+lemma restrict_apply: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)"
+  by (simp add: restrict_def)
+
+lemma restrict_apply1: "x \<in> A \<Longrightarrow> (\<lambda>y\<in>A. f y) x = f x"
+  by (simp add: restrict_def) 
+
+lemma restrict_ext: "(\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<lambda>x\<in>A. f x) = (\<lambda>x\<in>A. g x)"
+  by (simp add: fun_eq_iff maps_to_def restrict_def)
+
 
 definition compose::"'a set \<Rightarrow> ('b \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'c)" where
  "compose A g f = (\<lambda>x\<in>A. g (f x))"
 
 abbreviation Id where "Id X \<equiv> (\<lambda>x \<in> X. x)"
 
-definition surj::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set   \<Rightarrow> 'b set \<Rightarrow> bool" 
-  where"surj f X Y \<equiv> f`X=Y"
+lemma id_maps_on:"Id X \<in> maps_on X"
+  by (simp add: maps_on_memI1 restrict_def)
+
+lemma comp_maps_on:"compose A g f \<in> maps_on A"
+  by (simp add: compose_def maps_on_memI1 restrict_def)
+
+lemma is_comp:"\<lbrakk>f \<in> maps_to A B; g \<in> maps_to B C\<rbrakk> \<Longrightarrow> compose A g f \<in> maps_to A C"
+  by(simp add:maps_to_def compose_def restrict_def)
+
+lemma comp_assoc:"f \<in> maps_to A B \<Longrightarrow> compose A h (compose A g f) = compose A (compose B h g) f"
+  by(simp add: fun_eq_iff Pi_def compose_def restrict_def maps_to_def)
+
+lemma comp_eq:"x \<in> A \<Longrightarrow> compose A g f x = g (f x)"
+  by (simp add: compose_def restrict_def)
 
 definition rinv::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> 'b \<Rightarrow> 'a"
   where"rinv f X Y \<equiv> (\<lambda>y \<in> Y. SOME x.  x \<in> X \<and> f x = y)"
@@ -66,11 +293,90 @@ definition rinv::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b se
 definition is_right_inv::"'b set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" 
   where "is_right_inv Y f s \<equiv> compose Y f s = Id Y"
 
+lemma is_right_invI0:"compose Y f s = Id Y \<Longrightarrow> is_right_inv Y f s"
+  by (simp add: is_right_inv_def)
+
+lemma is_right_invI1:
+  assumes A0:"(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y)" shows "is_right_inv Y f s"
+proof(rule is_right_invI0)
+  obtain "compose Y f s \<in> maps_on Y" and "Id Y \<in> maps_on Y"
+  using comp_maps_on id_maps_on by blast 
+  then show "compose Y f s = Id Y"
+    by(simp add:assms comp_eq restrict_def maps_on_eqI1 )
+qed
+
+
+lemma is_right_invE2:
+  assumes A0:"is_right_inv Y f s" and A1:"y \<in> Y" 
+  shows "f(s y) = y"
+proof-
+  have "compose Y f s = Id Y"
+    using A0 is_right_inv_def by blast
+  then have "(compose Y f s) y = (Id Y) y"
+    by simp
+  then show "f (s y) = y"
+    by (simp add: A1 comp_eq restrict_def)
+qed
+
+
+lemma is_right_invE3:
+  assumes A0:"is_right_inv Y f s" 
+  shows "surj f (s`Y) Y"
+proof(rule surj_on_inverseI)
+  fix y assume "y \<in> Y" 
+  then show "f (s y) = y"
+    using A0 is_right_invE2[of Y f s y] by blast 
+qed
+
+
 definition is_left_inv ::"'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" 
   where "is_left_inv X f r \<equiv> compose X r f = Id X"
 
+lemma is_left_invI0:"compose X r f = Id X \<Longrightarrow> is_left_inv X f r"
+  by (simp add: is_left_inv_def)
+
+lemma is_left_invI1:
+  assumes A0:"(\<And>x. x \<in> X \<Longrightarrow> r (f x) = x)" shows "is_left_inv X f r"
+proof(rule is_left_invI0)
+  obtain "compose X r f \<in> maps_on X" and "Id X \<in> maps_on X"
+  using comp_maps_on id_maps_on by blast 
+  then show "compose X r f = Id X"
+    by(simp add:assms comp_eq restrict_def maps_on_eqI1 )
+qed
+
+lemma is_left_invE1:"is_left_inv X f r \<Longrightarrow>compose X r f = Id X "
+  by (simp add: is_left_inv_def)
+
+lemma is_left_invE2:
+  assumes A0:"is_left_inv X f r" and A1:"x \<in> X"
+  shows "r (f x) = x"
+proof-
+  have "compose X r f = Id X "
+    using A0 is_left_inv_def by blast
+  then have "(compose X r f) x = (Id X) x "
+    by simp
+  then show "r (f x) = x"
+    by (simp add: A1 comp_eq restrict_def)
+qed
+
+
+lemma is_left_invE3:
+  assumes A0:"is_left_inv X f r" 
+  shows "inj_on f X"
+proof(rule  inj_on_inverseI)
+  fix x assume "x \<in> X" 
+  then show "r (f x) = x"
+    using A0 is_left_invE2[of X f r x] by blast 
+qed
+
 definition is_eqrel::"'a set \<Rightarrow> 'a rel \<Rightarrow> bool" 
-  where "is_eqrel X R \<equiv> refl_on X R \<and> sym R \<and> trans R"
+  where "is_eqrel X R \<equiv> R \<subseteq> X \<times> X \<and> refl_on X R \<and> sym R \<and> trans R"
+
+lemma is_eqrelI1:"\<lbrakk> R \<subseteq> X \<times> X;refl_on X R; sym R; trans R\<rbrakk> \<Longrightarrow> is_eqrel X R" 
+  by(simp add:is_eqrel_def)
+
+lemma is_eqrelE1:assumes "is_eqrel X R" obtains "R \<subseteq> X \<times> X" and "refl_on X R" and "sym R" and "trans R" 
+  using assms by(simp add:is_eqrel_def)
 
 definition quotient::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> 'a set set" (infixl "'/" 75) 
   where "quotient X R \<equiv> (\<Union>x \<in> X. {R``{x}})"
@@ -101,95 +407,57 @@ lemma Pi_empty: "Pi {} B = UNIV"  by (simp add: Pi_def)
 lemma Pi_split_domain: "f \<in> Pi (A \<union> B) X \<longleftrightarrow> f \<in> Pi A X \<and> f \<in> Pi B X" by (auto simp: Pi_def)
 lemma Pi_split_insert_domain: "f \<in> Pi (insert a A) B \<longleftrightarrow>f \<in> Pi A B \<and> f a \<in> B a"  by (auto simp: Pi_def)
 lemma maps_to_eq:"maps_to A B = Pi A (\<lambda>_. B)" by (simp add: Pi_def maps_to_def)
-lemma maps_to_memI: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B"  by (simp add: maps_to_def)
-lemma id_maps_to: "(\<lambda>x. x) \<in> maps_to A A" by (simp add: maps_to_memI) 
-lemma maps_to_memD: "f \<in> maps_to A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B" by (simp add: maps_to_def)
-
-lemma maps_toE[elim]: "f \<in> maps_to A B \<Longrightarrow> (f x \<in> B \<Longrightarrow> Q) \<Longrightarrow> (x \<notin> A \<Longrightarrow> Q) \<Longrightarrow> Q" by (auto simp: maps_to_def)
-
+lemma maps_toE: "f \<in> maps_to A B \<Longrightarrow> (f x \<in> B \<Longrightarrow> Q) \<Longrightarrow> (x \<notin> A \<Longrightarrow> Q) \<Longrightarrow> Q" by (auto simp: maps_to_def)
 lemma maps_to_cong: "(\<And>w. w \<in> A \<Longrightarrow> f w = g w) \<Longrightarrow> f \<in>  maps_to A B \<longleftrightarrow> g \<in>  maps_to A B"  by (auto simp: maps_to_def)
-
-lemma maps_to_empty[simp]: "maps_to {} B = UNIV"  by (simp add: maps_to_def)
-
-lemma maps_to_im:"f \<in> maps_to A B \<Longrightarrow> f ` A \<subseteq> B"  by auto
-
-lemma maps_to_comp: "f \<in> maps_to A B \<Longrightarrow> g \<in> maps_to B C \<Longrightarrow> compose A g f \<in> maps_to A C"
-  by (simp add: maps_to_def compose_def restrict_def)
-
-lemma compose_assoc:"f \<in> maps_to A B \<Longrightarrow>compose A h (compose A g f) = compose A (compose B h g) f 
-"by (simp add: fun_eq_iff maps_to_def compose_def restrict_def)
-
-lemma compose_eq: "x \<in> A \<Longrightarrow> compose A g f x = g (f x)" by (simp add: compose_def restrict_def)
+lemma maps_to_empty: "maps_to {} B = UNIV"  by (simp add: maps_to_def)
 
 lemma surj_compose: "f ` A = B \<Longrightarrow> g ` B = C \<Longrightarrow> compose A g f ` A = C" 
-  by (auto simp add: image_def compose_eq)
+  by (auto simp add: image_def comp_eq)
 
-lemma restrict_cong: "I = J \<Longrightarrow> (\<And>i. i \<in> J =simp=> f i = g i) \<Longrightarrow> restrict f I = restrict g J" 
-  by (auto simp: restrict_def fun_eq_iff simp_implies_def)
-
-lemma restrictI1[intro!]: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> Pi A B"
-  by (simp add: Pi_def restrict_def)
-
-lemma restrictI2[intro!]: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> maps_to A B" 
-  by (simp add: maps_to_def restrict_def)
-
-lemma restrict_apply[simp]: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)"
-  by (simp add: restrict_def)
-
-lemma restrict_apply1: "x \<in> A \<Longrightarrow> (\<lambda>y\<in>A. f y) x = f x" 
-  by simp
-
-lemma restrict_ext: "(\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<lambda>x\<in>A. f x) = (\<lambda>x\<in>A. g x)"
-  by (simp add: fun_eq_iff maps_to_def restrict_def)
-
-lemma restrict_UNIV: "restrict f UNIV = f"
-  by (simp add: restrict_def)
-
-lemma inj_on_restrict_eq [simp]: "inj_on (restrict f A) A \<longleftrightarrow> inj_on f A" 
+lemma inj_on_restrict_eq: "inj_on (restrict f A) A \<longleftrightarrow> inj_on f A" 
   by (simp add: inj_on_def restrict_def)
 
-lemma inj_on_restrict_iff: "A \<subseteq> B \<Longrightarrow> inj_on (restrict f B) A \<longleftrightarrow> inj_on f A" 
-  by (metis inj_on_cong restrict_def subset_iff)
+lemma inj_on_restrictI: "A \<subseteq> B \<Longrightarrow> inj_on (restrict f B) A \<Longrightarrow> inj_on f A" 
+  by(simp add:restrict_def inj_on_def subsetD)
 
-lemma id_compose1: "f \<in> maps_to A B \<Longrightarrow> f \<in> maps_on A \<Longrightarrow> compose A (Id B) f = f" 
-  by (auto simp add: fun_eq_iff compose_def maps_on_def maps_to_def)
+lemma inj_on_restrictE: "A \<subseteq> B \<Longrightarrow> inj_on f A \<Longrightarrow> inj_on (restrict f B) A " 
+  by(simp add:restrict_def inj_on_def subsetD)
 
-lemma id_compose2: 
-  "f \<in> maps_to A B \<Longrightarrow> f \<in> maps_on A \<Longrightarrow> compose A f (Id A) = f"
-  by (auto simp add: fun_eq_iff compose_def maps_on_def maps_to_def)
+lemma inj_on_restrict_iff: "A \<subseteq> B \<Longrightarrow> inj_on (restrict f B) A \<longleftrightarrow> inj_on f A"
+  using inj_on_restrictE inj_on_restrictI by blast 
 
-lemma image_restrict_eq [simp]: 
+lemma image_restrict_eq: 
   "(restrict f A) ` A = f ` A" 
   by (auto simp add: restrict_def)
 
-lemma restrict_restrict[simp]: 
+lemma restrict_restrict: 
   "restrict (restrict f A) B = restrict f (A \<inter> B)"  
   unfolding restrict_def by (simp add: fun_eq_iff)
 
-lemma bijI:"f \<in> maps_to A B \<Longrightarrow> g \<in> maps_to B A \<Longrightarrow> 
-            (\<And>x. x\<in>A \<Longrightarrow> g (f x) = x) \<Longrightarrow> (\<And>y. y\<in>B \<Longrightarrow> f (g y) = y) \<Longrightarrow> bij_betw f A B" 
-  by (metis bij_betw_byWitness maps_to_im)
+lemma bij_betwI2:"\<lbrakk>f \<in> maps_to A B; g \<in> maps_to B A;  (\<And>x. x\<in>A \<Longrightarrow> g (f x) = x); (\<And>y. y\<in>B \<Longrightarrow> f (g y) = y)\<rbrakk>\<Longrightarrow> bij_betw f A B" 
+  using bij_betw_byWitness[of A g f B]  by (simp add: maps_to_memE2)
+
 
 lemma bijD1: "bij_betw f A B \<Longrightarrow> f \<in> maps_to A B"
-  by (simp add: bij_betwE maps_to_memI) 
+  by (simp add: bij_betw_def maps_to_memI2)
 
 lemma inj_compose:"bij_betw f A B \<Longrightarrow> inj_on g B \<Longrightarrow> inj_on (compose A g f) A"
-  by (auto simp add: bij_betw_def inj_on_def compose_eq)
+  by (auto simp add: bij_betw_def inj_on_def comp_eq)
 
 lemma bij_compose:"bij_betw f A B \<Longrightarrow> bij_betw g B C \<Longrightarrow> bij_betw (compose A g f) A C" 
   by (simp add: inj_compose bij_betw_def surj_compose)
 
 lemma bij_restrict_eq [simp]: "bij_betw (restrict f A) A B = bij_betw f A B"
-  by (simp add: bij_betw_def)
+  by (simp add: bij_betw_def image_restrict_eq inj_on_restrict_eq)
 
 lemma im_restrict_sub:"A \<subseteq> X \<Longrightarrow> f`A \<subseteq> A \<Longrightarrow> g`A \<subseteq> A \<Longrightarrow> (compose X f g)`A \<subseteq> A"
-  by (simp add: compose_eq subset_eq)
+  by (simp add: comp_eq subset_eq)
            
 lemma im_restrict_sub2:"A \<in> Pow X \<Longrightarrow> f`A \<subseteq> A \<Longrightarrow> g`A \<subseteq> A \<Longrightarrow> (compose X f g)`A \<subseteq> A"
-  by (simp add: compose_eq subset_eq)
+  by (simp add: comp_eq subset_eq)
            
 lemma im_restrict_eq:"A \<subseteq> X \<Longrightarrow> f`A = A \<Longrightarrow> g`A = A \<Longrightarrow> (compose X f g)`A = A"
-  apply(auto simp add:compose_def)
+  apply(auto simp add:compose_def restrict_def)
   apply fastforce
   by (metis image_image inf.absorb_iff2 inf_commute)
 
@@ -198,238 +466,55 @@ lemma im_restrict_eq2:"A \<in> Pow X \<Longrightarrow> f`A = A \<Longrightarrow>
 
 
 section \<open>Extensionality\<close>
-lemma maps_on_memI[intro]:
-  "(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> f \<in> maps_on A" 
-  by (simp add: maps_on_def)
-
-lemma maps_on_memD:
-  "f \<in> maps_on A \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined" 
-  by (simp add: maps_on_def)
-
-lemma maps_on_empty[simp]:
-  "maps_on {} = {\<lambda>x. undefined}" 
-  unfolding maps_on_def by auto
-
-lemma maps_on_arb: 
-  "f \<in> maps_on A \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined" 
-  by (simp add: maps_on_def)
-
-lemma restrict_maps_on [simp]: 
+lemma restrict_maps_on: 
   "restrict f A \<in> maps_on A"
   by (simp add: restrict_def maps_on_def)
 
-lemma compose_maps_on [simp]: 
-  "compose A f g \<in> maps_on A"  
-  by (simp add: compose_def)
-
-lemma maps_on_equalityI:
-  "f \<in> maps_on A \<Longrightarrow> g \<in> maps_on A \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g" 
-  by (force simp add: fun_eq_iff maps_on_def)
-
 lemma maps_on_restrict:
   "f \<in> maps_on A \<Longrightarrow> restrict f A = f" 
-  by (rule maps_on_equalityI[OF restrict_maps_on]) auto
+  by (erule maps_on_eqI1[OF restrict_maps_on],simp add: restrict_def) 
 
 lemma maps_on_subset: 
   "f \<in> maps_on A \<Longrightarrow> A \<subseteq> B \<Longrightarrow> f \<in> maps_on B"
   unfolding maps_on_def by auto
 
-lemma maps_on_Int[simp]:
-  "maps_on I \<inter> maps_on I' = maps_on (I \<inter> I')"  
-  unfolding maps_on_def by auto
-
-lemma maps_on_UNIV[simp]: 
-  "maps_on UNIV = UNIV" 
-  by (auto simp: maps_on_def)
-
-lemma restrict_maps_on_sub[intro]:
+lemma restrict_maps_on_sub:
   "A \<subseteq> B \<Longrightarrow> restrict f A \<in> maps_on B" 
   unfolding restrict_def maps_on_def by auto
 
-lemma maps_on_insert_cancel[intro, simp]:
- "a \<in> maps_on I \<Longrightarrow> a \<in> maps_on (insert i I)"  
-  unfolding maps_on_def by auto
-
-lemma hom_memI1:
-  "(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> set_morphisms A B" 
-  unfolding set_morphisms_def by fast
-
-lemma hom_memI2:
-  "f \<in> maps_on A \<Longrightarrow> f \<in>maps_to A B \<Longrightarrow> f \<in> set_morphisms A B"
-  by(rule hom_memI1,auto elim: maps_on_memD)
-
-lemma hom_memD1:
-  "f \<in> set_morphisms A B \<Longrightarrow> f \<in> maps_on A" 
-  unfolding set_morphisms_def maps_on_def by(auto)
-
-lemma hom_memD2:
-  "f \<in> set_morphisms A B \<Longrightarrow> f \<in> maps_to A B"
-  unfolding set_morphisms_def maps_to_def by(auto)
-
-lemma id1[simp]:
-  "Id X x = (if x \<in> X then x else undefined)"
-  by (simp add:Id_def)
-
-lemma id2[simp]:
-  "x \<in> X \<Longrightarrow> Id X x = x"
-  by simp
-
-lemma hom1:
-  "set_morphisms {} Y = {\<lambda>x. undefined}" 
-    by(auto simp add:set_morphisms_def) 
-
 lemma hom2:
-  "f \<in> set_morphisms A B \<Longrightarrow> g \<in> set_morphisms B C \<Longrightarrow> compose A g f \<in> set_morphisms A C" 
-  by(auto simp add:set_morphisms_def compose_def)
+  "f \<in> set_mor A B \<Longrightarrow> g \<in> set_mor B C \<Longrightarrow> compose A g f \<in> set_mor A C" 
+  using  set_morphisms_memE2 is_comp[of f A B g C] set_morphisms_memE2[of f A B] comp_maps_on[of A g f] set_morphisms_memI2[of "compose A g f" A C]
+  by blast
+
 
 lemma hom3:
-  "f \<in> set_morphisms A B \<Longrightarrow> compose A h (compose A g f) = compose A (compose B h g) f" 
-  by(auto simp add:set_morphisms_def fun_eq_iff compose_def)
+  "f \<in> set_mor A B \<Longrightarrow> compose A h (compose A g f) = compose A (compose B h g) f"
+  by (simp add: comp_assoc set_morphisms_memE2) 
 
 lemma fun_eqI:
-  "f \<in> set_morphisms A Y \<Longrightarrow> g \<in> set_morphisms A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g" 
-  by (meson hom_memD1 maps_on_equalityI) 
+  "f \<in> set_mor A Y \<Longrightarrow> g \<in> set_mor A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g"
+  using maps_on_eqI1 set_morphisms_memE3 by blast 
 
-lemma hom5:
-  "f \<in> set_morphisms A B \<Longrightarrow> compose A (Id B) f = f"
-  by(auto simp add:fun_eq_iff compose_def set_morphisms_def)
 
-lemma hom6:"f \<in> set_morphisms A B  \<Longrightarrow> compose A f (Id A) = f" 
-  by(auto simp add:fun_eq_iff compose_def set_morphisms_def)
-
-lemma hom7:"(Id A) \<in> set_morphisms A A" 
-  unfolding set_morphisms_def by(auto)
-
-lemma hom8:
-  "A \<subseteq> B \<Longrightarrow> (Id A) \<in> set_morphisms A B"  
-  using set_morphisms_def by fastforce 
-
-lemma hom9:
-  "f \<in> set_morphisms A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
-  unfolding set_morphisms_def by simp
-
-lemma hom10:
-  "f \<in> set_morphisms A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined"
-  unfolding set_morphisms_def by simp
 
 lemma hom11:
-  "f \<in> set_morphisms A B \<Longrightarrow> g \<in> set_morphisms A C \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = g x"
-  unfolding set_morphisms_def by(auto)
-
-lemma set_morphisms_eq_maps_to_inter_maps_on: 
-  "set_morphisms A B = maps_to A B \<inter> maps_on A"
-  unfolding set_morphisms_def maps_to_def maps_on_def by auto
-
-lemma set_epimorphisms_eq_set_morphisms_inter_surjectives:
-  "set_epimorphisms A B = set_morphisms A B \<inter> surjectives A B"
-  unfolding set_epimorphisms_def set_morphisms_def surjectives_def by auto
-
-lemma set_epimorphisms_eq_maps_to_inter_maps_on_inter_surjectives:
-  "set_epimorphisms A B = maps_to A B \<inter> maps_on A \<inter> surjectives A B"
-  by (simp add: set_epimorphisms_eq_set_morphisms_inter_surjectives set_morphisms_eq_maps_to_inter_maps_on)
-
-lemma set_monomorphisms_eq_set_morphisms_inter_injs:
-  "set_monomorphisms A B = set_morphisms A B \<inter> injectives A"
-  unfolding set_monomorphisms_def set_morphisms_def injectives_def inj_on_def by auto
-
-
-lemma set_isomorphisms_eq_set_morphisms_inter_bijs:
-  "set_isomorphisms A B = set_morphisms A B \<inter> bijectives A B"
-  unfolding set_isomorphisms_def set_morphisms_def bijectives_def bij_betw_def inj_on_def by(auto)
-
-lemma set_monomorphisms_memI:
-  "f \<in> set_morphisms A B \<Longrightarrow> inj_on f A \<Longrightarrow> f \<in> set_monomorphisms A B "
-  by (simp add: inj_on_def set_monomorphisms_def set_morphisms_def)
-
-lemma set_epimorphisms_memI:
-  "f \<in> set_morphisms A B \<Longrightarrow> f`A=B \<Longrightarrow> f \<in> set_epimorphisms A B "
-  by (simp add:set_epimorphisms_def set_morphisms_def)          
-
-lemma set_epimorphisms_memE1:
-  "f \<in> set_epimorphisms A B \<Longrightarrow> f \<in> set_morphisms A B"
-  by (simp add: set_epimorphisms_eq_set_morphisms_inter_surjectives)
-
-lemma set_monomorphisms_memE1:
-  "f \<in> set_monomorphisms A B \<Longrightarrow> f \<in> set_morphisms A B"
-  by (simp add: set_monomorphisms_eq_set_morphisms_inter_injs)
-
-lemma set_epimorphisms_memE2:
-  "f \<in> set_epimorphisms A B \<Longrightarrow> f`A=B"
-  by (simp add: set_epimorphisms_def)
-
-lemma set_monomorphisms_memE2:
-  "f \<in> set_monomorphisms A B \<Longrightarrow> inj_on f A"
-  unfolding set_monomorphisms_def using inj_on_def by auto
-
-lemma set_epimorphisms_memE3:
-  "f \<in> set_epimorphisms A B \<Longrightarrow> f \<in> surjectives A B"
-  by (simp add: set_epimorphisms_eq_set_morphisms_inter_surjectives)
-
-lemma set_monomorphisms_memE3:
-  "f \<in> set_monomorphisms A B \<Longrightarrow> f \<in> injectives A"
-  by (simp add: set_monomorphisms_eq_set_morphisms_inter_injs)
-
-lemma set_monomorphisms_memI2:
-  "f \<in> set_morphisms A B \<Longrightarrow> f \<in> injectives A \<Longrightarrow> f \<in> set_monomorphisms A B "
-  by (simp add: set_monomorphisms_eq_set_morphisms_inter_injs)
-
-lemma set_epimorphisms_memI2:
-  "f \<in> set_morphisms A B \<Longrightarrow> f \<in> surjectives A B \<Longrightarrow> f \<in> set_epimorphisms A B "
-  by (simp add: set_epimorphisms_eq_set_morphisms_inter_surjectives)
-
-lemma set_monomorphisms_eq_maps_to_inter_maps_on_inter_injs:
-  "set_monomorphisms A B = maps_to A B \<inter> maps_on A \<inter> injectives A"
-  unfolding set_monomorphisms_def maps_to_def maps_on_def injectives_def inj_on_def by auto
-
-lemma set_isomorphisms_eq_epi_inter_mono:
-  "set_isomorphisms A B =  set_epimorphisms A B \<inter> set_monomorphisms A B"
-  unfolding set_isomorphisms_def set_epimorphisms_def set_monomorphisms_def by auto
-
-lemma set_isomorphism_memI1:
-  "f \<in> set_monomorphisms A B \<Longrightarrow> f \<in> set_epimorphisms A B \<Longrightarrow> f \<in> set_isomorphisms A B"
-  by (simp add: set_isomorphisms_eq_epi_inter_mono)
-
-lemma set_isomorphism_memE1:
-  " f \<in> set_isomorphisms A B \<Longrightarrow> f \<in> set_monomorphisms A B \<and> f \<in> set_epimorphisms A B "
-  by (simp add: set_isomorphisms_eq_epi_inter_mono)
-
-lemma set_isomorphismE2:
-  " f \<in> set_isomorphisms A B \<Longrightarrow>bij_betw f A B "
-  unfolding bij_betw_def using set_epimorphisms_memE2 set_isomorphism_memE1 set_monomorphisms_memE2 by blast
-
-lemma set_isomorphismE3:
-  " f \<in> set_isomorphisms A B \<Longrightarrow> f \<in> bijectives A B "
-  by (simp add: bijectives_def set_isomorphismE2)
-
-lemma set_isomorphism_memI2:
-  "f \<in> set_morphisms A B \<Longrightarrow> bij_betw f A B \<Longrightarrow> f \<in> set_isomorphisms A B "
-  by (simp add: bij_betw_imp_inj_on bij_betw_imp_surj_on set_epimorphisms_memI set_isomorphism_memI1 set_monomorphisms_memI)
-
-
-lemma set_isomorphism_mem3:
-  "f \<in> set_morphisms A B \<Longrightarrow> f \<in> bijectives A B \<Longrightarrow> f \<in> set_isomorphisms A B "
-  by (simp add: bijectives_def set_isomorphism_memI2)
+  "f \<in> set_mor A B \<Longrightarrow> g \<in> set_mor A C \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = g x"
+  unfolding set_mor_def by(auto)
 
 lemma ker_pair_subI:"(\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> g x = g y \<Longrightarrow> f x = f y) \<Longrightarrow> ker_pair X g \<subseteq> ker_pair X f"
   unfolding ker_pair_def  by auto
 
-lemma is_right_invI0:
-  "compose Y f s = Id Y \<Longrightarrow> is_right_inv Y f s"
-  by (simp add: is_right_inv_def)
-
-lemma is_right_invI1:
-  "(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y) \<Longrightarrow> is_right_inv Y f s" 
-  unfolding is_right_inv_def compose_def using restrict_ext[of Y] by auto
 
 lemma is_right_invI2:
   "(\<And>y. y \<in> Y \<Longrightarrow> y = f (s y)) \<Longrightarrow> is_right_inv Y f s"
   by (simp add: is_right_invI1)
 
 lemma is_right_invE1:
-  "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> f (s y) = y"  
-  by (metis compose_eq id1 is_right_inv_def)
+  "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> f (s y) = y"
+  by (simp add: is_right_invE2)  
 
-lemma is_right_invE2:
+lemma is_right_invE1b:
   "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> y = f (s y) "
   by (simp add: is_right_invE1) 
 
@@ -437,54 +522,47 @@ lemma is_right_inv_E3:
   "is_right_inv Y f s \<Longrightarrow> compose Y f s = Id Y"
   by (simp add: is_right_inv_def)
 
+lemma ex_rinv_imp_surj1:
+  "\<exists>s. is_right_inv Y f s \<Longrightarrow> Y \<subseteq> range f"
+proof-
+  assume "\<exists>s. is_right_inv Y f s" 
+  then obtain s where "is_right_inv Y f s" by auto
+  then have B0:"\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y"
+    by (simp add: is_right_invE2)
+  show "Y \<subseteq> range f"
+  proof
+    fix y assume "y \<in> Y"
+    then show "y \<in> range f"
+      using rangeI[of f "s y"] B0 by simp
+  qed
+qed
+
 lemma ex_rinv_imp_surj:
-  "\<exists>s. is_right_inv Y f s \<Longrightarrow> f`(vimage f Y) = Y"  
-  using is_right_invE2 by fastforce
+  "\<exists>s. is_right_inv Y f s \<Longrightarrow> f`(vimage f Y) = Y"
+  using ex_rinv_imp_surj1 by blast  
 
 lemma is_rinv_imp_surj: 
   "is_right_inv Y f s \<Longrightarrow> f`(vimage f Y)=Y" 
   using ex_rinv_imp_surj by blast
 
-lemma is_left_invI0:
-  "compose X r f= Id X \<Longrightarrow> is_left_inv X f r"
-  by (simp add: is_left_inv_def)
 
-lemma is_left_invI1:
-  "(\<And>x. x \<in> X \<Longrightarrow> r (f x) = x) \<Longrightarrow> is_left_inv X f r" 
-  unfolding is_left_inv_def compose_def by auto
 
-lemma is_left_invI2:
-  "(\<And>x. x \<in> X \<Longrightarrow> x = r (f x)) \<Longrightarrow> is_left_inv X f r" 
-  by (simp add: is_left_invI1)
-
-lemma is_left_invE1:
-  "is_left_inv X f r \<Longrightarrow> x \<in> X \<Longrightarrow> r (f x) = x"
-  by (metis compose_eq id1 is_left_inv_def) 
-
-lemma is_left_invE2:
-  "is_left_inv X f r \<Longrightarrow> x \<in> X \<Longrightarrow> x = r (f x)" 
-  by (simp add: is_left_invE1) 
-
-lemma is_left_inv_E3:
-  "is_left_inv X f r \<Longrightarrow> compose X r f = Id X"
-  by (simp add: is_left_inv_def)
+lemma is_left_invE2b:
+  "is_left_inv X f r \<Longrightarrow> x \<in> X \<Longrightarrow> x = r (f x)"
+  by (simp add: is_left_invE2) 
 
 lemma linv_cancel:
   "is_left_inv X f r \<Longrightarrow> x1 \<in>X \<Longrightarrow>  x2 \<in> X \<Longrightarrow> f x1 = f x2 \<Longrightarrow> x1 =x2" 
 proof-
   assume A0:"is_left_inv X f r" and A1:"x1 \<in> X" and A2:"x2 \<in> X" and A3:"f x1 = f x2"
   then obtain "x1 = r ( f x1)" and "x2 = r ( f x2)"
-    using A1 A0 A2 is_left_invE2[of X f r x1] is_left_invE2[of X f r x2] by blast
+    using A1 A0 A2 is_left_invE2b[of X f r x1] is_left_invE2b[of X f r x2] by blast
   then show "x1 = x2"
     using A3 by force
 qed
 
 lemma ex_linv_implies_inj:
   "\<exists>s. is_left_inv X f r \<Longrightarrow> inj_on f X" 
-  by (simp add: inj_on_def linv_cancel)
-
-lemma is_linv_implies_inj:
-  "is_left_inv X f r \<Longrightarrow> inj_on f X"
   by (simp add: inj_on_def linv_cancel)
 
 lemma inj_implies_ex_linv:

@@ -1,4 +1,4 @@
-theory Algebrah16
+theory Algebrah15
   imports Main
 begin
 
@@ -91,18 +91,23 @@ definition qmap::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> ('a \<
   where "qmap X R f \<equiv> compose (X/R) f (qsect X R)"
 
 
-lemma Pi_I: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> f \<in> Pi A B"  by (simp add: Pi_def)
-lemma Pi_I': "(\<And>x. x \<in> A \<longrightarrow> f x \<in> B x) \<Longrightarrow> f \<in> Pi A B"  by (simp add:Pi_def)
+lemma Pi_I[intro!]: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> f \<in> Pi A B"  by (simp add: Pi_def)
+lemma Pi_I'[simp]: "(\<And>x. x \<in> A \<longrightarrow> f x \<in> B x) \<Longrightarrow> f \<in> Pi A B"  by (simp add:Pi_def)
 lemma Pi_mem: "f \<in> Pi A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B x" by (simp add: Pi_def)
 lemma Pi_iff: "f \<in> Pi I X \<longleftrightarrow> (\<forall>i\<in>I. f i \<in> X i)"  unfolding Pi_def by auto
 lemma PiE[elim]: "f \<in> Pi A B \<Longrightarrow> (f x \<in> B x \<Longrightarrow> Q) \<Longrightarrow> (x \<notin> A \<Longrightarrow> Q) \<Longrightarrow> Q"  by (auto simp: Pi_def)
 lemma Pi_cong: "(\<And>w. w \<in> A \<Longrightarrow> f w = g w) \<Longrightarrow> f \<in> Pi A B \<longleftrightarrow> g \<in> Pi A B"  by (auto simp: Pi_def)
-lemma Pi_empty: "Pi {} B = UNIV"  by (simp add: Pi_def)
-lemma Pi_split_domain: "f \<in> Pi (A \<union> B) X \<longleftrightarrow> f \<in> Pi A X \<and> f \<in> Pi B X" by (auto simp: Pi_def)
-lemma Pi_split_insert_domain: "f \<in> Pi (insert a A) B \<longleftrightarrow>f \<in> Pi A B \<and> f a \<in> B a"  by (auto simp: Pi_def)
+lemma Pi_empty [simp]: "Pi {} B = UNIV"  by (simp add: Pi_def)
+lemma Pi_Int: "Pi I E \<inter> Pi I F = (Pi I (\<lambda>i. E i \<inter> F i))"  by auto
+lemma Pi_split_domain[simp]: "f \<in> Pi (A \<union> B) X \<longleftrightarrow> f \<in> Pi A X \<and> f \<in> Pi B X" by (auto simp: Pi_def)
+lemma Pi_split_insert_domain[simp]: "f \<in> Pi (insert a A) B \<longleftrightarrow>f \<in> Pi A B \<and> f a \<in> B a"  by (auto simp: Pi_def)
+
 lemma maps_to_eq:"maps_to A B = Pi A (\<lambda>_. B)" by (simp add: Pi_def maps_to_def)
-lemma maps_to_memI: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B"  by (simp add: maps_to_def)
-lemma id_maps_to: "(\<lambda>x. x) \<in> maps_to A A" by (simp add: maps_to_memI) 
+
+lemma maps_to_memI[intro!]: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B"  by (simp add: maps_to_def)
+
+lemma id_maps_to[simp]: "(\<lambda>x. x) \<in> maps_to A A" by auto
+
 lemma maps_to_memD: "f \<in> maps_to A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B" by (simp add: maps_to_def)
 
 lemma maps_toE[elim]: "f \<in> maps_to A B \<Longrightarrow> (f x \<in> B \<Longrightarrow> Q) \<Longrightarrow> (x \<notin> A \<Longrightarrow> Q) \<Longrightarrow> Q" by (auto simp: maps_to_def)
@@ -110,6 +115,12 @@ lemma maps_toE[elim]: "f \<in> maps_to A B \<Longrightarrow> (f x \<in> B \<Long
 lemma maps_to_cong: "(\<And>w. w \<in> A \<Longrightarrow> f w = g w) \<Longrightarrow> f \<in>  maps_to A B \<longleftrightarrow> g \<in>  maps_to A B"  by (auto simp: maps_to_def)
 
 lemma maps_to_empty[simp]: "maps_to {} B = UNIV"  by (simp add: maps_to_def)
+
+lemma maps_to_int: "maps_to I E \<inter> maps_to I F = (maps_to I (E \<inter> F))" by auto
+
+lemma maps_splits_dom[simp]: "f \<in> maps_to (A \<union> B) X \<longleftrightarrow> f \<in> maps_to A X \<and> f \<in> maps_to B X" by (auto simp: maps_to_def)
+
+lemma maps_splits_insert_dom[simp]: "f \<in> maps_to (insert a A) B \<longleftrightarrow>f \<in> maps_to A B \<and> f a \<in> B"  by (auto simp: Pi_def)
 
 lemma maps_to_im:"f \<in> maps_to A B \<Longrightarrow> f ` A \<subseteq> B"  by auto
 
@@ -170,8 +181,8 @@ lemma bijI:"f \<in> maps_to A B \<Longrightarrow> g \<in> maps_to B A \<Longrigh
             (\<And>x. x\<in>A \<Longrightarrow> g (f x) = x) \<Longrightarrow> (\<And>y. y\<in>B \<Longrightarrow> f (g y) = y) \<Longrightarrow> bij_betw f A B" 
   by (metis bij_betw_byWitness maps_to_im)
 
-lemma bijD1: "bij_betw f A B \<Longrightarrow> f \<in> maps_to A B"
-  by (simp add: bij_betwE maps_to_memI) 
+lemma bijD1: "bij_betw f A B \<Longrightarrow> f \<in> maps_to A B" 
+  by (auto simp add: bij_betw_def)
 
 lemma inj_compose:"bij_betw f A B \<Longrightarrow> inj_on g B \<Longrightarrow> inj_on (compose A g f) A"
   by (auto simp add: bij_betw_def inj_on_def compose_eq)
@@ -192,7 +203,6 @@ lemma im_restrict_eq:"A \<subseteq> X \<Longrightarrow> f`A = A \<Longrightarrow
   apply(auto simp add:compose_def)
   apply fastforce
   by (metis image_image inf.absorb_iff2 inf_commute)
-
 lemma im_restrict_eq2:"A \<in> Pow X \<Longrightarrow> f`A = A \<Longrightarrow> g`A = A \<Longrightarrow> (compose X f g)`A = A"
   by (simp add: im_restrict_eq)
 
@@ -4017,11 +4027,6 @@ begin
 sublocale morphisms_comp:monoid "(set_morphisms E E)" "(compose E)" "(Id E)"
   by (simp add: monoid_axioms.intro monoid_def semigroup.intro hom2 hom3 hom5 hom6 hom7 magma.intro 
       semigroup_axioms.intro)
-
-
-lemma act_hom:"monoid_homomorphism \<alpha> M (\<cdot>) (e) (set_morphisms E E) (compose E) (Id E)"
-  by(unfold_locales, simp_all add:unid comp)
-
 end
 
 
@@ -6251,18 +6256,13 @@ lemma map_inv_id:
 proof-
   have "d = f e" by (simp add: map_id)
   also have "... =  f (x \<cdot> (dom.inv x))" by(simp add:A0)
-  also have "... = (f x)\<star>(f (dom.inv x))" 
-    using A0 cmp[of x "dom.inv x"] dom.invertible[of x] dom.unit_inv_closed[of x] by blast 
-  finally show "d =  (f x)\<star>(f (dom.inv x))" 
-    by blast
-  have "d = f e" 
-    by (simp add: map_id)
-  also have "... =  f ((dom.inv x)\<cdot> x)" 
-    by(simp add:A0)
+  also have "... = (f x)\<star>(f (dom.inv x))"  using A0 cmp by blast
+  finally show "d =  (f x)\<star>(f (dom.inv x))" by blast
+  have "d = f e" by (simp add: map_id)
+  also have "... =  f ((dom.inv x)\<cdot> x)" by(simp add:A0)
   also have "... = (f (dom.inv x))\<star>(f x)"
     using assms calculation dom.invertible inverse_image_id2 by presburger 
-  finally show "d =  (f (dom.inv x))\<star>(f x)" 
-    by blast
+  finally show "d =  (f (dom.inv x))\<star>(f x)" by blast
 qed
 
 lemma map_inv:"x \<in> X \<Longrightarrow> cod.inv (f x) = f (dom.inv x)"  using cod.inv_eq map_inv_id by auto
@@ -6792,7 +6792,7 @@ end
 
 context group_homomorphism
 begin
-
+print_facts
 lemma id_to_id:"f e = d"
   using map_id by auto 
 
@@ -6976,9 +6976,6 @@ definition "stabilizer \<equiv> (\<lambda>A \<in> Pow E. {m \<in> M. (\<alpha> m
 definition "strict_stabilizer \<equiv> (\<lambda>A \<in> Pow E. {m \<in> M. (\<alpha> m)`A = A})"
 
 definition "fixer \<equiv> (\<lambda>A \<in> Pow E. {m \<in> M. \<forall>a. a \<in> A \<longrightarrow> (\<alpha> m) a = a})"
-
-lemma fixer_memI:"\<lbrakk>A \<in> Pow E; m \<in> M; (\<And>a. a \<in> A \<Longrightarrow> (\<alpha> m) a = a)\<rbrakk> \<Longrightarrow> m \<in> fixer A"
-  by (simp add: fixer_def)
 
 lemma comp_simp:"\<And>x. x \<in> E \<Longrightarrow> m \<in> M \<Longrightarrow> n \<in> M \<Longrightarrow> \<alpha> (m \<cdot> n) x = (\<alpha> m) ((\<alpha> n) x)"
   by (simp add: comp compose_eq)
@@ -7270,6 +7267,7 @@ sublocale monoid_operating_on_set G "(\<cdot>)" e E \<alpha>
   apply (simp add: action_axioms)
   by (simp add: monoid_operating_on_set_axioms.intro)
 
+
 lemma translation_exist:
   "\<gamma> \<in> \<alpha>`G \<Longrightarrow> \<exists>g \<in> G. \<gamma> = \<alpha> g"
   by auto
@@ -7324,7 +7322,6 @@ proof-
 qed
 
 
-
 sublocale iso:group "(set_isomorphisms E E)" "(compose E)" "(Id E)"
   by (metis composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
     
@@ -7334,12 +7331,12 @@ sublocale iso:set_morphism \<alpha> G "set_isomorphisms E E"
   using iso_inj apply blast
   using iso_ex by blast
 
-
-lemma act_hom:"group_homomorphism \<alpha> G  (\<cdot>) (set_isomorphisms E E) (compose E) (e) (Id E)"
-  by(unfold_locales, simp_all)
-
 sublocale iso:group_homomorphism \<alpha> G "(\<cdot>)" "set_isomorphisms E E" "compose E" e "Id E"
-  using act_hom by blast
+  apply(rule group_homomorphism.intro)
+  apply (simp add: iso.set_morphism_axioms)
+  apply (simp add: group_axioms)
+  apply (simp add: iso.group_axioms)
+  by (simp add: group_homomorphism_axioms.intro)
 
 
 abbreviation "Im \<equiv> \<alpha>`G"
@@ -7468,51 +7465,6 @@ lemma fix_norm_subgroup:
   using assms fix_sub_strict apply blast
   apply(rule normal_subgroup_axioms.intro)
   using assms fix_norm_sub strict_stab_sub by auto
-
-
-lemma faithful1:
-  assumes A0:"inj_on \<alpha> G"
-  shows "fixer E = {e}"
-proof-
-  have B0:"{e} \<subseteq> fixer E"
-    by (simp add: b151prop11(2))
-  also have B1:"\<And>u. u \<in> fixer E \<Longrightarrow> u = e"
-  proof-
-    fix u assume A1:"u \<in> fixer E"
-    then obtain B2:"\<And>x. x \<in> E \<Longrightarrow> \<alpha> u x = x"
-      by (simp add: fixer_def)
-    have B3:"\<And>x. x \<notin> E \<Longrightarrow> \<alpha> u x = undefined"
-      by (meson A1 Pow_top actsE212 b151prop11(13) subset_iff)
-    then obtain B4:"\<alpha> u = Id E"
-      using B2 by force
-    have B5:"\<alpha> e = Id E"
-      by simp
-    have B6:"u \<in> G"
-      using A1 b151prop11(13) by auto
-    have B7:"\<alpha> u = \<alpha> e"
-      by (simp add: B4)
-    then show "u = e"
-      by (meson B6 assms idin inj_onD)
-  qed
-  then show ?thesis
-    using calculation by blast
-qed
-
-
-
-lemma faithful2:
-  assumes A0:"fixer E = {e}" 
-  shows "inj_on \<alpha> G"
-proof(rule inj_onI)
-  fix g h assume  A1:"g\<in> G" and A2:"h \<in> G" and A3:"\<alpha> g = \<alpha> h"
-  then obtain B0:"\<alpha> ((inv h)\<cdot> g) = \<alpha> e"
-    by (simp add: iso_rinv)
-  have "(inv h)\<cdot> g \<in> fixer E"
-    by(rule fixer_memI,simp_all add: A1 A2 opposite.closed B0)
-  then show "g = h"
-    by (metis A1 A2 all_not_in_conv assms insert_iff invertible rid unit_rinv2)
-qed
-
 
 end
 
