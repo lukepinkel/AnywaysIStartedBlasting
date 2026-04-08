@@ -3978,11 +3978,18 @@ sublocale semigroup_homomorphism f X "(\<cdot>)" Y "(\<star>)"
   by (simp add: cmp cod.semigroup_axioms dom.semigroup_axioms semigroup_homomorphism_axioms_def 
       semigroup_homomorphism_def set_morphism_axioms)
 
-lemma im_subsmonoid1:"submonoid A X (\<cdot>) e \<Longrightarrow> submonoid (f`A) Y (\<star>) d"  
-  apply(unfold_locales)
-  apply (simp add: maps_to_im maps_to_memI submonoid.subD)
-  apply (simp add: dom.magma_axioms imag_comp submagmaI submonoid.opsub submonoid.setsub)
-  by (metis rev_image_eqI submonoid.idsub unt)
+lemma im_subsmonoid1:
+  assumes A0:"submonoid A X (\<cdot>) e"
+  shows "submonoid (f`A) Y (\<star>) d"  
+proof-
+  interpret submagma "f`A" Y "(\<star>)"
+    by (metis assms dom.magma_axioms submagma1 submagmaI submonoid.opsub submonoid.setsub)
+  show ?thesis
+    apply(unfold_locales)
+    apply (simp add: submem)
+    using sub.opposite.closed apply blast
+    by (metis assms rev_image_eqI submonoid_axioms_def submonoid_def unt)
+qed
 
 lemma im_subsemigroup2:"submonoid B Y (\<star>) d \<Longrightarrow> (vimage f B) \<subseteq> X \<Longrightarrow>submonoid (vimage f B) X (\<cdot>) e" 
 proof-
@@ -4064,10 +4071,12 @@ end
 
 
 
-locale transformation_monoid=set_endomorphisms E+submonoid M "set_morphisms E E" "compose E" "Id E" for M and E
+locale transformation_monoid=set_endomorphisms E+submonoid M "set_mor E E" "compose E" "Id E" for M and E
 begin
-lemma tr_closed[intro,simp]:"\<lbrakk>f \<in> M; x \<in> E\<rbrakk> \<Longrightarrow> f x \<in> E"  using hom9 by fastforce
-lemma tr_undef[intro,simp]:"\<lbrakk>f \<in> M; x \<notin> E\<rbrakk> \<Longrightarrow> f x = undefined"  using hom10 by fastforce
+lemma tr_closed[intro,simp]:"\<lbrakk>f \<in> M; x \<in> E\<rbrakk> \<Longrightarrow> f x \<in> E"
+  by (meson maps_to_memE1 set_morphisms_memE2 subD)  
+lemma tr_undef[intro,simp]:"\<lbrakk>f \<in> M; x \<notin> E\<rbrakk> \<Longrightarrow> f x = undefined"
+  by (meson maps_on_memE1 set_morphisms_memE3 subD) 
 end
 
 
@@ -4075,19 +4084,19 @@ locale monoid_clone=monoid
 begin
 sublocale transformation:set_endomorphisms X .
 
-sublocale transformation:transformation_monoid "l_trans`X" X apply(unfold_locales)
+sublocale transformation:transformation_monoid "l_trans`X" X
+  apply(unfold_locales)
   apply (simp add: hom3)
-  apply (simp add: hom7)
-  apply (simp add: hom5)
-  apply (simp add: hom6)
-    apply blast
-  apply(auto simp add: image_iff )
-  apply (metis left_trans_comp opposite.closed)
-  using ltranslation_id by force
+  apply (simp add: set_morphisms_memI1)
+  apply (simp add: hom5(1))
+  apply (simp add: hom5(2))
+  apply blast
+  using ltranslation_comp m_closed apply force
+  by (metis ltranslation_id monoid.idin monoid_axioms rev_image_eqI)
 
 
 sublocale set_morphism l_trans X "l_trans`X"
-  by (simp add: hom_memI1 set_morphismI1)
+  by (simp add: set_morphism_def)
 
 sublocale monoid_homomorphism l_trans X "(\<cdot>)" e  "l_trans`X" "compose X" "Id X"
   apply(unfold_locales)
@@ -4119,26 +4128,36 @@ locale monoid_operating_on_set= monoid M "(\<cdot>)" e+action M E \<alpha>
           comp:"\<lbrakk>x\<in>M;y\<in>M\<rbrakk> \<Longrightarrow> \<alpha> (x \<cdot> y) = compose E (\<alpha> x) (\<alpha> y)"
 
 begin
-sublocale morphisms_comp:monoid "(set_morphisms E E)" "(compose E)" "(Id E)"
-  by (simp add: monoid_axioms.intro monoid_def semigroup.intro hom2 hom3 hom5 hom6 hom7 magma.intro 
-      semigroup_axioms.intro)
+sublocale morphisms_comp:monoid "(set_mor E E)" "(compose E)" "(Id E)"
+  apply(unfold_locales)
+  apply (simp add: hom2)
+  apply (simp add: hom3)
+  apply (simp add: id_maps_on restrictI2 set_morphisms_memI2)
+  apply (simp add: hom5(1))
+  by (simp add: hom5(2))
 
 
-lemma act_hom:"monoid_homomorphism \<alpha> M (\<cdot>) (e) (set_morphisms E E) (compose E) (Id E)"
+lemma act_hom:"monoid_homomorphism \<alpha> M (\<cdot>) (e) (set_mor E E) (compose E) (Id E)"
   by(unfold_locales, simp_all add:unid comp)
 
 end
 
 
-lemma composition_monoid:"monoid (set_morphisms X X) (compose X) (Id X)"by(unfold_locales, auto simp add:hom2 hom3 hom5 hom6 hom7)
+lemma composition_monoid:"monoid (set_mor X X) (compose X) (Id X)"
+  by(unfold_locales, auto simp add:hom2 hom3 hom5 id_maps_on restrictI2 set_morphisms_memI2)
 
 subsection \<open>Composition Monoid Locale\<close>
 
-locale compositional_monoid =submonoid M "set_morphisms E E" "compose E" "Id E" for M and E
+locale compositional_monoid =submonoid M "set_mor E E" "compose E" "Id E" for M and E
 begin
-lemma hom_mem:"f \<in> M \<Longrightarrow> f \<in> set_morphisms E E" using subD by blast
-lemma eval_simp[intro, simp]:"f \<in> M  \<Longrightarrow> x \<in> E \<Longrightarrow> f x \<in> E" by(auto intro:  hom9)
-lemma eval_ndef[intro,simp]:"f \<in> M \<Longrightarrow> x \<notin> E \<Longrightarrow> f x = undefined" using hom10 by fastforce
+lemma hom_mem:"f \<in> M \<Longrightarrow> f \<in> set_mor E E" 
+  using subD by blast
+
+lemma eval_simp[intro, simp]:"f \<in> M  \<Longrightarrow> x \<in> E \<Longrightarrow> f x \<in> E"
+  by (meson set_morphism.cod set_morphismI1 subD)
+
+lemma eval_ndef[intro,simp]:"f \<in> M \<Longrightarrow> x \<notin> E \<Longrightarrow> f x = undefined"
+  by (meson submonoid_axioms transformation_monoid.tr_undef transformation_monoid_def)
 end
 
 
@@ -4206,9 +4225,6 @@ lemma first_isomorphism_monoids2:"cong X (\<cdot>) R(f)"
 lemma first_isomorphism_monoids3a:"monoid_homomorphism (ker.h) (X/R(f)) (\<bullet>) quotient.H (f`X) (\<star>) (f e)"  
  apply(unfold_locales)
   using ker.quotient_map.dom apply blast
-  apply auto
-  apply (metis cmp dom.m_closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient_magma quotient_magma.qlaw4)
-  using quotient.H_def by auto
 
 lemma first_isomorphism_monoids3b:"monoid_isomorphism ker.h (X/R(f)) (\<bullet>)quotient.H (f`X) (\<star>) (f e)"
   apply(unfold_locales)
