@@ -251,13 +251,13 @@ translations "\<lambda>x\<in>A. f" \<rightleftharpoons> "CONST restrict (\<lambd
 lemma restrict_cong: "I = J \<Longrightarrow> (\<And>i. i \<in> J =simp=> f i = g i) \<Longrightarrow> restrict f I = restrict g J" 
   by (auto simp: restrict_def fun_eq_iff simp_implies_def)
 
-lemma restrictI1: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> Pi A B"
+lemma restrictI1[intro!]: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B x) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> Pi A B"
   by (simp add: Pi_def restrict_def)
 
 lemma restrictI2: "(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> (\<lambda>x\<in>A. f x) \<in> maps_to A B" 
   by (simp add: maps_to_def restrict_def)
 
-lemma restrict_apply: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)"
+lemma restrict_apply[simp]: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)"
   by (simp add: restrict_def)
 
 lemma restrict_apply1: "x \<in> A \<Longrightarrow> (\<lambda>y\<in>A. f y) x = f x"
@@ -265,7 +265,6 @@ lemma restrict_apply1: "x \<in> A \<Longrightarrow> (\<lambda>y\<in>A. f y) x = 
 
 lemma restrict_ext: "(\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<lambda>x\<in>A. f x) = (\<lambda>x\<in>A. g x)"
   by (simp add: fun_eq_iff maps_to_def restrict_def)
-
 
 definition compose::"'a set \<Rightarrow> ('b \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'c)" where
  "compose A g f = (\<lambda>x\<in>A. g (f x))"
@@ -570,43 +569,54 @@ lemma inj_implies_ex_linv:
   by (metis is_left_invI1 the_inv_into_f_f)
 
 lemma rinv_simp:
-  "y \<in> Y \<Longrightarrow> (rinv f X Y) y = (\<lambda>y. SOME x. x \<in> X \<and> f x = y) y" 
-  by (simp add: rinv_def)
+  "y \<in> Y \<Longrightarrow> (rinv f X Y) y = (\<lambda>y. SOME x. x \<in> X \<and> f x = y) y"
+  by (simp add: restrict_def rinv_def) 
+
+
 
 lemma rinv_closed:
   "y \<in> f`X \<inter> Y \<Longrightarrow> rinv f X Y y \<in> X" 
-  by(simp add:rinv_def,fast intro: someI2)
+  by(simp add:rinv_def restrict_def,fast intro: someI2)
 
 lemma rinv_undef:
   "y \<notin> Y \<Longrightarrow> rinv f X Y y = undefined" 
-  by(simp add:rinv_def)
+  by(simp add:rinv_def restrict_def)
 
 lemma rinv_map_to: "f ` A = B \<Longrightarrow> (rinv f A B) \<in> maps_to B A"  
-  by (unfold rinv_def) (fast intro: someI2)
+  by(rule maps_to_memI1; simp add: rinv_closed)
 
-lemma id_surj:"(Id A)`A = A" 
-  by force
+lemma id_surj:"(Id A)`A = A"
+  by (simp add: image_restrict_eq) 
 
 lemma rinv_comp_to:
   "f ` A = B \<Longrightarrow> compose B f (rinv f A B) \<in> maps_to B B" 
-  apply(rule maps_to_memI)
-  using compose_eq[ of _ B f "rinv f A B"] rinv_closed[of _ f A B] by blast
+  apply(rule maps_to_memI1)
+  by (metis comp_eq imageI maps_toE rinv_map_to) 
 
-lemma rinv_into_into:"f \<in> set_morphisms A B \<Longrightarrow> y \<in> f ` A \<Longrightarrow> rinv f A B y \<in> A"
-  apply(auto simp add: rinv_def)
-   apply(fast intro:someI2)
-  by (simp add: hom9)
+lemma rinv_into_into:
+  assumes A0:"f \<in> set_mor A B" and A1:"y \<in> f ` A" 
+  shows "rinv f A B y \<in> A"
+  using A0 A1 IntI maps_to_memE2 set_morphisms_memE2 subsetD rinv_closed
+proof-
+  have "f \<in> maps_to A B"
+    by (simp add: A0 set_morphisms_memE2)
+  then have "y \<in>f ` A \<inter> B"
+    using A1 maps_to_memE1[of f A B ] by blast
+  then show "rinv f A B y \<in> A"
+    by (simp add: rinv_closed)
+qed
 
-lemma rinv_identity[simp]:
+lemma rinv_identity:
   "rinv (Id A) A A= Id A"  
-  by (force simp add: rinv_def)
-lemma rinv_into_f_f[simp]: 
+  by (force simp add: rinv_def restrict_def)
+
+lemma rinv_into_f_f: 
   "inj_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> (rinv f A (f`(A))) (f x) = x"  
-  by (simp add: rinv_def inj_on_def) (blast intro: someI2)
+  by (simp add: rinv_def inj_on_def restrict_def) (blast intro: someI2)
 
 lemma f_inv_into_f:
   "y \<in> f`A \<Longrightarrow> f (rinv f A (f`A) y) = y"
-  by (simp add: rinv_def) (fast intro: someI2)
+  by (simp add: rinv_def restrict_def) (fast intro: someI2)
 lemma rinv_into_f_eq: 
   "inj_on f A \<Longrightarrow> x \<in> A \<Longrightarrow> f x = y \<Longrightarrow> rinv f A (f`A) y = x"
   by (erule subst) (fast intro: rinv_into_f_f)
@@ -629,17 +639,29 @@ lemma inj_on_rinv_into:
 
 lemma bij_betw_rinv_into:
   "bij_betw f A B \<Longrightarrow> bij_betw (rinv f A B) B A" 
-  by (auto simp add: bij_betw_def inj_on_rinv_into image_iff)
+proof-
+  assume A0:"bij_betw f A B"
+  then obtain B0:"f`A = B" and B1:"inj_on f A"
+    by (simp add: bij_betw_def)
+  show "bij_betw (rinv f A B) B A"
+  proof(rule bij_betwI1)
+    show "surj (rinv f A B) B A"
+      using B0 B1 rinv_into_f_eq[of f A] surj_on_inverseI[of A "(rinv f A B)"] by blast
+    show "inj_on (rinv f A B) B"
+      using B0 inj_on_rinv_into by blast
+  qed
+qed
+
 
 lemma rinv_into_f:
   "f`A = B \<Longrightarrow> y \<in> f`A \<Longrightarrow> f (rinv f A B y) = y" 
-  by (simp add: rinv_def) (fast intro: someI2)
+  by (simp add: rinv_def restrict_def) (fast intro: someI2)
 
 lemma into_rinv_f:"\<lbrakk>f \<in> maps_to A B; inj_on f A; x \<in> A\<rbrakk> \<Longrightarrow> (rinv f A B) (f x) = x"
 proof -
   assume A0: "inj_on f A" and A1: "x \<in> A" and A2: "f \<in> maps_to A B"
   then obtain "rinv f A (f ` A) (f x) = x" and  "f x \<in> B"
-    by auto
+    by (simp add: maps_to_memE1 rinv_into_f_f)
   then show ?thesis
     by (simp add: A1 rinv_simp)
 qed
@@ -650,11 +672,11 @@ lemma into_rinv_f2:
 
 lemma rinv_inv:
   "f ` A = B \<Longrightarrow> compose B f (rinv f A B) = Id B"
-  by (simp add: is_left_invI2 is_left_inv_E3 rinv_into_f)
+  by (simp add: is_right_invI2 is_right_inv_E3 rinv_into_f)
 
 lemma inv_rinv: 
   "f \<in> maps_to A B \<Longrightarrow> inj_on f A \<Longrightarrow> compose A (rinv f A B) f= Id A"
-  by (simp add: into_rinv_f is_left_invI2 is_left_inv_E3) 
+  by (metis into_rinv_f is_right_invI2 is_right_inv_def)
 
 lemma inv_rinv2:"bij_betw f A B \<Longrightarrow> compose A (rinv f A B) f= Id A"  
   by (simp add: bijD1 bij_betw_imp_inj_on inv_rinv)
@@ -663,8 +685,8 @@ lemma inv_rinv3:"bij_betw f A B \<Longrightarrow> compose B f (rinv f A B)= Id B
   by (simp add: bij_betw_imp_surj_on rinv_inv)  
 
 lemma rinv_restrict:
-  "f`A = B \<Longrightarrow> restrict (rinv f A B) B = rinv f A B" 
-  by (simp add: rinv_def)
+  "f`A = B \<Longrightarrow> restrict (rinv f A B) B = rinv f A B"
+  by (simp add: maps_on_restrict restrict_maps_on rinv_def) 
 
 lemma rinv_is_rinv:
   "f ` A = B \<Longrightarrow> is_right_inv B f (rinv f A B)"
@@ -694,57 +716,104 @@ qed
 
 lemma rinv_in_maps_on:
   "rinv f A B \<in> maps_on B"
-  by (simp add: rinv_def)
+  by (simp add: maps_on_memI1 rinv_undef)
 
 lemma rinv_inv_set_morphisms:
-  "f`A=B \<Longrightarrow> rinv f A B \<in> set_morphisms B A"
-  by (simp add: hom_memI2 rinv_in_maps_on rinv_map_to)
+  "f`A=B \<Longrightarrow> rinv f A B \<in> set_mor B A"
+  by (simp add: rinv_in_maps_on rinv_map_to set_morphisms_memI2)
+
+lemma hom5:assumes A0:"f \<in> set_mor A B"
+  shows "compose A (Id B) f = f" and "compose A f (Id A) = f"
+proof-
+  show P0:"compose A (Id B) f = f"
+  proof
+    fix x show "compose A (Id B) f x = f x"
+    proof(cases "x \<in> A")
+      case True
+      then show ?thesis
+        by (metis assms comp_eq maps_to_memE1 restrict_apply1 set_morphisms_memE2) 
+    next
+      case False
+      then show ?thesis
+        by (metis assms comp_maps_on maps_on_memE1 set_morphisms_memE3) 
+    qed
+  qed
+  show P1:"compose A f (Id A) = f"
+  proof
+    fix x show "compose A f (Id A) x = f x"
+    proof(cases "x \<in> A")
+      case True
+      then show ?thesis
+        by (simp add: compose_def restrict_def)
+    next
+      case False
+      then show ?thesis
+        by (metis P0 compose_def restrict_def)
+    qed
+  qed
+qed
 
 
 lemma inj_implies_factors_concrete:
   fixes X::"'a set" and Y::"'b set" and Z::"'c set" and f::"'a \<Rightarrow> 'b" and g::"'c \<Rightarrow> 'b"
-  assumes A0:"f \<in> set_morphisms X Y" and A1:"g \<in> set_morphisms Z Y" and A2:"inj_on g Z" and A3:"(f`X) \<subseteq> (g`Z)"
+  assumes A0:"f \<in> set_mor X Y" and A1:"g \<in> set_mor Z Y" and A2:"inj_on g Z" and A3:"(f`X) \<subseteq> (g`Z)"
   shows "\<And>x. x \<in> X \<Longrightarrow> f x = g (rinv g Z Y (f x))" and 
-        "compose X (rinv g Z Y) f \<in> set_morphisms X Z" and 
-        "compose X g (compose X (rinv g Z Y) f) \<in> set_morphisms X Y" and
+        "compose X (rinv g Z Y) f \<in> set_mor X Z" and 
+        "compose X g (compose X (rinv g Z Y) f) \<in> set_mor X Y" and
         "\<And>x. x \<in> X \<Longrightarrow> f x = compose X g (compose X (rinv g Z Y) f) x" and
         "f = compose X g (compose X (rinv g Z Y) f)" and
-       "\<And>h. \<lbrakk>h \<in> set_morphisms X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
+       "\<And>h. \<lbrakk>h \<in> set_mor X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
 proof-
   show P0:"\<And>x. x \<in> X \<Longrightarrow> f x = g (rinv g Z Y (f x))"
   proof-
     let ?r="rinv g Z Y"
-    fix x assume A4:"x \<in> X" then obtain B0:"f x \<in> Y" 
-      using A0 A4 hom9[of f X Y] by blast 
+    fix x assume A4:"x \<in> X" then obtain B0:"f x \<in> Y"
+      by (meson A0 maps_to_memE1 set_morphisms_memE2) 
     let ?z="?r (f x)"
     obtain B1:"?z \<in> Z"
       by (meson A1 A3 A4 imageI in_mono rinv_into_into)
     then show B2:"f x = g ?z"
-      using A1 A2 A3 A4 hom_memD2 into_rinv_f by fastforce
+      using A1 A2 A3 A4 into_rinv_f set_morphisms_memE2 by fastforce
   qed
-  show P1:"compose X (rinv g Z Y) f \<in> set_morphisms X Z"
-    unfolding set_morphisms_def apply(auto)
-    apply (meson compose_maps_on maps_on_memD)
-    by (metis A1 A3 compose_eq image_subset_iff rinv_into_into)
-  show P2:"compose X g (compose X (rinv g Z Y) f) \<in> set_morphisms X Y"
+  show P1:"compose X (rinv g Z Y) f \<in> set_mor X Z"
+    unfolding set_mor_def apply(auto)
+    apply (simp add: compose_def restrict_def)
+    by (metis A1 A3 comp_eq image_subset_iff rinv_into_into)
+  show P2:"compose X g (compose X (rinv g Z Y) f) \<in> set_mor X Y"
     using A1 P1 hom2 by blast
   show P3:"\<And>x. x \<in> X \<Longrightarrow> f x = compose X g (compose X (rinv g Z Y) f) x"
-    by (metis P0 compose_eq)
+    by (metis P0 comp_eq)
   show P3:"f = compose X g (compose X (rinv g Z Y) f)"
     using A0 P2 P3 fun_eqI by blast
-  show P4:"\<And>h. \<lbrakk>h \<in> set_morphisms X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
-    by (simp add: A1 A2 hom3 hom5 hom_memD2 inv_rinv)
+  show P4:"\<And>h. \<lbrakk>h \<in> set_mor X Z; f = compose X g h\<rbrakk> \<Longrightarrow> h =compose X (rinv g Z Y) f"
+  proof-
+    fix h assume A4:"h \<in> set_mor X Z" and A5:"f = compose X g h"
+    show "h = compose X (rinv g Z Y) f"
+    proof
+      fix x 
+      show "h x = compose X (rinv g Z Y) f x"
+      proof(cases "x \<in> X")
+        case True
+        then show ?thesis
+          by (metis A1 A2 A4 A5 comp_eq into_rinv_f maps_to_memE1 set_morphisms_memE2) 
+      next
+        case False
+        then show ?thesis
+          by (meson A4 P1 hom11) 
+      qed
+    qed
+  qed
 qed
 
 
 lemma surj_implies_factors_concrete:
   fixes X::"'a set" and Y::"'b set" and Z::"'c set" and f::"'a \<Rightarrow> 'b" and g::"'a \<Rightarrow> 'c"
-  assumes A0:"f \<in> set_morphisms X Y" and A1:"g \<in> set_morphisms X Z" and A2:"g`X=Z" and A3:"ker_pair X g \<subseteq> ker_pair X f"
+  assumes A0:"f \<in> set_mor X Y" and A1:"g \<in> set_mor X Z" and A2:"g`X=Z" and A3:"ker_pair X g \<subseteq> ker_pair X f"
   shows "\<And>x. x \<in> X \<Longrightarrow> f x = f (rinv g X Z (g x))" and
-        "compose Z f (rinv g X Z) \<in> set_morphisms Z Y" and
+        "compose Z f (rinv g X Z) \<in> set_mor Z Y" and
         "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (compose Z f (rinv g X Z)) g x"
         "f = compose X (compose Z f (rinv g X Z)) g" and
-        "\<And>h. \<lbrakk>h \<in> set_morphisms Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
+        "\<And>h. \<lbrakk>h \<in> set_mor Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
 proof-
   have P0:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X; g x = g y\<rbrakk> \<Longrightarrow> f x = f y"
     using A3 unfolding ker_pair_def by blast
@@ -761,14 +830,14 @@ proof-
     then show "f x = f ?x" 
       using B2 A4 P0[of x ?x] by blast
   qed
-  show P2:"compose Z f (rinv g X Z) \<in> set_morphisms Z Y"
+  show P2:"compose Z f (rinv g X Z) \<in> set_mor Z Y"
     using A0 A2 hom2 rinv_inv_set_morphisms by blast
   show P3: "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (compose Z f (rinv g X Z)) g x"
-    by (metis A1 P1 compose_eq hom9)
+    by (metis A2 P1 comp_eq imageI)
   show P4:"f = compose X (compose Z f (rinv g X Z)) g"
     using A0 A1 P2 P3 fun_eqI hom2 by blast
-  show P5:"\<And>h. \<lbrakk>h \<in> set_morphisms Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
-    by (metis A2 compose_assoc hom6 rinv_inv rinv_map_to)
+  show P5:"\<And>h. \<lbrakk>h \<in> set_mor Z Y; f = compose X h g\<rbrakk> \<Longrightarrow> h = compose Z f (rinv g X Z)"
+    by (metis A2 Algebrah17.comp_assoc hom5(2) rinv_inv rinv_map_to)
 qed
 
 
@@ -791,16 +860,16 @@ proof-
         using compat A0 B1 by blast
   qed
   show P1:"\<And>x. x \<in> X \<Longrightarrow> f x = compose Y f (rinv g X Y) (g x)"
-    by (metis P0 compose_eq image_eqI surj)
+    by (metis P0 comp_eq image_eqI surj)
 qed
 
 
 lemma rinv_unique_on1:
-  assumes A0:"f`A=B" and A1:"is_right_inv B f s" and A2:"s`B=(rinv f A B)`B" and A3:"s \<in> set_morphisms B A"
+  assumes A0:"f`A=B" and A1:"is_right_inv B f s" and A2:"s`B=(rinv f A B)`B" and A3:"s \<in> set_mor B A"
   shows "s=rinv f A B"
   using A3
 proof(rule fun_eqI)
-  show B0:"rinv f A B \<in> set_morphisms B A"
+  show B0:"rinv f A B \<in> set_mor B A"
     by (simp add: A0 rinv_inv_set_morphisms)
   have B1:"\<And>y. y \<in> B \<Longrightarrow> f (s y) = y"
     by (metis A1 is_right_invE2) 
@@ -841,19 +910,19 @@ lemma rinv_surj:
   by (simp add: surj_def left_inv_target)
 
 lemma rinv_inj:
- "is_right_inv (Y::'b set) f s \<Longrightarrow> inj_on s Y"  
-  using is_linv_implies_inj linv_r by blast
+ "is_right_inv (Y::'b set) f s \<Longrightarrow> inj_on s Y"
+  using is_left_invE3 linv_r by blast  
 
 lemma bij_betw_rinv:
   "bij_betw f A B \<Longrightarrow> y \<in> B \<Longrightarrow> f (rinv f A B y) = y"  
   by (simp add: bij_betw_imp_surj_on rinv_into_f)
 
 lemma bij_betw_linv:
-  "bij_betw f A B \<Longrightarrow> x \<in> A \<Longrightarrow> (rinv f A B) (f x)= x" 
-  by(simp add:  bij_betw_def,force)
+  "bij_betw f A B \<Longrightarrow> x \<in> A \<Longrightarrow> (rinv f A B) (f x)= x"
+  by (simp add: into_rinv_f2) 
 
-lemma bij_betw_hom_rev:"bij_betw f A B \<Longrightarrow> rinv f A B \<in> set_morphisms B A"
-  by(rule hom_memI2,simp add: rinv_def,simp add:bijD1 bij_betw_rinv_into)
+lemma bij_betw_hom_rev:"bij_betw f A B \<Longrightarrow> rinv f A B \<in> set_mor B A"
+  by (simp add: bij_betw_def rinv_in_maps_on rinv_map_to set_morphisms_memI2)
 
 section \<open>Set Morphism Locales\<close>
 
@@ -863,28 +932,28 @@ locale set_morphism=
           cod[intro,simp]:"x \<in> A \<Longrightarrow> f x \<in> B"
 begin
 lemma mem_maps_to:
- "f \<in> maps_to A B" 
-  by (simp add: maps_to_memI)
+ "f \<in> maps_to A B"
+  by (simp add: maps_to_memI1) 
 
 lemma mem_maps_on:
-  "f \<in> maps_on A" 
-  by (simp add: dom maps_on_memI) 
+  "f \<in> maps_on A"
+  by (simp add: dom maps_on_memI1) 
 
 lemma mem_hom:
-  "f \<in> set_morphisms A B" 
-  by (simp add: hom_memI2 mem_maps_on mem_maps_to)
+  "f \<in> set_mor A B"
+  by (simp add: mem_maps_on mem_maps_to set_morphisms_memI2) 
 end
 
 lemma set_morphismI1:
-  "f \<in> set_morphisms A B \<Longrightarrow> set_morphism f A B"
-  unfolding set_morphisms_def by(auto intro!: set_morphism.intro)
+  "f \<in> set_mor A B \<Longrightarrow> set_morphism f A B"
+  by (simp add: set_mor_def set_morphism.intro)
 
 lemma set_morphismD1:
-  "set_morphism f A B \<Longrightarrow> f \<in> set_morphisms A B" 
+  "set_morphism f A B \<Longrightarrow> f \<in> set_mor A B" 
   by (simp add: set_morphism.mem_hom) 
 
 lemma set_morphism_iff:
-  "f \<in> set_morphisms A B \<longleftrightarrow> set_morphism f A B"  
+  "f \<in> set_mor A B \<longleftrightarrow> set_morphism f A B"  
   using set_morphismD1 set_morphismI1 by blast
 
 locale sur_locale=fixes f::"'a \<Rightarrow> 'b" and A::"'a set" and B::"'b set"
@@ -905,11 +974,11 @@ begin
 sublocale set_morphism f A B  by (simp add: set_morphism_axioms)
 definition right_inverse ("s") where "right_inverse \<equiv> rinv f A B"
 
-lemma set_epimorphism_mem:"f \<in> set_epimorphisms A B"
-  by (simp add: dom set_epimorphisms_def sur)
+lemma set_epimorphism_mem:"f \<in> set_epi A B"
+  by (simp add: dom set_epi_def sur)
 
 lemma right_inv_is_set_morphism:
-  "s \<in> set_morphisms B A"
+  "s \<in> set_mor B A"
   by (simp add: right_inverse_def rinv_inv_set_morphisms sur)
 
 lemma right_inverse_inv:
@@ -920,17 +989,13 @@ lemma right_inverse_inj:
   "s \<in> injectives B"
   using injectives_def right_inverse_inv rinv_inj by fastforce
 
-lemma right_inv_is_set_mono:
-  "s \<in> set_monomorphisms B A"
-  by (simp add: right_inv_is_set_morphism right_inverse_inj set_monomorphisms_memI2)
-
 lemma right_inverse_comp1:
   "compose B f s = Id B"  
   by (simp add: right_inverse_def rinv_inv sur)
 
 lemma right_inverse_comp2:
   "y \<in> B \<Longrightarrow> compose B f s y = y"
-  by (simp add: right_inverse_comp1)
+  by (simp add: restrict_def right_inverse_comp1)
 
 lemma right_inverse_comp3:
   "y \<in> B \<Longrightarrow> f (s y) = y"  
@@ -938,21 +1003,6 @@ lemma right_inverse_comp3:
 
 end
 
-
-lemma set_epimorphismI1:
-  "f \<in> set_epimorphisms A B \<Longrightarrow> set_epimorphism f A B"
-  by (simp add: set_epimorphism.intro set_epimorphisms_memE1 set_epimorphisms_memE2 set_morphismI1 sur_locale.intro)
-
-lemma set_epiI1:"f \<in> set_morphisms A B \<Longrightarrow> f`A=B \<Longrightarrow> set_epimorphism f A B"
-  by (simp add: set_epimorphism_def set_morphismI1 sur_locale.intro) 
-
-lemma set_epimorphismD1:
-  "set_epimorphism f A B \<Longrightarrow> f \<in> set_epimorphisms A B"
-  by (simp add: set_epimorphism.set_epimorphism_mem) 
-
-lemma set_epimorphism_iff:
-  "f \<in> set_epimorphisms A B \<longleftrightarrow> set_epimorphism f A B"
-  using set_epimorphismD1 set_epimorphismI1 by blast  
 
 
 locale set_monomorphism=set_morphism f A B+ inj_locale f A B for f and A and B
@@ -962,8 +1012,8 @@ sublocale set_morphism f A B  by (simp add: set_morphism_axioms)
 
 definition left_inverse ("r") where "left_inverse \<equiv> rinv f A B"
 
-lemma set_monomorphism_mem:"f \<in> set_monomorphisms A B"
-  by (simp add: mem_hom set_monomorphisms_memI)
+lemma set_monomorphism_mem:"f \<in> set_mono A B"
+  by (simp add: dom set_mono_memI1)
 
 lemma injectives_mem:"f \<in> injectives A"
   by (simp add: injectives_def)
@@ -972,10 +1022,9 @@ lemma left_inverse_comp1:
   "compose A r f = Id A"
   by (simp add: inv_rinv left_inverse_def mem_maps_to) 
 
-lemma 
-  left_inverse_comp2:
-  "x \<in> A \<Longrightarrow> compose A r f x = x" 
-  by (simp add: left_inverse_comp1) 
+lemma left_inverse_comp2:
+  "x \<in> A \<Longrightarrow> compose A r f x = x"
+  by (simp add: left_inverse_comp1 restrict_def) 
 
 lemma left_inverse_comp3:
   "x \<in> A \<Longrightarrow> r (f  x) = x" 
@@ -988,22 +1037,21 @@ lemma left_inverse_inv:
 end
 
 
-lemma set_monoI1:"f \<in> set_morphisms A B \<Longrightarrow> inj_on f A \<Longrightarrow> set_monomorphism f A B"
+lemma set_monoI1:"f \<in> set_mor A B \<Longrightarrow> inj_on f A \<Longrightarrow> set_monomorphism f A B"
   by (simp add: inj_locale.intro set_monomorphism_def set_morphism_iff)
 
-lemma set_monoI2:"f \<in> set_morphisms A B \<Longrightarrow>f \<in> injectives A \<Longrightarrow> set_monomorphism f A B"
+lemma set_monoI2:"f \<in> set_mor A B \<Longrightarrow>f \<in> injectives A \<Longrightarrow> set_monomorphism f A B"
   by (simp add: injectives_def set_monoI1)
 
-lemma set_monomorphismI1:
-  "f \<in> set_monomorphisms A B \<Longrightarrow> set_monomorphism f A B"
-  by (simp add: set_monoI2 set_monomorphisms_eq_set_morphisms_inter_injs)
+lemma set_monomorphismI1: "f \<in> set_mono A B \<Longrightarrow> set_monomorphism f A B"
+  using set_mono1 set_monoI1 set_mono_memE3 by blast
 
 lemma set_monomorphismD1:
-  "set_monomorphism f A B \<Longrightarrow> f \<in> set_monomorphisms A B"
+  "set_monomorphism f A B \<Longrightarrow> f \<in> set_mono A B"
   by (simp add: set_monomorphism.set_monomorphism_mem)
 
 lemma set_monomorphism_iff:
-  "f \<in> set_monomorphisms A B \<longleftrightarrow> set_monomorphism f A B"
+  "f \<in> set_mono A B \<longleftrightarrow> set_monomorphism f A B"
   using set_monomorphismD1 set_monomorphismI1 by blast
 
 
@@ -1016,48 +1064,51 @@ sublocale inv:set_morphism "rinv f A B" B A  using bij_betw_hom_rev set_morphism
 sublocale iso:iso_locale "rinv f A B" B A  by (simp add: bij_betw_rinv_into iso_locale.intro)
 
 lemma set_iso_mem:
-  "f \<in> set_isomorphisms A B"
-  by (simp add: mem_hom set_isomorphism_memI2)
+  "f \<in> set_iso A B"
+  by (simp add: dom epi.sur set_iso_memI1)
 
 end
 
-lemma set_isoI1:"f \<in> set_morphisms A B \<Longrightarrow> bij_betw f A B \<Longrightarrow> set_isomorphism f A B"
+lemma set_isoI1:"f \<in> set_mor A B \<Longrightarrow> bij_betw f A B \<Longrightarrow> set_isomorphism f A B"
   by (simp add: iso_locale.intro set_isomorphism_def set_morphismI1)
 
 lemma set_isomorphismI1:
-  "set_isomorphism f A B \<Longrightarrow> f \<in> set_isomorphisms A B"
-  by (simp add: set_isomorphism.set_iso_mem)
+  "f \<in> set_iso A B \<Longrightarrow>set_isomorphism f A B "
+  by (metis bij_betw_imageI set_iso1 set_isoI1 set_iso_memE3 set_iso_memE4 subsetD)
 
 lemma set_isomorphismD1:
-  "set_isomorphism f A B \<Longrightarrow> f \<in> set_isomorphisms A B"
-  by (simp add: set_isomorphismI1)
+  "set_isomorphism f A B \<Longrightarrow> f \<in> set_iso A B"
+  by (simp add: set_isomorphism.set_iso_mem)
 
 lemma set_isomorphism_iff:
-  "f \<in> set_isomorphisms A B \<longleftrightarrow> set_isomorphism f A B"
-  using set_isoI1 set_isomorphismE2 set_isomorphismI1 set_isomorphism_memE1 set_monomorphisms_memE1 by blast
+  "f \<in> set_iso A B \<longleftrightarrow> set_isomorphism f A B"
+  using set_isomorphismD1 set_isomorphismI1 by blast
+
+
 
 
 lemma bij_bewt_has_lr_inv:
-  "bij_betw f A B \<Longrightarrow> (\<exists>g \<in> set_morphisms B A. is_left_inv A f g \<and> is_right_inv B f g)"
+  "bij_betw f A B \<Longrightarrow> (\<exists>g \<in> set_mor B A. is_left_inv A f g \<and> is_right_inv B f g)"
   by (metis bij_betw_hom_rev bij_betw_imp_surj_on inv_rinv2 is_left_invI0 rinv_is_rinv)
 
+
+lemma bij_bewt_has_inverse:
+  "bij_betw f A B \<Longrightarrow> (\<exists>g \<in> set_mor B A. compose A g f = Id A \<and> compose B f g = Id B)"
+  by (metis bij_betw_hom_rev inv_rinv2 inv_rinv3)
 
 
 context set_morphism
 begin
 
-lemma bij_bewt_has_inverse:
-  "bij_betw f A B \<Longrightarrow> (\<exists>g \<in> set_morphisms B A. compose A g f = Id A \<and> compose B f g = Id B)"
-  using bij_bewt_has_lr_inv is_left_inv_E3 is_right_inv_def by fastforce
-
 lemma has_inverse_bij_bewt:
-  "(\<exists>g \<in> set_morphisms B A. is_left_inv A f g \<and> is_right_inv B f g) \<Longrightarrow> bij_betw f A B"
-  using bijI hom_memD2 is_left_invE1 is_right_invE1 mem_maps_to by fastforce
+  "(\<exists>g \<in> set_mor B A. is_left_inv A f g \<and> is_right_inv B f g) \<Longrightarrow> bij_betw f A B"
+  using bij_betw_def is_left_invE3 is_right_invE1b maps_to_memE2 set_morphism.mem_maps_to set_morphismI1
+  by fastforce
 
 lemma bij_betw_iff_has_inverse:
-  "bij_betw f A B \<longleftrightarrow> (\<exists>g \<in> set_morphisms B A. compose A g f = Id A \<and> compose B f g = Id B)" 
-  (is "_ \<longleftrightarrow> (\<exists>g \<in> set_morphisms B A. ?INV g)")
-  using bij_bewt_has_inverse has_inverse_bij_bewt is_left_invI0 is_right_inv_def by blast
+  "bij_betw f A B \<longleftrightarrow> (\<exists>g \<in> set_mor B A. compose A g f = Id A \<and> compose B f g = Id B)" 
+  (is "_ \<longleftrightarrow> (\<exists>g \<in> set_mor B A. ?INV g)")
+  by (metis bij_bewt_has_inverse has_inverse_bij_bewt is_left_invI0 is_right_inv_def)
 
 
 end
@@ -1067,10 +1118,10 @@ section Equivalence
 
 locale equivalence_relation=
   fixes X :: "'a set" and R :: "('a \<times> 'a) set"
-  assumes sub[intro, simp]:"R \<subseteq> X \<times> X" and
-          ref[intro, simp]: "a \<in> X \<Longrightarrow> (a, a) \<in> R" and 
-          sym[sym]: "(a, b) \<in> R \<Longrightarrow> (b, a) \<in> R" and
-          trn[trans]: "\<lbrakk>(a, b) \<in> R; (b, c) \<in> R \<rbrakk> \<Longrightarrow> (a, c) \<in> R"
+  assumes sub:"R \<subseteq> X \<times> X" and
+          ref: "a \<in> X \<Longrightarrow> (a, a) \<in> R" and 
+          sym: "(a, b) \<in> R \<Longrightarrow> (b, a) \<in> R" and
+          trn: "\<lbrakk>(a, b) \<in> R; (b, c) \<in> R \<rbrakk> \<Longrightarrow> (a, c) \<in> R"
 begin
 abbreviation "p \<equiv> qproj X R"
 abbreviation "pinv \<equiv> qsect X R"
@@ -1085,75 +1136,106 @@ lemma r_closed[intro]:
 
 lemma qproj_def2:
   "p = (\<lambda>x \<in> X. R``{x})" 
-  unfolding qproj_def by fastforce
+  unfolding qproj_def
+proof
+  fix x show "(\<lambda>x\<in>X. {y \<in> X. (x, y) \<in> R}) x = (\<lambda>x\<in>X. R `` {x}) x" 
+  proof(cases "x \<in> X")
+    case True
+    then show ?thesis unfolding restrict_def by auto
+  next
+    case False
+    then show ?thesis
+      by (simp add: restrict_def) 
+  qed
+qed
 
-lemma p_closed1[dest]:
-  "x \<in> X \<Longrightarrow> y \<in> p x \<Longrightarrow> y \<in> X" 
-  unfolding qproj_def by auto
+lemma p_closed1:
+  "x \<in> X \<Longrightarrow> y \<in> p x \<Longrightarrow> y \<in> X"
+  by (simp add: qproj_def2 r_closed restrict_apply1) 
 
-lemma p_closed2[intro, simp]:
-  "a \<in> X \<Longrightarrow> p a \<subseteq> X" 
-  unfolding qproj_def by auto
+lemma p_closed2:
+  "a \<in> X \<Longrightarrow> p a \<subseteq> X"
+  using p_closed1 by blast 
 
-lemma p_undefined[intro, simp]:
-  "a \<notin> X \<Longrightarrow> p a = undefined" 
-  unfolding qproj_def by simp
+lemma p_undefined:
+  "a \<notin> X \<Longrightarrow> p a = undefined"
+  by (simp add: qproj_def2 restrict_def) 
 
-lemma p_I1[intro, simp]:
-  "(a, b) \<in> R \<Longrightarrow> b \<in> p a"  
-  unfolding qproj_def by (simp add: l_closed r_closed)
+lemma p_I1:
+  "(a, b) \<in> R \<Longrightarrow> b \<in> p a"
+  by (simp add: l_closed qproj_def2 restrict_def)  
 
-lemma p_revI [intro, simp]:
-  "(a, b) \<in> R \<Longrightarrow> a \<in> p a"  
-  by (blast intro: sym)
+lemma p_revI:
+  "(a, b) \<in> R \<Longrightarrow> a \<in> p a"
+  using p_I1 ref by auto
 
-lemma p_D1[dest]:
-  "\<lbrakk>a \<in> X; b \<in> p a\<rbrakk> \<Longrightarrow> (a, b) \<in> R" 
-  unfolding qproj_def by simp
-lemma p_self [intro, simp]:
-  "a \<in> X \<Longrightarrow> a \<in> p a"  
-    unfolding qproj_def by simp
-lemma p_un [simp]:
-  "(\<Union>a\<in>X. p a) = X" 
-    by blast
+lemma p_D1:
+  "\<lbrakk>a \<in> X; b \<in> p a\<rbrakk> \<Longrightarrow> (a, b) \<in> R"
+  by (simp add: qproj_def2 restrict_def) 
+
+lemma p_self:
+  "a \<in> X \<Longrightarrow> a \<in> p a"
+  using p_revI ref by blast
+
+lemma p_un:
+  "(\<Union>a\<in>X. p a) = X"
+  using p_closed1 p_self by auto 
+
 lemma p_subset1:
   "(a, b) \<in> R \<Longrightarrow> p a \<subseteq> p b"
-  by (meson l_closed local.sym p_D1 p_I1 subsetI trn) 
+proof-
+  assume A0:"(a,b) \<in> R"
+  show "p a \<subseteq> p b"
+  proof
+    fix x assume A1:"x \<in> p a" 
+    then obtain "(x, a) \<in> R" and "x \<in> X"
+      using A0 local.sym p_D1 by blast
+    then obtain "(x, b) \<in> R"
+      using A0 trn by blast
+    then show "x \<in> p b"
+      using local.sym p_I1 by blast
+  qed
+qed
 
 lemma p_eq1:
   "(a, b) \<in> R \<Longrightarrow> p a = p b"  
   by (auto intro!: p_subset1 intro: sym)
 
+lemma proj_eq_equiv:"\<lbrakk>a \<in> X; b \<in> X;p a = p b\<rbrakk> \<Longrightarrow> (a, b) \<in> R"
+  by (simp add: p_D1 p_self)
+
 lemma p_equivalence:
-  "\<lbrakk>a \<in> X;b \<in> X\<rbrakk> \<Longrightarrow> p a = p b \<longleftrightarrow> (a, b) \<in> R"  
-  by (metis p_D1 p_eq1 p_self)
+  "\<lbrakk>a \<in> X;b \<in> X\<rbrakk> \<Longrightarrow> p a = p b \<longleftrightarrow> (a, b) \<in> R"
+  using p_eq1 proj_eq_equiv by blast  
 
 lemma p_meet_eq1:
-  "\<lbrakk>a \<in> X; b \<in> X; p a \<inter> p b \<noteq> {}\<rbrakk> \<Longrightarrow> p a = p b" 
-  by (metis disjoint_iff p_D1 p_eq1)
+  "\<lbrakk>a \<in> X; b \<in> X; p a \<inter> p b \<noteq> {}\<rbrakk> \<Longrightarrow> p a = p b"
+  by (metis disjoint_iff p_D1 p_eq1) 
 
-lemma p_in_quotient1[intro, simp]:
-  "a \<in> X \<Longrightarrow> p a \<in> (X/R)" 
-  unfolding quotient_def by blast
+lemma p_in_quotient1:
+  "a \<in> X \<Longrightarrow> p a \<in> (X/R)"  
+proof-
+  fix a assume A0:"a \<in> X"
+  then obtain "p a \<in> {R `` {a}}"
+    by (simp add: qproj_def2 restrict_def)
+  then show "p a \<in> (X/R)"
+    using A0 quotient_def by blast
+qed
+  
 
-lemma elem_ex1:
-  "x \<in> X \<Longrightarrow> \<exists>t. x \<in> t \<and> t \<in> (X/R)"  
-  using p_self by blast
+lemma elem_ex1:"x \<in> X \<Longrightarrow> \<exists>t. x \<in> t \<and> t \<in> (X/R)"
+  using p_in_quotient1 p_self by auto  
 
-lemma elem_ex2:
-  "p`X = (X/R)" 
-  by (simp add: quotient_def UNION_singleton_eq_range qproj_def2)
+lemma elem_ex2:"p`X = (X/R)"
+  by (simp add: quotient_def UNION_singleton_eq_range image_restrict_eq qproj_def2) 
 
-lemma elem_ex3:
-  "t \<in> (X/R) \<Longrightarrow> t \<in> p`X" 
+lemma elem_ex3: "t \<in> (X/R) \<Longrightarrow> t \<in> p`X" 
   by (simp add: elem_ex2)
 
-lemma elem_ex4:
-  "t \<in> (X/R) \<Longrightarrow> (\<exists>x \<in> X. p x = t)" 
+lemma elem_ex4: "t \<in> (X/R) \<Longrightarrow> (\<exists>x \<in> X. p x = t)" 
   using elem_ex3 by blast 
 
-lemma elem_un1:
-  "t \<in> (X/R) \<Longrightarrow> s \<in> (X/R) \<Longrightarrow> t \<noteq> s \<Longrightarrow>  t \<inter> s = {}"
+lemma elem_un1:  "t \<in> (X/R) \<Longrightarrow> s \<in> (X/R) \<Longrightarrow> t \<noteq> s \<Longrightarrow>  t \<inter> s = {}"
 proof-
   assume t0:"t \<in> (X/R)" and t1:"s \<in> (X/R)"
   then obtain x y where x0:"x \<in> X" and x1:"p x = t" and y0:"y \<in> X" and y1:"p y =s" 
@@ -1171,20 +1253,19 @@ lemma elem_un2:
   "t \<in> (X/R) \<Longrightarrow> s \<in> (X/R) \<Longrightarrow> a \<in> t \<Longrightarrow> a \<in> s \<Longrightarrow> t = s" 
   by (metis disjoint_iff elem_un1)
 
-lemma p_mem_closed[intro]:
+lemma p_mem_closed:
   "x \<in> t \<Longrightarrow> t \<in> (X/R) \<Longrightarrow> x \<in> X"
-  using elem_ex2 by auto
+  using elem_ex4 p_closed1 by blast
 
-lemma elem_ex5:
-  "t \<in> (X/R) \<Longrightarrow> \<exists>x \<in> X. x \<in> t" 
-    using elem_ex4 by blast
+lemma elem_ex5:"t \<in> (X/R) \<Longrightarrow> \<exists>x \<in> X. x \<in> t" 
+  using elem_ex4 p_self by blast 
 
 lemma proj_hom:
-  "set_morphism p X (X/R)" 
-  by (simp add: set_morphism.intro) 
+  "set_morphism p X (X/R)"
+  using p_in_quotient1 p_undefined set_morphism_def by blast 
 
 lemma proj_hom2:
-  "p \<in> set_morphisms X (X/R)"
+  "p \<in> set_mor X (X/R)"
   by (simp add: proj_hom set_morphism_iff)
 
 lemma proj_epi:
@@ -1192,16 +1273,16 @@ lemma proj_epi:
   by (simp add: elem_ex2 proj_hom set_epimorphism.intro sur_locale.intro)  
 
 lemma proj_epi2:
-  "p \<in> set_epimorphisms X (X/R)"
-  by (simp add: elem_ex2 set_epimorphisms_def)
+  "p \<in> set_epi X (X/R)"
+  by (simp add: proj_epi set_epimorphism.set_epimorphism_mem)
 
-lemma rep_ex[dest]:
-  "t \<in> X/R \<Longrightarrow> \<exists>x \<in> X. x \<in> t \<and> p x = t" 
-  using elem_ex4 by blast
+lemma rep_ex:
+  "t \<in> X/R \<Longrightarrow> \<exists>x \<in> X. x \<in> t \<and> p x = t"
+  using elem_ex4 p_self by blast 
 
 lemma projE:
   "t \<in> X/R \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> Q (p x)) \<Longrightarrow> Q t"
-  by blast
+  using elem_ex4 by auto
 
 lemma sec_rinv:
   "is_right_inv (X/R) p pinv" 
@@ -1210,7 +1291,7 @@ lemma sec_rinv:
 lemma sec_hom:"set_morphism pinv (X/R) X"
   by (simp add: elem_ex2 qsect_def rinv_inv_set_morphisms set_morphismI1)
 
-lemma sec_hom2:"pinv \<in> set_morphisms (X/R) X"
+lemma sec_hom2:"pinv \<in> set_mor (X/R) X"
   by (simp add: sec_hom set_morphism_iff)
 
 lemma sec_inj:
@@ -1221,10 +1302,10 @@ lemma sec_mono:
   "set_monomorphism pinv (X/R) X"
   by (simp add: sec_hom2 sec_inj set_monoI1) 
 
-lemma sec_mono_mem:"pinv \<in> set_monomorphisms (X/R) X"
+lemma sec_mono_mem:"pinv \<in> set_mono (X/R) X"
   by (simp add: sec_mono set_monomorphism_iff)
 
-lemma sec_closed[intro]:
+lemma sec_closed:
   "t \<in> X/R \<Longrightarrow> pinv t \<in> X"
   by (simp add: elem_ex3 proj_hom2 qsect_def rinv_into_into)
 
@@ -1245,23 +1326,23 @@ lemma compat_factors1b:
 lemma compat_factors1c:
   assumes compat:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; p x = p y\<rbrakk> \<Longrightarrow> f x = f y" 
   shows "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (qmap X R f) p x"
-  by(simp add:compose_eq[of _ X "qmap X R f" p],blast intro:compat compat_factors1b)
+  by(simp add:comp_eq[of _ X "qmap X R f" p],blast intro:compat compat_factors1b)
 
 
 lemma compat_factors1d:
-  assumes compat:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; p x = p y\<rbrakk> \<Longrightarrow> f x = f y" and set_hom:"f \<in> set_morphisms X Y"
+  assumes compat:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; p x = p y\<rbrakk> \<Longrightarrow> f x = f y" and set_hom:"f \<in> set_mor X Y"
   shows "f = compose X (qmap X R f) p"
-proof(rule maps_on_equalityI)
+proof(rule maps_on_eqI1)
   show "f \<in> maps_on X"
-    using hom_memD1 set_hom by blast
+    using set_hom set_morphisms_memE3 by auto
   show "compose X (qmap X R f) p \<in> maps_on X"
-    by simp
+    by (simp add: comp_maps_on)
   show "\<And>x. x \<in> X \<Longrightarrow> f x = compose X (qmap X R f) p x"
     using compat compat_factors1c[of f] by blast
 qed
 
 lemma compat_factors2:
-  assumes compat:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; p x = p y\<rbrakk> \<Longrightarrow> f x = f y" and set_hom:"f \<in> set_morphisms X Y"
+  assumes compat:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; p x = p y\<rbrakk> \<Longrightarrow> f x = f y" and set_hom:"f \<in> set_mor X Y"
   defines "h \<equiv> compose (X/R) f (rinv p X (X/R))"
   shows "\<And>x. x \<in> X \<Longrightarrow> f x = compose X h p x" and "f = compose X h p"
 proof-
@@ -1271,16 +1352,16 @@ proof-
   then have "f x = compose (X / R) f (rinv p X (X / R)) (p x)"
     unfolding h_def using compat compat_factors1 by blast
   also have "... = compose X h p x"
-    by (simp add: a1 compose_eq h_def)
+    by (simp add: a1 comp_eq h_def)
   finally show " f x = compose X h p x"
     by simp
 qed
    show "f = compose X h p"
-proof(rule maps_on_equalityI)
+proof(rule maps_on_eqI1)
   show "f \<in> maps_on X"
-    using hom_memD1 set_hom by blast
+    using set_hom set_morphisms_memE3 by auto
   show "compose X h p \<in> maps_on X"
-    by simp
+    by (simp add: comp_maps_on)
   show "\<And>x. x \<in> X \<Longrightarrow> f x = compose X h p x"
     by (simp add:P0)
   qed
@@ -1290,7 +1371,7 @@ lemma psecE1:"t \<in> X/R \<Longrightarrow> p (pinv t) = t"
 
 end
 
-lemma is_eqrelE1:"is_eqrel X R \<Longrightarrow> R \<subseteq> X \<times> X"  by (simp add: is_eqrel_def refl_on_def)
+
 lemma is_eqrelE2:"is_eqrel X R \<Longrightarrow>x \<in> X \<Longrightarrow> (x,x)\<in>R"  by (simp add: is_eqrel_def refl_on_def)
 lemma is_eqrelE3:"is_eqrel X R \<Longrightarrow>(x,y)\<in>R \<Longrightarrow> (y,x)\<in>R"  by (meson is_eqrel_def symE) 
 lemma is_eqrelE4:"is_eqrel X R \<Longrightarrow>(x,y)\<in>R \<Longrightarrow> (y, z)\<in>R \<Longrightarrow> (x,z)\<in>R"  by (meson is_eqrel_def transE)  
@@ -1325,12 +1406,12 @@ lemma h_eq:
   "\<lbrakk>x\<in>X;y\<in>X\<rbrakk> \<Longrightarrow> eqr.p x =eqr.p y \<longleftrightarrow> f x = f y"
   unfolding eqr.p_equivalence unfolding kernel_pair_object_def by simp
 
-lemma h_simp[simp]:
+lemma h_simp:
   "x \<in> X \<Longrightarrow> h (eqr.p x) = f x" 
   unfolding  h_def using h_eq  eqr.compat_factors1b[of f]  by presburger
 
 lemma quotient_map_hom:
-  "h \<in> set_morphisms (X/Ker(f)) Y"
+  "h \<in> set_mor (X/Ker(f)) Y"
   unfolding h_def qmap_def using eqr.sec_hom2 hom2 mem_hom by blast
 
 lemma ker_pair_ker:
@@ -1350,30 +1431,31 @@ sublocale quotient_map:set_monomorphism h "X/Ker(f)" Y
   by (simp add: h_inj_on quotient_map_hom set_monoI1) 
 
 lemma factorization1:
-  "x\<in>X \<Longrightarrow> compose X h eqr.p a = f a" 
-  by (simp add: compose_def dom)
+  "x\<in>X \<Longrightarrow> compose X h eqr.p a = f a"
+  by (simp add: compose_def dom h_simp restrict_def)
 
-lemma factorization2[simp]:
-  "compose X h eqr.p = f" 
-  by (rule ext) (simp add: compose_def dom)
+lemma factorization2:
+  "compose X h eqr.p = f"
+  by (metis eqr.compat_factors1d h_def h_simp mem_hom) 
 
 lemma factorization3:
-  assumes A0:"g \<in> set_morphisms (X/Ker(f)) Y" and A1:"compose X g eqr.p = f"
+  assumes A0:"g \<in> set_mor (X/Ker(f)) Y" and A1:"compose X g eqr.p = f"
   shows "g = h" 
 proof
   fix t show "g t = h t"
   proof (cases "t \<in> X/Ker(f)")
     case True
-    then obtain x where [simp]: "t = eqr.p x" "x \<in> X" 
-      by fast
+    then obtain x where [simp]: "t = eqr.p x" "x \<in> X"
+      using eqr.elem_ex4 by blast 
     then have "g (eqr.p x) = f x"
-      by (metis compose_eq A1)
+      by (metis comp_eq A1)
     also have "\<dots> = h (eqr.p x)"
-      by simp
+      by (simp add: h_simp)
     finally show ?thesis
       by simp
   next
-    case False then show ?thesis using A0 hom10 quotient_map.dom by fastforce
+    case False then show ?thesis
+      by (metis A0 maps_on_memE1 quotient_map.dom set_morphisms_memE3) 
   qed
 qed
 
@@ -1387,7 +1469,9 @@ lemma eqr_eq_proj_ker:
   "R = ker_pair X p"
   apply(auto simp add:ker_pair_def)
   using p_eq1 apply blast
-  using p_eq1 by blast
+  using p_eq1
+  apply blast
+  by (simp add: p_D1 p_self) 
 
 end
 
@@ -1571,213 +1655,6 @@ lemma (in LCD) fold_commute:
   by (induct set: finite) (auto simp add: left_commute fold_insert)
 
 section Fold
-
-lemma set_morphisms_empty:"\<exists>!f. f \<in> set_morphisms {} Y"
-  by (simp add: hom1)
-
-
-definition "seq X a f n \<equiv> {x \<in> set_morphisms {..Suc n} X. x 0 = a \<and> (\<forall>k \<in> {..<Suc n}. x (Suc k) = f (x k))}"
-definition "inductive_seq X a f n \<equiv> (THE x. x \<in> seq X a f n)"
-definition "ind_seq X a f \<equiv> (\<lambda>n \<in> Nats. inductive_seq X a f n n)"
-
-
-
-lemma set_morphism_insert:
-  assumes A0:"f \<in> set_morphisms A Y" and A1:"a \<notin> A" and A2:"y \<in> Y"
-  defines "g \<equiv> (\<lambda>x \<in> (insert a A). if x=a then y else f x)"
-  shows "g \<in> set_morphisms (insert a A) Y"
-  using assms unfolding set_morphisms_def by(auto)
-
-lemma suc_insert_lol:
-  assumes A0:"f \<in> set_morphisms {..n} Y" and A1:"n \<in> Nats" and A2:"y \<in> Y"
-  defines "g \<equiv> (\<lambda>x \<in> {..(Suc n)}. if x \<in>{..n} then f x else y)"
-  shows "g \<in> set_morphisms {..(Suc n)} Y"
-  using assms unfolding set_morphisms_def by auto
-
-
-
-lemma iseq_ex0:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X"
-  defines "x \<equiv> (\<lambda>i \<in>{..Suc 0}. (if i=0 then a else (f a)))"
-  shows "x \<in> set_morphisms {..Suc 0} X" and "x 0 = a" and "(\<forall>k \<in> {..<Suc 0}. x (Suc k) = f (x k))" and
-        "x \<in> seq X a f 0" and  "\<And>y. y \<in> seq X a f 0 \<Longrightarrow> y = x" and "\<exists>!x. x \<in> seq X a f 0" and
-        "inductive_seq X a f 0 = x"
-proof-
-  obtain B0:"{..<Suc 0} = {0::nat}" and B1:"{.. Suc 0} = {0,1}"
-    by (simp add: atMost_Suc insert_commute lessThan_atLeast0)
-  obtain B2:"x 0 = a" and B3:"x 1 = f a"
-    by (simp add: x_def)
-  show B4:"x \<in> set_morphisms {.. Suc 0} X"
-    unfolding x_def set_morphisms_def dom_def using A1 A0 hom9 by force
-  show B5:"x 0 = a"
-    using B2 by auto
-  show B6:"(\<forall>k \<in> {..<Suc 0}. x (Suc k) = f (x k))"
-    by (metis B0 B3 B5 One_nat_def singletonD)
-  show B7:"x \<in> seq X a f 0"
-    by (simp add: B4 B5 B6 seq_def)
-  show B8:"\<And>y. y \<in> seq X a f 0 \<Longrightarrow> y = x"
-  proof-
-    fix y assume A2:"y \<in> seq X a f 0"
-    then obtain "y \<in> set_morphisms {..Suc 0} X" and "y 0 = a" and "\<forall>k \<in> {..<Suc 0}. y (Suc k) = f (y k)"
-      by (simp add: seq_def)
-    then show "y = x"
-      using fun_eqI[of y "{..Suc 0}" X x X]  by (metis B0 B1 B3 B4 B5 One_nat_def insertE singleton_iff)
-  qed
-  show "\<exists>!x. x \<in> seq X a f 0"
-    using B7 B8 by auto
-  show "inductive_seq X a f 0 = x"
-    unfolding inductive_seq_def  using B7 B8 by blast
-qed
-
-
-lemma iseqrestric:
-  assumes A0:"f \<in> set_morphisms X X"  and A1:"a \<in> X" and A2:"n \<in> Nats" and A3:"x \<in> seq X a f (Suc n)"
-  shows "(\<lambda>i \<in> {..Suc n}. x i) \<in> seq X a f n"
-proof-
-  let ?r="(\<lambda>i \<in> {..Suc n}. x i)"
-  obtain A4:"x \<in> set_morphisms {..Suc (Suc n)} X" and A6:"x 0 = a" and A7:"\<forall>k \<in> {..<Suc (Suc n)}. x (Suc k) = f (x k)"
-    using A3 by (simp add: seq_def)
-  have B0:"?r \<in> set_morphisms {..Suc n} X"
-    using A4 unfolding set_morphisms_def by(auto)
-  have B1:"?r 0 = a"
-    by (simp add: A6)
-  have B2:"\<forall>k \<in> {..<Suc n}. ?r (Suc k) = f (?r k)"
-    using A7 by auto
-  show ?thesis
-    unfolding seq_def using B0 B1 B2 by blast
-qed
-  
-lemma iseq_ex1:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X" and A2:"n \<in> Nats" and A3:"\<exists>!x. x \<in> seq X a f n"
-  shows "\<exists>!x. x \<in> seq X a f (Suc n)" and "inductive_seq X a f (Suc n) \<in> seq X a f (Suc n)"
-proof-
-  obtain y where A4:"y \<in> seq X a f n" using A3 by auto
-  then obtain A5:"y \<in> set_morphisms {..Suc n} X" and A6:"y 0 = a" and A7:"\<forall>k \<in> {..<Suc n}. y (Suc k) = f (y k)"
-    by (simp add: seq_def)
-  define x where "x \<equiv> (\<lambda>i \<in>{..Suc (Suc n)}. (if i \<in> {..Suc n} then y i else (f (y (Suc n)))))"
-  have B0:"\<forall>k \<in> {..<Suc (Suc n)}. x k = y k"
-    using x_def by auto
-  have B1:"y (Suc n) \<in> X"
-    using A5 hom9 by fastforce
-  have B2:"x (Suc (Suc n)) = f (y (Suc n))"
-    by (simp add: x_def)
-  have B3:"f(y (Suc n)) \<in> X"
-    by (meson A0 B1 hom9)
-  have B4:"compose {..Suc n} f y \<in> set_morphisms {..Suc n} X"
-    using A0 A5 hom2 by blast
-  have B5:"{..Suc (Suc n)} = insert (Suc (Suc n)) {..<Suc (Suc n)}"
-    using lessThan_Suc lessThan_Suc_atMost by auto 
-  have B6:"\<forall>i \<in> {..Suc n}. x (Suc i) = f (x i)"
-    by (metis A7 B0 B2 lessThan_Suc_atMost lessThan_iff less_Suc_eq less_Suc_eq_0_disj)
-  have B7:"x 0 = a"
-    by (simp add: A6 B0)
-  have B8:"x \<in> set_morphisms {..Suc (Suc n)} X"
-    unfolding x_def using B3 A5 suc_insert_lol[of y "Suc n" X "f (y (Suc n))"] by (simp add: set_morphisms_def)
-  have B9:"\<forall>k \<in> {..<Suc n}. x (Suc k) = f (x k)"
-    by (simp add: B6)
-  have P0:"x \<in> seq X a f (Suc n)"
-    unfolding seq_def by (simp add: B6 B7 B8)
-  have P1:"\<And>z. z \<in> seq X a f (Suc n) \<Longrightarrow> z = x"
-  proof-
-    fix z assume A4:"z \<in> seq X a f (Suc n)"
-    then obtain "(\<lambda>i \<in> {..Suc n}. z i) \<in> seq X a f n" and "(\<lambda>i \<in> {..Suc n}. x i) \<in> seq X a f n"
-      by (simp add: A0 A1 P0 assms(3) iseqrestric)
-    then obtain B10:"(\<lambda>i \<in> {..Suc n}. x i) = (\<lambda>i \<in> {..Suc n}. z i)"
-      using A3 by auto
-    then obtain B11:"\<forall>k \<in> {..Suc n}. z k = x k"
-      by (metis restrict_apply1)
-    obtain B12:"x (Suc (Suc n)) = f (y (Suc n))" and B13:"y (Suc n) = x (Suc n)" and B14:"z (Suc (Suc n)) = f (x (Suc n))"
-      by (metis (mono_tags, lifting) A4 B0 B11 B6 insertI1 lessThan_Suc lessThan_Suc_atMost mem_Collect_eq seq_def)
-    obtain B15:"x (Suc (Suc n)) = z (Suc (Suc n))"
-      by (simp add: B13 B14 B2)
-    have "\<And>k. k \<in> {..Suc (Suc n)} \<Longrightarrow> z k = x k"
-    proof-
-      fix k assume A5:"k \<in> {..Suc (Suc n)}" show "z k = x k"
-      proof(cases "k=Suc(Suc n)")
-        case True  then show ?thesis using B15 by auto
-      next
-        case False then obtain "k \<in> {..Suc n}"  using A5 by force
-        then show ?thesis using B11 by auto
-      qed
-    qed
-    then show "z = x"
-      by (metis (mono_tags, lifting) A4 B8 fun_eqI mem_Collect_eq seq_def)
-  qed
-  show "\<exists>!x. x \<in> seq X a f (Suc n)"
-    using P0 P1 by blast 
-  then show "inductive_seq X a f (Suc n) \<in> seq X a f (Suc n)"
-    unfolding inductive_seq_def using theI'[of "\<lambda>z. z \<in> seq X a f (Suc n)"] by auto
-qed
-
-lemma iseq_ex2:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X" 
-  shows "\<exists>!x. x \<in> seq X a f n" 
-proof(induct n)
-  case 0
-  then show ?case
-    by (simp add: A0 A1 iseq_ex0(6) iseq_ex1) 
-next
-  case (Suc n)
-  also have "n \<in> Nats"
-    by (metis of_nat_id of_nat_in_Nats)
-  then show ?case using A0 A1 iseq_ex1[of f X a n] using calculation by blast
-qed
-
-
-lemma iseq_ex3:"f \<in> set_morphisms X X \<Longrightarrow> a \<in> X \<Longrightarrow> inductive_seq X a f n \<in> seq X a f n" 
-  unfolding inductive_seq_def using iseq_ex2[of f X a n] theI'[of "\<lambda>z. z \<in> seq X a f n"] by auto
-
-lemma iseq_ex4:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X" and A2:"n \<in> Nats" and A3:"x = inductive_seq X a f n"
-  shows "x \<in> set_morphisms {..Suc n} X" and "x 0 = a" and A7:"\<forall>k \<in> {..<Suc n}. x (Suc k) = f (x k)"
-proof-
-  obtain B0:"inductive_seq X a f n \<in> seq X a f n"
-    by (simp add: A0 A1 iseq_ex3)
-  then obtain B1:"x \<in> seq X a f n"
-    by (simp add: A3)
-  then show "x \<in> set_morphisms {..Suc n} X" and "x 0 = a" and A7:"\<forall>k \<in> {..<Suc n}. x (Suc k) = f (x k)"
-    by (simp_all add: seq_def)
-qed
-
-lemma iseq_rest:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X" and A2:"n \<in> Nats" and A3:"m \<in> Nats" and A4:"n \<le> m"
-  shows "(\<lambda>k \<in> {..Suc n}. (inductive_seq X a f m) k) = inductive_seq X a f n "
-proof-
-  let ?x="(inductive_seq X a f m)" let ?r="(\<lambda>k \<in> {..Suc n}. (inductive_seq X a f m) k) "
-  let ?y="inductive_seq X a f n "
-  obtain B0:"?x \<in> set_morphisms {..Suc m} X" and B1:"?x 0 = a" and B2:"\<forall>k \<in> {..<Suc m}. ?x (Suc k) = f (?x k)" and
-         B3:"?y \<in> set_morphisms {..Suc n} X" and B4:"?y 0 = a" and B5:"\<forall>k \<in> {..<Suc n}. ?y (Suc k) = f (?y k)"
-    by (metis A0 A1 A2 A3 A7 iseq_ex4(1) iseq_ex4(2)) 
-  have B6:"{..Suc n} \<subseteq> {..Suc m}"
-    by (simp add: A4)
-  have B7:"?r \<in> set_morphisms {..Suc n} X" 
-    using B0 B6 unfolding set_morphisms_def by(auto)
-  obtain B8:"?r 0 = a" and B9:"\<forall>k \<in> {..<Suc n}. ?r (Suc k) = f (?r k)"
-    using A4 B2 B1 by force
-  then obtain "?r \<in> seq X a f n"
-    by (simp add: B7 seq_def)
-  then show "?r = ?y"
-    by (metis A0 A1 iseq_ex2 iseq_ex3)
-qed
-
-lemma ind_seq_props:
-  assumes A0:"f \<in> set_morphisms X X" and A1:"a \<in> X" 
-  shows "(ind_seq X a f) \<in> set_morphisms Nats X" and 
-        "(ind_seq X a f) 0 = a" and 
-        "\<And>n. n \<in> Nats \<Longrightarrow> (ind_seq X a f) (Suc n) = f ((ind_seq X a f) n)"
-proof-
-  show  "(ind_seq X a f) \<in> set_morphisms Nats X"
-    unfolding set_morphisms_def ind_seq_def using assms by(auto;meson atMost_iff hom9 iseq_ex4(1) le_Suc_eq le_eq_less_or_eq)
-  show "(ind_seq X a f) 0 = a"
-    by (metis (no_types, lifting) A0 A1 Nats_0 ind_seq_def iseq_ex4(2) restrict_apply)
-  show "\<And>n. n \<in> Nats \<Longrightarrow> (ind_seq X a f) (Suc n) = f ((ind_seq X a f) n)"
-  proof-
-    fix n assume n:"(n::nat) \<in> Nats" then obtain "(Suc n) \<in> Nats"
-      by (metis of_nat_id of_nat_in_Nats)
-    then show "(ind_seq X a f) (Suc n) = f ((ind_seq X a f) n)"  unfolding ind_seq_def 
-      using n  by (smt (verit, best) A0 A1 A7 Suc_leD atMost_iff eq_imp_le iseq_rest lessThan_Suc_atMost restrict_apply)
-  qed
-qed
 
 
 section Magmas
@@ -1968,67 +1845,132 @@ lemma center_memI3:"x \<in> X \<Longrightarrow> (\<And>y. y \<in> X \<Longrighta
 lemma center_memD:"x \<in> center \<Longrightarrow> (\<And>a. a \<in> X \<Longrightarrow>  a \<cdot> x = x \<cdot> a)"  using center_def centralizer_memD by blast  
 
 
-lemma l_cancellableI1:"a \<in> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;a\<cdot>x=a\<cdot>y\<rbrakk> \<Longrightarrow> x = y ) \<Longrightarrow> l_cancellable a"  by (simp add: l_cancellable_def)
-lemma r_cancellableI1:"a \<in> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;x\<cdot>a=y\<cdot>a\<rbrakk> \<Longrightarrow> x = y ) \<Longrightarrow> r_cancellable a"  by (simp add: r_cancellable_def)
-lemma cancellableI1:"a \<in> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;a\<cdot>x=a\<cdot>y\<rbrakk> \<Longrightarrow> x = y )  \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;x\<cdot>a=y\<cdot>a\<rbrakk> \<Longrightarrow> x = y ) \<Longrightarrow> cancellable a"  by (simp add: cancellable_def)
+lemma l_cancellableI1:"\<lbrakk>a \<in> X; (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;a\<cdot>x=a\<cdot>y\<rbrakk> \<Longrightarrow> x = y )\<rbrakk> \<Longrightarrow> l_cancellable a" 
+  by (simp add: l_cancellable_def)
 
-lemma l_cancellableI2:"a \<in> X \<Longrightarrow> inj_on (l_trans a) X \<Longrightarrow> l_cancellable a"  by (simp add: inj_on_def l_cancellableI1 l_trans_def) 
-lemma r_cancellableI2:"a \<in> X \<Longrightarrow> inj_on (r_trans a) X \<Longrightarrow> r_cancellable a"  by (simp add: inj_on_def r_cancellableI1 r_trans_def) 
-lemma cancellableI2:"a \<in> X \<Longrightarrow> inj_on (l_trans a) X \<Longrightarrow> inj_on (r_trans a) X \<Longrightarrow> cancellable a"  by (simp add: inj_on_def cancellableI1 l_trans_def r_trans_def) 
-lemma cancellableI3:" l_cancellable a \<Longrightarrow> r_cancellable a \<Longrightarrow> cancellable a" by (simp add: cancellableI1 l_cancellable_def r_cancellable_def)  
+lemma r_cancellableI1:"\<lbrakk>a \<in> X; (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;x\<cdot>a=y\<cdot>a\<rbrakk> \<Longrightarrow> x = y )\<rbrakk> \<Longrightarrow> r_cancellable a" 
+  by (simp add: r_cancellable_def)
 
-
-lemma l_cancellableD1:"l_cancellable a \<Longrightarrow> inj_on (l_trans a) X"  by (simp add: inj_on_def l_cancellable_def l_trans_def) 
-lemma r_cancellableD1:"r_cancellable a \<Longrightarrow> inj_on (r_trans a) X"  by (simp add: inj_on_def r_cancellable_def r_trans_def) 
-lemma cancellableD1:"cancellable a \<Longrightarrow> inj_on (l_trans a) X \<and>  inj_on (r_trans a) X"  by (simp add: cancellable_def l_cancellableD1 l_cancellableI1 r_cancellableD1 r_cancellableI1) 
-
-lemma l_cancellable_iff_l_trans_inj:"a \<in> X \<Longrightarrow> l_cancellable a \<longleftrightarrow> inj_on (l_trans a) X" using l_cancellableD1 l_cancellableI2 by blast
-lemma r_cancellable_iff_r_trans_inj:"a \<in> X \<Longrightarrow> r_cancellable a \<longleftrightarrow> inj_on (r_trans a) X" using r_cancellableD1 r_cancellableI2 by blast
-lemma cancellable_iff_trans_inj:"a \<in> X \<Longrightarrow> cancellable a \<longleftrightarrow>inj_on (l_trans a) X \<and> inj_on (r_trans a) X" using cancellableD1 cancellableI2 by blast 
-
-lemma stableI:  "A \<subseteq> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> A; y \<in> A\<rbrakk> \<Longrightarrow> x\<cdot>y \<in> A) \<Longrightarrow> stable A" by (simp add: local.stable_def magma_stable_def)
-lemma stableE1: "stable A \<Longrightarrow> A \<subseteq> X" by (simp add: local.stable_def magma_stable_def)
-lemma stableE2:  "stable A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x\<cdot>y \<in> A" by (simp add: local.stable_def magma_stable_def)
-
-lemma centralizer_sub:"centralizer A \<subseteq> X" unfolding centralizer_def by blast
-lemma centralizer_antitone:"A \<subseteq> B \<Longrightarrow> centralizer B \<subseteq> centralizer  A" unfolding centralizer_def by blast
-lemma centralizer_comp_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq> centralizer (centralizer A)" unfolding centralizer_def commutes_def by force
-lemma bicentralizer_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq>bicentralizer A" unfolding centralizer_def commutes_def by force
-lemma bicentralizer_isotone:"A \<subseteq> B \<Longrightarrow> bicentralizer A \<subseteq>bicentralizer B" unfolding centralizer_def commutes_def by force
-lemma bicentralizer_idempotent:"bicentralizer (bicentralizer A) = bicentralizer A" unfolding centralizer_def commutes_def by force
-
-lemma commutes_sub_centralizer1:"B \<subseteq> X \<Longrightarrow> commutes A B \<Longrightarrow> B \<subseteq> centralizer A" unfolding centralizer_def commutes_def by fastforce
-lemma commutes_sub_centralizer2:"B \<subseteq> X \<Longrightarrow> commutes B A \<Longrightarrow> B \<subseteq> centralizer A" unfolding centralizer_def commutes_def by fastforce
-lemma centralizer_commutes1:"commutes A (centralizer A)" unfolding centralizer_def commutes_def by fastforce
-lemma centralizer_commutes2:"commutes (centralizer A) A" unfolding centralizer_def commutes_def by fastforce
-lemma bicentralizer_commutes1:"commutes (centralizer A) (bicentralizer A)" unfolding centralizer_def commutes_def by(auto)
-lemma bicentralizer_commutes2:"commutes (bicentralizer A) (centralizer A)" unfolding centralizer_def commutes_def by(auto)
+lemma cancellableI1:"\<lbrakk>a \<in> X; (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;a\<cdot>x=a\<cdot>y\<rbrakk> \<Longrightarrow> x = y ); (\<And>x y. \<lbrakk>x \<in> X; y \<in> X;x\<cdot>a=y\<cdot>a\<rbrakk> \<Longrightarrow> x = y )\<rbrakk> \<Longrightarrow> cancellable a" 
+  by (simp add: cancellable_def)
 
 
-lemma bicentralizer_mem_iff:"A \<subseteq> X \<Longrightarrow>y \<in> X \<Longrightarrow> y \<in> bicentralizer A \<longleftrightarrow> (\<forall>x \<in> X. (\<forall>a \<in> A. x \<cdot> a = a \<cdot> x) \<longrightarrow> x \<cdot> y = y \<cdot> x)"  unfolding centralizer_def commutes_def by(auto)
+lemma l_cancellableI2:"\<lbrakk>a \<in> X; inj_on (l_trans a) X\<rbrakk> \<Longrightarrow> l_cancellable a" 
+  by (simp add: inj_on_def l_cancellableI1 l_trans_def) 
 
-lemma id_elem_unique:"\<And>e1 e2. id_elem e1 \<Longrightarrow> id_elem e2 \<Longrightarrow>e1 \<in> X \<Longrightarrow> e2 \<in> X \<Longrightarrow>  e1 = e2" unfolding id_elem_def by auto
-lemma id_commutes:"id_elem e \<Longrightarrow> e \<in> X \<Longrightarrow> commutes {e} X" unfolding id_elem_def commutes_def by(auto)
+lemma r_cancellableI2:"a \<in> X \<Longrightarrow> inj_on (r_trans a) X \<Longrightarrow> r_cancellable a" 
+  by (simp add: inj_on_def r_cancellableI1 r_trans_def) 
 
+lemma cancellableI2:"a \<in> X \<Longrightarrow> inj_on (l_trans a) X \<Longrightarrow> inj_on (r_trans a) X \<Longrightarrow> cancellable a"  
+  by (simp add: inj_on_def cancellableI1 l_trans_def r_trans_def) 
 
-lemma l_trans_app:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> l_trans x y = r_trans y x" unfolding l_trans_def r_trans_def by(auto)
-lemma r_trans_app:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> r_trans x y = l_trans y x" unfolding l_trans_def r_trans_def by(auto)
-
-lemma l_trans_hom:"\<And>a. a \<in> X \<Longrightarrow> l_trans a \<in> set_morphisms X X" by (simp add: closed hom_memI1 l_trans_def)
-lemma r_trans_hom:"\<And>a. a \<in> X \<Longrightarrow> r_trans a \<in> set_morphisms X X" by (simp add: closed hom_memI1 r_trans_def)
-
-
-lemma l_trans_und:"\<And>a. a \<notin> X \<Longrightarrow> l_trans a = undefined" by (simp add: closed hom_memI1 l_trans_def)
-lemma r_trans_und:"\<And>a. a \<notin> X \<Longrightarrow> r_trans a = undefined" by (simp add: closed hom_memI1 r_trans_def)
+lemma cancellableI3:" l_cancellable a \<Longrightarrow> r_cancellable a \<Longrightarrow> cancellable a" 
+  by (simp add: cancellableI1 l_cancellable_def r_cancellable_def)  
 
 
-lemma l_trans_hom_mem:"l_trans \<in> set_morphisms X (set_morphisms X X)"  using hom_memI1 l_trans_hom l_trans_und by auto
-lemma r_trans_hom_mem:"r_trans \<in> set_morphisms X (set_morphisms X X)"  using hom_memI1 r_trans_hom r_trans_und by auto
+lemma l_cancellableD1:"l_cancellable a \<Longrightarrow> inj_on (l_trans a) X" 
+  by (simp add: inj_on_def l_cancellable_def l_trans_def) 
 
-lemma id_elem_linj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (l_trans e) X " unfolding inj_on_def l_trans_def id_elem_def by(auto)
-lemma id_elem_rinj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (r_trans e) X " unfolding inj_on_def r_trans_def id_elem_def by(auto)
+lemma r_cancellableD1:"r_cancellable a \<Longrightarrow> inj_on (r_trans a) X" 
+  by (simp add: inj_on_def r_cancellable_def r_trans_def) 
+
+lemma cancellableD1:"cancellable a \<Longrightarrow> inj_on (l_trans a) X \<and>  inj_on (r_trans a) X" 
+  by (simp add: cancellable_def l_cancellableD1 l_cancellableI1 r_cancellableD1 r_cancellableI1) 
+
+lemma l_cancellable_iff_l_trans_inj:"a \<in> X \<Longrightarrow> l_cancellable a \<longleftrightarrow> inj_on (l_trans a) X"
+  using l_cancellableD1 l_cancellableI2 by blast
+
+lemma r_cancellable_iff_r_trans_inj:"a \<in> X \<Longrightarrow> r_cancellable a \<longleftrightarrow> inj_on (r_trans a) X"
+  using r_cancellableD1 r_cancellableI2 by blast
+
+lemma cancellable_iff_trans_inj:"a \<in> X \<Longrightarrow> cancellable a \<longleftrightarrow>inj_on (l_trans a) X \<and> inj_on (r_trans a) X" 
+  using cancellableD1 cancellableI2 by blast 
+
+lemma stableI:  "A \<subseteq> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> A; y \<in> A\<rbrakk> \<Longrightarrow> x\<cdot>y \<in> A) \<Longrightarrow> stable A" 
+  by (simp add: local.stable_def magma_stable_def)
+
+lemma stableE1: "stable A \<Longrightarrow> A \<subseteq> X"
+  by (simp add: local.stable_def magma_stable_def)
+
+lemma stableE2:  "stable A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> x\<cdot>y \<in> A" 
+  by (simp add: local.stable_def magma_stable_def)
+
+lemma centralizer_sub:"centralizer A \<subseteq> X" 
+  unfolding centralizer_def by blast
+
+lemma centralizer_antitone:"A \<subseteq> B \<Longrightarrow> centralizer B \<subseteq> centralizer  A" 
+  unfolding centralizer_def by blast
+
+lemma centralizer_comp_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq> centralizer (centralizer A)" 
+  unfolding centralizer_def commutes_def by force
+
+lemma bicentralizer_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq>bicentralizer A" 
+  unfolding centralizer_def commutes_def by force
+
+lemma bicentralizer_isotone:"A \<subseteq> B \<Longrightarrow> bicentralizer A \<subseteq>bicentralizer B" 
+  unfolding centralizer_def commutes_def by force
+
+lemma bicentralizer_idempotent:"bicentralizer (bicentralizer A) = bicentralizer A" 
+  unfolding centralizer_def commutes_def by force
+
+lemma commutes_sub_centralizer1:"B \<subseteq> X \<Longrightarrow> commutes A B \<Longrightarrow> B \<subseteq> centralizer A" 
+  unfolding centralizer_def commutes_def by fastforce
+
+lemma commutes_sub_centralizer2:"B \<subseteq> X \<Longrightarrow> commutes B A \<Longrightarrow> B \<subseteq> centralizer A" 
+  unfolding centralizer_def commutes_def by fastforce
+
+lemma centralizer_commutes1:"commutes A (centralizer A)" 
+  unfolding centralizer_def commutes_def by fastforce
+
+lemma centralizer_commutes2:"commutes (centralizer A) A"
+  unfolding centralizer_def commutes_def by fastforce
+
+lemma bicentralizer_commutes1:"commutes (centralizer A) (bicentralizer A)"
+  unfolding centralizer_def commutes_def by(auto)
+
+lemma bicentralizer_commutes2:"commutes (bicentralizer A) (centralizer A)" 
+  unfolding centralizer_def commutes_def by(auto)
+
+lemma bicentralizer_mem_iff:"\<lbrakk>A \<subseteq> X;y \<in> X\<rbrakk>\<Longrightarrow> y \<in> bicentralizer A \<longleftrightarrow> (\<forall>x \<in> X. (\<forall>a \<in> A. x \<cdot> a = a \<cdot> x) \<longrightarrow> x \<cdot> y = y \<cdot> x)" 
+  unfolding centralizer_def commutes_def by(auto)
+
+lemma id_elem_unique:"\<And>e1 e2. id_elem e1 \<Longrightarrow> id_elem e2 \<Longrightarrow>e1 \<in> X \<Longrightarrow> e2 \<in> X \<Longrightarrow>  e1 = e2"
+  unfolding id_elem_def by auto
+
+lemma id_commutes:"id_elem e \<Longrightarrow> e \<in> X \<Longrightarrow> commutes {e} X" 
+  unfolding id_elem_def commutes_def by(auto)
 
 
+lemma l_trans_app:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> l_trans x y = r_trans y x"
+  unfolding l_trans_def r_trans_def by(auto)
+
+lemma r_trans_app:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> r_trans x y = l_trans y x" 
+  unfolding l_trans_def r_trans_def by(auto)
+
+lemma l_trans_hom:"\<And>a. a \<in> X \<Longrightarrow> l_trans a \<in> set_mor X X"
+  by (simp add: closed l_trans_def set_mor_def) 
+
+lemma r_trans_hom:"\<And>a. a \<in> X \<Longrightarrow> r_trans a \<in> set_mor X X" 
+  by (simp add: closed set_mor_def r_trans_def)
+
+lemma l_trans_und:"\<And>a. a \<notin> X \<Longrightarrow> l_trans a = undefined" 
+  by (simp add: closed set_mor_def l_trans_def)
+
+lemma r_trans_und:"\<And>a. a \<notin> X \<Longrightarrow> r_trans a = undefined" 
+  by (simp add: closed set_mor_def r_trans_def)
+
+
+lemma l_trans_hom_mem:"l_trans \<in> set_mor X (set_mor X X)"  
+  using set_mor_def l_trans_hom l_trans_und by auto
+
+lemma r_trans_hom_mem:"r_trans \<in> set_mor X (set_mor X X)" 
+  using set_mor_def r_trans_hom r_trans_und by auto
+
+lemma id_elem_linj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (l_trans e) X " 
+  unfolding inj_on_def l_trans_def id_elem_def by(auto)
+
+lemma id_elem_rinj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (r_trans e) X "
+  unfolding inj_on_def r_trans_def id_elem_def by(auto)
 
 definition set_to_list :: "'b set \<Rightarrow> 'b list"
   where "set_to_list s = (SOME l. set l = s)"
@@ -2078,24 +2020,29 @@ sublocale magma \<subseteq> opposite:magma X "\<lambda>x. \<lambda>y. f y x"  by
 
 context magma 
 begin
-lemma lr_trans_dual:"l_trans = opposite.r_trans"  using l_trans_def opposite.r_trans_def by presburger
-lemma rl_trans_dual:"r_trans = opposite.l_trans"  using r_trans_def opposite.l_trans_def by presburger
+lemma lr_trans_dual:"l_trans = opposite.r_trans"  
+  using l_trans_def opposite.r_trans_def by presburger
 
+lemma rl_trans_dual:"r_trans = opposite.l_trans"  
+  using r_trans_def opposite.l_trans_def by presburger
 end
 
-interpretation ex1a:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<union> B)" apply(unfold_locales) by simp
+(*interpretation ex1a:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<union> B)" apply(unfold_locales) by simp
 interpretation ex1b:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<inter> B)" apply(unfold_locales) by blast
 interpretation ex2a:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x+y)"  by (simp add: magma.intro)
 interpretation ex2b:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x*y)"  by (simp add: magma.intro)
-
+*)
 
 subsection \<open>Submagma Locale\<close>
 locale submagma=magma X "(\<cdot>)" for A and X and magma_law (infixl "\<cdot>" 70)+
   assumes submem:"A \<subseteq> X" and 
           subfun:"\<lbrakk>x \<in>A; y \<in> A\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> A" 
 begin
-lemma sub[intro,simp]:"x \<in> A \<Longrightarrow> x \<in> X" using submem by auto
-sublocale sub:magma A "(\<cdot>)" by (simp add: magma.intro subfun) 
+lemma sub[intro,simp]:"x \<in> A \<Longrightarrow> x \<in> X" 
+  using submem by auto
+
+sublocale sub:magma A "(\<cdot>)"
+  by (simp add: magma.intro subfun) 
 
 lemma cl_submgama: "submagma (cl H) X (\<cdot>)" 
   apply(rule submagma.intro)
@@ -2221,10 +2168,16 @@ definition kernel where "kernel \<equiv> ker.kernel_pair_object f"
 notation ker.kernel_pair_object ("R'(_')")
 sublocale im:submagma "f`X" Y "(\<star>)" by (simp add: dom.closed dom.magma_axioms submagma1 submagmaI)
 
-lemma kernel_ref:"refl_on X kernel"  by (simp add: kernel_def refl_on_def)
-lemma kernel_sym:"sym kernel"   by (simp add: ker.eqr.sym kernel_def symI) 
-lemma kernel_trn:"trans  kernel" unfolding kernel_def using ker.eqr.trn transI  by auto
-lemma eqr_kernel:"is_eqrel X  kernel" unfolding is_eqrel_def using kernel_ref kernel_sym kernel_trn by auto
+lemma kernel_ref:"refl_on X kernel"
+  by (simp add: ker.eqr.l_closed ker.eqr.r_closed ker.eqr.ref kernel_def refl_on_def subrelI) 
+
+lemma kernel_sym:"sym kernel"  
+  by (simp add: ker.eqr.sym kernel_def symI) 
+lemma kernel_trn:"trans  kernel"
+  unfolding kernel_def using ker.eqr.trn transI  by auto
+
+lemma eqr_kernel:"is_eqrel X  kernel"
+  by (meson is_eqrelI1 kernel_ref kernel_sym kernel_trn refl_on_def) 
 
 end
 
@@ -2389,18 +2342,21 @@ definition quotient_law (infixl "\<bullet>" 70) where "quotient_law \<equiv> (\<
 lemma op_compat1:"\<lbrakk>\<pi> x1=\<pi> x2;\<pi> y1=\<pi> y2; x1\<in>X; x2\<in>X;y1\<in>X; y2\<in>X\<rbrakk> \<Longrightarrow> \<pi> (x1 \<cdot>y1) = \<pi> (x2 \<cdot> y2)" 
   by (meson closed p_equivalence quotient_magma.compatible quotient_magma_axioms) 
 
-lemma left_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y) \<in> R"  using compatible by auto 
-lemma right_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (x\<cdot>a, y\<cdot>a) \<in> R"  using compatible by auto 
-lemma left_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (l_trans a x, l_trans a y)\<in>R" 
-  by (simp add: compatible l_closed l_trans_def r_closed)
-lemma right_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (r_trans a x, r_trans a y)\<in>R"  
-  by (simp add: compatible r_closed r_trans_def l_closed)
+lemma left_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y) \<in> R"
+  using compatible ref by blast  
+lemma right_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (x\<cdot>a, y\<cdot>a) \<in> R" 
+  using compatible ref by auto 
+lemma left_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (l_trans a x, l_trans a y)\<in>R"
+  by (simp add: compatible l_closed l_trans_def r_closed ref) 
+
+lemma right_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (r_trans a x, r_trans a y)\<in>R"
+  by (simp add: compatible r_closed r_trans_def l_closed ref)
 
 lemma psecE3:"t \<in> X/R \<Longrightarrow> s \<in> X/R \<Longrightarrow>  (\<sigma> t)\<cdot>(\<sigma> s) \<in> X" 
   by (simp add: closed sec_closed) 
 
-lemma qlaw1:"t \<in> X/R \<Longrightarrow> s \<in> X/R  \<Longrightarrow> t\<bullet>s \<in> X/R" 
-  by (simp add: closed sec_closed quotient_law_def)  
+lemma qlaw1:"\<lbrakk>t \<in> X/R ;s \<in> X/R\<rbrakk>  \<Longrightarrow> t\<bullet>s \<in> X/R" 
+  by (simp add: closed sec_closed quotient_law_def p_in_quotient1 psecE3)  
 
 lemma qlaw2:"x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> y1 \<in> \<pi> x1 \<Longrightarrow> y2 \<in> \<pi> x2 \<Longrightarrow> y1 \<cdot> y2 \<in> \<pi> (x1 \<cdot> x2)" 
   by (meson compatible p_D1 p_I1)  
@@ -2414,12 +2370,12 @@ proof-
     using x0 x1 p_in_quotient1 psecE1 sec_closed by presburger
   then obtain B0:"\<sigma> (\<pi> a) = a" "\<sigma> (\<pi> b) = b" "\<pi> x = \<pi> a" "\<pi> y = \<pi> b" 
     by force
-  have "(\<pi> x)\<bullet>\<pi>(y) = \<pi> ((\<sigma> (\<pi> x)) \<cdot> (\<sigma> (\<pi> y)))"  
-    by (simp add: x0 x1 quotient_law_def restrict_def)
+  have "(\<pi> x)\<bullet>\<pi>(y) = \<pi> ((\<sigma> (\<pi> x)) \<cdot> (\<sigma> (\<pi> y)))"
+    by (simp add: p_in_quotient1 quotient_law_def x0 x1)
   also have "... = \<pi> (a\<cdot>b)"  
     by(simp add:B0)
   also have "... = \<pi> (x \<cdot> y)"
-    by (metis A0 A1 B0(3) B0(4) x0 x1 op_compat1)  
+    using A0 A1 B0(3,4) op_compat1 x0 x1 by blast
   finally show ?thesis  
     by blast
 qed
@@ -2431,14 +2387,17 @@ sublocale quotient: magma "X/R" "(\<bullet>)"
   by (simp add: magma.intro qlaw1)
 
 lemma proj_homomorphism:"magma_homomorphism \<pi> X (\<cdot>) (X/R) (\<bullet>)"  
-  by(unfold_locales)(auto simp add:qlaw3)
+  by(unfold_locales,simp_all add:p_undefined p_in_quotient1 qlaw3)
+  
 
 lemma proj_epimorphism:"magma_epimorphism \<pi> X (\<cdot>) (X/R) (\<bullet>)"  
-  by(unfold_locales)(auto simp add:qlaw3)
+  by(unfold_locales,simp_all add:p_undefined p_in_quotient1 qlaw3 elem_ex2)
 
-sublocale proj:magma_homomorphism \<pi> X f "(X/R)" "(\<bullet>)"  by (simp add: proj_homomorphism) 
+sublocale proj:magma_homomorphism \<pi> X f "(X/R)" "(\<bullet>)"  
+  by (simp add: proj_homomorphism) 
 
-sublocale proj_epi:magma_epimorphism \<pi> X f "(X/R)" "(\<bullet>)" by (simp add: proj_epimorphism) 
+sublocale proj_epi:magma_epimorphism \<pi> X f "(X/R)" "(\<bullet>)" 
+  by (simp add: proj_epimorphism) 
 
 lemma qlaw5:"\<lbrakk>t \<in> X/R;s \<in> X/R\<rbrakk> \<Longrightarrow>t\<bullet>s = (\<pi> (\<sigma> t)) \<bullet> (\<pi>(\<sigma> s))" 
   using psecE1 by auto 
@@ -2496,14 +2455,16 @@ lemma first_isomorphism_magmas3a:"magma_homomorphism (ker.h) (X/R(f)) (\<bullet>
  apply(unfold_locales)
   using ker.quotient_map.dom apply blast
   apply auto
-  using cmp dom.closed quotient.qlaw3 by fastforce
+  using ker.eqr.elem_ex4 ker.h_simp apply fastforce
+  by (metis cmp dom.closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient.qlaw4)
+
 
 lemma first_isomorphism_magmas3b:"magma_isomorphism ker.h (X/R(f)) (\<bullet>) (f`X) (\<star>)"
   apply(unfold_locales)
   using ker.quotient_map.dom apply blast
-    apply(auto)
-  apply (metis ker.eqr.elem_ex2 ker.factorization2 inj_on_imp_bij_betw ker.quotient_map.inj surj_compose)
-  using cmp dom.closed quotient.qlaw3 by fastforce
+  apply (meson first_isomorphism_magmas3a magma_homomorphism_def set_morphism.cod)
+  apply (metis inj_on_imp_bij_betw ker.factorization2 ker.quotient_map.inj quotient.proj_epi.sur surj_compose)
+  by (meson first_isomorphism_magmas3a magma_homomorphism.cmp)
 
 sublocale induced:magma_isomorphism ker.h "X/R(f)" "(\<bullet>)" "f`X" "(\<star>)"
   by (simp add: first_isomorphism_magmas3b)
@@ -2537,7 +2498,7 @@ proof-
   then have B1:"(\<Union>x \<in> (vimage f B). ker.eqr.p x) \<subseteq> ?A"
     by blast
   have B2:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> ker.eqr.p x"
-    using A1 by force
+    using A1 ker.eqr.p_self by blast
   then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
     by blast
   then show ?thesis
@@ -2565,10 +2526,10 @@ begin
 
 definition "h \<equiv> compose Z f (rinv g X Z)"
 
-lemma h_set_hom:"h \<in>set_morphisms Z Y"
+lemma h_set_hom:"h \<in>set_mor Z Y"
   by (metis h_def hom2 map.mem_hom epi.right_inv_is_set_morphism epi.right_inverse_def)
 
-lemma hg_set_hom:"compose X h g \<in> set_morphisms X Y"  using h_set_hom hom2 epi.mem_hom by blast 
+lemma hg_set_hom:"compose X h g \<in> set_mor X Y"  using h_set_hom hom2 epi.mem_hom by blast 
 lemma compat:"\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X;g x1 = g x2\<rbrakk> \<Longrightarrow> f x1 = f x2"  using ker_sub unfolding ker_pair_def by auto
 
 
@@ -2576,11 +2537,11 @@ lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
   unfolding h_def using compat epi.sur surj_implies_factors(2)[of g X Z f] by blast
 
 lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X h g) x"
-  by (simp add: compose_eq h_eq1)
+  by (simp add: comp_eq h_eq1)
 
 lemma h_eq3:"compose X h g = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor X Z"
     by (simp add: map.mem_hom epi.mem_hom) 
   then show ?thesis
     by (metis fun_eqI h_eq2 hg_set_hom)
@@ -2600,9 +2561,10 @@ qed
 
 lemma magma_hom:"magma_homomorphism h Z (\<bullet>) Y (\<star>)"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
+  apply (simp add: compose_def h_def)
+  apply (metis h_set_hom maps_to_memE1 set_morphisms_memE2)
   using magma_hom1 by blast
+
 
 end
 
@@ -2618,10 +2580,10 @@ definition "h \<equiv> compose X (rinv g Z Y) f"
 lemma g_inj:"inj_on g Z"
   by simp
 
-lemma h_set_hom:"h \<in>set_morphisms X Z"
+lemma h_set_hom:"h \<in>set_mor X Z"
   by (simp add: h_def inj_implies_factors_concrete(2) im_sub map.mem_hom mono.mem_hom)
 
-lemma gh_set_hom:"compose X g h \<in> set_morphisms X Y"
+lemma gh_set_hom:"compose X g h \<in> set_mor X Y"
   using h_set_hom hom2 mono.mem_hom by blast 
 
 lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = g (compose X (rinv g Z Y) f x) "
@@ -2630,7 +2592,7 @@ proof-
   then have "f x = g ((rinv g Z Y) (f x))"
     by (meson g_inj im_sub inj_implies_factors_concrete(1) map.mem_hom mono.mem_hom)
   also have "... = g (compose X (rinv g Z Y) f x)"
-    by (simp add: compose_eq x0)
+    by (simp add: comp_eq x0)
   finally show "f x = g (compose X (rinv g Z Y) f x)"
     by blast
 qed
@@ -2639,11 +2601,11 @@ lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = g (h x)"
   using h_def h_eq1 by force
 
 lemma h_eq3:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X g h) x"
-  by (simp add: compose_eq h_eq2)
+  by (simp add: comp_eq h_eq2)
 
 lemma h_eq4:"compose X g h = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms Z Y"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor Z Y"
     by (simp add: map.mem_hom mono.mem_hom) 
   then show ?thesis
     by (metis g_inj h_def im_sub inj_implies_factors_concrete(5))
@@ -2654,10 +2616,10 @@ lemma magma_hom1:"\<And>x1 x2. \<lbrakk>x1\<in>X;x2\<in>X\<rbrakk> \<Longrightar
 proof-
   fix x1 x2 assume x10:"x1 \<in> X" and x20:"x2 \<in> X"
   then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and h0:"h x1 \<in> Z" and h1:"h x2 \<in> Z"
-    by (meson h_set_hom hom9 map.mem_hom) 
+    by (meson h_set_hom map.cod maps_to_memE1 set_morphisms_memE2)
   let ?r="rinv g Z Y"
   have B0:"h  (x1\<cdot>x2) = ?r (f(x1 \<cdot> x2))"
-    by (simp add: compose_eq h_def map.dom.closed x10 x20)
+    by (simp add: comp_eq h_def map.dom.closed x10 x20)
   also have B1:"... = ?r ((f x1) \<star> (f x2))"
     by (simp add: map.cmp x10 x20)
   also have "... = ?r ((g (h x1)) \<star>( g (h x2)))"
@@ -2673,9 +2635,9 @@ qed
 
 lemma magma_hom:"magma_homomorphism h X (\<cdot>) Z (\<bullet>)"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
-  using magma_hom1 by blast
+  apply (simp add: compose_def h_def)
+  apply (meson h_set_hom set_morphism.cod set_morphismI1)
+  using magma_hom1 by auto
 
 
 end
@@ -2707,7 +2669,9 @@ lemma Q_memE:assumes "(y1, y2)\<in>Q"
   using assms Q_def by auto
 
 lemma Q_refl_on:"refl_on Y Q"
-  unfolding refl_on_def Q_def using map.sur by(blast)
+  unfolding Q_def apply(auto simp add:refl_on_def)
+  using eqr.ref map.sur by blast
+
 
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
@@ -2727,7 +2691,7 @@ proof(rule transI)
 qed
 
 lemma q_eqr:"is_eqrel Y Q"
-  by (simp add: Q_refl_on Q_sym Q_trans is_eqrel_def) 
+  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -2739,7 +2703,7 @@ proof
     fix u assume "u \<in> Q" then obtain x1 x2 where "(x1, x2)\<in>R" and u:"u=(f x1, f x2)"
       using Q_def by auto
     then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and "factor_map (f x1) = factor_map (f x2)"
-      by (metis compose_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
+      by (metis comp_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
      then have "(f x1, f x2) \<in> ker_pair Y (factor_map)"
        unfolding ker_pair_def by blast
      then show "u \<in> ker_pair Y (factor_map)"
@@ -2753,7 +2717,7 @@ proof
    then obtain x1 x2 where "x1 \<in> X" and "x2 \<in> X" and y1:"y1 = f x1" and y2:"y2 = f x2"
      using map.sur by blast 
    then obtain "(x1, x2)\<in>R"
-     by (metis compose_eq eq eqr.p_equivalence factor_maps_factors)
+     by (metis comp_eq eq eqr.p_equivalence factor_maps_factors)
    then show "u \<in> Q"
      using Q_def u y1 y2 by auto
  qed
@@ -2823,27 +2787,45 @@ definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
 
 lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
   apply(auto simp add:Q_def ker_pair_def)
-  apply (simp add: compose_eq eqr.p_eq1)
-  apply (simp add: compose_eq eqr.p_eq1)
-  by (simp add: compose_eq eqr.p_equivalence)
+  apply (simp add: comp_eq eqr.p_eq1)
+  apply (simp add: comp_eq eqr.p_eq1)
+  by (simp add: comp_eq eqr.p_equivalence)
 
-lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
-  using eqr.sym apply presburger
-  by (meson eqr.trn)
+
+lemma Q_refl_on:"refl_on X Q"
+  unfolding Q_def apply(auto simp add:refl_on_def)
+  by (simp add: eqr.ref)
+
+
+lemma Q_sym:"sym Q"
+  unfolding Q_def sym_def using eqr.sym by(blast)
+
+lemma Q_trans:"trans Q"
+proof(rule transI)
+  fix x1 x2 x3 assume xy:"(x1, x2) \<in> Q" and yz:"(x2, x3) \<in> Q" 
+  then obtain B0:"x1 \<in> X" and "x2 \<in> X" and B1:"x3 \<in> X" and "(f x1, f x2) \<in> S" and "(f x2, f x3) \<in> S"
+    unfolding Q_def by auto
+  then obtain "(f x1, f x3) \<in> S"
+    using eqr.trn by blast
+  then show "(x1, x3) \<in> Q"
+    using Q_def B0 B1 by blast
+qed
+
+
+lemma q_eqr:"is_eqrel X Q"
+  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def) 
+
 
 lemma q_eqr2:"equivalence_relation X Q"
-  apply(unfold_locales)
-  using Q_def apply force
-  apply (simp add: Q_def)
-  apply (simp add: Q_def eqr.sym)
-  by (simp add: ker_pair_def q_vimage_comp)
+  by (simp add: equivalence_relationI q_eqr)
 
 lemma q_cong:"cong X (\<cdot>) Q"
   unfolding Q_def
   apply(rule congI1)
   using eqr.compatible map.cmp map.dom.closed by auto
 
-lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
+lemma ker_sub_q:"R(f) \<subseteq> Q"
+  by (simp add: comp_eq ker_pair_subI map.ker.ker_pair_ker q_vimage_comp) 
 
 sublocale domain_eqr:equivalence_relation X Q 
   by (simp add: q_eqr2)
@@ -2853,7 +2835,7 @@ sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
 
 sublocale codom_hom:magma_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
   apply(unfold_locales)
-  by (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
+  by (simp add: comp_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
 
 sublocale dom_quotient:quotient_magma X "(\<cdot>)" Q
   using codom_hom.quotient_magma domain_ker.ker_pair_ker q_vimage_comp by auto
@@ -2880,18 +2862,26 @@ end
 
 section \<open>Actions\<close>
 
-definition "actions \<Omega> E \<equiv> (set_morphisms \<Omega> (set_morphisms E E))"
+definition "actions \<Omega> E \<equiv> (set_mor \<Omega> (set_mor E E))"
 
 locale action=fixes \<Omega>::"'a set" and E::"'b set" and \<alpha>::"'a \<Rightarrow> 'b \<Rightarrow> 'b"
   assumes acts[intro,simp]:"\<alpha> \<in> actions \<Omega> E"
 begin
 definition "l_law \<equiv> (\<lambda>\<omega> \<in> \<Omega>. \<lambda>x \<in> E. \<alpha> \<omega> x)"
 definition "r_law \<equiv> (\<lambda>x \<in> E. \<lambda>\<omega> \<in> \<Omega>. \<alpha> \<omega> x)"
-lemma actsE1:"\<alpha> \<in> set_morphisms \<Omega> (set_morphisms E E)"  using actions_def acts by auto
-lemma actsE21[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> \<alpha> \<omega> \<in> set_morphisms E E"   using actions_def acts hom9 by fastforce
-lemma actsE22[intro,simp]:"\<omega> \<notin> \<Omega> \<Longrightarrow> \<alpha> \<omega> = undefined"  using actions_def acts hom10 by fastforce  
-lemma actsE211[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> x \<in> E \<Longrightarrow> \<alpha> \<omega> x \<in> E"  using hom9[of "(\<alpha> \<omega>)" E E x]  actsE21 by auto
-lemma actsE212[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> x \<notin> E \<Longrightarrow> \<alpha> \<omega> x = undefined" using hom10[of "(\<alpha> \<omega>)" E E x]  actsE21 by auto 
+lemma actsE1:"\<alpha> \<in> set_mor \<Omega> (set_mor E E)"  using actions_def acts by auto
+lemma actsE21[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> \<alpha> \<omega> \<in> set_mor E E"
+  by (meson actsE1 set_morphism.cod set_morphism_iff)   
+
+lemma actsE22[intro,simp]:"\<omega> \<notin> \<Omega> \<Longrightarrow> \<alpha> \<omega> = undefined"
+  by (meson actsE1 maps_on_memE1 set_morphisms_memE3)  
+
+lemma actsE211[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> x \<in> E \<Longrightarrow> \<alpha> \<omega> x \<in> E"
+  using set_morphism.cod set_morphismI1 by fastforce
+
+lemma actsE212[intro,simp]:"\<omega> \<in> \<Omega> \<Longrightarrow> x \<notin> E \<Longrightarrow> \<alpha> \<omega> x = undefined"
+  by (meson actsE21 in_mono maps_on_memE1 set_mor1)
+
 end
 
 
@@ -2907,7 +2897,8 @@ lemma r_derived_law_eq1:"\<And>a. a \<in> X \<Longrightarrow> r_trans a = l_acti
   using l_action.r_law_def l_trans_app by fastforce
 
 lemma l_derived_law_eq2:"l_trans = l_action.l_law"
-  using l_action.l_law_def lr_trans_dual opposite.r_trans_def by auto 
+  using l_action.l_law_def by fastforce
+
 
 lemma r_derived_law_eq2:"r_trans = l_action.r_law"
   using l_action.r_law_def r_derived_law_eq1 by auto
@@ -2917,11 +2908,14 @@ end
 
 locale set_endomorphisms=fixes E::"'a set"
 begin
-sublocale magma "set_morphisms E E" "compose E"  by(unfold_locales;simp add: hom2)
+sublocale magma "set_mor E E" "compose E" 
+  by(unfold_locales;simp add: hom2)
 
 lemma id_lid:"l_identity (Id E)"  by (simp add: hom5 l_identity_def)
-lemma id_rid:"r_identity (Id E)"  by (simp add: hom6 r_identity_def)  
-lemma id_id:"id_elem (Id E)"  by (simp add: hom5 hom6 id_elem_def) 
+lemma id_rid:"r_identity (Id E)"
+  by (simp add: hom5(2) magma.r_identity_def magma_axioms) 
+lemma id_id:"id_elem (Id E)"
+  by (simp add: hom5(1,2) id_elem_def) 
 
 
 end
@@ -2992,8 +2986,8 @@ lemma id_elem_id_map:
   assumes is_mem:"e \<in> X" and is_id:"id_elem e"
   shows "l_trans e = Id X" and "r_trans e = Id X" 
 proof-
-  obtain idhom:"Id X \<in> set_morphisms X X" and lhom:"l_trans e \<in> set_morphisms X X" and rhom:"r_trans e \<in> set_morphisms X X" 
-    using hom7[of X] l_trans_hom[of e] r_trans_hom[of e] is_mem by auto
+  obtain idhom:"Id X \<in> set_mor X X" and lhom:"l_trans e \<in> set_mor X X" and rhom:"r_trans e \<in> set_mor X X"
+    by (simp add: is_mem set_mor_def) 
   show " l_trans e = Id X" using lhom idhom  proof(rule fun_eqI) 
     show "\<And>x. x \<in> X \<Longrightarrow> l_trans e x = Id X x"
       using id_elem_def is_id is_mem l_trans_def by auto
@@ -3086,9 +3080,9 @@ lemma left_trans_comp:
   assumes A0:"x \<in> X" and A1:"y \<in> X"
   shows "l_trans (x \<cdot> y) = compose X (l_trans x) (l_trans y)"
 proof(rule fun_eqI)
-  show "l_trans (x \<cdot> y) \<in> set_morphisms X X"
+  show "l_trans (x \<cdot> y) \<in> set_mor X X"
     by (simp add: A0 A1 closed l_trans_hom)
-  show "compose X (l_trans x) (l_trans y) \<in> set_morphisms X X"
+  show "compose X (l_trans x) (l_trans y) \<in> set_mor X X"
     using A0 A1 hom2 l_trans_hom by blast
   show "\<And>z. z \<in> X \<Longrightarrow> l_trans (x \<cdot> y) z = compose X (l_trans x) (l_trans y) z"
     by (simp add: A0 A1 ltranslation_comp)
@@ -3099,9 +3093,9 @@ lemma right_trans_comp:
   assumes A0:"x \<in> X" and A1:"y \<in> X"
   shows "r_trans (x \<cdot> y) = compose X (r_trans y) (r_trans x)"
 proof(rule fun_eqI)
-  show "r_trans (x \<cdot> y) \<in> set_morphisms X X"
+  show "r_trans (x \<cdot> y) \<in> set_mor X X"
     by (simp add: A0 A1 closed r_trans_hom)
-  show "compose X (r_trans y) (r_trans x) \<in> set_morphisms X X"
+  show "compose X (r_trans y) (r_trans x) \<in> set_mor X X"
     using A0 A1 hom2 r_trans_hom by blast
   show "\<And>z. z \<in> X \<Longrightarrow> r_trans (x \<cdot> y) z = compose X (r_trans y) (r_trans x) z"
     by (simp add: A0 A1 rtranslation_comp)
@@ -3414,15 +3408,16 @@ lemma first_isomorphism_semigroups2:"cong X (\<cdot>) R(f)"
 lemma first_isomorphism_semigroups3a:"semigroup_homomorphism (ker.h) (X/R(f)) (\<bullet>) (f`X) (\<star>)"  
  apply(unfold_locales)
   using ker.quotient_map.dom apply blast
-  apply auto
-  using cmp dom.closed quotient.qlaw3 by fastforce
-
+  using ker.eqr.elem_ex4 ker.h_simp apply fastforce
+  by (metis cmp dom.closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient.qlaw4)
+ 
 lemma first_isomorphism_semigroups3b:"semigroup_isomorphism ker.h (X/R(f)) (\<bullet>) (f`X) (\<star>)"
   apply(unfold_locales)
   using ker.quotient_map.dom apply blast
-    apply(auto)
-  apply (metis bij_betw_imageI ker.factorization2 ker.quotient_map.inj quotient.proj_epi.sur surj_compose)
-  using cmp dom.closed quotient.qlaw3 by fastforce
+  using ker.eqr.elem_ex4 ker.h_simp apply fastforce
+  apply (metis inj_on_imp_bij_betw ker.factorization2 ker.quotient_map.inj quotient.proj_epi.sur surj_compose)
+  by (meson first_isomorphism_semigroups3a semigroup_homomorphism.cmp)
+
 
 sublocale induced:semigroup_isomorphism ker.h "X/R(f)" "(\<bullet>)" "f`X" "(\<star>)"
   by (simp add: first_isomorphism_semigroups3b)
@@ -3456,8 +3451,9 @@ proof-
   then have B1:"(\<Union>x \<in> (vimage f B). ker.eqr.p x) \<subseteq> ?A"
     by blast
   have B2:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> ker.eqr.p x"
-    using A1 by force
-  then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
+    using A1 ker.eqr.p_self by blast
+
+ then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
     by blast
   then show ?thesis
     using B1 by blast
@@ -3484,10 +3480,10 @@ begin
 
 definition "h \<equiv> compose Z f (rinv g X Z)"
 
-lemma h_set_hom:"h \<in>set_morphisms Z Y"
+lemma h_set_hom:"h \<in>set_mor Z Y"
   by (metis h_def hom2 map.mem_hom epi.right_inv_is_set_morphism epi.right_inverse_def)
 
-lemma hg_set_hom:"compose X h g \<in> set_morphisms X Y"  using h_set_hom hom2 epi.mem_hom by blast 
+lemma hg_set_hom:"compose X h g \<in> set_mor X Y"  using h_set_hom hom2 epi.mem_hom by blast 
 lemma compat:"\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X;g x1 = g x2\<rbrakk> \<Longrightarrow> f x1 = f x2"  using ker_sub unfolding ker_pair_def by auto
 
 
@@ -3495,11 +3491,11 @@ lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
   unfolding h_def using compat epi.sur surj_implies_factors(2)[of g X Z f] by blast
 
 lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X h g) x"
-  by (simp add: compose_eq h_eq1)
+  by (simp add: comp_eq h_eq1)
 
 lemma h_eq3:"compose X h g = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor X Z"
     by (simp add: map.mem_hom epi.mem_hom) 
   then show ?thesis
     by (metis fun_eqI h_eq2 hg_set_hom)
@@ -3519,9 +3515,10 @@ qed
 
 lemma semigroup_hom:"semigroup_homomorphism h Z (\<bullet>) Y (\<star>)"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
+  apply (simp add: compose_def h_def)
+  apply (meson h_set_hom maps_to_memE1 set_morphisms_memE2)
   using magma_hom1 by blast
+ 
 
 end
 
@@ -3537,10 +3534,10 @@ definition "h \<equiv> compose X (rinv g Z Y) f"
 lemma g_inj:"inj_on g Z"
   by simp
 
-lemma h_set_hom:"h \<in>set_morphisms X Z"
+lemma h_set_hom:"h \<in>set_mor X Z"
   by (simp add: h_def inj_implies_factors_concrete(2) im_sub map.mem_hom mono.mem_hom)
 
-lemma gh_set_hom:"compose X g h \<in> set_morphisms X Y"
+lemma gh_set_hom:"compose X g h \<in> set_mor X Y"
   using h_set_hom hom2 mono.mem_hom by blast 
 
 lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = g (compose X (rinv g Z Y) f x) "
@@ -3549,7 +3546,7 @@ proof-
   then have "f x = g ((rinv g Z Y) (f x))"
     by (meson g_inj im_sub inj_implies_factors_concrete(1) map.mem_hom mono.mem_hom)
   also have "... = g (compose X (rinv g Z Y) f x)"
-    by (simp add: compose_eq x0)
+    by (simp add: comp_eq x0)
   finally show "f x = g (compose X (rinv g Z Y) f x)"
     by blast
 qed
@@ -3558,11 +3555,11 @@ lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = g (h x)"
   using h_def h_eq1 by force
 
 lemma h_eq3:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X g h) x"
-  by (simp add: compose_eq h_eq2)
+  by (simp add: comp_eq h_eq2)
 
 lemma h_eq4:"compose X g h = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms Z Y"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor Z Y"
     by (simp add: map.mem_hom mono.mem_hom) 
   then show ?thesis
     by (metis g_inj h_def im_sub inj_implies_factors_concrete(5))
@@ -3573,10 +3570,10 @@ lemma magma_hom1:"\<And>x1 x2. \<lbrakk>x1\<in>X;x2\<in>X\<rbrakk> \<Longrightar
 proof-
   fix x1 x2 assume x10:"x1 \<in> X" and x20:"x2 \<in> X"
   then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and h0:"h x1 \<in> Z" and h1:"h x2 \<in> Z"
-    by (meson h_set_hom hom9 map.mem_hom) 
+    by (meson h_set_hom map.mem_maps_to maps_to_memE1 set_morphisms_memE2)
   let ?r="rinv g Z Y"
   have B0:"h  (x1\<cdot>x2) = ?r (f(x1 \<cdot> x2))"
-    by (simp add: compose_eq h_def map.dom.closed x10 x20)
+    by (simp add: comp_eq h_def map.dom.closed x10 x20)
   also have B1:"... = ?r ((f x1) \<star> (f x2))"
     by (simp add: map.cmp x10 x20)
   also have "... = ?r ((g (h x1)) \<star>( g (h x2)))"
@@ -3592,9 +3589,9 @@ qed
 
 lemma semigroup_hom:"semigroup_homomorphism h X (\<cdot>) Z (\<bullet>)"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
-  using magma_hom1 by blast
+  apply (simp add: compose_def h_def)
+  apply (meson h_set_hom set_morphism.cod set_morphism_iff)
+  by (simp add: magma_hom1)
 
 
 end
@@ -3626,7 +3623,8 @@ lemma Q_memE:assumes "(y1, y2)\<in>Q"
   using Q_def assms eqr.l_closed eqr.r_closed by auto
 
 lemma Q_refl_on:"refl_on Y Q"
-  unfolding refl_on_def Q_def using map.sur by(blast)
+  unfolding refl_on_def Q_def apply auto
+  using eqr.ref map.sur by blast
 
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
@@ -3646,7 +3644,7 @@ proof(rule transI)
 qed
 
 lemma q_eqr:"is_eqrel Y Q"
-  by (simp add: Q_refl_on Q_sym Q_trans is_eqrel_def) 
+  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -3658,7 +3656,7 @@ proof
     fix u assume "u \<in> Q" then obtain x1 x2 where "(x1, x2)\<in>R" and u:"u=(f x1, f x2)"
       using Q_def by auto
     then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and "factor_map (f x1) = factor_map (f x2)"
-      by (metis compose_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
+      by (metis comp_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
      then have "(f x1, f x2) \<in> ker_pair Y (factor_map)"
        unfolding ker_pair_def by blast
      then show "u \<in> ker_pair Y (factor_map)"
@@ -3672,7 +3670,7 @@ proof
    then obtain x1 x2 where "x1 \<in> X" and "x2 \<in> X" and y1:"y1 = f x1" and y2:"y2 = f x2"
      using map.sur by blast 
    then obtain "(x1, x2)\<in>R"
-     by (metis compose_eq eq eqr.p_equivalence factor_maps_factors)
+     by (metis comp_eq eq eqr.p_equivalence factor_maps_factors)
    then show "u \<in> Q"
      using Q_def u y1 y2 by auto
  qed
@@ -3742,9 +3740,9 @@ definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
 
 lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
   apply(auto simp add:Q_def ker_pair_def)
-  apply (simp add: compose_eq eqr.p_eq1)
-  apply (simp add: compose_eq eqr.p_eq1)
-  by (simp add: compose_eq eqr.p_equivalence)
+  apply (simp add: comp_eq eqr.p_eq1)
+  apply (simp add: comp_eq eqr.p_eq1)
+  by (simp add: comp_eq eqr.p_equivalence)
 
 lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
   using eqr.sym apply presburger
@@ -3772,7 +3770,7 @@ sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
 
 sublocale codom_hom:semigroup_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
   apply(unfold_locales)
-  by (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
+  by (simp add: comp_eq eqr.proj_epi.cmp map.cmp map.dom.closed)
 
 sublocale dom_quotient:quotient_semigroup X "(\<cdot>)" Q
   using codom_hom.quotient_semigroup domain_ker.ker_pair_ker q_vimage_comp by auto
@@ -4264,7 +4262,7 @@ lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = h (g x)"
   unfolding h_def using compat epi.sur surj_implies_factors(2)[of g X Z f] by blast
 
 lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X h g) x"
-  by (simp add: compose_eq h_eq1)
+  by (simp add: comp_eq h_eq1)
 
 lemma h_eq3:"compose X h g = f"
 proof-
@@ -4322,7 +4320,7 @@ proof-
   then have "f x = g ((rinv g Z Y) (f x))"
     by (meson g_inj im_sub inj_implies_factors_concrete(1) map.mem_hom mono.mem_hom)
   also have "... = g (compose X (rinv g Z Y) f x)"
-    by (simp add: compose_eq x0)
+    by (simp add: comp_eq x0)
   finally show "f x = g (compose X (rinv g Z Y) f x)"
     by blast
 qed
@@ -4331,7 +4329,7 @@ lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = g (h x)"
   using h_def h_eq1 by force
 
 lemma h_eq3:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X g h) x"
-  by (simp add: compose_eq h_eq2)
+  by (simp add: comp_eq h_eq2)
 
 lemma h_eq4:"compose X g h = f"
 proof-
@@ -4349,7 +4347,7 @@ proof-
     by (meson h_set_hom hom9 map.mem_hom) 
   let ?r="rinv g Z Y"
   have B0:"h  (x1\<cdot>x2) = ?r (f(x1 \<cdot> x2))"
-    by (simp add: compose_eq h_def map.dom.closed x10 x20)
+    by (simp add: comp_eq h_def map.dom.closed x10 x20)
   also have B1:"... = ?r ((f x1) \<star> (f x2))"
     by (simp add: map.cmp x10 x20)
   also have "... = ?r ((g (h x1)) \<star>( g (h x2)))"
@@ -4363,7 +4361,7 @@ proof-
 qed
 
 lemma monoid_hom2:"h e = c"
-  by (metis compose_eq h_def map.cod.id_elem_unique map.dom.idin map.im.idin map.im.isid mono.dom.idin mono.im.idin mono.im.isid mono.left_inverse_def mono.set_monomorphism_axioms set_monomorphism.left_inverse_comp3)
+  by (metis comp_eq h_def map.cod.id_elem_unique map.dom.idin map.im.idin map.im.isid mono.dom.idin mono.im.idin mono.im.isid mono.left_inverse_def mono.set_monomorphism_axioms set_monomorphism.left_inverse_comp3)
 
 lemma monoid_hom3:"monoid_homomorphism h X (\<cdot>) e  Z (\<bullet>) c"
   apply(unfold_locales)
@@ -4435,7 +4433,7 @@ proof
     fix u assume "u \<in> Q" then obtain x1 x2 where "(x1, x2)\<in>R" and u:"u=(f x1, f x2)"
       using Q_def by auto
     then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and "factor_map (f x1) = factor_map (f x2)"
-      by (metis compose_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
+      by (metis comp_eq eqr.l_closed eqr.p_eq1 eqr.r_closed factor_maps_factors map.cod)
      then have "(f x1, f x2) \<in> ker_pair Y (factor_map)"
        unfolding ker_pair_def by blast
      then show "u \<in> ker_pair Y (factor_map)"
@@ -4449,7 +4447,7 @@ proof
    then obtain x1 x2 where "x1 \<in> X" and "x2 \<in> X" and y1:"y1 = f x1" and y2:"y2 = f x2"
      using map.sur by blast 
    then obtain "(x1, x2)\<in>R"
-     by (metis compose_eq eq eqr.p_equivalence factor_maps_factors)
+     by (metis comp_eq eq eqr.p_equivalence factor_maps_factors)
    then show "u \<in> Q"
      using Q_def u y1 y2 by auto
  qed
@@ -4521,9 +4519,9 @@ definition "Q \<equiv> {(x, y) \<in> X \<times> X. (f x, f y) \<in> S}"
 
 lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
   apply(auto simp add:Q_def ker_pair_def)
-  apply (simp add: compose_eq eqr.p_eq1)
-  apply (simp add: compose_eq eqr.p_eq1)
-  by (simp add: compose_eq eqr.p_equivalence)
+  apply (simp add: comp_eq eqr.p_eq1)
+  apply (simp add: comp_eq eqr.p_eq1)
+  by (simp add: comp_eq eqr.p_equivalence)
 
 lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
   using eqr.sym apply presburger
@@ -4551,8 +4549,8 @@ sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
 
 sublocale codom_hom:monoid_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "e"  "Y/S" "(\<bullet>)" "eqr.H"
   apply(unfold_locales)
-  apply (simp add: compose_eq eqr.proj_epi.cmp map.cmp map.dom.m_closed)
-  by (simp add: compose_eq eqr.proj_epi.unt map.unt)
+  apply (simp add: comp_eq eqr.proj_epi.cmp map.cmp map.dom.m_closed)
+  by (simp add: comp_eq eqr.proj_epi.unt map.unt)
 
 sublocale dom_quotient:quotient_monoid X "(\<cdot>)" Q e
   using codom_hom.quotient_monoid domain_ker.ker_pair_ker q_vimage_comp by auto
@@ -7059,7 +7057,7 @@ lemma fixer_memI:"\<lbrakk>A \<in> Pow E; m \<in> M; (\<And>a. a \<in> A \<Longr
   by (simp add: fixer_def)
 
 lemma comp_simp:"\<And>x. x \<in> E \<Longrightarrow> m \<in> M \<Longrightarrow> n \<in> M \<Longrightarrow> \<alpha> (m \<cdot> n) x = (\<alpha> m) ((\<alpha> n) x)"
-  by (simp add: comp compose_eq)
+  by (simp add: comp comp_eq)
 
 lemma im_comp_simp:"\<And>x. A \<in> Pow E \<Longrightarrow> m \<in> M \<Longrightarrow> (\<alpha> n)`A \<in> Pow E \<Longrightarrow> n \<in> M \<Longrightarrow> \<alpha> (m \<cdot> n)`A = (\<alpha> m)`((\<alpha> n)`A)"
   by(auto simp add:comp_simp in_mono)
@@ -7119,7 +7117,7 @@ proof-
   then have "\<And>a. a \<in> A \<Longrightarrow> \<alpha> (m \<cdot> n) a = (compose E (\<alpha> m) (\<alpha> n)) a"
     by presburger
   then have "\<And>a. a \<in> A \<Longrightarrow> \<alpha> (m \<cdot> n) a = a"
-    by (metis A0 PowD compose_eq in_mono m1 n1)
+    by (metis A0 PowD comp_eq in_mono m1 n1)
   then show "(m \<cdot> n) \<in>fixer A"
     using A0 m2 n2 opposite.closed fixer_def by force  
 qed
@@ -7376,7 +7374,7 @@ proof-
   then have "x = compose E (\<alpha> (inv g)) (\<alpha> g) x"
     by (simp add: iso_rinv)
   also have "... = compose E (\<alpha> (inv g)) (\<alpha> g) y"
-    by (simp add: A1 A2 A3 compose_eq)
+    by (simp add: A1 A2 A3 comp_eq)
   also have "... = y"
     by (simp add: A0 A2 group_operating_on_set.iso_rinv group_operating_on_set_axioms)
   finally show "x=y"
@@ -7396,7 +7394,7 @@ proof-
   also have "... = compose E (\<alpha> g) (\<alpha> (inv g)) x"
     using A0 iso_linv by presburger
   also have "... \<in> (\<alpha> g)`E"
-    by (simp add: A1 B1 compose_eq)
+    by (simp add: A1 B1 comp_eq)
   finally show "x \<in> (\<alpha> g) ` E"
     by blast
 qed
@@ -7792,13 +7790,13 @@ proof-
     have "c  (x \<cdot> y) = compose G a b (x \<cdot> y)"
       by (simp add: c_def)
     also have "... = a (b (x \<cdot> y))"
-      by (simp add: A2 A3 compose_eq opposite.closed)
+      by (simp add: A2 A3 comp_eq opposite.closed)
     also have "... = a ((b x) \<cdot> (b y))"
       using A2 A3 B3 group_isomorphism.cmp by fastforce
     also have "... = (a (b x)) \<cdot> (a (b y))"
       by (meson A2 A3 B1 B2 group_isomorphism.cmp hom9)
     also have "... =  compose G a b x \<cdot> compose G a b y"
-      by (simp add: A2 A3 compose_eq)
+      by (simp add: A2 A3 comp_eq)
     also have "... = (c x)\<cdot>(c y)"
       by (simp add: c_def)
     finally show "c  (x \<cdot> y) = (c x) \<cdot> (c y)"
@@ -7850,13 +7848,13 @@ proof-
     have "\<sigma> ((\<tau> x) \<cdot> (\<tau> y)) = (\<sigma> (\<tau> x)) \<cdot> (\<sigma> (\<tau> y)) "
       by (meson B1 B3 B4 group_isomorphism.cmp)
     also have "... = x \<cdot> y"
-      by (metis A0 A2 A3 Aut_sub_bij B0 compose_eq id2 inv_rinv3 set_isomorphismE2 subsetD)
+      by (metis A0 A2 A3 Aut_sub_bij B0 comp_eq id2 inv_rinv3 set_isomorphismE2 subsetD)
     finally have "\<sigma> ((\<tau> x) \<cdot> (\<tau> y))  = x \<cdot> y"
       by simp
     then have "\<tau> (\<sigma> ((\<tau> x) \<cdot> (\<tau> y))) = \<tau> (x \<cdot> y)"
       by auto
     then have "(\<tau> x) \<cdot> (\<tau> y) =  \<tau> (x \<cdot> y)"
-      by (metis A0 Aut_sub_bij B5 \<tau>_def compose_eq group.l_inv_simp id2 permutations.group_axioms subsetD)
+      by (metis A0 Aut_sub_bij B5 \<tau>_def comp_eq group.l_inv_simp id2 permutations.group_axioms subsetD)
     then show " \<tau>  (x \<cdot> y) = (\<tau> x) \<cdot> (\<tau> y)"
       by simp
   qed
