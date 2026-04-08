@@ -2177,7 +2177,7 @@ lemma kernel_trn:"trans  kernel"
   unfolding kernel_def using ker.eqr.trn transI  by auto
 
 lemma eqr_kernel:"is_eqrel X  kernel"
-  by (meson is_eqrelI1 kernel_ref kernel_sym kernel_trn refl_on_def) 
+  using is_eqrel_def ker.eqr.sub kernel_ref kernel_sym kernel_trn local.kernel_def by auto
 
 end
 
@@ -2672,6 +2672,8 @@ lemma Q_refl_on:"refl_on Y Q"
   unfolding Q_def apply(auto simp add:refl_on_def)
   using eqr.ref map.sur by blast
 
+lemma Q_sub:" Q \<subseteq> Y \<times> Y"
+  using Q_def by auto
 
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
@@ -2691,7 +2693,8 @@ proof(rule transI)
 qed
 
 lemma q_eqr:"is_eqrel Y Q"
-  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
+  by(rule is_eqrelI1, simp_all add: Q_sub Q_sym Q_refl_on Q_trans)
+
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -2796,6 +2799,7 @@ lemma Q_refl_on:"refl_on X Q"
   unfolding Q_def apply(auto simp add:refl_on_def)
   by (simp add: eqr.ref)
 
+lemma Q_sub:"Q \<subseteq> X\<times>X" unfolding Q_def by auto
 
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
@@ -2813,7 +2817,7 @@ qed
 
 
 lemma q_eqr:"is_eqrel X Q"
-  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def) 
+  by(rule is_eqrelI1, simp_all add:Q_sub Q_sym Q_trans Q_refl_on)
 
 
 lemma q_eqr2:"equivalence_relation X Q"
@@ -3626,6 +3630,11 @@ lemma Q_refl_on:"refl_on Y Q"
   unfolding refl_on_def Q_def apply auto
   using eqr.ref map.sur by blast
 
+
+lemma Q_sub:" Q \<subseteq> Y \<times> Y"
+  using Q_def by auto
+
+
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
 
@@ -3643,8 +3652,11 @@ proof(rule transI)
     using Q_def y1 y3 by auto
 qed
 
+
 lemma q_eqr:"is_eqrel Y Q"
-  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
+  by(rule is_eqrelI1, simp_all add: Q_sub Q_sym Q_refl_on Q_trans)
+
+
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -3744,23 +3756,40 @@ lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
   apply (simp add: comp_eq eqr.p_eq1)
   by (simp add: comp_eq eqr.p_equivalence)
 
-lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
-  using eqr.sym apply presburger
-  by (meson eqr.trn)
+lemma Q_refl_on:"refl_on X Q"
+  unfolding Q_def apply(auto simp add:refl_on_def)
+  by (simp add: eqr.ref)
+
+lemma Q_sub:"Q \<subseteq> X\<times>X" unfolding Q_def by auto
+
+lemma Q_sym:"sym Q"
+  unfolding Q_def sym_def using eqr.sym by(blast)
+
+lemma Q_trans:"trans Q"
+proof(rule transI)
+  fix x1 x2 x3 assume xy:"(x1, x2) \<in> Q" and yz:"(x2, x3) \<in> Q" 
+  then obtain B0:"x1 \<in> X" and "x2 \<in> X" and B1:"x3 \<in> X" and "(f x1, f x2) \<in> S" and "(f x2, f x3) \<in> S"
+    unfolding Q_def by auto
+  then obtain "(f x1, f x3) \<in> S"
+    using eqr.trn by blast
+  then show "(x1, x3) \<in> Q"
+    using Q_def B0 B1 by blast
+qed
+
+
+lemma q_eqr:"is_eqrel X Q"
+  by(rule is_eqrelI1, simp_all add:Q_sub Q_sym Q_trans Q_refl_on)
+
 
 lemma q_eqr2:"equivalence_relation X Q"
-  apply(unfold_locales)
-  using Q_def apply force
-  apply (simp add: Q_def)
-  apply (simp add: Q_def eqr.sym)
-  by (simp add: ker_pair_def q_vimage_comp)
+  by (simp add: equivalence_relationI q_eqr)
 
 lemma q_cong:"cong X (\<cdot>) Q"
   unfolding Q_def
   apply(rule congI1)
   using eqr.compatible map.cmp map.dom.closed by auto
 
-lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
+lemma ker_sub_q:"R(f) \<subseteq> Q" by (simp add: comp_eq ker_pair_subI map.ker.ker_pair_ker q_vimage_comp) 
 
 sublocale domain_eqr:equivalence_relation X Q 
   by (simp add: q_eqr2)
