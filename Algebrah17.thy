@@ -17,16 +17,23 @@ definition maps_to::"'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow>
   where "maps_to A B \<equiv> {f. (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B)}"
 
 
-lemma maps_to_memI1:"(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B" by (simp add: maps_to_def)
-lemma maps_to_memI2:"f`A \<subseteq> B \<Longrightarrow> f \<in> maps_to A B"  by (simp add: image_subset_iff maps_to_def)
-lemma maps_to_memE1:"f \<in> maps_to A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"  by (simp add: maps_to_def)
-lemma maps_to_memE2:"f \<in> maps_to A B \<Longrightarrow>f`A \<subseteq> B"  by (simp add: image_subsetI maps_to_memE1) 
+lemma maps_to_memI1:"(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> maps_to A B" 
+  by (simp add: maps_to_def)
+
+lemma maps_to_memI2:"f`A \<subseteq> B \<Longrightarrow> f \<in> maps_to A B"  
+  by (simp add: image_subset_iff maps_to_def)
+
+lemma maps_to_memE1:"f \<in> maps_to A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
+  by (simp add: maps_to_def)
+
+lemma maps_to_memE2:"f \<in> maps_to A B \<Longrightarrow>f`A \<subseteq> B" 
+  by (simp add: image_subsetI maps_to_memE1) 
 
 definition maps_on::"'a set \<Rightarrow> ('a \<Rightarrow> 'b) set" 
   where "maps_on A \<equiv> {f. (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined)}"
 
-lemma fun_eqI1:"(\<And>x. f x = g x) \<Longrightarrow> f = g" by auto
-
+lemma fun_eqI1:"(\<And>x. f x = g x) \<Longrightarrow> f = g"
+  by auto
 
 lemma maps_on_memI1:"(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> f \<in> maps_on A"
   by (simp add: maps_on_def)
@@ -2124,13 +2131,27 @@ locale magma_homomorphism=set_morphism f X Y+ dom:magma X "(\<cdot>)" + cod:magm
   assumes cmp:"\<lbrakk>x \<in> X; y \<in> X \<rbrakk> \<Longrightarrow> f (x \<cdot> y) = (f x) \<star> (f y)"
 begin
 
+lemma im_closed:assumes "y1\<in> (f`X)" "y2 \<in> (f`X)" shows "y1 \<star> y2 \<in> (f`X)"
+proof-
+  obtain x1 x2 where A0:"x1 \<in> X" and A1:"x2 \<in> X" and A2:"f x1 = y1" and A3:"f x2  =y2"
+    using assms(1,2) by blast
+  then obtain "x1 \<cdot> x2 \<in> X" and "f (x1 \<cdot> x2 ) = y1 \<star> y2"
+    by (simp add: cmp dom.closed)
+  then show "y1 \<star> y2 \<in> f`X"
+    by (simp add: rev_image_eqI)
+qed
 
 lemma imag_comp:"submagma A X (\<cdot>) \<Longrightarrow> x \<in> f ` A \<Longrightarrow> y \<in> f ` A \<Longrightarrow> x \<star> y \<in> f ` A"
 proof-
-  fix x y assume A0:"submagma A X (\<cdot>)" "x \<in> f ` A" "y \<in> f `A" then obtain a b where A1:"a \<in> A" "b \<in> A" "x = f a" "y = f b"  by blast
-  then obtain "a\<cdot>b \<in> A" by (meson A0 submagma.subfun) 
-  then obtain "f (a \<cdot>b) \<in> f `A" and  "f (a \<cdot> b) = (f a)\<star>(f b)" by (meson A0(1) A1(1) A1(2) cmp imageI submagma.sub) 
-  then show "x \<star> y \<in> f ` A"  by (simp add: A1(3) A1(4)) 
+  fix x y assume A0:"submagma A X (\<cdot>)" "x \<in> f ` A" "y \<in> f `A" 
+  then obtain a b where A1:"a \<in> A" "b \<in> A" "x = f a" "y = f b"  
+    by blast
+  then obtain "a\<cdot>b \<in> A"
+    by (meson A0 submagma.subfun) 
+  then obtain "f (a \<cdot>b) \<in> f `A" and  "f (a \<cdot> b) = (f a)\<star>(f b)" 
+    by (meson A0(1) A1(1) A1(2) cmp imageI submagma.sub) 
+  then show "x \<star> y \<in> f ` A" 
+    by (simp add: A1(3) A1(4)) 
 qed
 
 
@@ -2195,6 +2216,13 @@ definition kernel where
 
 notation ker.kernel_pair_object ("R'(_')")
 
+
+lemma im_magma:"magma (f`X) (\<star>)"
+  by (simp add: im_closed magmaI1)
+
+lemma im_submagma:"submagma (f`X) Y (\<star>)"
+  by (simp add: dom.magma_axioms magmaE1 submagma1 submagmaI)
+
 sublocale im:submagma "f`X" Y "(\<star>)" 
   by (simp add: dom.closed dom.magma_axioms submagma1 submagmaI)
 
@@ -2211,6 +2239,25 @@ lemma eqr_kernel:"is_eqrel X  kernel"
   using is_eqrel_def ker.eqr.sub kernel_ref kernel_sym kernel_trn local.kernel_def by auto
 
 end
+
+definition comm::"('a  \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'b set  \<Rightarrow> ('b \<Rightarrow>'b \<Rightarrow>'b)  \<Rightarrow> bool" where
+  "comm f X law1 Y law2 \<equiv> (\<forall>x \<in> X. \<forall>y \<in> X. f(law1 x y) = law2 (f x) (f y))"
+
+lemma magma_homE:"comm f X law1 Y law2 \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)"
+  by (simp add: comm_def)
+
+lemma commI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)) \<Longrightarrow> comm f X law1 Y law2"
+  by (simp add: comm_def)
+
+
+
+
+lemma magma_homI:"\<lbrakk>f \<in> set_mor X Y; comm f X l1 Y l2; (\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y); magma X l1; magma Y l2\<rbrakk> \<Longrightarrow> magma_homomorphism f X l1 Y l2"
+  by (simp add: magma_homE magma_homomorphism_axioms.intro magma_homomorphism_def set_morphismI1)
+ 
+
+lemma magma_homI2:"\<lbrakk>set_morphism \<phi> X Y; magma X f; magma Y g; comm \<phi> X f Y g\<rbrakk> \<Longrightarrow> magma_homomorphism \<phi> X f Y g"
+  by (simp add: magma_homI set_morphismD1 set_morphism_def)
 
 subsection \<open>Magma Epimorphism Locale\<close>
 
@@ -2375,14 +2422,18 @@ begin
 
 notation pinv ("\<sigma>")
 notation p ("\<pi>")
-definition quotient_law (infixl "\<bullet>" 70) where "quotient_law \<equiv> (\<lambda>t \<in> X/R. \<lambda>s \<in> X/R. \<pi> (f (\<sigma> t) (\<sigma> s)) )"
-lemma op_compat1:"\<lbrakk>\<pi> x1=\<pi> x2;\<pi> y1=\<pi> y2; x1\<in>X; x2\<in>X;y1\<in>X; y2\<in>X\<rbrakk> \<Longrightarrow> \<pi> (x1 \<cdot>y1) = \<pi> (x2 \<cdot> y2)" 
-  by (meson closed p_equivalence quotient_magma.compatible quotient_magma_axioms) 
+definition quotient_law (infixl "\<bullet>" 70) where
+ "quotient_law \<equiv> (\<lambda>t \<in> X/R. \<lambda>s \<in> X/R. \<pi> (f (\<sigma> t) (\<sigma> s)) )"
+
+lemma op_compat1:"\<lbrakk>\<pi> x1=\<pi> x2;\<pi> y1=\<pi> y2; x1\<in>X; x2\<in>X;y1\<in>X; y2\<in>X\<rbrakk> \<Longrightarrow> \<pi> (x1 \<cdot>y1) = \<pi> (x2 \<cdot> y2)"
+  by (simp add: compatible p_eq1 p_equivalence) 
 
 lemma left_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (a\<cdot>x, a\<cdot>y) \<in> R"
-  using compatible ref by blast  
+  using compatible ref by blast 
+
 lemma right_compatible:"a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (x\<cdot>a, y\<cdot>a) \<in> R" 
   using compatible ref by auto 
+
 lemma left_trans_compat:"\<And>a. a \<in> X \<Longrightarrow> (x,y)\<in>R \<Longrightarrow> (l_trans a x, l_trans a y)\<in>R"
   by (simp add: compatible l_closed l_trans_def r_closed ref) 
 
@@ -2395,8 +2446,8 @@ lemma psecE3:"t \<in> X/R \<Longrightarrow> s \<in> X/R \<Longrightarrow>  (\<si
 lemma qlaw1:"\<lbrakk>t \<in> X/R ;s \<in> X/R\<rbrakk>  \<Longrightarrow> t\<bullet>s \<in> X/R" 
   by (simp add: closed sec_closed quotient_law_def p_in_quotient1 psecE3)  
 
-lemma qlaw2:"x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> y1 \<in> \<pi> x1 \<Longrightarrow> y2 \<in> \<pi> x2 \<Longrightarrow> y1 \<cdot> y2 \<in> \<pi> (x1 \<cdot> x2)" 
-  by (meson compatible p_D1 p_I1)  
+lemma qlaw2:"x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> y1 \<in> \<pi> x1 \<Longrightarrow> y2 \<in> \<pi> x2 \<Longrightarrow> y1 \<cdot> y2 \<in> \<pi> (x1 \<cdot> x2)"
+  using compatible p_D1 p_I1 by presburger 
 
 lemma qlaw3: 
   assumes x0:"x \<in> X" and x1:"y \<in> X" 
@@ -2426,7 +2477,6 @@ sublocale quotient: magma "X/R" "(\<bullet>)"
 lemma proj_homomorphism:"magma_homomorphism \<pi> X (\<cdot>) (X/R) (\<bullet>)"  
   by(unfold_locales,simp_all add:p_undefined p_in_quotient1 qlaw3)
   
-
 lemma proj_epimorphism:"magma_epimorphism \<pi> X (\<cdot>) (X/R) (\<bullet>)"  
   by(unfold_locales,simp_all add:p_undefined p_in_quotient1 qlaw3 elem_ex2)
 
@@ -2444,38 +2494,43 @@ lemma qlaw6:"\<lbrakk>t \<in> X/R;s \<in> X/R\<rbrakk> \<Longrightarrow>(\<pi> (
 
 end
 
+lemma quotient_magmaI1:"\<lbrakk>magma X f; equivalence_relation X R; cong X f R\<rbrakk> \<Longrightarrow> quotient_magma X f R"
+  by (simp add: congD1 quotient_magma_axioms_def quotient_magma_def)
+
 theorem magma_liftable_operation_iff_congruent:
   fixes X::"'a set" and f::"'a \<Rightarrow> 'a \<Rightarrow> 'a" (infixl "\<cdot>" 70)  and R::"'a rel"
   assumes A0:"magma X (\<cdot>)" and A1:"equivalence_relation X R"
-  shows "(\<exists>q::'a set \<Rightarrow> 'a set \<Rightarrow> 'a set. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q)
-        \<longleftrightarrow> cong X f R"
+  shows "(\<exists>q. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q) \<longleftrightarrow> cong X f R"
 proof
-  assume "(\<exists>q::'a set \<Rightarrow> 'a set \<Rightarrow> 'a set. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q)"
+  assume "(\<exists>q. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q)"
   then obtain q (infixl "\<bullet>" 70) where A2:"magma (X/R) (\<bullet>)" and A3:"magma_homomorphism (qproj X R) X (\<cdot>) (X/R) (\<bullet>)"
     by auto
   show "cong X f R"
   proof(rule congI1)
     fix x1 x2 y1 y2 assume x12:"(x1, x2) \<in> R" and  y12:"(y1, y2) \<in> R" 
+    then obtain x1x:"x1 \<in> X" and x2x:"x2 \<in> X" and y1x:"y1 \<in> X" and y2x:"y2 \<in> X"
+      by (meson A1 equivalence_relation.l_closed equivalence_relation.r_closed)
     then obtain px12:"(qproj X R) x1 = (qproj X R) x2" and py12:"(qproj X R) y1 = (qproj X R) y2"
-      by (simp add: A1 equivalence_relation.p_eq1)
+      by (simp add: A1 equivalence_relation.p_eq1 x12 y12)
     then obtain "(qproj X R) (x1 \<cdot> y1) = ((qproj X R) x1) \<bullet> ((qproj X R) y1)" and
                 "(qproj X R) (x2 \<cdot> y2) = ((qproj X R) x2) \<bullet> ((qproj X R) y2)"
-      by (meson A1 A3 equivalence_relation.l_closed equivalence_relation.r_closed magma_homomorphism.cmp x12 y12) 
+      by (meson A3 magma_homomorphism.cmp x1x x2x y1x y2x)
+    then obtain "(qproj X R) (x1 \<cdot> y1) = (qproj X R) (x2 \<cdot> y2)" and "x1 \<cdot> y1 \<in> X" and  "x2 \<cdot> y2 \<in> X"
+      by (simp add: A0 magmaE1 px12 py12 x1x x2x y1x y2x)
     then show "(x1 \<cdot> y1, x2 \<cdot> y2) \<in> R"
-      by (metis A0 A1 equivalence_relation.l_closed equivalence_relation.p_D1 equivalence_relation.p_self 
-          equivalence_relation.r_closed magma.closed px12 py12 x12 y12)
+      by (simp add: A1 equivalence_relation.p_equivalence)
   qed
 next
   assume A2:"cong X f R"
-  show "(\<exists>q::'a set \<Rightarrow> 'a set \<Rightarrow> 'a set. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q)"
-    using A0 A1 A2 congD1 magma_homomorphism.axioms(3) quotient_magma.intro quotient_magma.proj_homomorphism
-          quotient_magma_axioms_def by fastforce
+  interpret quotient_magma X f R
+    by (simp add: A0 A1 A2 quotient_magmaI1)
+  show "(\<exists>q. magma (X/R) q \<and> magma_homomorphism (qproj X R) X (\<cdot>) (X/R) q)"
+    using magma_homomorphism.axioms(3) proj_homomorphism by blast
 qed
 
 
 context magma_homomorphism
 begin
-
 lemma quotient_magma:"quotient_magma X (\<cdot>) R(f)"
   using congD1 dom.magma_axioms ker.eqr.equivalence_relation_axioms ker_cong kernel_def quotient_magma.intro quotient_magma_axioms_def by fastforce
 end
@@ -2486,8 +2541,16 @@ locale magma_homomorphism_fundamental=magma_homomorphism
 begin
 sublocale quotient:quotient_magma X "(\<cdot>)" "R(f)"  by (simp add: quotient_magma)
 notation quotient.quotient_law (infixl "(\<bullet>)" 70)
-lemma first_isomorphism_magmas1:"submagma (f`X) Y (\<star>)"  by (simp add: im.submagma_axioms)
-lemma first_isomorphism_magmas2:"cong X (\<cdot>) R(f)"  using ker_cong kernel_def by force
+
+lemma quotient_magma2:"magma (X/R(f)) (\<bullet>)"
+  by (simp add: quotient.quotient.magma_axioms)
+
+lemma first_isomorphism_magmas1:"submagma (f`X) Y (\<star>)" 
+  by (simp add: im.submagma_axioms)
+
+lemma first_isomorphism_magmas2:"cong X (\<cdot>) R(f)" 
+  using ker_cong kernel_def by force
+
 lemma first_isomorphism_magmas3a:"magma_homomorphism (ker.h) (X/R(f)) (\<bullet>) (f`X) (\<star>)"  
  apply(unfold_locales)
   using ker.quotient_map.dom apply blast
@@ -8004,22 +8067,6 @@ end
 section \<open>Magma Homomorphism Locale\<close>
 
 
-definition comm::"('a  \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'b set  \<Rightarrow> ('b \<Rightarrow>'b \<Rightarrow>'b)  \<Rightarrow> bool" where
-  "comm f X law1 Y law2 \<equiv> (\<forall>x \<in> X. \<forall>y \<in> X. f(law1 x y) = law2 (f x) (f y))"
-
-lemma magma_homE:"comm f X law1 Y law2 \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)"
-  by (simp add: comm_def)
-
-lemma commI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)) \<Longrightarrow> comm f X law1 Y law2"
-  by (simp add: comm_def)
-
-
-
-
-lemma magma_homI:"\<lbrakk>f \<in> set_mor X Y; comm f X l1 Y l2; (\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y); magma X l1; magma Y l2\<rbrakk> \<Longrightarrow> magma_homomorphism f X l1 Y l2"
-  by (simp add: magma_homE magma_homomorphism_axioms.intro magma_homomorphism_def set_morphismI1)
- 
-
 section \<open>Magma Isomorphism\<close> 
 
 (*
@@ -9145,6 +9192,9 @@ interpretation ex1b:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<inter> B)" apply
 interpretation ex2a:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x+y)"  by (simp add: magma.intro)
 interpretation ex2b:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x*y)"  by (simp add: magma.intro)
 
+print_commands
+locale_deps
+unused_thms
+thm_deps group_operating_on_set.strict_stab_sub
 
 end
-
