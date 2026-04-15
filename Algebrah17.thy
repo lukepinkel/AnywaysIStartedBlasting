@@ -1662,7 +1662,6 @@ lemma (in LCD) fold_commute:
    f x (fold X f e A) = fold X f (f x e) A"
   by (induct set: finite) (auto simp add: left_commute fold_insert)
 
-section Fold
 
 
 section Magmas
@@ -1817,20 +1816,37 @@ lemma magma_cl_non_gen:
   obtains a b where "a \<in> cl A" and "b \<in> cl A" and "x = a \<cdot> b"
   using A0 A1 A2 magma_cl_cases[of A x] using that by auto
 
-definition opposite_law where "opposite_law \<equiv> \<lambda>x. \<lambda>y. f y x"
-definition stable where  "stable A \<equiv> magma_stable X f A"
-definition commutes where  "commutes A B \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B. a \<cdot> b = b \<cdot> a)"
+definition opposite_law where 
+  "opposite_law \<equiv> \<lambda>x. \<lambda>y. f y x"
 
-definition centralizer where "centralizer E \<equiv> {x \<in> X. \<forall>y \<in> E. commutes {x} {y}}"
-definition center where "center = centralizer X"
+definition stable where  
+  "stable A \<equiv> magma_stable X f A"
 
-abbreviation bicentralizer where "bicentralizer \<equiv> centralizer \<circ> centralizer"
-definition l_identity where "l_identity e \<equiv> (\<forall>x \<in>X. e \<cdot> x = x)"
-definition r_identity where "r_identity e \<equiv> (\<forall>x \<in>X. x \<cdot> e = x)"
+definition commutes where 
+ "commutes A B \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B. a \<cdot> b = b \<cdot> a)"
 
-definition l_cancellable where "l_cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  a \<cdot> x = a \<cdot> y \<longrightarrow> x = y)"
-definition r_cancellable where "r_cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  x \<cdot> a = y \<cdot> a \<longrightarrow> x = y)"
-definition cancellable where "cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  x \<cdot> a = y \<cdot> a \<longrightarrow> x = y) \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  a \<cdot> x = a \<cdot> y \<longrightarrow> x = y)"
+definition centralizer where
+ "centralizer E \<equiv> {x \<in> X. \<forall>y \<in> E. commutes {x} {y}}"
+
+definition center where
+ "center = centralizer X"
+
+
+abbreviation bicentralizer where 
+"bicentralizer \<equiv> centralizer \<circ> centralizer"
+definition l_identity where 
+"l_identity e \<equiv> (\<forall>x \<in>X. e \<cdot> x = x)"
+
+definition r_identity where 
+  "r_identity e \<equiv> (\<forall>x \<in>X. x \<cdot> e = x)"
+
+definition l_cancellable where 
+  "l_cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  a \<cdot> x = a \<cdot> y \<longrightarrow> x = y)"
+definition r_cancellable where
+  "r_cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  x \<cdot> a = y \<cdot> a \<longrightarrow> x = y)"
+
+definition cancellable where 
+  "cancellable a \<equiv> a \<in> X \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  x \<cdot> a = y \<cdot> a \<longrightarrow> x = y) \<and> (\<forall>x \<in> X. \<forall>y \<in> X.  a \<cdot> x = a \<cdot> y \<longrightarrow> x = y)"
 
 definition id_elem where "id_elem e \<equiv>(\<forall>x \<in>X. e \<cdot> x = x \<and> x \<cdot> e = x)"
 definition l_trans where "l_trans \<equiv> (\<lambda>a \<in> X. \<lambda>x \<in> X. a \<cdot> x)"
@@ -2024,22 +2040,18 @@ lemma l_coset_sub:"A \<subseteq> X \<Longrightarrow> x \<in> X \<Longrightarrow>
 
 end
 
-sublocale magma \<subseteq> opposite:magma X "\<lambda>x. \<lambda>y. f y x"  by(unfold_locales,simp add: closed)
+lemma magmaI1:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f x y \<in> X) \<Longrightarrow> magma X f"
+  by (simp add: magma.intro)
 
-context magma 
-begin
-lemma lr_trans_dual:"l_trans = opposite.r_trans"  
-  using l_trans_def opposite.r_trans_def by presburger
+lemma magmaE1:"\<lbrakk>magma X f; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f x y \<in> X"
+  by (simp add: magma.closed)
 
-lemma rl_trans_dual:"r_trans = opposite.l_trans"  
-  using r_trans_def opposite.l_trans_def by presburger
-end
+lemma magma_magma_stable1:"magma_stable X f X \<Longrightarrow> magma X f"
+  by (simp add: magmaI1 magma_stable_def)
 
-(*interpretation ex1a:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<union> B)" apply(unfold_locales) by simp
-interpretation ex1b:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<inter> B)" apply(unfold_locales) by blast
-interpretation ex2a:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x+y)"  by (simp add: magma.intro)
-interpretation ex2b:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x*y)"  by (simp add: magma.intro)
-*)
+lemma magma_magma_stable2:"magma X f \<Longrightarrow> magma_stable X f X"
+  by (simp add: magma_def magma_stable_def)
+
 
 subsection \<open>Submagma Locale\<close>
 locale submagma=magma X "(\<cdot>)" for A and X and magma_law (infixl "\<cdot>" 70)+
@@ -2061,7 +2073,7 @@ lemma cl_submgama: "submagma (cl H) X (\<cdot>)"
   using cl_stable local.stable_def stableE2 by blast
 
 lemma cl_magma_ub:
-  assumes A0:"A \<subseteq> B" and A1:"submagma B X (\<cdot>)"   shows "cl A \<subseteq> B"
+  assumes A0:"A \<subseteq> B" and A1:"submagma B X (\<cdot>)" shows "cl A \<subseteq> B"
 proof
   fix x assume "x \<in> cl A"
   then show "x \<in> B"
@@ -2083,6 +2095,7 @@ qed
 end
 
 
+
 lemma submamga_trans[trans]: 
   assumes "submagma A B f" and 
           "submagma B C f" 
@@ -2096,8 +2109,11 @@ proof-
     by (simp add: A.subfun C.magma_axioms submagma.intro submagma_axioms_def subset_iff) 
 qed
 
-lemma submagmaI:"magma X f \<Longrightarrow> A \<subseteq> X \<Longrightarrow> (\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> (f x y) \<in> A) \<Longrightarrow> submagma A X f" 
+lemma submagmaI:"\<lbrakk>magma X f; A \<subseteq> X; (\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> (f x y) \<in> A)\<rbrakk> \<Longrightarrow> submagma A X f" 
   by (simp add: submagma.intro submagma_axioms.intro subsetD)
+
+lemma submagmaI2:"\<lbrakk>magma X f; magma_stable X f A\<rbrakk> \<Longrightarrow> submagma A X f"
+  by (simp add: magma_stable_def submagmaI)
 
 
 subsection \<open>Magma Homomorphism Locale\<close>
@@ -2171,16 +2187,23 @@ proof-
   by (simp add: cmp submagma.subfun subset_eq)
 qed
 
-sublocale ker:kernel_pair f X Y  by (simp add: kernel_pair_def set_morphism_axioms)
-definition kernel where "kernel \<equiv> ker.kernel_pair_object f"
+sublocale ker:kernel_pair f X Y  
+  by (simp add: kernel_pair_def set_morphism_axioms)
+
+definition kernel where
+ "kernel \<equiv> ker.kernel_pair_object f"
+
 notation ker.kernel_pair_object ("R'(_')")
-sublocale im:submagma "f`X" Y "(\<star>)" by (simp add: dom.closed dom.magma_axioms submagma1 submagmaI)
+
+sublocale im:submagma "f`X" Y "(\<star>)" 
+  by (simp add: dom.closed dom.magma_axioms submagma1 submagmaI)
 
 lemma kernel_ref:"refl_on X kernel"
   by (simp add: ker.eqr.l_closed ker.eqr.r_closed ker.eqr.ref kernel_def refl_on_def subrelI) 
 
 lemma kernel_sym:"sym kernel"  
   by (simp add: ker.eqr.sym kernel_def symI) 
+
 lemma kernel_trn:"trans  kernel"
   unfolding kernel_def using ker.eqr.trn transI  by auto
 
@@ -2195,8 +2218,12 @@ locale magma_epimorphism=set_epimorphism f X Y+ dom:magma X "(\<cdot>)" + cod:ma
   for f and X and domain_law (infixl "\<cdot>" 70) and Y and codomain_law (infixl "\<star>" 70)+
   assumes cmp:"\<lbrakk>x \<in> X; y \<in> X \<rbrakk> \<Longrightarrow> f (x \<cdot> y) = (f x) \<star> (f y)"
 begin
-sublocale magma_homomorphism by(unfold_locales,simp add: cmp)
-sublocale ker:kernel_pair f X Y  by (simp add: kernel_pair_def set_morphism_axioms)
+sublocale magma_homomorphism 
+  by(unfold_locales,simp add: cmp)
+
+sublocale ker:kernel_pair f X Y  
+  by (simp add: kernel_pair_def set_morphism_axioms)
+
 notation ker.kernel_pair_object ("R'(_')")
 
 
@@ -2211,7 +2238,9 @@ locale magma_monomorphism=set_monomorphism f X Y+ dom:magma X "(\<cdot>)" + cod:
   for f and X and domain_law (infixl "\<cdot>" 70) and Y and codomain_law (infixl "\<star>" 70)+
   assumes cmp:"\<lbrakk>x \<in> X; y \<in> X \<rbrakk> \<Longrightarrow> f (x \<cdot> y) = (f x) \<star> (f y)"
 begin
-sublocale magma_homomorphism by(unfold_locales,simp add: cmp)
+sublocale magma_homomorphism 
+  by(unfold_locales,simp add: cmp)
+
 end
 
 
@@ -3993,10 +4022,7 @@ proof-
   interpret submagma "f`A" Y "(\<star>)"
     by (metis assms dom.magma_axioms submagma1 submagmaI submonoid.opsub submonoid.setsub)
   show ?thesis
-    apply(unfold_locales)
-    apply (simp add: submem)
-    using sub.opposite.closed apply blast
-    by (metis assms rev_image_eqI submonoid_axioms_def submonoid_def unt)
+    by (metis assms cod.monoid_axioms imageI subfun submem submonoid_axioms_def submonoid_def unt)
 qed
 
 lemma im_subsemigroup2:"submonoid B Y (\<star>) d \<Longrightarrow> (vimage f B) \<subseteq> X \<Longrightarrow>submonoid (vimage f B) X (\<cdot>) e" 
@@ -6275,7 +6301,7 @@ proof-
     then have B4:"g \<cdot> (inv g \<cdot> x \<cdot> g) \<cdot> inv g \<in> (\<Union>h\<in>H. {g \<cdot> h \<cdot> inv g})"
       using B2 by blast
     have B5:"g \<cdot> (inv g \<cdot> x \<cdot> g) \<cdot> inv g = (g \<cdot> inv g) \<cdot> x \<cdot> (g \<cdot> inv g)"
-      using A0 A1 B1 asc opposite.closed sub_mem by presburger
+      using A0 A1 B1 asc m_closed sub_mem by presburger
     also have B6:"... = x"
       by (simp add: A0 A1)
     then show "x \<in> (\<Union>h\<in>H. {g \<cdot> h \<cdot> inv g})"
@@ -7170,7 +7196,7 @@ proof-
   finally have "\<alpha> (m \<cdot> n)`A \<subseteq> A"
     by blast
   then show "(m \<cdot> n) \<in> stabilizer A"
-    using A0 m2 n2 opposite.closed stabilizer_def by force  
+    using A0 m2 m_closed n2 stabilizer_def by force
 qed
 
 lemma stict_stab_memI:"\<lbrakk>A \<in> Pow E; m \<in>strict_stabilizer A; n \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> strict_stabilizer A"
@@ -7187,7 +7213,7 @@ proof-
   finally have "\<alpha> (m \<cdot> n)`A = A"
     by blast
   then show "(m \<cdot> n) \<in> strict_stabilizer A"
-    using A0 m2 n2 opposite.closed strict_stabilizer_def by force  
+    using A0 m2 m_closed n2 strict_stabilizer_def by auto
 qed
 
 lemma fix_memI:"\<lbrakk>A \<in> Pow E;  m \<in>fixer A; n \<in> fixer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> fixer A"
@@ -7202,7 +7228,7 @@ proof-
   then have "\<And>a. a \<in> A \<Longrightarrow> \<alpha> (m \<cdot> n) a = a"
     by (metis A0 PowD comp_eq in_mono m1 n1)
   then show "(m \<cdot> n) \<in>fixer A"
-    using A0 m2 n2 opposite.closed fixer_def by force  
+    using A0 fixer_memI m2 m_closed n2 by presburger
 qed
 
 lemma id_apply:"A \<in> Pow E \<Longrightarrow> (\<alpha> e)`A = A"
@@ -7603,7 +7629,7 @@ proof-
     then obtain B9:"(\<alpha> h ) ((\<alpha> (inv g)) a) =  (\<alpha> (inv g)) a"
       using B3 by blast
     have "(\<alpha> (g \<cdot> h \<cdot> inv g)) a = (\<alpha> g ) ((\<alpha> h ) ((\<alpha> (inv g)) a))"
-      using A4 B0 B2 B5 actsE211 comp_simp opposite.closed by presburger
+      by (metis A4 B0 B2 B5 action.actsE211 action_axioms comp_simp subgroupE1(4) top_subgroup)
     also have "(\<alpha> g ) ((\<alpha> h ) ((\<alpha> (inv g)) a)) = (\<alpha> g) ((\<alpha> (inv g)) a)"
      using B9 by presburger
     also have "... = \<alpha> (g \<cdot> (inv g)) a"
@@ -7616,7 +7642,7 @@ proof-
       by auto
   qed
   have B10:"((g \<cdot> h \<cdot> inv g)) \<in> G"
-    using B0 B2 B5 opposite.closed by presburger
+    using B0 B2 B5 m_closed by presburger
   show ?thesis
     unfolding fixer_def using A0 B7 B10 by(auto)
 qed
@@ -7668,7 +7694,7 @@ proof(rule inj_onI)
   then obtain B0:"\<alpha> ((inv h)\<cdot> g) = \<alpha> e"
     by (simp add: iso_rinv)
   have "(inv h)\<cdot> g \<in> fixer E"
-    by(rule fixer_memI,simp_all add: A1 A2 opposite.closed B0)
+    by(rule fixer_memI,simp_all add: A1 A2 m_closed B0)
   then show "g = h"
     by (metis A1 A2 all_not_in_conv assms insert_iff invertible rid unit_rinv2)
 qed
@@ -7735,13 +7761,13 @@ proof-
     then obtain B3:"h \<in> G" and B4:"\<alpha> h x = x"
       using B1 A0 unfolding stabilizer_def by auto
     have B5:"g \<cdot> h \<cdot> (inv g) \<in> G"
-      using B3 A1 by (simp add: opposite.closed) 
+      using B3 A1 by (simp add: m_closed) 
     then have "\<alpha> s (\<alpha> g x) = \<alpha> (g \<cdot> h \<cdot> (inv g)) (\<alpha> g x) "
       using B2 by blast
     also have "... = \<alpha> (g \<cdot> h \<cdot> (inv g) \<cdot> g) x"
       using A0 A1 B5 comp_simp by presburger
     also have "... = \<alpha> (g \<cdot> h) x"
-      by (simp add: A1 B3 asc opposite.closed)
+      by (simp add: A1 B3 asc m_closed)
     also have "... = \<alpha> g (\<alpha> h x)"
       using A0 A1 B3 comp_simp by presburger
     also have "... = \<alpha> g x"
@@ -7762,11 +7788,11 @@ proof-
     then obtain h where B4:"h \<in> stabilizer {\<alpha> g x}" and B5:"k = inv g \<cdot> h \<cdot> g" 
       by blast
     then obtain B6:"h \<in> G" and B7:"k \<in> G" and B8:"\<alpha> h (\<alpha> g x) = \<alpha> g x"
-      using P0 A1 opposite.closed singleton_stabilizer_memD  subgroupE1(3) top_subgroup by presburger
+      using P0 A1 m_closed singleton_stabilizer_memD  subgroupE1(3) top_subgroup by presburger
     have "\<alpha> k x = \<alpha> (inv g \<cdot> h \<cdot> g) x"
       using B5 by blast
     also have "... = \<alpha> (inv g) (\<alpha> h (\<alpha> g x))"
-      by (metis A0 A1 B6 P0 comp_simp idin inv2_prod inv_ident opposite.closed rid)
+      by (metis A0 A1 B6 P0 comp_simp idin inv2_prod inv_ident m_closed rid)
     also have "... = \<alpha> (inv g) (\<alpha> g x)"
       using B8 by presburger
     also have "... = x"
@@ -7784,7 +7810,7 @@ proof-
     have B6:"inv g \<cdot> s \<cdot> g \<in> stabilizer {x}"
       using A2 B3 by blast
     have B7:"s = g \<cdot> (inv g \<cdot> s \<cdot> g) \<cdot> (inv g)"
-      by (metis A1 B4 asc inv2_prod inv_lsolve1 inv_rsolve1 opposite.closed)
+      by (metis A1 B4 asc inv2_prod inv_lsolve1 inv_rsolve1 m_closed)
     then show "s \<in> {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
       using B6 by auto
   qed
@@ -7875,7 +7901,7 @@ proof-
     have "c  (x \<cdot> y) = compose G a b (x \<cdot> y)"
       by (simp add: c_def)
     also have "... = a (b (x \<cdot> y))"
-      by (simp add: A2 A3 comp_eq opposite.closed)
+      by (simp add: A2 A3 comp_eq m_closed)
     also have "... = a ((b x) \<cdot> (b y))"
       using A2 A3 B3 group_isomorphism.cmp by fastforce
     also have "... = (a (b x)) \<cdot> (a (b y))"
@@ -7908,7 +7934,7 @@ proof-
     apply simp
     apply simp
     apply (simp add: bij_betwI')
-    by (simp add: opposite.closed)
+    by (simp add: m_closed)
   then show "Id G \<in> Aut"
     unfolding Aut_def by simp
 qed
@@ -7929,7 +7955,7 @@ proof-
     then obtain B3:"\<tau> x \<in> G" and B4:"\<tau> y \<in> G"
       by (metis A0 Aut_sub_bij B0 bij_betw_hom_rev hom9 set_isomorphismE2 subsetD)
     then obtain B5:"(\<tau> x) \<cdot> (\<tau> y) \<in> G"
-      by (simp add: opposite.closed)
+      by (simp add: m_closed)
     have "\<sigma> ((\<tau> x) \<cdot> (\<tau> y)) = (\<sigma> (\<tau> x)) \<cdot> (\<sigma> (\<tau> y)) "
       by (meson B1 B3 B4 group_isomorphism.cmp)
     also have "... = x \<cdot> y"
@@ -8326,7 +8352,7 @@ lemma mega_peen:
   assumes  "x \<in> dom.M"  shows "M(f) x \<in> Y"
   using assms apply(induct)
   apply simp
-  by (simp add: cod.opposite.closed)
+  by (simp add: cod.closed)
  
 
 lemma peen6:"\<And>x. x \<in> dom.M \<Longrightarrow> M(f) x \<in> Y"  using mega_peen by force
@@ -9101,6 +9127,23 @@ proof-
     by simp
 qed
 
+
+sublocale magma \<subseteq> opposite:magma X "\<lambda>x. \<lambda>y. f y x"  by(unfold_locales,simp add: closed)
+
+context magma 
+begin
+lemma lr_trans_dual:"l_trans = opposite.r_trans"  
+  using l_trans_def opposite.r_trans_def by presburger
+
+lemma rl_trans_dual:"r_trans = opposite.l_trans"  
+  using r_trans_def opposite.l_trans_def by presburger
+end
+
+
+interpretation ex1a:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<union> B)" apply(unfold_locales) by simp
+interpretation ex1b:magma "Pow X" "(\<lambda>A. \<lambda>B. A \<inter> B)" apply(unfold_locales) by blast
+interpretation ex2a:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x+y)"  by (simp add: magma.intro)
+interpretation ex2b:magma "UNIV::nat set" "(\<lambda>x. \<lambda>y. x*y)"  by (simp add: magma.intro)
 
 
 end
