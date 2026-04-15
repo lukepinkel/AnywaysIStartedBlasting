@@ -497,6 +497,10 @@ lemma fun_eqI:
 
 
 
+lemma hom9:
+  "f \<in> set_mor A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"
+  unfolding set_mor_def by simp
+
 lemma hom11:
   "f \<in> set_mor A B \<Longrightarrow> g \<in> set_mor A C \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = g x"
   unfolding set_mor_def by(auto)
@@ -7929,13 +7933,14 @@ proof-
     have "\<sigma> ((\<tau> x) \<cdot> (\<tau> y)) = (\<sigma> (\<tau> x)) \<cdot> (\<sigma> (\<tau> y)) "
       by (meson B1 B3 B4 group_isomorphism.cmp)
     also have "... = x \<cdot> y"
-      by (metis A0 A2 A3 Aut_sub_bij B0 comp_eq id2 inv_rinv3 set_isomorphismE2 subsetD)
+      by (metis A2 A3 B0 B1 comp_eq group_iso_sub_set_iso inv_rinv3 restrict_apply1 set_isomorphismE2)
     finally have "\<sigma> ((\<tau> x) \<cdot> (\<tau> y))  = x \<cdot> y"
       by simp
     then have "\<tau> (\<sigma> ((\<tau> x) \<cdot> (\<tau> y))) = \<tau> (x \<cdot> y)"
       by auto
     then have "(\<tau> x) \<cdot> (\<tau> y) =  \<tau> (x \<cdot> y)"
-      by (metis A0 Aut_sub_bij B5 \<tau>_def comp_eq group.l_inv_simp id2 permutations.group_axioms subsetD)
+      by (metis B0 B1 B5 bij_betw_def composition_monoid group_iso_sub_set_iso into_rinv_f monoid.mem_UnitsD set_isomorphismE2
+          set_morphisms_memE2 transformations_notation.set_iso_unital2)
     then show " \<tau>  (x \<cdot> y) = (\<tau> x) \<cdot> (\<tau> y)"
       by simp
   qed
@@ -7958,14 +7963,8 @@ lemma Aut_inv_closed:"a \<in> Aut \<Longrightarrow> permutations.inv  a \<in> Au
 
 
 lemma Aut_subgroup:
-  "subgroup Aut (set_isomorphisms G G) (compose G) (Id G)" 
-  apply(rule subgroup.intro)
-  apply (metis composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
-  apply(rule subgroup_axioms.intro)
-  apply (simp add: Aut_sub_bij)
-    apply (simp add: Aut_comp_closed)
-  apply(simp add:Aut_contains_id)
-  using Aut_inv_closed by auto
+  "subgroup Aut (set_iso G G) (compose G) (Id G)"
+  using Aut_comp_closed Aut_contains_id Aut_inv_closed Aut_sub_bij permutations.subgroupI by blast 
 
 
 
@@ -7991,7 +7990,7 @@ lemma commI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow
 
 
 
-lemma magma_homI:"\<lbrakk>f \<in> set_morphisms X Y; comm f X l1 Y l2; (\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y); magma X l1; magma Y l2\<rbrakk> \<Longrightarrow> magma_homomorphism f X l1 Y l2"
+lemma magma_homI:"\<lbrakk>f \<in> set_mor X Y; comm f X l1 Y l2; (\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y); magma X l1; magma Y l2\<rbrakk> \<Longrightarrow> magma_homomorphism f X l1 Y l2"
   by (simp add: magma_homE magma_homomorphism_axioms.intro magma_homomorphism_def set_morphismI1)
  
 
@@ -8037,7 +8036,7 @@ sublocale f_inv_iso:magma_homomorphism f_inv Y "(\<star>)" X "(\<cdot>)"
 end
 
 
-lemma magma_iso_intro:"\<lbrakk>f \<in>set_morphisms X Y; bij_betw f X Y; magma X xlaw; magma Y ylaw; comm f X xlaw Y ylaw\<rbrakk> \<Longrightarrow> magma_isomorphism f X xlaw Y ylaw"
+lemma magma_iso_intro:"\<lbrakk>f \<in>set_mor X Y; bij_betw f X Y; magma X xlaw; magma Y ylaw; comm f X xlaw Y ylaw\<rbrakk> \<Longrightarrow> magma_isomorphism f X xlaw Y ylaw"
   by (simp add: magma_homE magma_isomorphism_axioms.intro magma_isomorphism_def set_isoI1)
 
 
@@ -8446,7 +8445,7 @@ proof-
       using calculation by auto
   qed
   then show ?thesis
-    using inj_on_inverseI by auto
+    using inj_on_inverseI[of dom.M "frm.map_frm g" "M(f)"] by simp
 qed
 
 
@@ -8587,17 +8586,17 @@ qed
 lemma aut_stable4:
   assumes A0:"comm f (free_magma X) Op (free_magma X) Op" and
           A1:"bij_betw  f (free_magma X)  (free_magma X)" and
-          A2:"f \<in> set_morphisms (free_magma X) (free_magma X)"
+          A2:"f \<in> set_mor (free_magma X) (free_magma X)"
         shows  aut_stable4c:"(magma_isomorphism.f_inv f (free_magma X) (free_magma X))`(\<eta>`X) \<subseteq> \<eta>`X"  and
          aut_stable4b:"\<And>a. a \<in> X \<Longrightarrow> (\<exists>b \<in> X. f (\<eta> b) = \<eta> a)"
 proof-
   let ?g="\<lambda>y \<in> (free_magma X). inv_into (free_magma X) f y"
   interpret iso:magma_isomorphism f "free_magma X" Op "free_magma X" Op
     apply(unfold_locales)
-    using A2 hom10 apply fastforce
+    apply (meson A2 maps_on_memE1 set_morphisms_memE3)
     using A1 bij_betwE apply blast
     apply (simp add: A1)
-    apply simp
+    apply blast
     by (meson A0 magma_homE)
   have iso_eq:"?g = iso.f_inv"
     using iso.f_inv_def by auto
@@ -8646,7 +8645,7 @@ locale free_magma_aut=dom:free_magma_locale X
   for \<phi>::"'a frm \<Rightarrow> 'a frm" and X::"'a set" +
   assumes bij:"bij_betw \<phi> dom.M dom.M" and
           comm:"comm \<phi> dom.M Op dom.M Op" and
-          hom:"\<phi> \<in> set_morphisms dom.M dom.M"
+          hom:"\<phi> \<in> set_mor dom.M dom.M"
 begin
 
 
@@ -8682,7 +8681,7 @@ lemma f_inj5: "inj_on (dom.eta_inv \<circ> (\<phi> \<circ> \<eta>)) X"
   using comp_inj_on f_inj2 f_inj4 by blast
 
 lemma f_inj6:"inj_on f X"
-  by (simp add: comp_assoc f_eq f_inj5)
+  by (simp add: Fun.comp_assoc f_eq f_inj5)
 
 lemma f_surj:"f`X \<subseteq> X"
 proof-
@@ -8834,9 +8833,11 @@ lemma extension_bij2:"bij_betw f N' N"
   using ext_eq extension_bij1 by force
 
 lemma inc_iso:"magma_isomorphism f N' Op N Op"
-  by (metis bij_betw_def bij_betw_id extension_bij2 frm.map_id frm.map_id0 hom7 image_restrict_eq inc_comm
-      magma_iso_intro restrict_ext tmp.dom.is_magma.magma_axioms)
-
+  apply(unfold_locales)
+  apply(simp_all)
+  apply (simp add: ext_sub0 frm.map_id)
+  using extension_bij2 by auto
+ 
 lemma inc_sub:"submagma (tmp.extension(id)`(N')) M Op"
   by (simp add: free_magma_iso frm.map_id0 sub submagmaI tmp.cod.is_magma.magma_axioms)
 
