@@ -1086,6 +1086,10 @@ lemma set_isomorphism_iff:
 
 
 
+lemma set_isomorphismE2:
+  " f \<in> set_iso A B \<Longrightarrow>bij_betw f A B "
+  by (simp add: bij_betw_def set_iso_memE3 set_iso_memE4)
+
 
 lemma bij_bewt_has_lr_inv:
   "bij_betw f A B \<Longrightarrow> (\<exists>g \<in> set_mor B A. is_left_inv A f g \<and> is_right_inv B f g)"
@@ -3222,17 +3226,19 @@ lemma lr_coset_assoc:
 
 end
 
+lemma semigroupI1:"magma X f \<Longrightarrow> (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>f (f x y) z = f x (f y z)) \<Longrightarrow> semigroup X f"
+  by (simp add: semigroup_def semigroup_axioms.intro)
+
 subsection \<open>Subsemigroup Locale\<close>
 
 locale subsemigroup=semigroup X "(\<cdot>)" for A and X and magma_law (infixl "\<cdot>" 70)+
   assumes submem:"A \<subseteq> X" and 
-          subfun:"\<lbrakk>x \<in>A; y \<in> A\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> A" and
-          asc[ac_simps]:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)"
+          subfun:"\<lbrakk>x \<in>A; y \<in> A\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> A"
 begin
 sublocale submagma A X "(\<cdot>)"  using magma_axioms subfun submagmaI submem by blast 
 sublocale sub:semigroup A "(\<cdot>)" by (simp add: semigroup.intro asc semigroup_axioms_def sub.magma_axioms)
-
 end
+
 
 
 lemma subsemigroup_trans[trans]:
@@ -3260,8 +3266,7 @@ lemma assoc_comm:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightar
 lemma im_subsemigroup1:"subsemigroup A X (\<cdot>) \<Longrightarrow> subsemigroup (f`A) Y (\<star>)" 
   apply(unfold_locales)
   apply (meson im.submem image_mono subsemigroup.submem subset_trans)
-  apply (simp add: dom.magma_axioms imag_comp submagmaI subsemigroup.subfun subsemigroup.submem)
-  using cod.asc by presburger
+  by (simp add: dom.magma_axioms imag_comp submagmaI subsemigroup.subfun subsemigroup.submem)
 
 
 lemma im_subsemigroup2:"subsemigroup B Y (\<star>) \<Longrightarrow> (vimage f B) \<subseteq> X \<Longrightarrow>subsemigroup (vimage f B) X (\<cdot>)" 
@@ -3270,8 +3275,7 @@ proof-
   then show "subsemigroup (vimage f B) X (\<cdot>)"
   apply(unfold_locales)
   using A1 apply blast
-  apply (simp add: cmp subsemigroup.subfun subset_eq)
-  by (simp add: dom.asc)
+  by (simp add: cmp subsemigroup.subfun subset_eq)
 qed
 
 sublocale im:subsemigroup "f`X" Y "(\<star>)"
@@ -4225,14 +4229,17 @@ lemma first_isomorphism_monoids2:"cong X (\<cdot>) R(f)"
 lemma first_isomorphism_monoids3a:"monoid_homomorphism (ker.h) (X/R(f)) (\<bullet>) quotient.H (f`X) (\<star>) (f e)"  
  apply(unfold_locales)
   using ker.quotient_map.dom apply blast
+  apply (metis imageI ker.eqr.elem_ex4 ker.h_simp)
+  apply (metis cmp dom.m_closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient.qlaw4)
+  by (simp add: ker.h_simp quotient.H_def)
 
 lemma first_isomorphism_monoids3b:"monoid_isomorphism ker.h (X/R(f)) (\<bullet>)quotient.H (f`X) (\<star>) (f e)"
   apply(unfold_locales)
   using ker.quotient_map.dom apply blast
-    apply(auto)
-  apply (metis bij_betw_imageI ker.factorization2 ker.quotient_map.inj quotient.proj_epi.sur surj_compose)
-  apply (metis cmp dom.m_closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient_magma quotient_magma.qlaw4)
-  using quotient.H_def by auto
+  using ker.eqr.rep_ex ker.h_simp apply force
+  apply (metis bij_betw_def ker.factorization2 ker.quotient_map.inj quotient.proj_epi.sur surj_compose)
+  apply (metis cmp dom.m_closed ker.eqr.psecE1 ker.eqr.sec_closed ker.h_simp quotient.qlaw4)
+  using ker.h_simp quotient.H_def by auto
 
 sublocale induced:monoid_isomorphism ker.h "X/R(f)" "(\<bullet>)" quotient.H "f`X" "(\<star>)" "f e"
   by (simp add: first_isomorphism_monoids3b)
@@ -4266,7 +4273,7 @@ proof-
   then have B1:"(\<Union>x \<in> (vimage f B). ker.eqr.p x) \<subseteq> ?A"
     by blast
   have B2:"\<And>x. x \<in> ?A \<Longrightarrow> x \<in> ker.eqr.p x"
-    using A1 by force
+    using A1 ker.eqr.p_self by auto
   then have B3:"?A \<subseteq> (\<Union>x \<in> (vimage f B). ker.eqr.p x)"
     by blast
   then show ?thesis
@@ -4296,10 +4303,10 @@ begin
 
 definition "h \<equiv> compose Z f (rinv g X Z)"
 
-lemma h_set_hom:"h \<in>set_morphisms Z Y"
+lemma h_set_hom:"h \<in>set_mor Z Y"
   by (metis h_def hom2 map.mem_hom epi.right_inv_is_set_morphism epi.right_inverse_def)
 
-lemma hg_set_hom:"compose X h g \<in> set_morphisms X Y"  using h_set_hom hom2 epi.mem_hom by blast 
+lemma hg_set_hom:"compose X h g \<in> set_mor X Y"  using h_set_hom hom2 epi.mem_hom by blast 
 lemma compat:"\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X;g x1 = g x2\<rbrakk> \<Longrightarrow> f x1 = f x2"  using ker_sub unfolding ker_pair_def by auto
 
 
@@ -4311,7 +4318,7 @@ lemma h_eq2:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X h g) x"
 
 lemma h_eq3:"compose X h g = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms X Z"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor X Z"
     by (simp add: map.mem_hom epi.mem_hom) 
   then show ?thesis
     by (metis fun_eqI h_eq2 hg_set_hom)
@@ -4334,10 +4341,11 @@ lemma monoid_hom2:"h c = d"
 
 lemma monoid_hom:"monoid_homomorphism h Z (\<bullet>) c  Y (\<star>) d"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
+  apply (simp add: compose_def h_def)
+  apply (meson h_set_hom maps_to_memE1 set_morphisms_memE2)
   using monoid_hom1 apply blast
-  using monoid_hom2 by blast
+  by (simp add: monoid_hom2)
+
 
 end
 
@@ -4353,10 +4361,10 @@ definition "h \<equiv> compose X (rinv g Z Y) f"
 lemma g_inj:"inj_on g Z"
   by simp
 
-lemma h_set_hom:"h \<in>set_morphisms X Z"
+lemma h_set_hom:"h \<in>set_mor X Z"
   by (simp add: h_def inj_implies_factors_concrete(2) im_sub map.mem_hom mono.mem_hom)
 
-lemma gh_set_hom:"compose X g h \<in> set_morphisms X Y"
+lemma gh_set_hom:"compose X g h \<in> set_mor X Y"
   using h_set_hom hom2 mono.mem_hom by blast 
 
 lemma h_eq1:"\<And>x. x \<in> X \<Longrightarrow> f x = g (compose X (rinv g Z Y) f x) "
@@ -4378,7 +4386,7 @@ lemma h_eq3:"\<And>x. x \<in> X \<Longrightarrow> f x = (compose X g h) x"
 
 lemma h_eq4:"compose X g h = f"
 proof-
-  obtain B5:"f \<in> set_morphisms X Y" and B6:"g \<in> set_morphisms Z Y"
+  obtain B5:"f \<in> set_mor X Y" and B6:"g \<in> set_mor Z Y"
     by (simp add: map.mem_hom mono.mem_hom) 
   then show ?thesis
     by (metis g_inj h_def im_sub inj_implies_factors_concrete(5))
@@ -4389,7 +4397,7 @@ lemma monoid_hom1:"\<And>x1 x2. \<lbrakk>x1\<in>X;x2\<in>X\<rbrakk> \<Longrighta
 proof-
   fix x1 x2 assume x10:"x1 \<in> X" and x20:"x2 \<in> X"
   then obtain "f x1 \<in> Y" and "f x2 \<in> Y" and h0:"h x1 \<in> Z" and h1:"h x2 \<in> Z"
-    by (meson h_set_hom hom9 map.mem_hom) 
+    by (meson h_set_hom map.cod set_morphism.cod set_morphism_iff)
   let ?r="rinv g Z Y"
   have B0:"h  (x1\<cdot>x2) = ?r (f(x1 \<cdot> x2))"
     by (simp add: comp_eq h_def map.dom.closed x10 x20)
@@ -4410,10 +4418,11 @@ lemma monoid_hom2:"h e = c"
 
 lemma monoid_hom3:"monoid_homomorphism h X (\<cdot>) e  Z (\<bullet>) c"
   apply(unfold_locales)
-  apply (meson h_set_hom hom10)
-  apply (meson h_set_hom hom9)
+  apply (meson h_set_hom maps_on_memE1 set_morphisms_memE3)
+  apply (meson h_set_hom set_morphism.cod set_morphism_iff)
   using monoid_hom1 apply blast
-  using monoid_hom2 by blast
+  using monoid_hom2 by auto
+
 
 
 
@@ -4446,7 +4455,10 @@ lemma Q_memE:assumes "(y1, y2)\<in>Q"
   using Q_def assms eqr.l_closed eqr.r_closed by auto
 
 lemma Q_refl_on:"refl_on Y Q"
-  unfolding refl_on_def Q_def using map.sur by(blast)
+  apply(rule refl_onI)
+  using Q_memE apply auto[1]
+  using Q_def eqr.ref map.sur by blast
+
 
 lemma Q_sym:"sym Q"
   unfolding Q_def sym_def using eqr.sym by(blast)
@@ -4466,7 +4478,7 @@ proof(rule transI)
 qed
 
 lemma q_eqr:"is_eqrel Y Q"
-  by (simp add: Q_refl_on Q_sym Q_trans is_eqrel_def) 
+  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -4569,13 +4581,16 @@ lemma q_vimage_comp:"Q = ker_pair X (compose X eqr.p f)"
   by (simp add: comp_eq eqr.p_equivalence)
 
 lemma q_eqr:"is_eqrel X Q" unfolding is_eqrel_def Q_def refl_on_def sym_def trans_def apply(auto)
-  using eqr.sym apply presburger
-  by (meson eqr.trn)
+  apply (simp add: eqr.ref)
+  using eqr.sym apply blast
+  using eqr.trn by blast
+ 
 
 lemma q_eqr2:"equivalence_relation X Q"
   apply(unfold_locales)
   using Q_def apply force
   apply (simp add: Q_def)
+  apply (simp add: eqr.ref)
   apply (simp add: Q_def eqr.sym)
   by (simp add: ker_pair_def q_vimage_comp)
 
@@ -4584,7 +4599,8 @@ lemma q_cong:"cong X (\<cdot>) Q"
   apply(rule congI1)
   using eqr.compatible map.cmp map.dom.closed by auto
 
-lemma ker_sub_q:"R(f) \<subseteq> Q" unfolding Q_def  local.map.ker.kernel_pair_object_def  by fastforce
+lemma ker_sub_q:"R(f) \<subseteq> Q"
+  by (simp add: comp_eq ker_pair_subI map.ker.ker_pair_ker q_vimage_comp) 
 
 sublocale domain_eqr:equivalence_relation X Q 
   by (simp add: q_eqr2)
@@ -4669,10 +4685,10 @@ lemma inv_prod_r_coset2:"\<lbrakk>x \<in> X;y \<in> X;H \<subseteq> X;r_coset H 
   by (metis invertible monoid.unit_inv_closed monoid_axioms r_coset_assoc r_coset_id_prod r_inv_simp) 
 
 lemma l_trans_inj1:"\<And>g h. g \<in> X \<Longrightarrow> h \<in> X \<Longrightarrow> l_trans g = l_trans h \<Longrightarrow> g = h"
-  by (metis id1 idin l_trans_app rtranslation_id)
+  by (metis l_trans_def r_cancel1 restrict_def)
 
 lemma r_trans_inj2:"\<And>g h. g \<in> X \<Longrightarrow> h \<in> X \<Longrightarrow> r_trans g = r_trans h \<Longrightarrow> g = h"
-  by (metis id2 idin lr_trans_dual ltranslation_id opposite.lr_trans_dual opposite.r_trans_app)
+  by (metis inj_on_eq_iff l_cancel1 l_cancellableD1 l_cancellableI1 l_trans_app)
 
 end
 
@@ -4737,15 +4753,25 @@ end
 
 context compositional_monoid
 begin
-lemma invertible_is_bijective:assumes dom: "u \<in> set_morphisms E E" shows "invertible u \<longleftrightarrow> bij_betw u E E" 
+lemma invertible_is_bijective:assumes dom: "u \<in> set_mor E E" shows "invertible u \<longleftrightarrow> bij_betw u E E" 
 proof-  
-  from dom interpret set_morphism u E E  by (metis (full_types) hom10 hom9 set_morphism_def)
-  show "invertible u \<longleftrightarrow> bij_betw u E E"  using bij_betw_iff_has_inverse mem_hom by blast
+  from dom interpret set_morphism u E E
+    by (simp add: set_morphismI1)  
+  show "invertible u \<longleftrightarrow> bij_betw u E E"  
+    using bij_betw_iff_has_inverse mem_hom by blast
 qed
-lemma Units_bijective: "Units = {u \<in>  set_morphisms E E. bij_betw u E E}"  unfolding Units_def by (auto simp add: invertible_is_bijective)
-lemma Units_bij_betwI [intro, simp]: "u \<in> Units \<Longrightarrow> bij_betw u E E" by (simp add: Units_bijective)
-lemma Units_bij_betwD [dest, simp]: "\<lbrakk>u \<in> set_morphisms E E; bij_betw u E E \<rbrakk> \<Longrightarrow> u \<in> Units" unfolding Units_bijective by simp
-sublocale symmetric: group "Units" "compose E" "Id E"  by (simp add: group_of_units) 
+lemma Units_bijective: "Units = {u \<in>  set_mor E E. bij_betw u E E}"
+  unfolding Units_def by (auto simp add: invertible_is_bijective)
+
+lemma Units_bij_betwI [intro, simp]: "u \<in> Units \<Longrightarrow> bij_betw u E E"
+  by (simp add: Units_bijective)
+
+lemma Units_bij_betwD [dest, simp]: "\<lbrakk>u \<in> set_mor E E; bij_betw u E E \<rbrakk> \<Longrightarrow> u \<in> Units" 
+  unfolding Units_bijective by simp
+
+sublocale symmetric: group "Units" "compose E" "Id E" 
+  by (simp add: group_of_units) 
+
 end
 
 locale compositional_group = compositional_monoid M E+monoid_subgroup M Units "compose E" "Id E" for M and E
@@ -5299,22 +5325,25 @@ sublocale quotient_monoid X "(\<cdot>)" R e
   by (simp add: compatible equivalence_relation_axioms monoid_axioms quotient_monoid.intro quotient_monoid_axioms_def)
 
 definition "qinv t \<equiv>  (p (inv (pinv t)))"
-lemma id_pair:"(e, e) \<in> R" by auto
+lemma id_pair:"(e, e) \<in> R"
+  by (simp add: ref) 
 
 lemma equivalentE1:"(x, y) \<in> R \<Longrightarrow> inv x \<cdot> y \<in> H"
 proof-
   assume xy:"(x,y) \<in> R" then obtain x0:"x \<in> X" and y0:"y \<in> X" and x1:"inv x \<in> X" by (simp add: l_closed r_closed)
-  then obtain "(inv x, inv x) \<in> R" by blast
-  then obtain "(inv x \<cdot> x, inv x \<cdot> y) \<in> R"  using compatible xy by blast
+  then obtain "(inv x, inv x) \<in> R"
+    using ref by blast 
+  then obtain "(inv x \<cdot> x, inv x \<cdot> y) \<in> R" 
+    using compatible xy by blast
   then show "inv x \<cdot> y \<in> H"
-    by (simp add: H_def x0)
+    by (simp add: H_def p_I1 x0)
 qed
 
 lemma equivalentI1:"\<lbrakk>x \<in> X;y \<in> X; inv x \<cdot> y \<in> H\<rbrakk> \<Longrightarrow> (x, y) \<in> R "
 proof-
   assume x0:"x \<in> X" and y0:"y \<in> X" and xy:"inv x \<cdot> y \<in> H"
   then obtain "(e, inv x \<cdot> y) \<in> R" and "(x,x)\<in>R"
-    using H_def idin by blast
+    using H_def p_D1 ref by blast
   then obtain "(x \<cdot> e, x \<cdot> (inv x \<cdot> y)) \<in> R"
     using compatible by blast
   then show "(x, y) \<in> R"
@@ -5324,12 +5353,15 @@ qed
 
 lemma equivalent_iff:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y) \<in> R \<longleftrightarrow> (inv x) \<cdot> y \<in> H" 
   by (meson equivalentE1 equivalentI1)
-lemma h_memI1:"(e,x) \<in> R \<Longrightarrow> x \<in> H" 
-  by (simp add: H_def)
+lemma h_memI1:"(e,x) \<in> R \<Longrightarrow> x \<in> H"
+  by (simp add: H_def p_I1) 
 lemma h_memI2:"(x,e) \<in> R \<Longrightarrow> x \<in> H" 
   using h_memI1 local.sym by blast
-lemma h_ne_sub:"H \<noteq> {} \<and> H \<subseteq> X"  using H_def by auto 
-lemma h_id_mem:"e \<in> H"  using H_def by blast
+lemma h_ne_sub:"H \<noteq> {} \<and> H \<subseteq> X"
+  using H_def p_closed2 p_self by force  
+lemma h_id_mem:"e \<in> H"
+  by (simp add: H_def id_pair p_I1)  
+
 lemma h_inv_closed:"\<And>x. x \<in> H \<Longrightarrow> inv x \<in> H"
   by (metis H_def double_inv equivalentI1 h_memI2 idin inv2_prod inv_ident p_closed1 rid)
 
@@ -6156,8 +6188,10 @@ lemma l_sub_eq_sym:"sym l_sub_eq" unfolding l_sub_eq_def apply(auto simp add:sym
 lemma r_sub_eq_sym:"sym r_sub_eq" unfolding r_sub_eq_def apply(auto simp add:sym_def) using coset_eq_iff(4) by blast
 lemma l_sub_eq_trans:"trans l_sub_eq" unfolding l_sub_eq_def apply(auto simp add:trans_on_def)  by (metis coset_eq_iff(2))
 lemma r_sub_eq_trans:"trans r_sub_eq" unfolding r_sub_eq_def apply(auto simp add:trans_on_def)  by (metis coset_eq_iff(4))
-lemma l_sub_eqr:"is_eqrel G l_sub_eq"  by (simp add: is_eqrel_def l_sub_eq_refl l_sub_eq_sym l_sub_eq_trans) 
-lemma r_sub_eqr:"is_eqrel G r_sub_eq"  by (simp add: is_eqrel_def r_sub_eq_refl r_sub_eq_sym r_sub_eq_trans)
+lemma l_sub_eqr:"is_eqrel G l_sub_eq"
+  by (meson is_eqrel_def l_sub_eq_refl l_sub_eq_sym l_sub_eq_trans refl_on_def) 
+lemma r_sub_eqr:"is_eqrel G r_sub_eq"
+  by (meson is_eqrel_def r_sub_eq_refl r_sub_eq_sym r_sub_eq_trans refl_on_def)  
 
 
 (*
@@ -6472,7 +6506,7 @@ sublocale group_epimorphism by(unfold_locales,simp add: cmp)
 sublocale group_monomorphism by(unfold_locales,simp add: cmp)
 lemma ker_id:"Ker = {e}" using ker_id by force  
 lemma card_eq:"card X = card Y" using bij_betw_same_card by blast
-lemma in_set_iso:"f \<in> set_isomorphisms X Y"
+lemma in_set_iso:"f \<in> set_iso X Y"
   by (simp add: set_iso_mem)
 end
       
@@ -7303,14 +7337,14 @@ end
 
 locale transformations_notation=fixes X::"'a set"
 begin
-sublocale monoid "(set_morphisms X X)" "(compose X)" "Id X" by (simp add: composition_monoid)
+sublocale monoid "(set_mor X X)" "(compose X)" "Id X" by (simp add: composition_monoid)
 
 lemma inv_iff_bij_betw:
-  "\<sigma> \<in> (set_morphisms X X) \<Longrightarrow> invertible \<sigma> \<longleftrightarrow> bij_betw \<sigma> X X" 
+  "\<sigma> \<in> (set_mor X X) \<Longrightarrow> invertible \<sigma> \<longleftrightarrow> bij_betw \<sigma> X X" 
   using set_morphism.bij_betw_iff_has_inverse set_morphismI1 by fastforce
 
 lemma inv_eq_inv:
-  assumes A0:"\<sigma> \<in> set_morphisms X X" and A1:"invertible \<sigma>"
+  assumes A0:"\<sigma> \<in> set_mor X X" and A1:"invertible \<sigma>"
   shows "inv \<sigma> = rinv \<sigma> X X"
 proof-
   obtain B0:"compose X (rinv \<sigma> X X) \<sigma> = Id X" and B1:"compose X \<sigma> (rinv \<sigma> X X) = Id X"
@@ -7325,23 +7359,23 @@ lemma Units_bij_betwI [intro, simp]:
 
 
 lemma Units_bij_betwD [dest, simp]:
-  "\<lbrakk>\<sigma>\<in> set_morphisms X X; bij_betw \<sigma> X X\<rbrakk> \<Longrightarrow> \<sigma> \<in> Units"
+  "\<lbrakk>\<sigma>\<in> set_mor X X; bij_betw \<sigma> X X\<rbrakk> \<Longrightarrow> \<sigma> \<in> Units"
   using inv_iff_bij_betw mem_UnitsI by presburger
 
 
 lemma set_iso_unital1:
-  "Units = {\<sigma> \<in> (set_morphisms X X). bij_betw \<sigma> X X}"
+  "Units = {\<sigma> \<in> (set_mor X X). bij_betw \<sigma> X X}"
   using mem_UnitsD by auto
 
 lemma set_iso_unital2:
-  "Units = set_isomorphisms X X"
+  "Units = set_iso X X"
 proof-
-  have "Units = {\<sigma> \<in> (set_morphisms X X). bij_betw \<sigma> X X}"
+  have "Units = {\<sigma> \<in> (set_mor X X). bij_betw \<sigma> X X}"
     using set_iso_unital1 by blast
-  also have "... \<subseteq> set_isomorphisms X X"
-    using set_isomorphism_memI2 by auto
+  also have "... \<subseteq> set_iso X X"
+    by (simp add: set_isoI1 set_isomorphism.set_iso_mem subset_iff)
   also have "... \<subseteq> Units"
-    using set_isomorphismE2 set_isomorphisms_eq_set_morphisms_inter_bijs by fastforce
+    by (smt (verit, del_insts) Units_bij_betwD bij_betw_def set_iso1 set_iso_memE3 set_iso_memE4 subset_iff)
   finally show ?thesis
     by auto
 qed
@@ -7360,7 +7394,7 @@ lemma closed [intro, simp]:
 
 lemma undef[intro, simp]:
   "\<lbrakk> \<sigma> \<in> G; x \<notin>X \<rbrakk> \<Longrightarrow> \<sigma> x = undefined"
-  by (meson hom10 mem_UnitsD subsetD subset)
+  by (metis comp_maps_on maps_on_memE1 sub.rid)
 
 lemma inv_set_inv:"g \<in> G \<Longrightarrow> inv g = (rinv g X X)"
   using inv_eq_inv mem_UnitsD sub_mem by presburger
@@ -7446,26 +7480,27 @@ qed
 
 
 
-sublocale iso:group "(set_isomorphisms E E)" "(compose E)" "(Id E)"
+sublocale iso:group "(set_iso E E)" "(compose E)" "(Id E)"
   by (metis composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
     
-sublocale iso:set_morphism \<alpha> G "set_isomorphisms E E"
+sublocale iso:set_morphism \<alpha> G "set_iso E E"
   apply(unfold_locales)
-  apply(auto simp add:set_isomorphisms_def)
+   apply simp
+  apply(auto simp add:set_iso_def)
   using iso_inj apply blast
   using iso_ex by blast
 
 
-lemma act_hom:"group_homomorphism \<alpha> G  (\<cdot>) (set_isomorphisms E E) (compose E) (e) (Id E)"
+lemma act_hom:"group_homomorphism \<alpha> G  (\<cdot>) (set_iso E E) (compose E) (e) (Id E)"
   by(unfold_locales, simp_all)
 
-sublocale iso:group_homomorphism \<alpha> G "(\<cdot>)" "set_isomorphisms E E" "compose E" e "Id E"
+sublocale iso:group_homomorphism \<alpha> G "(\<cdot>)" "set_iso E E" "compose E" e "Id E"
   using act_hom by blast
 
 
 abbreviation "Im \<equiv> \<alpha>`G"
 
-lemma Imsub:"Im \<subseteq> set_isomorphisms E E"
+lemma Imsub:"Im \<subseteq> set_iso E E"
   by blast
 
 
@@ -7664,10 +7699,10 @@ sublocale im:set_monomorphism l_trans G "Im"
   by (simp add: trans_inj)
 
 sublocale im:set_epimorphism l_trans G "Im"
-  using im.mem_hom set_epiI1 by blast
+  using im.set_morphism_axioms set_epimorphism.intro sur_locale.intro by blast
 
 sublocale im:set_isomorphism l_trans G "Im"
-  using im.set_epimorphism_mem im.set_monomorphism_mem set_isomorphism_iff set_isomorphism_memI1 by blast
+  by (simp add: im.mem_hom inj_on_imp_bij_betw set_isoI1)
 
 sublocale im:group_isomorphism l_trans G "(\<cdot>)" "Im" "compose G" e "Id G"
   apply(rule group_isomorphism.intro)
@@ -7761,51 +7796,52 @@ begin
 definition Aut where "Aut \<equiv> {\<phi>. group_isomorphism \<phi> G law G law e e}"
 definition Inn where "Inn \<equiv> {(\<lambda>y \<in> G. x \<cdot> y \<cdot> (inv x))|x. x \<in> G}"
 
-sublocale permutations:group "(set_isomorphisms G G)" "(compose G)" "(Id G)"
-  apply(rule group.intro)
-  apply (metis group.axioms(1) composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
-  by (metis group.axioms(2) composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
+sublocale permutations:group "(set_iso G G)" "(compose G)" "(Id G)"
+  by (metis composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
 
 
-lemma group_iso_sub_set_iso:"group_isomorphism \<phi> G law G law e e \<Longrightarrow> \<phi> \<in> set_isomorphisms G G"
+lemma group_iso_sub_set_iso:"group_isomorphism \<phi> G law G law e e \<Longrightarrow> \<phi> \<in> set_iso G G"
   by (simp add: group_isomorphism.in_set_iso)
 
   
 
 lemma permuation_inv_eq_inv:
-  assumes A0:"\<sigma> \<in> set_isomorphisms G G"
+  assumes A0:"\<sigma> \<in> set_iso G G"
   defines "\<tau> \<equiv> permutations.inv \<sigma>"
   shows "\<tau>  = rinv \<sigma> G G" and 
-        "\<tau> \<in> set_isomorphisms G G" 
+        "\<tau> \<in> set_iso G G" 
 proof-
   obtain B0:"compose G (rinv \<sigma> G G) \<sigma> = Id G"
-    by (simp add: assms inv_rinv2 set_isomorphismE2)
+  by (metis A0 composition_monoid inv_rinv2 monoid.mem_UnitsD transformations_notation.inv_iff_bij_betw
+      transformations_notation.set_iso_unital2)
   obtain B1:"compose G \<sigma> (rinv \<sigma> G G) = Id G"
-    by (simp add: assms inv_rinv3 set_isomorphismE2)
-  have B2:"rinv \<sigma> G G \<in> set_isomorphisms G G"
-    by (meson assms bij_betw_hom_rev bij_betw_rinv_into set_isomorphismE2 set_isomorphism_memI2)
+    by (metis A0 composition_monoid inv_rinv3 monoid.mem_UnitsD transformations_notation.inv_iff_bij_betw
+        transformations_notation.set_iso_unital2)
+  have B2:"rinv \<sigma> G G \<in> set_iso G G"
+    by (metis A0 bij_betw_hom_rev bij_betw_rinv_into composition_monoid monoid.mem_UnitsD monoid.mem_UnitsI
+        transformations_notation.inv_iff_bij_betw transformations_notation.set_iso_unital2)
   then show B3:"\<tau>  = rinv \<sigma> G G"
     using permutations.inverse_unique B0 A0 permutations.inv_eq \<tau>_def by blast
-  then show B4:"\<tau> \<in> set_isomorphisms G G"
+  then show B4:"\<tau> \<in> set_iso G G"
     using B2 by force
 qed
 
 
-lemma Aut_sub_bij:"Aut \<subseteq> set_isomorphisms G G"
+lemma Aut_sub_bij:"Aut \<subseteq> set_iso G G"
 proof
   fix \<phi> assume A0:"\<phi> \<in> Aut"
   then obtain  B1:"group_isomorphism \<phi> G law G law e e"
     unfolding Aut_def by auto
   then obtain "set_isomorphism \<phi> G G"
     by (simp add: group_isomorphism_def)
-  then show "\<phi> \<in> set_isomorphisms G G"
-    by (metis set_isomorphismI1)
+  then show "\<phi> \<in> set_iso G G"
+    by (simp add: set_isomorphismD1)
 qed
 
 lemma Aut_comp_hom:
   assumes A0:"a \<in>Aut" and A1:"b \<in> Aut"
   defines "c \<equiv> compose G a b"
-  shows "c \<in> set_morphisms G G" and
+  shows "c \<in> set_mor G G" and
         "set_isomorphism c G G" and
         "\<And>x y. \<lbrakk>x \<in> G; y \<in> G\<rbrakk> \<Longrightarrow> c  (x \<cdot> y) = (c x) \<cdot> (c y)" and
         "group_isomorphism c G law G law e e" and
@@ -7816,16 +7852,16 @@ proof-
     using A0 A1 unfolding Aut_def by auto  
   then obtain B4:"set_isomorphism a G G" and B5:"set_isomorphism b G G"
     by (simp add: group_isomorphism_def)
-  then obtain B0:"a \<in>  set_morphisms G G" and B2:"b \<in> set_morphisms G G"
+  then obtain B0:"a \<in>  set_mor G G" and B2:"b \<in> set_mor G G"
     using set_isomorphism_def set_morphism_iff by blast
-  have B6:"compose G a b \<in> set_morphisms G G"
+  have B6:"compose G a b \<in> set_mor G G"
     using B0 B2 hom2 by blast 
   have B7:"set_isomorphism (compose G a b ) G G"
       apply(rule set_isomorphism.intro)
      apply (simp add: B6 set_morphismI1)
     apply(rule iso_locale.intro)
     by (meson A0 A1 Aut_sub_bij bij_compose in_mono set_isomorphismE2)
-  show  P0:"c \<in> set_morphisms G G"
+  show  P0:"c \<in> set_mor G G"
     by (simp add: B6 c_def)
   show  P1:"set_isomorphism c G G"
     by (simp add: B7 c_def) 
@@ -7839,7 +7875,7 @@ proof-
     also have "... = a ((b x) \<cdot> (b y))"
       using A2 A3 B3 group_isomorphism.cmp by fastforce
     also have "... = (a (b x)) \<cdot> (a (b y))"
-      by (meson A2 A3 B1 B2 group_isomorphism.cmp hom9)
+      by (meson A2 A3 B1 B3 group_iso_sub_set_iso group_isomorphism.cmp set_iso_memE2)
     also have "... =  compose G a b x \<cdot> compose G a b y"
       by (simp add: A2 A3 comp_eq)
     also have "... = (c x)\<cdot>(c y)"
