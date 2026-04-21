@@ -976,6 +976,9 @@ lemma set_morphismI1:
   "f \<in> set_mor A B \<Longrightarrow> set_morphism f A B"
   by (simp add: set_mor_def set_morphism.intro)
 
+lemma set_morphismI2:"\<lbrakk>(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined); (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B)\<rbrakk> \<Longrightarrow> set_morphism f A B"
+  by (simp add: set_morphism.intro)
+
 lemma set_morphismD1:
   "set_morphism f A B \<Longrightarrow> f \<in> set_mor A B" 
   by (simp add: set_morphism.mem_hom) 
@@ -2963,8 +2966,16 @@ lemma ker_sub_q:"R(f) \<subseteq> Q"
 sublocale domain_eqr:equivalence_relation X Q 
   by (simp add: q_eqr2)
 
+lemma proj_f_set_mor:"set_morphism (compose X eqr.p f) X (Y/S)"
+  apply(unfold_locales)
+  apply (meson comp_maps_on maps_on_memE1)
+  by (simp add: comp_eq)
+
+lemma domain_ker:"kernel_pair (compose X eqr.p f) X (Y/S)"
+  by (simp add: kernel_pair_def proj_f_set_mor)
+
 sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
-  using eqr.proj_hom2 hom2 kernel_pair_def map.mem_hom set_morphismI1 by blast  
+  by (simp add: domain_ker)
 
 sublocale codom_hom:magma_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "Y/S" "(\<bullet>)"
   apply(unfold_locales)
