@@ -2877,23 +2877,38 @@ qed
 sublocale domain_eqr:equivalence_relation X R
   by (simp add: eqr.equivalence_relation_axioms)
 
+
+lemma factor_map_set_mor:"factor_map \<in> set_mor Y (X/R)"
+  using factor_map_def h_def h_set_hom by auto
+
+lemma codomain_ker:"kernel_pair factor_map Y (X/R)"
+  by (simp add: factor_map_set_mor kernel_pair_def set_morphismI1)
+
 sublocale codomain_ker:kernel_pair factor_map Y "X/R"
-  using factor_map_def h_def h_set_hom kernel_pair.intro set_morphismI1 by fastforce
+  by (simp add: codomain_ker)
+
+lemma codom_hom:"magma_homomorphism factor_map Y (\<star>) (X/R) (\<bullet>)"
+  using factor_map_def h_def magma_hom by presburger
 
 sublocale codom_hom:magma_homomorphism "factor_map" Y "(\<star>)" "X/R" "(\<bullet>)"
-  apply(unfold_locales)
-  using factor_map_def h_def magma_hom1 by presburger
+  by (simp add: codom_hom)
+
+lemma codom_quotient:"quotient_magma Y (\<star>) Q"
+  using codom_hom.quotient_magma codomain_ker.ker_pair_ker q_eq_ker_factor by force
 
 sublocale codom_quotient:quotient_magma Y "(\<star>)" Q
-  using codom_hom.quotient_magma codomain_ker.ker_pair_ker q_eq_ker_factor by auto
+  using codom_quotient by blast
 
 notation codom_quotient.quotient_law ("\<otimes>")
 
 sublocale magma_homomorphism "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
   using codom_hom.magma_homomorphism_axioms by blast
 
+lemma magma_homomorphism_fundamental:"magma_homomorphism_fundamental factor_map Y (\<star>) (X/R) (\<bullet>)"
+  using codom_hom magma_homomorphism_fundamental_def by blast
+
 sublocale first_isomorphism:magma_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
-  by(unfold_locales)
+  using magma_homomorphism_fundamental by blast
 
 lemma epi_then_iso:
   assumes A0:"f`X=Y"
@@ -7731,16 +7746,17 @@ sublocale im:group_homomorphism \<alpha> G "(\<cdot>)" "Im" "compose E" e "Id E"
   using bozo apply presburger
   by (simp add: group_homomorphism_axioms.intro)
 
+lemma sstab_inv_closed:"\<lbrakk>A \<in> Pow E;a \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> inv a \<in> strict_stabilizer A"
+  by (meson b151prop11(12) invertible stric_stab_inv_cl subsetD)
+
 lemma strict_stab_sub:
   assumes A0:"A \<in> Pow E"
   shows "subgroup (strict_stabilizer A) G (\<cdot>) e" 
-  apply(rule subgroup.intro)
-   apply (simp add: group_axioms)
-  apply(rule subgroup_axioms.intro)
-  using assms b151prop11(12) apply presburger
-  using assms stict_stab_memI apply blast
+  apply(rule subgroupI1)
+  using assms b151prop11(12) apply blast
   using assms b151prop11(4) apply blast
-  by (meson assms b151prop11(12) invertible stric_stab_inv_cl subsetD)
+  using assms stict_stab_memI apply blast
+  using assms sstab_inv_closed by blast
 
 
 lemma fix_sub:
@@ -8152,9 +8168,6 @@ end
 
 
 
-
-
-section \<open>Magma Homomorphism Locale\<close>
 
 
 section \<open>Magma Isomorphism\<close> 
