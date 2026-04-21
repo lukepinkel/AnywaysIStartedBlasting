@@ -440,9 +440,8 @@ lemma restrict_restrict:
   "restrict (restrict f A) B = restrict f (A \<inter> B)"  
   unfolding restrict_def by (simp add: fun_eq_iff)
 
-lemma bij_betwI2:"\<lbrakk>f \<in> maps_to A B; g \<in> maps_to B A;  (\<And>x. x\<in>A \<Longrightarrow> g (f x) = x); (\<And>y. y\<in>B \<Longrightarrow> f (g y) = y)\<rbrakk>\<Longrightarrow> bij_betw f A B" 
+lemma bij_betwI2:"\<lbrakk>f \<in> maps_to A B; g \<in> maps_to B A; (\<And>x. x\<in>A \<Longrightarrow> g (f x) = x); (\<And>y. y\<in>B \<Longrightarrow> f (g y) = y)\<rbrakk>\<Longrightarrow> bij_betw f A B" 
   using bij_betw_byWitness[of A g f B]  by (simp add: maps_to_memE2)
-
 
 lemma bijD1: "bij_betw f A B \<Longrightarrow> f \<in> maps_to A B"
   by (simp add: bij_betw_def maps_to_memI2)
@@ -461,11 +460,29 @@ lemma im_restrict_sub:"A \<subseteq> X \<Longrightarrow> f`A \<subseteq> A \<Lon
            
 lemma im_restrict_sub2:"A \<in> Pow X \<Longrightarrow> f`A \<subseteq> A \<Longrightarrow> g`A \<subseteq> A \<Longrightarrow> (compose X f g)`A \<subseteq> A"
   by (simp add: comp_eq subset_eq)
+
+lemma im_restrict_eq:
+  assumes A0:"A \<subseteq> X" and A1:"f`A=A" and A2:"g`A = A"
+  shows "(compose X f g)`A = A"
+proof-
+  have "(compose X f g)`A \<subseteq> A"
+    by (simp add: assms(1,2,3) im_restrict_sub)
+  also have "A \<subseteq> (compose X f g)`A"
+  proof
+    fix a assume A3:"a \<in> A"
+    then obtain "a \<in> g`A" and "a \<in> X" and "a \<in> f`A"
+      using A0 A1 A2 by blast
+    then obtain "a \<in> g`(A \<inter> X)" and "a \<in> f`g`(A \<inter> X)"
+      by (simp add: A0 A2 Int_absorb2)
+    then have "a \<in> (\<lambda>x::'a. f (g x)) ` (A \<inter> X)"
+      by blast
+    then show "a \<in> (compose X f g)`A"
+      by(auto simp add: compose_def restrict_def)
+  qed
+  then show ?thesis
+    using calculation by auto
+qed
            
-lemma im_restrict_eq:"A \<subseteq> X \<Longrightarrow> f`A = A \<Longrightarrow> g`A = A \<Longrightarrow> (compose X f g)`A = A"
-  apply(auto simp add:compose_def restrict_def)
-  apply fastforce
-  by (metis image_image inf.absorb_iff2 inf_commute)
 
 lemma im_restrict_eq2:"A \<in> Pow X \<Longrightarrow> f`A = A \<Longrightarrow> g`A = A \<Longrightarrow> (compose X f g)`A = A"
   by (simp add: im_restrict_eq)
@@ -687,7 +704,7 @@ lemma rinv_inv:
 
 lemma inv_rinv: 
   "f \<in> maps_to A B \<Longrightarrow> inj_on f A \<Longrightarrow> compose A (rinv f A B) f= Id A"
-  by (metis into_rinv_f is_right_invI2 is_right_inv_def)
+  by (simp add: into_rinv_f is_right_invI2 is_right_inv_E3)
 
 lemma inv_rinv2:"bij_betw f A B \<Longrightarrow> compose A (rinv f A B) f= Id A"  
   by (simp add: bijD1 bij_betw_imp_inj_on inv_rinv)
@@ -9196,5 +9213,5 @@ print_commands
 locale_deps
 unused_thms
 thm_deps group_operating_on_set.strict_stab_sub
-
+thm_oracles group_operating_on_set.strict_stab_sub
 end
