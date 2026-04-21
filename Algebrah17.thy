@@ -1882,6 +1882,18 @@ definition r_cosets::"'a set \<Rightarrow> ('a set) set" where "r_cosets H = (\<
 definition l_cosets::"'a set \<Rightarrow> ('a set) set" where "l_cosets H = (\<Union>a\<in>X. {l_coset a H})"
 definition set_prod::"'a set \<Rightarrow> 'a set \<Rightarrow> 'a set"  where "set_prod H K = (\<Union>h\<in>H. \<Union>k\<in>K. {h \<cdot> k})"
 
+lemma r_coset_memI1:"\<exists>h \<in> H. x = h \<cdot> a \<Longrightarrow> x \<in> r_coset H a"
+  by (simp add: r_coset_def)
+
+lemma r_coset_memI2:"\<lbrakk>h \<in> H; x = h \<cdot> a\<rbrakk> \<Longrightarrow> x \<in> r_coset H a"
+  using r_coset_memI1 by blast
+
+lemma l_coset_memI1:"\<exists>h \<in>H. x = a \<cdot> h \<Longrightarrow> x \<in> l_coset a H"
+  by (simp add: l_coset_def)
+
+lemma l_coset_memI2:"\<lbrakk>h \<in> H; x = a \<cdot> h\<rbrakk> \<Longrightarrow> x \<in> l_coset a H"
+  using l_coset_memI1 by blast
+
 lemma commutesI:"(\<And>a b. \<lbrakk>a \<in> A; b \<in> B\<rbrakk> \<Longrightarrow> a \<cdot> b = b \<cdot> a) \<Longrightarrow> commutes A B"  using commutes_def by auto
 lemma centralizer_memI1:"x \<in> X \<Longrightarrow> (\<And>y. y \<in> E \<Longrightarrow> commutes {x} {y}) \<Longrightarrow> x \<in> centralizer E" by (simp add: centralizer_def)
 lemma centralizer_memI2:"x \<in> X \<Longrightarrow> (\<And>y. y \<in> E \<Longrightarrow> x \<cdot> y = y \<cdot> x) \<Longrightarrow> x \<in> centralizer E"  by (simp add: centralizer_memI1 commutes_def) 
@@ -3362,7 +3374,9 @@ proof-
   interpret A: subsemigroup A B f  by fact 
   interpret C: subsemigroup B C f  by fact 
   show ?thesis
-    using A.subfun C.asc C.semigroup_axioms subsemigroup.intro subsemigroup_axioms_def by blast
+    apply(unfold_locales)
+    using A.submem C.submem apply order
+    by (simp add: A.subfun)
 qed
 
 subsection \<open>Semigroup Homomorphisms\<close>
@@ -3421,9 +3435,13 @@ locale semigroup_isomorphism=set_isomorphism f X Y+ dom:semigroup X "(\<cdot>)" 
   for f and X and domain_law (infixl "\<cdot>" 70) and Y and codomain_law (infixl "\<star>" 70) +
   assumes cmp:"\<lbrakk>x \<in> X; y \<in> X \<rbrakk> \<Longrightarrow> f (x \<cdot> y) = (f x) \<star> (f y)"
 begin
+
+lemma semigroup_homomorphism:"semigroup_homomorphism f X (\<cdot>) Y (\<star>)"
+  by(unfold_locales,simp add: cmp)
+
 sublocale semigroup_homomorphism f X "(\<cdot>)" Y "(\<star>)"
-  using cmp cod.semigroup_axioms dom.semigroup_axioms semigroup_homomorphism.intro
-        semigroup_homomorphism_axioms_def set_morphism_axioms by blast
+  by (simp add: semigroup_homomorphism)
+
 end
 
 
@@ -3839,8 +3857,11 @@ notation codom_quotient.quotient_law ("\<otimes>")
 sublocale semigroup_homomorphism "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
   by (simp add: codom_hom.semigroup_homomorphism_axioms)
 
+lemma first_isomorphism_semi:"semigroup_homomorphism_fundamental factor_map Y (\<star>) (X/R) (\<bullet>)"
+  by(unfold_locales)
+
 sublocale first_isomorphism:semigroup_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
-  by (simp add: codom_hom.semigroup_homomorphism_axioms semigroup_homomorphism_fundamental_def)
+  by (simp add: first_isomorphism_semi)
 
 lemma epi_then_iso:
   assumes A0:"f`X=Y"
@@ -4037,15 +4058,42 @@ lemma r_trans_inv1:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longr
 lemma r_trans_inv2:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> compose X (r_trans (inv x)) (r_trans x) = Id X" 
   using rtranslation_comp rtranslation_id by auto 
 
+lemma coset_id_prod:
+  assumes A0:"H \<subseteq> X"
+  shows "x \<in> l_coset e H  \<Longrightarrow> x \<in> H" and
+        "x \<in> H \<Longrightarrow> x \<in>  l_coset e H" and 
+        "x \<in> r_coset H e \<Longrightarrow> x \<in> H " and
+        "x \<in> H \<Longrightarrow> x \<in> r_coset H e"
+proof-
+  show P0:"x \<in> l_coset e H \<Longrightarrow> x \<in> H"
+    using assms by fastforce
+  show P1:"x \<in> H \<Longrightarrow> x \<in>  l_coset e H"  
+  proof-
+    fix x assume A1:"x \<in> H"
+    then have "x = e \<cdot> x"
+      using assms by fastforce
+    then show "x \<in> l_coset e H"
+      using A1 l_coset_memI1 by auto
+  qed
+  show P2:"x \<in> r_coset H e \<Longrightarrow> x \<in> H "
+    using assms by force
+  show P3:"x \<in> H \<Longrightarrow> x \<in> r_coset H e"
+  proof-
+    fix x assume A1:"x \<in> H"
+    then have "x = x \<cdot> e"
+      using assms by fastforce
+    then show "x \<in> r_coset H e"
+      using A1 r_coset_memI1 by auto
+  qed
+qed
+  
+
 lemma l_coset_id_prod:"H \<subseteq> X \<Longrightarrow> l_coset e H = H"
-  apply(rule subset_antisym)
-  using subset_eq apply fastforce
-  by (metis l_coset_memI lid subset_eq)
+  using coset_id_prod(1,2) by blast
 
 lemma r_coset_id_prod:"H \<subseteq> X \<Longrightarrow> r_coset H e = H"
-  apply(rule subset_antisym)
-  using  subset_eq apply fastforce
-  by (metis r_coset_memI rid subset_eq)
+  using coset_id_prod(3,4) by blast
+
 
 lemma r_coset_id[simp]: "A \<subseteq> X \<Longrightarrow> r_coset A e = A"
   by (simp add: r_coset_id_prod)
@@ -4641,6 +4689,12 @@ sublocale domain_eqr:equivalence_relation X R
 
 sublocale codomain_ker:kernel_pair factor_map Y "X/R"
   using factor_map_def h_def h_set_hom kernel_pair.intro set_morphismI1 by fastforce
+(*
+lemma codom_hom_monoid:"monoid_homomorphism factor_map Y (\<star>) d (X/R) (\<bullet>) eqr.H"
+  apply(unfold_locales)
+ *)
+
+
 
 sublocale codom_hom:monoid_homomorphism "factor_map" Y "(\<star>)" "d" "X/R" "(\<bullet>)" "eqr.H"
   apply(unfold_locales)
@@ -4655,6 +4709,9 @@ notation codom_quotient.H ("G")
 
 sublocale monoid_homomorphism "factor_map" "Y" "(\<star>)" "d" "(X/R)" "(\<bullet>)" "eqr.H"
   using codom_hom.monoid_homomorphism_axioms by auto
+
+lemma first_iso_monoid:"monoid_homomorphism_fundamental factor_map Y (\<star>) d (X/R) (\<bullet>) eqr.H"
+  by (simp add: codom_hom.monoid_homomorphism_axioms monoid_homomorphism_fundamental_def)
 
 sublocale first_isomorphism:monoid_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "d"  "(X/R)" "(\<bullet>)" "eqr.H"
   using codom_hom.monoid_homomorphism_axioms monoid_homomorphism_fundamental_def by force
@@ -4715,8 +4772,13 @@ lemma ker_sub_q:"R(f) \<subseteq> Q"
 sublocale domain_eqr:equivalence_relation X Q 
   by (simp add: q_eqr2)
 
+lemma domain_ker:"kernel_pair (compose X eqr.p f) X (Y/S)"
+  apply(unfold_locales)
+  apply (meson comp_maps_on maps_on_memE1)
+  by (simp add: comp_eq)
+
 sublocale domain_ker:kernel_pair "(compose X eqr.p f)" X "Y/S"
-  using eqr.proj_hom2 hom2 kernel_pair_def map.mem_hom set_morphismI1 by blast  
+  using domain_ker by blast
 
 sublocale codom_hom:monoid_homomorphism "(compose X eqr.p f)" X "(\<cdot>)" "e"  "Y/S" "(\<bullet>)" "eqr.H"
   apply(unfold_locales)
@@ -5821,7 +5883,7 @@ proof-
     then obtain r::nat where "r > 0" and "gcd r d=1" and "k=r * ?m"
       by metis  
     then show ?lhs
-      by (metis gcd.commute gcd_mult_distrib_nat mult.comm_neutral mult.commute)
+      by (simp add: gcd_mult_right)
   qed 
   finally show "elem_ord ?b =d \<longleftrightarrow>  (\<exists>r::nat. r > 0 \<and> gcd r d=1 \<and> k=r * ?n div d)"  
     by (simp add: ddvd div_mult_swap) 
