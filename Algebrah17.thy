@@ -381,6 +381,21 @@ definition is_eqrel::"'a set \<Rightarrow> 'a rel \<Rightarrow> bool"
 lemma is_eqrelI1:"\<lbrakk> R \<subseteq> X \<times> X;refl_on X R; sym R; trans R\<rbrakk> \<Longrightarrow> is_eqrel X R" 
   by(simp add:is_eqrel_def)
 
+lemma transI1:
+  assumes A0:"R \<subseteq> X \<times> X"and A1:"trans_on X R"
+  shows "trans R"
+proof(rule transI)
+  fix x y z assume A2:"(x, y) \<in> R" and A3:"(y, z) \<in> R" 
+  then obtain "x \<in> X" and "y \<in> X" and "z \<in> X"
+    using A0 by auto
+  then show "(x, z) \<in> R"
+    by (meson A1 A2 A3 trans_onD)
+qed
+
+lemma is_eqrelI2:"\<lbrakk> R \<subseteq> X \<times> X;refl_on X R; sym R; trans_on X R\<rbrakk> \<Longrightarrow> is_eqrel X R"
+  by (simp add: is_eqrel_def transI1) 
+
+
 lemma is_eqrelE1:assumes "is_eqrel X R" obtains "R \<subseteq> X \<times> X" and "refl_on X R" and "sym R" and "trans R" 
   using assms by(simp add:is_eqrel_def)
 
@@ -7676,18 +7691,30 @@ proof-
     by blast
 qed
 
-
+lemma iso:"group (set_iso E E) (compose E) (Id E)"
+  using morphisms_comp.group_of_units transformations_notation.set_iso_unital2[of E]  by simp
+  
 
 sublocale iso:group "(set_iso E E)" "(compose E)" "(Id E)"
-  by (metis composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
-    
-sublocale iso:set_morphism \<alpha> G "set_iso E E"
-  apply(unfold_locales)
-   apply simp
-  apply(auto simp add:set_iso_def)
+  by (simp add: local.iso)
+
+
+lemma inj_act:"\<lbrakk>g \<in> G; x1 \<in> E; x2 \<in> E; \<alpha> g x1 = \<alpha> g x2\<rbrakk> \<Longrightarrow> x1 = x2"
+  using iso_inj by blast
+
+lemma act_im:"\<lbrakk>g \<in> G; x \<in> E\<rbrakk> \<Longrightarrow> x \<in> \<alpha> g ` E"
+  using iso_ex by blast
+
+lemma set_mor1:"g \<in> G \<Longrightarrow> \<alpha> g \<in> (set_iso E E)" 
+  unfolding set_iso_def apply auto
   using iso_inj apply blast
   using iso_ex by blast
 
+lemma set_mor2:"set_morphism \<alpha> G (set_iso E E)"
+  using actsE22 local.set_mor1 set_morphism.intro by blast
+
+sublocale iso:set_morphism \<alpha> G "set_iso E E"
+  by (simp add: local.set_mor2)
 
 lemma act_hom:"group_homomorphism \<alpha> G  (\<cdot>) (set_iso E E) (compose E) (e) (Id E)"
   by(unfold_locales, simp_all)
@@ -7868,6 +7895,69 @@ proof(rule inj_onI)
     by (metis A1 A2 all_not_in_conv assms insert_iff invertible rid unit_rinv2)
 qed
 
+
+lemma act_inv_comp:
+  assumes A0:"g \<in> G" and A1:"x \<in> E"  
+  shows "\<alpha> (inv g) (\<alpha> g x) = \<alpha> e x" and "\<alpha> g (\<alpha> (inv g) x) = \<alpha> e x"
+proof-
+  show  "\<alpha> (inv g) (\<alpha> g x) = \<alpha> e x"
+    by (metis A0 A1 comp_simp invertible l_inv_simp unit_inv_closed)
+  show "\<alpha> g (\<alpha> (inv g) x) = \<alpha> e x"
+    by (metis A0 A1 comp_simp inv_commute inv_eq l_inv_ex)
+qed
+
+definition is_conjugate where "is_conjugate x y \<equiv> (\<exists>g \<in> G. \<alpha> g x = y)"
+
+definition conjugacy_rel where "conjugacy_rel \<equiv> {(x, y) \<in> E \<times> E. is_conjugate x y}"
+
+
+lemma conj_sym:assumes A0:"x \<in> E" and A1:"y \<in> E" and A2:"is_conjugate x y" shows "is_conjugate y x"
+proof-
+  obtain g where B0:"g \<in> G" and B1:"\<alpha> g x = y"
+    using assms(3) is_conjugate_def by blast
+  have B2:"inv g \<in> G" 
+    using B0 by blast
+  have B3:"\<alpha> (inv g) y = \<alpha> (inv g) ( \<alpha> g x)"
+    using B1 by blast
+  also have  "... = \<alpha> e x"
+    using A0 B0 act_inv_comp(1) by blast
+  also have "... = x"
+    using A0 by auto
+  finally show ?thesis
+    using B2 is_conjugate_def by blast
+qed
+
+lemma conj_refl:assumes "x \<in> E" shows "is_conjugate x x"
+proof-
+  obtain "e \<in> G" and "\<alpha> e x  =x"
+    using assms by auto
+  then show ?thesis
+    using is_conjugate_def by blast
+qed
+
+lemma conj_rel_sym:"(x,y) \<in> conjugacy_rel \<Longrightarrow> (y,x)\<in>conjugacy_rel"
+  by (simp add: conj_sym conjugacy_rel_def)
+
+lemma conj_refl2:"x \<in> E \<Longrightarrow> (x,x) \<in> conjugacy_rel"
+  by (simp add: conj_refl conjugacy_rel_def)
+
+lemma conj_trans:
+  assumes A0:"x \<in> E" and A1:"y \<in> E" and A2:"z \<in> E" 
+  and A3:"is_conjugate x y" and A4:"is_conjugate y z"
+  shows "is_conjugate x z"
+  by (metis A0 A3 A4 comp_simp is_conjugate_def m_closed)
+
+lemma conj_rel_trans:"\<lbrakk>x \<in>E ; y \<in> E; z \<in> E; (x,y)\<in> conjugacy_rel; (y,z)\<in> conjugacy_rel\<rbrakk>\<Longrightarrow> (x,z) \<in>conjugacy_rel" 
+  unfolding conjugacy_rel_def  using conj_trans by blast 
+
+lemma conj_refl_on:"refl_on E conjugacy_rel" 
+  using refl_on_def conj_refl2 conjugacy_rel_def by auto
+
+lemma conj_rel_trans2:"trans_on E conjugacy_rel"
+  using conj_rel_trans trans_onI by blast  
+
+
+lemma conj_equiv_rel:"is_eqrel E conjugacy_rel" 
 
 end
 
