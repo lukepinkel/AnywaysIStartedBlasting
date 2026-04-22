@@ -7938,6 +7938,9 @@ qed
 lemma conj_rel_sym:"(x,y) \<in> conjugacy_rel \<Longrightarrow> (y,x)\<in>conjugacy_rel"
   by (simp add: conj_sym conjugacy_rel_def)
 
+lemma conj_rel_sym2:"sym conjugacy_rel"
+  by (simp add: conj_rel_sym symI)
+
 lemma conj_refl2:"x \<in> E \<Longrightarrow> (x,x) \<in> conjugacy_rel"
   by (simp add: conj_refl conjugacy_rel_def)
 
@@ -7956,9 +7959,16 @@ lemma conj_refl_on:"refl_on E conjugacy_rel"
 lemma conj_rel_trans2:"trans_on E conjugacy_rel"
   using conj_rel_trans trans_onI by blast  
 
+lemma conj_rel_subset:"conjugacy_rel \<subseteq> E \<times> E"
+  using conjugacy_rel_def by auto
 
 lemma conj_equiv_rel:"is_eqrel E conjugacy_rel" 
-
+  apply(rule  is_eqrelI2)
+  apply (simp add: conj_rel_subset)
+  apply (simp add: conj_refl_on)
+  apply (simp add: conj_rel_sym2)
+  by (simp add: conj_rel_trans2)
+ 
 end
 
 locale group_acting_on_self=group G "(\<cdot>)" e for G and law (infixl "\<cdot>" 70) and e
