@@ -1,4 +1,4 @@
-theory PosetsRel6B
+theory Algebrah
   imports Main
 begin
 
@@ -11,81 +11,88 @@ hide_const partition
 hide_const monoid
 hide_const group
 hide_const inverse
-
+no_notation power (infixr "^" 80)
+hide_const power
 
 
 no_notation divide (infixl "'/" 70)
 no_notation inverse_divide (infixl "'/" 70)
 section DisjointSets
 
-definition "restrict" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'b"
-  where "restrict f A = (\<lambda>x. if x \<in> A then f x else undefined)"
+definition "restrict" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'b" where "restrict f A = (\<lambda>x. if x \<in> A then f x else undefined)"
+definition map_on::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> bool" where "map_on f A \<equiv> (\<forall>x. x \<notin> A \<longrightarrow> f x = undefined)"
+definition map_in::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> bool" where "map_in f A B \<equiv> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B)"
+definition maps_in:: "'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set" where "maps_in A B \<equiv> {f. map_in f A B}"
+definition maps_on:: "'a set \<Rightarrow> ('a \<Rightarrow> 'b) set" where "maps_on A \<equiv> {f. map_on f A}"
 
-syntax
-  "_lam" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b)"  ("(3\<lambda>_\<in>_./ _)" [0,0,3] 3)
-translations
-  "\<lambda>x\<in>A. f" \<rightleftharpoons> "CONST restrict (\<lambda>x. f) A"
+definition hom :: "'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set"  where "hom A B \<equiv> {f. ((\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B))}"
+syntax "_lam" :: "pttrn \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'b)"  ("(3\<lambda>_\<in>_./ _)" [0,0,3] 3)
+translations "\<lambda>x\<in>A. f" \<rightleftharpoons> "CONST restrict (\<lambda>x. f) A"
+definition "compose"::"'a set \<Rightarrow> ('b \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'c)"  where "compose A g f = (\<lambda>x\<in>A. g (f x))"
+definition Id where "Id X \<equiv> (\<lambda>x \<in> X. x)"
 
-definition surj_into::"('a \<Rightarrow> 'b) \<Rightarrow> 'b set \<Rightarrow> bool" where
-  "surj_into f Y \<equiv> (\<forall>y \<in> Y. \<exists>x. f x = y)"
+lemma map_inD1:"map_in f A B \<Longrightarrow> f`A \<subseteq> B" by (simp add: image_subsetI map_in_def)
+lemma map_inD2:"map_in f A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"  by (simp add: map_in_def)
+lemma map_inI2:"f`A \<subseteq> B \<Longrightarrow> map_in f A B"  by (simp add: image_subset_iff map_in_def)
+lemma map_inI1:"(\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> map_in f A B" by (simp add: map_in_def)
 
-lemma surj_intoI:
-  "(\<And>y. y \<in> Y \<Longrightarrow> (\<exists>x. f x = y)) \<Longrightarrow> surj_into f Y"
-  by (simp add: surj_into_def)
+lemma maps_in_memD: "f \<in> maps_in A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B"  by (simp add: maps_in_def map_in_def)
+lemma binary_dom_glue:"f \<in> maps_in (A1 \<union> A2) Y \<longleftrightarrow> f \<in> maps_in A1 Y \<and> f \<in> maps_in A2 Y" unfolding maps_in_def map_in_def by(auto) 
+lemma hom_memI:"(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> hom A B" unfolding hom_def by fast
+lemma restrict_apply[simp]: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)" by (simp add: restrict_def)
+lemma id1[simp]:"Id X x = (if x \<in> X then x else undefined)" by (simp add:Id_def)
 
-lemma surj_intoI1:
-  "(\<And>y. y \<in> Y \<Longrightarrow> (\<exists>x. y = f x )) \<Longrightarrow> surj_into f Y"
- by(auto simp add:surj_into_def)
+lemma hom1:"hom {} Y = {\<lambda>x. undefined}"  by(auto simp add:hom_def) 
+lemma hom2:"f \<in> hom A B \<Longrightarrow> g \<in> hom B C \<Longrightarrow> compose A g f \<in> hom A C" by(auto simp add:hom_def compose_def)
+lemma hom3:"f \<in> hom A B \<Longrightarrow> compose A h (compose A g f) = compose A (compose B h g) f" by(auto simp add:hom_def fun_eq_iff compose_def)
+lemma fun_eqI:"f \<in> hom A Y \<Longrightarrow> g \<in> hom A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g" by(force simp add:fun_eq_iff hom_def)
+lemma hom5:"f \<in> hom A B \<Longrightarrow> compose A (Id B) f = f" by(auto simp add:fun_eq_iff compose_def hom_def)
+lemma hom6:"f \<in> hom A B  \<Longrightarrow> compose A f (Id A) = f" by(auto simp add:fun_eq_iff compose_def hom_def)
+lemma hom7:"(Id A) \<in> hom A A" unfolding hom_def by(auto)
+lemma hom8:"A \<subseteq> B \<Longrightarrow> (Id A) \<in> hom A B"  using hom_def by fastforce 
+lemma hom9:"f \<in> hom A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B" unfolding hom_def by simp
+lemma hom10:"f \<in> hom A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined" unfolding hom_def by simp
+lemma hom11:"f \<in> hom A B \<Longrightarrow> g \<in> hom A C \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = g x" unfolding hom_def by(auto)
+lemma hom_agree:"f \<in> hom A B \<Longrightarrow> g \<in> hom A C \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<And>x. f x = g x) " proof- assume a0:"f \<in> hom A B" and a1:"g \<in> hom A C" and agree:"\<And>x. x \<in> A \<Longrightarrow> f x = g x" show "\<And>x. f x = g x"   proof-   fix x  show "f x = g x"  proof(cases "x \<in> A")  case True then show ?thesis  using agree by blast  next  case False then show ?thesis   using a0 a1 hom11[of f A B g C x] by auto  qed qed qed
+lemma hom_agree2:"f \<in> hom A B \<Longrightarrow> g \<in> hom A B \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow>(\<And>x. f x = g x)" using hom_agree[of f A B g] by(auto)
 
-lemma surj_fiber_nonempty:
-  "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> vimage f {y} \<noteq> {}"
-  unfolding surj_into_def by auto
+lemma restrict_apply': "x \<in> A \<Longrightarrow> (\<lambda>y\<in>A. f y) x = f x" by simp
+lemma restrict_ext: "(\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<lambda>x\<in>A. f x) = (\<lambda>x\<in>A. g x)" by (simp add: fun_eq_iff hom_def restrict_def)
+lemma compose_inv_into_id: "bij_betw f A B \<Longrightarrow> compose A (\<lambda>y\<in>B. inv_into A f y) f = (\<lambda>x\<in>A. x)" by(auto simp add:bij_betw_def compose_def)
+lemma compose_id_inv_into: "f ` A = B \<Longrightarrow> compose B f (\<lambda>y\<in>B. inv_into A f y) = (\<lambda>x\<in>B. x)"  by(auto simp add:compose_def f_inv_into_f)
 
-lemma surj_intoE1:
-  "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> (\<exists>x. f x = y)"
-  by (simp add: surj_into_def)
-  
-lemma surj_intoE2:
-  "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> (\<exists>x. y= f x)"
-  using surj_intoE1 by fastforce
- 
-lemma surj_into_obtains:
-  assumes "surj_into f Y" and "y \<in> Y"
-  obtains x where "f x = y"
-  using assms unfolding surj_into_def by blast
 
-definition is_fun::"('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> bool" where
-  "is_fun f X Y \<equiv> f`X \<subseteq> Y"
+lemma bijI:
+  assumes fhom:"f \<in> hom A B" and ghom:"g \<in> hom B A" and l_id:"\<And>x. x \<in> A\<Longrightarrow> g (f x) = x" and r_id:"\<And>x. x \<in> B \<Longrightarrow> f (g x) = x"
+  shows "bij_betw f A B"
+  unfolding bij_betw_def
+proof
+  show "inj_on f A"
+    using inj_on_inverseI l_id by blast
+  show "f`A =  B"
+  proof
+    show "f`A \<subseteq> B"
+      using fhom hom9 by fastforce
+    show "f`A \<supseteq> B" by (metis ghom hom9 image_eqI r_id subsetI)
+  qed
+qed
+
+definition surj_into::"('a \<Rightarrow> 'b) \<Rightarrow> 'b set \<Rightarrow> bool" where"surj_into f Y \<equiv> (\<forall>y \<in> Y. \<exists>x. f x = y)"
+lemma surj_intoI:"(\<And>y. y \<in> Y \<Longrightarrow> (\<exists>x. f x = y)) \<Longrightarrow> surj_into f Y"by (simp add: surj_into_def)
+lemma surj_intoI1: "(\<And>y. y \<in> Y \<Longrightarrow> (\<exists>x. y = f x )) \<Longrightarrow> surj_into f Y"by(auto simp add:surj_into_def)
+lemma surj_fiber_nonempty:  "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> vimage f {y} \<noteq> {}"  unfolding surj_into_def by auto
+lemma surj_intoE1: "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> (\<exists>x. f x = y)" by (simp add: surj_into_def)
+lemma surj_intoE2:  "surj_into f Y \<Longrightarrow> y \<in> Y \<Longrightarrow> (\<exists>x. y= f x)"  using surj_intoE1 by fastforce
+lemma surj_into_obtains:  assumes "surj_into f Y" and "y \<in> Y"  obtains x where "f x = y" using assms unfolding surj_into_def by blast
 
 section RightInverse
-
-definition is_right_inv::"'b set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where
-  "is_right_inv Y f s \<equiv> (\<forall>y \<in> Y.  f (s y) = y)"
-
-
-lemma is_right_invI:
-  "(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y) \<Longrightarrow> is_right_inv Y f s"
-  unfolding  is_right_inv_def by blast
-
-lemma is_right_invI1:
-  "(\<And>y. y \<in> Y \<Longrightarrow> y = f (s y)) \<Longrightarrow> is_right_inv Y f s"
-  by (simp add: is_right_invI)
-
-lemma is_right_invE1:
-  "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> f (s y) = y"
-  by (simp add: is_right_inv_def)
-
-lemma is_right_invE2:
-  "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> y = f (s y) "
-  by (simp add: is_right_inv_def)
-
-lemma ex_rinv_imp_surj:
-  "\<exists>s. is_right_inv Y f s \<Longrightarrow> surj_into f Y"
-  unfolding surj_into_def is_right_inv_def by(auto)
-
-lemma is_rinv_imp_surj:
-  "is_right_inv Y f s \<Longrightarrow> surj_into f Y"
-  using ex_rinv_imp_surj by blast
+definition is_right_inv::"'b set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where"is_right_inv Y f s \<equiv> (\<forall>y \<in> Y.  f (s y) = y)"
+lemma is_right_invI: "(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y) \<Longrightarrow> is_right_inv Y f s" unfolding  is_right_inv_def by blast
+lemma is_right_invI1:  "(\<And>y. y \<in> Y \<Longrightarrow> y = f (s y)) \<Longrightarrow> is_right_inv Y f s"by (simp add: is_right_invI)
+lemma is_right_invE1: "is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> f (s y) = y" by (simp add: is_right_inv_def)
+lemma is_right_invE2:"is_right_inv Y f s \<Longrightarrow> y \<in> Y \<Longrightarrow> y = f (s y) "  by (simp add: is_right_inv_def)
+lemma ex_rinv_imp_surj: "\<exists>s. is_right_inv Y f s \<Longrightarrow> surj_into f Y" unfolding surj_into_def is_right_inv_def by(auto)
+lemma is_rinv_imp_surj: "is_right_inv Y f s \<Longrightarrow> surj_into f Y" using ex_rinv_imp_surj by blast
 
 lemma surj_implies_ex_rinv:
   "surj_into f Y \<Longrightarrow> \<exists>s. is_right_inv Y f s"
@@ -104,23 +111,11 @@ qed
 section LeftInverse
 
 
-definition is_left_inv::"'a set \<Rightarrow> ('a\<Rightarrow>'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where
-  "is_left_inv X f r \<equiv> (\<forall>x \<in> X.  r (f x) = x)"
-
-lemma is_left_invI:
-  "(\<And>x. x \<in> X \<Longrightarrow> r (f x) = x) \<Longrightarrow> is_left_inv X f r"
-  unfolding  is_left_inv_def by blast
-
-lemma is_left_invI1:
-  "(\<And>x. x \<in> X \<Longrightarrow> x = r (f x)) \<Longrightarrow> is_left_inv X f r"
-  by (simp add: is_left_invI)
-
-lemma is_left_invE1:
-  "is_left_inv X f r \<Longrightarrow> x \<in> X \<Longrightarrow> r (f x) = x"
-  by (simp add: is_left_inv_def)
-
-lemma linv_cancel:
-  assumes linv:"is_left_inv X f r" and elem:"x1 \<in> X""x2 \<in> X" and eq_under:"f x1 = f x2"
+definition is_left_inv::"'a set \<Rightarrow> ('a\<Rightarrow>'b) \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> bool" where "is_left_inv X f r \<equiv> (\<forall>x \<in> X.  r (f x) = x)"
+lemma is_left_invI:  "(\<And>x. x \<in> X \<Longrightarrow> r (f x) = x) \<Longrightarrow> is_left_inv X f r" unfolding  is_left_inv_def by blast
+lemma is_left_invI1: "(\<And>x. x \<in> X \<Longrightarrow> x = r (f x)) \<Longrightarrow> is_left_inv X f r" by (simp add: is_left_invI)
+lemma is_left_invE1: "is_left_inv X f r \<Longrightarrow> x \<in> X \<Longrightarrow> r (f x) = x"by (simp add: is_left_inv_def)
+lemma linv_cancel: assumes linv:"is_left_inv X f r" and elem:"x1 \<in> X""x2 \<in> X" and eq_under:"f x1 = f x2"
   shows "x1 = x2"
 proof-
   from linv elem(1) have "x1 =r (f x1)"
@@ -191,8 +186,9 @@ proof-
     using b1 by blast
 qed
 
-definition fun_section :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> 'b \<Rightarrow> 'a"
-  where "fun_section f X Y \<equiv> (\<lambda>y. SOME x.  x \<in> X \<and> f x = y)"
+definition fun_section :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> 'b set \<Rightarrow> 'b \<Rightarrow> 'a" where "fun_section f X Y \<equiv> (\<lambda>y \<in> Y. SOME x.  x \<in> X \<and> f x = y)"
+
+lemma fun_section_simp:"y \<in> Y \<Longrightarrow> fun_section f X Y y = (\<lambda>y. SOME x. x \<in> X \<and> f x = y) y" by (simp add: fun_section_def)
 
 lemma section_is_rinv:
   assumes A0:"surj_into f Y" and A1:"image f X = Y"
@@ -204,13 +200,10 @@ proof-
   proof(rule is_right_invI1)
     fix y assume A2:"y \<in> Y" 
     show "y = f (?s y)"
-    unfolding fun_section_def
-    proof(rule someI2_ex)
-      show "\<exists>a::'a. a \<in> X \<and> f a = y"
-        using A0 A1 A2 unfolding surj_into_def by(auto)
-      show "\<And>x::'a. x \<in> X \<and> f x = y \<Longrightarrow> y = f x"
-        by simp
-    qed
+    proof(simp add:A2 fun_section_simp, rule someI2_ex)
+      show "\<exists>a::'a. a \<in> X \<and> f a = y"  using A1 A2 by blast
+      show "\<And>x::'a. x \<in> X \<and> f x = y \<Longrightarrow> y = f x"  by simp
+   qed
   qed
 qed
 
@@ -218,8 +211,7 @@ qed
 lemma section_is_into:
   assumes A0:"surj_into f Y" and A1:"image f X = Y" and A2:"y \<in> Y"
   shows "(fun_section f X Y) y \<in> X"
-  unfolding fun_section_def
-  proof(rule someI2_ex)
+  proof(simp add:A2 fun_section_simp, rule someI2_ex)
     show  "\<exists>a::'a. a \<in> X \<and> f a = y"
       using A1 A2 by blast
     show "\<And>x::'a. x \<in> X \<and> f x = y \<Longrightarrow> x \<in> X"
@@ -564,7 +556,7 @@ lemma quotient_to_partition:
   assumes A0:"is_eqrel X R"
   shows "is_part X (quotient X R)"
 proof(rule is_partI1)
-  show " \<Union> (PosetsRel6B.quotient X R) = X"
+  show " \<Union> (quotient X R) = X"
     by (simp add: assms quotient_un)
   show "is_disjoint (quotient X R)"
     unfolding is_disjoint_def   using assms quotient_disj3 by blast
@@ -870,14 +862,15 @@ lemma eqr_associated_mem_iff:
   by(rule iffI,erule eqr_associated_memD, auto intro: eqr_associated_memI)
 
 definition canonical_proj::"'a set \<Rightarrow> ('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a set"
-  where "canonical_proj X R \<equiv> (\<lambda>x. THE t. t \<in> (X/R) \<and>  x \<in> t)"
+  where "canonical_proj X R \<equiv> (\<lambda>x \<in> X. THE t. t \<in> (X/R) \<and>  x \<in> t)"
 
 
 lemma canonical_proj_eq:
   assumes A0:"is_eqrel X R" and A1:"x \<in> X"
   shows "canonical_proj X R x = R``{x}"
   unfolding canonical_proj_def
-proof(rule the_equality)
+  apply(simp add:A1)
+  proof(rule the_equality)
   show P0:"R `` {x} \<in> X / R \<and> x \<in> R `` {x}"
     using A0 A1 eqrel_class3[of X R x] quotientI1[of x X R] by fastforce
   show "\<And>t::'a set. t \<in> X / R \<and> x \<in> t \<Longrightarrow> t = R `` {x}"
@@ -915,20 +908,14 @@ proof-
   proof-
     fix t assume B0:"t \<in> X/R" and B1:"x \<in> t"
     show "(canonical_proj X R x=t)"
-    unfolding canonical_proj_def 
-    proof(rule the_equality)
-      show " t \<in> X / R \<and> x \<in> t"
-        by (simp add: B0 B1)
-      show "\<And>s.  s\<in>(X/R) \<and> x\<in>s \<Longrightarrow> s=t"
-        using A0 B0 B1 classes_eqI[of X R t _ x] by blast
-      qed
+      by (metis B0 B1 UnionI assms canonical_proj_eq quotient_un unique_class1)
    qed
    show P3:"surj_into (canonical_proj X R) (X/R)"
      using P1 surj_intoI[of "X/R"  "(canonical_proj X R)"] by auto
    show "\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y)\<in>R \<longleftrightarrow> (canonical_proj X R) x = (canonical_proj X R) y"
      using A0 canonical_proj_eq[of X R] eqrel_class3e[of X R] by auto
    show P4:"(canonical_proj X R)`(X) =(X/R)"
-     by (simp add: PosetsRel6B.quotient_def UNION_singleton_eq_range assms canonical_proj_eq)
+     by (simp add: quotient_def UNION_singleton_eq_range assms canonical_proj_eq)
   show P5:"\<And>x. x \<in> X \<Longrightarrow> y \<in> canonical_proj X R x\<Longrightarrow> (x,y)\<in>R"
     by (simp add: assms canonical_proj_eq) 
 qed
@@ -990,7 +977,7 @@ proof-
     fix x assume A0:"x \<in> X"  then obtain B0:"g x \<in> Y"
       using vim by blast
       then obtain B0:"g x \<in> Y"  and B1:"?s (g x) \<in> X"
-      by (metis (mono_tags, lifting) A0  fun_section_def someI_ex)
+        by (simp add: gsurj section_is_into vim)
     then obtain B2:"g (?s (g x)) = g x"
       by (simp add: P0)
     then obtain "f (?s (g x)) = f x"
@@ -1720,56 +1707,6 @@ value "\<Union>x \<in> example_X. {example_S``{x}}"
 
 
 
-definition hom :: "'a set \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) set"  where "hom A B \<equiv> {f. ((\<forall>x. x \<notin> A \<longrightarrow> f x = undefined) \<and> (\<forall>x. x \<in> A \<longrightarrow> f x \<in> B))}"
-
-lemma hom_memI:"(\<And>x. x \<notin> A \<Longrightarrow> f x = undefined) \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x \<in> B) \<Longrightarrow> f \<in> hom A B" unfolding hom_def by fast
-
-
-
-lemma restrict_apply[simp]: "(\<lambda>y\<in>A. f y) x = (if x \<in> A then f x else undefined)" by (simp add: restrict_def)
-
-
-definition "compose" :: "'a set \<Rightarrow> ('b \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'c)"  where "compose A g f = (\<lambda>x\<in>A. g (f x))"
-definition Id where "Id X \<equiv> (\<lambda>x \<in> X. x)"
-
-lemma id1[simp]:"Id X x = (if x \<in> X then x else undefined)" by (simp add:Id_def)
-
-abbreviation comp where "comp X f g \<equiv> compose X f g"
-
-
-lemma hom1:"hom {} Y = {\<lambda>x. undefined}"  by(auto simp add:hom_def) 
-lemma hom2:"f \<in> hom A B \<Longrightarrow> g \<in> hom B C \<Longrightarrow> comp A g f \<in> hom A C" by(auto simp add:hom_def compose_def)
-lemma hom3:"f \<in> hom A B \<Longrightarrow> comp A h (comp A g f) = comp A (comp B h g) f" by(auto simp add:hom_def fun_eq_iff compose_def)
-lemma fun_eqI:"f \<in> hom A Y \<Longrightarrow> g \<in> hom A Z \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> f = g" by(force simp add:fun_eq_iff hom_def)
-lemma hom5:"f \<in> hom A B \<Longrightarrow> comp A (Id B) f = f" by(auto simp add:fun_eq_iff compose_def hom_def)
-lemma hom6:"f \<in> hom A B  \<Longrightarrow> compose A f (Id A) = f" by(auto simp add:fun_eq_iff compose_def hom_def)
-lemma hom7:"(Id A) \<in> hom A A" unfolding hom_def by(auto)
-lemma hom8:"A \<subseteq> B \<Longrightarrow> (Id A) \<in> hom A B"  using hom_def by fastforce 
-lemma hom9:"f \<in> hom A B \<Longrightarrow> x \<in> A \<Longrightarrow> f x \<in> B" unfolding hom_def by simp
-lemma hom10:"f \<in> hom A B \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = undefined" unfolding hom_def by simp
-lemma hom11:"f \<in> hom A B \<Longrightarrow> g \<in> hom A C \<Longrightarrow> x \<notin> A \<Longrightarrow> f x = g x" unfolding hom_def by(auto)
-lemma hom_agree:"f \<in> hom A B \<Longrightarrow> g \<in> hom A C \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow> (\<And>x. f x = g x) "
-proof-
-  assume a0:"f \<in> hom A B" and a1:"g \<in> hom A C" and agree:"\<And>x. x \<in> A \<Longrightarrow> f x = g x"
-  show "\<And>x. f x = g x" 
-  proof- 
-    fix x  
-    show "f x = g x" 
-    proof(cases "x \<in> A")
-      case True
-      then show ?thesis
-        using agree by blast
-    next
-      case False
-      then show ?thesis
-        using a0 a1 hom11[of f A B g C x] by auto
-    qed
-  qed
-qed
-
-lemma hom_agree2:"f \<in> hom A B \<Longrightarrow> g \<in> hom A B \<Longrightarrow> (\<And>x. x \<in> A \<Longrightarrow> f x = g x) \<Longrightarrow>(\<And>x. f x = g x)" using hom_agree[of f A B g] by(auto)
-  
-
 section GraphLocale
 locale graph=fixes G assumes ordered_pairs:"\<And>z. z \<in> G \<Longrightarrow> (\<exists>x1. \<exists>x2. (x1, x2) = z)"
 begin
@@ -1824,36 +1761,67 @@ lemma func_in_hom:"func \<in> hom A B"  by (simp add: fsimp5 fsimp6 hom_memI)
 end
 
 section FunctionalMap
-locale fun_map= fixes f::"'a \<Rightarrow> 'b" and  A::"'a set" and B::"'b set" assumes codom:"\<And>x. x \<in> A \<Longrightarrow> f x \<in> B" and cosur:"\<And>x. x \<notin> A \<Longrightarrow> f x = undefined" 
+locale fun_map= 
+  fixes f::"'a \<Rightarrow> 'b" and 
+        A::"'a set" and
+        B::"'b set" assumes
+        codom:"\<And>x. x \<in> A \<Longrightarrow> f x \<in> B" and
+        cosur:"\<And>x. x \<notin> A \<Longrightarrow> f x = undefined" 
 begin
-definition Graph where "Graph= {(x, f x)|x. x \<in> A}"
-lemma pr1:"fst`Graph \<subseteq>A" using fun_map.Graph_def fun_map_axioms by fastforce
-lemma pr2:"snd`Graph \<subseteq>B"  using codom fun_map.Graph_def fun_map_axioms by fastforce
+definition Graph2 where "Graph2= {(x, f x)|x. x \<in> A}"
+lemma pr1:"fst`Graph2 \<subseteq>A" using fun_map.Graph2_def fun_map_axioms by fastforce
+lemma pr2:"snd`Graph2 \<subseteq>B"  using codom fun_map.Graph2_def fun_map_axioms by fastforce
 lemma codom2:"\<And>x. x \<in> A \<Longrightarrow> (\<exists>y \<in> B. f x = y)" using codom by blast
-lemma cosur2:"(converse Graph)``B = A"  by(auto simp add:converse_def Graph_def codom)
+lemma cosur2:"(converse Graph2)``B = A"  by(auto simp add:converse_def Graph2_def codom)
 lemma fun_map_in_hom:"f \<in> hom A B" by (simp add: codom cosur hom_memI)
+
+theorem bij_betw_iff_has_inverse:
+  "bij_betw f A B \<longleftrightarrow> (\<exists>g \<in> (hom B A). compose A g f = Id A \<and> compose B f g = Id B)" (is "_ \<longleftrightarrow> (\<exists>g \<in> (hom B A). ?INV g)")
+proof
+  let ?inv = "restrict (inv_into A f) B"
+  assume A0:"bij_betw f A B"
+  have B0:"?INV ?inv"
+    by (simp add: A0 Algebrah.Id_def bij_betw_imp_surj_on compose_id_inv_into compose_inv_into_id)
+  have B1:"?inv \<in> hom B A"
+    unfolding hom_def  using A0 bij_betwE bij_betw_inv_into by fastforce
+  then show "\<exists>g \<in>hom B A. ?INV g"
+    using B0 by auto
+  next
+  assume A0:"\<exists>g \<in>hom B A. ?INV g"
+  then obtain g where B0:"f \<in> hom A B" and B1:"g \<in>hom B A" and B2:"compose A g f = Id A" and B3:"compose B f g = Id B"
+    using fun_map_in_hom by blast
+  have "\<And>x. x \<in> A \<Longrightarrow> g (f x) = x"
+    by (metis B2 compose_def id1 restrict_def)
+  also have "\<And>x. x \<in> B \<Longrightarrow> f (g x) = x"
+    by (metis Algebrah.Id_def B3 compose_def restrict_def)  
+  then show "bij_betw f A B"
+    using Algebrah.bijI B1 calculation fun_map_in_hom by blast 
+qed
+
 end
+
+
 
 
 context fun_corr begin
 lemma is_fun_map:"fun_map func A B " by (simp add: fsimp5 fsimp6 fun_map_def)
 interpretation fun_map func A B by (simp add: fsimp5 fsimp6 fun_map_def)
-lemma graph_eq_g:"Graph = G" unfolding Graph_def using domain_sub_source by(auto simp add: fsimp2 fsimp3)
+lemma graph_eq_g:"Graph2 = G" unfolding Graph2_def using domain_sub_source by(auto simp add: fsimp2 fsimp3)
 end
 
 context fun_map
 begin
-lemma is_fun_corr:"fun_corr Graph A B " by(unfold_locales, auto simp add:Graph_def codom)
-interpretation fun_corr Graph A B by(unfold_locales, auto simp add:Graph_def codom)
+lemma is_fun_corr:"fun_corr Graph2 A B " by(unfold_locales, auto simp add:Graph2_def codom)
+interpretation fun_corr Graph2 A B by(unfold_locales, auto simp add:Graph2_def codom)
 
-lemma f_agree_func:"\<And>x. x \<in> A \<Longrightarrow> f x = func x" using Graph_def fsimp3 by blast
+lemma f_agree_func:"\<And>x. x \<in> A \<Longrightarrow> f x = func x" using Graph2_def fsimp3 by blast
 lemma f_eq_func:"\<And>x. f x = func x"  using hom_agree2[of f A B func] f_agree_func fun_map_in_hom func_in_hom by blast
 lemma func_eq_f:"f = func" using f_eq_func by auto
 
 end
 
-sublocale fun_map \<subseteq> fun_corr Graph A B  by (simp add: is_fun_corr)
-sublocale fun_corr \<subseteq> fun_map func  rewrites "fun_map.Graph func A  = G"  by (auto simp add: is_fun_map graph_eq_g) 
+sublocale fun_map \<subseteq> fun_corr Graph2 A B  by (simp add: is_fun_corr)
+sublocale fun_corr \<subseteq> fun_map func  rewrites "fun_map.Graph2 func A  = G"  by (auto simp add: is_fun_map graph_eq_g) 
 
 locale surj_func=fun_corr+sur_corr begin lemma surj_into_alt:"surj_into func B" by (metis fsimp3 sur_exE surj_intoI) end
 
@@ -1866,6 +1834,8 @@ lemma gr_sub:assumes "graph G1" and "graph G2" shows "G1 \<subseteq> G2 \<longle
 lemma hom_maps1:"f \<in> hom A B \<Longrightarrow> fun_map f A B" by (simp add: fun_map_def hom_def)
 
 lemma hom_maps2:"fun_map f A B \<Longrightarrow> f \<in> hom A B"  by (simp add: fun_map_def hom_def)
+
+
 
 
 section MagmaLocale
@@ -2041,7 +2011,7 @@ locale quotient_magma=
   magma X "(\<cdot>)" + 
   equivalence_relation X R
   for X::"'a set" and 
-      f (infixl "\<cdot>" 70) and 
+      f:: "'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "\<cdot>" 70) and 
       R::"'a rel"+
   assumes compatible:"(x1, x2) \<in> R \<Longrightarrow> (y1, y2) \<in> R \<Longrightarrow> (x1\<cdot>y1 , x2\<cdot>y2) \<in> R"
 begin
@@ -2082,26 +2052,13 @@ sublocale qmag: magma "X/R" quotient_law  by (simp add: magma.intro qlaw1)
 lemma proj_homomorphism:"homomorphism X f (X/R) quotient_law proj"
   by (simp add: homomorphism.intro homomorphism_axioms_def magma_axioms projE3 qlaw3 qmag.magma_axioms)
 
-lemma proj_hom:"proj \<in> hom X (X/R)"
+lemma proj_hom:"proj \<in> hom X (X/R)"  by (metis (no_types, lifting) canonical_proj_def hom_memI local.proj_def projE3 restrict_apply)
 
-lemma hom_magma:"hom_magma X f (X/R) quotient_law proj"
-  by (simp add: hom_magma.intro hom_magma_def magma_axioms projE3 qlaw3 qmag.magma_axioms)
-
-
-sublocale deez_nuts:homomorphism X f "(X/R)" quotient_law proj
-  by (simp add: proj_homomorphism)
+lemma hom_magma:"hom_magma X f (X/R) quotient_law proj" by (simp add: hom_magma_axioms_def hom_magma_def magma_axioms proj_hom qlaw3 qmag.magma_axioms)
+sublocale projection_is_magma_hom:hom_magma X f "(X/R)" quotient_law proj by (simp add: hom_magma)
 
 end
 
-
-                      
-
-locale unital_homomorphism=homomorphism X domain_law Y codomain_law f+
-  unital_magma X domain_law u+
-  unital_magma Y codomain_law v
-  for X and domain_law and Y and codomain_law and u and v and f+
-  assumes unithom:"f u = v"
-    
 
 section Semigroup
 locale semigroup=magma+ assumes associative[ac_simps]:"\<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)"
@@ -2118,7 +2075,8 @@ proof-
   finally show ?thesis by simp
 qed
 
-
+lemma semigroupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
+                  (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow> semigroup X f" using semigroup_axioms by blast
 
 end
 
@@ -2147,8 +2105,7 @@ inductive_set
 
 inductive_cases empty_foldSetDE [elim!]: "({}, x) \<in> foldSetD D f e"
 
-definition
-  foldD :: "['a set, 'b \<Rightarrow> 'a \<Rightarrow> 'a, 'a, 'b set] \<Rightarrow> 'a"
+definition  foldD :: "['a set, 'b \<Rightarrow> 'a \<Rightarrow> 'a, 'a, 'b set] \<Rightarrow> 'a"
   where "foldD D f e A = (THE x. (A, x) \<in> foldSetD D f e)"
 
 lemma foldSetD_closed: "(A, z) \<in> foldSetD D f e \<Longrightarrow> z \<in> D"
@@ -2187,9 +2144,8 @@ locale LCD =
   fixes B :: "'b set"
   and D :: "'a set"
   and f :: "'b \<Rightarrow> 'a \<Rightarrow> 'a"    (infixl "\<cdot>" 70)
-  assumes left_commute:
-    "\<lbrakk>x \<in> B; y \<in> B; z \<in> D\<rbrakk> \<Longrightarrow> x \<cdot> (y \<cdot> z) = y \<cdot> (x \<cdot> z)"
-  and f_closed [simp, intro!]: "!!x y. \<lbrakk>x \<in> B; y \<in> D\<rbrakk> \<Longrightarrow> f x y \<in> D"
+  assumes left_commute: "\<lbrakk>x \<in> B; y \<in> B; z \<in> D\<rbrakk> \<Longrightarrow> x \<cdot> (y \<cdot> z) = y \<cdot> (x \<cdot> z)"
+  and f_closed [simp, intro!]: "\<And>x y. \<lbrakk>x \<in> B; y \<in> D\<rbrakk> \<Longrightarrow> f x y \<in> D"
 
 lemma (in LCD) foldSetD_closed [dest]: "(A, z) \<in> foldSetD D f e \<Longrightarrow> z \<in> D"
   by (erule foldSetD.cases) auto
@@ -2522,16 +2478,28 @@ locale monoid=semigroup+fixes unit ("e")
   assumes idmem:"e\<in>X" and
           leftid:"x \<in> X \<Longrightarrow> e \<cdot> x = x" and
           rightid:"x \<in> X \<Longrightarrow> x \<cdot> e = x"
+begin
+
+lemma monoidI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
+              (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow>
+              e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow>
+              monoid X f e" using monoid_axioms by blast 
+
+lemma monoidI2:"semigroup X f \<Longrightarrow> e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow> monoid X f e" using monoid_axioms by blast
+
+end
 
 locale submonoid=monoid X "(\<cdot>)" e for A and X and f (infixl "\<cdot>" 70) and unit ("e") +
-  assumes sub:"A \<subseteq> X" and 
-          opc:"\<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> a \<cdot> b \<in> A" and
-          idc:"e \<in> A"
+  assumes setsub:"A \<subseteq> X" and 
+          opsub:"\<lbrakk>a \<in> A; b \<in> A\<rbrakk> \<Longrightarrow> a \<cdot> b \<in> A" and
+          idsub:"e \<in> A"
 begin
-lemma subD[intro,simp]:"a \<in> A \<Longrightarrow> a \<in> X" using sub by auto  
-sublocale sub:monoid A "(\<cdot>)" e using subD opc idc leftid rightid
-  by (simp add: monoid_axioms_def monoid_def semigroup.intro associative magma_def semigroup_axioms_def) 
+lemma subD[intro,simp]:"a \<in> A \<Longrightarrow> a \<in> X" using setsub by auto  
+sublocale sub:monoid A "(\<cdot>)" e using subD opsub idsub leftid rightid by (simp add: monoid_axioms_def monoid_def semigroup.intro associative magma_def semigroup_axioms_def) 
 end
+
+lemma submonoid_submagma:"submonoid A X f e \<Longrightarrow> submagma A X f"  by (simp add: Algebrah.monoid_def semigroup.axioms(1) submagmaI submonoid.opsub submonoid.setsub submonoid_def)
+lemma submonoidI:"monoid X f e \<Longrightarrow> A \<subseteq> X \<Longrightarrow> (\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> (f x y) \<in> A) \<Longrightarrow> e \<in> A \<Longrightarrow> submonoid A X f e" by (simp add: submonoid.intro submonoid_axioms.intro) 
 
 lemma submonoid_transitive:
   assumes "submonoid A B f e"
@@ -2541,30 +2509,41 @@ proof -
   interpret A: submonoid A B f e by fact
   interpret B: submonoid B C f e by fact
   show ?thesis
-    by (simp add: A.opc A.sub.idmem B.monoid_axioms submonoid.intro submonoid_axioms_def subset_iff)
+    by (simp add: A.opsub A.sub.idmem B.monoid_axioms submonoidI subset_eq)
 qed
 
 
+locale hom_monoid=
+  hom_magma X "(\<cdot>)" Y "(\<star>)" f+
+  dom:monoid X "(\<cdot>)" e +
+  cod:monoid Y "(\<star>)" i for
+  X::"'a set"and  domain_law::"'a \<Rightarrow> 'a \<Rightarrow> 'a" (infixl "\<cdot>" 70) and domain_identity ("e") and
+  Y::"'b set" and codomain_law::"'b \<Rightarrow> 'b \<Rightarrow> 'b" (infixl "\<star>" 70) and codomain_identity ("i") and 
+  f::"'a \<Rightarrow> 'b"+assumes
+  unital:"f e = i"
 
-lemma composition_monoid:"monoid (hom X X) (comp X) (Id X)"by(unfold_locales, auto simp add:hom2 hom3 hom5 hom6 hom7)
 
 
-locale compositional_monoid =submonoid M "hom E E" "comp E" "Id E" for M and E
+
+lemma composition_monoid:"monoid (hom X X) (compose X) (Id X)"by(unfold_locales, auto simp add:hom2 hom3 hom5 hom6 hom7)
+
+section CompositionMonoid
+locale compositional_monoid =submonoid M "hom E E" "compose E" "Id E" for M and E
 begin
-lemma hom_mem:"f \<in> M \<Longrightarrow> f \<in> hom E E" by blast
-lemma eval_simp[intro, simp]:"f \<in> M  \<Longrightarrow> x \<in> E \<Longrightarrow> f x \<in> E" by(auto intro: hom9)
+lemma hom_mem:"f \<in> M \<Longrightarrow> f \<in> hom E E" using subD by blast
+lemma eval_simp[intro, simp]:"f \<in> M  \<Longrightarrow> x \<in> E \<Longrightarrow> f x \<in> E" by(auto intro:  hom9)
 lemma eval_ndef[intro,simp]:"f \<in> M \<Longrightarrow> x \<notin> E \<Longrightarrow> f x = undefined" using hom10 by fastforce
 end
 
-
+section InversionInMonoids
 context monoid begin
 
 definition invertible where "u \<in> X \<Longrightarrow> invertible u \<longleftrightarrow> (\<exists>v \<in> X. u \<cdot> v = e \<and> v \<cdot> u = e)"
+definition inv_elem where "inv_elem = (\<lambda>u \<in> X. THE v. v \<in>X \<and> u \<cdot> v = e \<and> v \<cdot> u = e)"
 
 lemma invertibleI [intro]:  "\<lbrakk> u \<cdot> v = e; v \<cdot> u = e; u \<in> X; v \<in> X\<rbrakk> \<Longrightarrow> invertible u" unfolding invertible_def by fast
 lemma invertibleE [elim]: "\<lbrakk>invertible u; \<And>v. \<lbrakk> u \<cdot> v = e; v \<cdot> u = e; v \<in> X \<rbrakk> \<Longrightarrow> P; u \<in> X\<rbrakk> \<Longrightarrow> P"  unfolding invertible_def by fast
-theorem inverse_unique:  "\<lbrakk>u \<cdot> v' =e; v \<cdot> u = e; u \<in> X;  v \<in> X; v' \<in> X \<rbrakk> \<Longrightarrow> v = v'" by (metis associative leftid rightid)
-definition inv_elem where "inv_elem = (\<lambda>u \<in> X. THE v. v \<in>X \<and> u \<cdot> v = e \<and> v \<cdot> u = e)"
+lemma inverse_unique:  "\<lbrakk>u \<cdot> v' =e; v \<cdot> u = e; u \<in> X;  v \<in> X; v' \<in> X \<rbrakk> \<Longrightarrow> v = v'" by (metis associative leftid rightid)
 lemma inverse_equality:  "\<lbrakk>u \<cdot> v = e; v \<cdot> u = e; u \<in> X; v \<in> X \<rbrakk> \<Longrightarrow> inv_elem u = v" unfolding inv_elem_def using inverse_unique by simp blast
 
 lemma invertible_inverse_closed [intro, simp]: "\<lbrakk> invertible u; u \<in> X \<rbrakk> \<Longrightarrow> inv_elem u \<in> X" using inverse_equality by auto
@@ -2577,18 +2556,48 @@ lemma invertible_right_cancel [simp]:  "\<lbrakk> invertible x; x \<in> X; y \<i
 lemma inv_ident [simp]: "inv_elem e = e"  using inverse_equality idmem leftid by blast
 lemma invertible_inverse_invertible [intro, simp]:  "\<lbrakk> invertible u; u \<in> X\<rbrakk> \<Longrightarrow> invertible (inv_elem u)"  using invertible_left_inverse invertible_right_inverse by blast
 lemma invertible_inverse_inverse [simp]:  "\<lbrakk> invertible u; u \<in> X \<rbrakk> \<Longrightarrow> inv_elem (inv_elem u) = u" by (simp add: inverse_equality)
+
+lemma invprod:assumes A0:"x \<in> X" and A1:"y \<in> X" and A2:"invertible x" and A3:"invertible y" 
+  shows "invertible (x \<cdot> y)" and "inv_elem (x \<cdot> y) = (inv_elem y) \<cdot> (inv_elem x )"
+proof-
+  let ?a="inv_elem x" let  ?b="inv_elem y" let ?u="x \<cdot> y" let ?v="?b \<cdot> ?a"
+  have "?u \<cdot> ?v = e"  by (simp add: associate3 associative closed leftid A0 A1 A2 A3)
+  also have  "?v \<cdot> ?u = e"  by (metis A0 A1 A2 A3 associative closed invertible_inverse_closed invertible_left_inverse rightid)
+  then show "inv_elem (x \<cdot> y) = (inv_elem y) \<cdot> (inv_elem x) "  by (simp add: A0 A1 A2 A3 calculation closed inverse_equality)
+  then show "invertible (x \<cdot> y)"
+    using A0 A1 A2 A3 \<open>inv_elem (y::'a) \<cdot> inv_elem (x::'a) \<cdot> (x \<cdot> y) = e\<close> calculation closed invertibleI invertible_inverse_closed by presburger
+qed
+
+lemma invid:"invertible e" using idmem rightid by auto
+lemma inv_right_cancel:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> (inv_elem x \<cdot> y) = y" by (simp add: associate3 leftid)
+lemma inv_left_cancel:"\<lbrakk>invertible x; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> inv_elem x \<cdot> (x \<cdot> y) = y" by (metis associative invertible_inverse_closed invertible_left_inverse leftid) 
+
 end
 
+section InversionInSubmonoids
 context submonoid begin
 lemma submonoid_invertible [intro, simp]:  "\<lbrakk> sub.invertible u; u \<in> A \<rbrakk> \<Longrightarrow> invertible u"  using invertibleI by blast
 lemma submonoid_inverse_closed [intro, simp]:  "\<lbrakk> sub.invertible u; u \<in> A \<rbrakk> \<Longrightarrow> inv_elem u \<in> A"using inverse_equality by auto
 end
 
-locale group = monoid G "(\<cdot>)" e for G and f (infixl "\<cdot>" 70) and unit ("e") +assumes invertible [simp, intro]: "u \<in> G \<Longrightarrow> invertible u"
-locale subgroup = submonoid H G "(\<cdot>)" e + sub: group H "(\<cdot>)" e  for H and G and composition (infixl "\<cdot>" 70) and unit ("e")
+
+section Group
+locale group = 
+  monoid X "(\<cdot>)" e for X and f (infixl "\<cdot>" 70) and unit ("e") + 
+  assumes invertible [simp, intro]: "u \<in> X \<Longrightarrow> invertible u"
 begin
-lemma subgroup_inverse_equality [simp]:  "u \<in> H \<Longrightarrow> inv_elem u = sub.inv_elem u" by (simp add: inverse_equality)
-lemma subgroup_inverse_iff [simp]: "\<lbrakk>invertible x; x \<in> G \<rbrakk> \<Longrightarrow> inv_elem x \<in> H\<longleftrightarrow> x \<in> H"using invertible_inverse_inverse sub.invertible_inverse_closed by fastforce
+lemma groupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
+              (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow>
+              e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow>
+              (\<And>x. x \<in> X \<Longrightarrow> invertible x) \<Longrightarrow>
+              group X f e" using group_axioms by blast 
+end
+
+section Subgroup
+locale subgroup=submonoid A X "(\<cdot>)" e + sub: group A "(\<cdot>)" e  for A and X and composition (infixl "\<cdot>" 70) and unit ("e")
+begin
+lemma subgroup_inverse_equality [simp]:  "u \<in> A \<Longrightarrow> inv_elem u = sub.inv_elem u" by (simp add: inverse_equality)
+lemma subgroup_inverse_iff [simp]: "\<lbrakk>invertible x; x \<in> X \<rbrakk> \<Longrightarrow> inv_elem x \<in> A\<longleftrightarrow> x \<in> A"using invertible_inverse_inverse sub.invertible_inverse_closed by fastforce
 end 
 
 lemma subgroup_transitive [trans]:
@@ -2603,9 +2612,505 @@ proof -
 qed
 
 
+lemma subgroup_submonoid:"subgroup H G f e \<Longrightarrow> submonoid H G f e" by (simp add: subgroup.axioms(1))  
+
+context monoid begin
+
+lemma subgroupI:" submonoid H X f e \<Longrightarrow> e \<in> H \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow>  monoid.invertible H (\<cdot>) e x)  \<Longrightarrow> (\<And>x. x \<in> H \<Longrightarrow> inv_elem  x \<in> H) \<Longrightarrow> subgroup H X f e" 
+  apply(unfold_locales)
+  apply (simp add: submonoid.setsub)
+  apply (simp add: submonoid.opsub)
+  apply blast
+  apply (meson associative submonoid.subD)
+  apply (metis leftid submonoid.subD)
+  apply (simp add: rightid submonoid.subD)
+  by blast
+
+definition "Units = {u \<in> X. invertible u}"
+lemma mem_UnitsI: "\<lbrakk> invertible u; u \<in> X \<rbrakk> \<Longrightarrow> u \<in> Units"  unfolding Units_def by clarify
+lemma mem_UnitsD:  "\<lbrakk> u \<in> Units \<rbrakk> \<Longrightarrow> invertible u \<and> u \<in> X"  unfolding Units_def by clarify
+
+lemma subgroupI2:
+  fixes A
+  assumes subset [THEN subsetD, intro]: "A \<subseteq> X"
+    and [intro]: "e \<in> A"
+    and [intro]: "\<And>g h. \<lbrakk> g \<in> A; h \<in> A\<rbrakk> \<Longrightarrow> g \<cdot> h \<in> A"
+    and [intro]: "\<And>g. g \<in> A \<Longrightarrow> invertible g"
+    and [intro]: "\<And>g. g \<in> A \<Longrightarrow> inv_elem g \<in> A"
+  shows "subgroup A X (\<cdot>) e"
+proof -
+interpret sub: monoid A "(\<cdot>)" e  by (simp add: Algebrah.monoid_axioms_def Algebrah.monoid_def Algebrah.semigroup.intro assms(2) assms(3) associative leftid magma_def rightid semigroup_axioms_def subset)
+  show ?thesis
+  apply(unfold_locales)
+  apply (simp add: assms(1))
+  apply (simp add: assms(3))
+  apply (simp add: sub.idmem)
+  using invertible_left_inverse invertible_right_inverse by blast
+qed
 
 
+
+interpretation units: subgroup Units X f e
+  apply(rule subgroupI2)
+  using mem_UnitsD apply blast
+  using idmem leftid mem_UnitsI apply blast
+  apply (metis closed invprod(1) mem_UnitsD mem_UnitsI)
+  using mem_UnitsD apply auto[1]
+  using mem_UnitsD mem_UnitsI by blast
+
+lemma "group Units f e" by (simp add: units.sub.group_axioms)
+
+end
+
+locale quotient_group=group X "(\<cdot>)" e + quotient_semigroup X "(\<cdot>)" R for
+        X::"'a set" and
+        f::"'a \<Rightarrow> 'a \<Rightarrow>'a" (infixl "\<cdot>" 70) and
+        R::"('a \<times> 'a) set" and
+        e::"'a"
+begin
+
+definition "H \<equiv> proj e"
+
+lemma equivalent_iff:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> (x, y) \<in> R \<longleftrightarrow> (inv_elem x) \<cdot> y \<in> H"
+proof-
+  fix x y assume xmem:"x \<in> X" and ymem:"y \<in> X"
+  show "(x, y) \<in> R \<longleftrightarrow> (inv_elem x) \<cdot> y \<in> H" (is "?LHS \<longleftrightarrow> ?RHS")
+  proof
+    assume L:?LHS
+    then obtain "(inv_elem x \<cdot> x, inv_elem x \<cdot> y) \<in> R"
+      using compatible projE2 xmem by blast
+    then obtain "(e, inv_elem x \<cdot> y) \<in> R"
+      by (simp add: xmem)
+    then show ?RHS
+      using H_def projE5 by blast
+    next
+    assume R:?RHS
+    then obtain "(e, inv_elem x \<cdot> y) \<in> R"
+      using H_def idmem projE4 by blast
+    then obtain "(x \<cdot> e, x \<cdot> inv_elem x \<cdot> y) \<in> R"
+      by (metis associative compatible invertible invertible_inverse_closed projE2 xmem ymem)
+    then obtain "(x, y) \<in> R"
+      by (simp add: leftid rightid xmem ymem)
+    then show ?LHS
+      by blast
+  qed
+qed
+
+lemma h_inv_closed:"\<And>x. x \<in> H \<Longrightarrow> inv_elem x \<in> H"
+proof-
+  fix x assume xmem:"x \<in> H"
+  then obtain "(e, x) \<in> R"
+    using H_def idmem projE4 by blast
+  then obtain "(inv_elem x \<cdot> e, inv_elem x \<cdot> x) \<in> R"
+    using H_def xmem equivalent_iff idmem invertible invertible_inverse_closed invertible_inverse_inverse invertible_left_inverse projE1 rightid by presburger
+  then obtain "(e, inv_elem x) \<in> R"
+    by (metis H_def idmem invertible invertible_inverse_closed invertible_left_inverse projE1 projE2 rightid xmem)
+  then show "inv_elem x \<in> H"
+    by (simp add: H_def projE5)
+qed
+
+
+
+lemma id_image_subgroup:"subgroup H X f e"
+proof(rule subgroupI)
+  show "submonoid H X (\<cdot>) e"
+  proof(rule submonoidI)
+    show "monoid X (\<cdot>) e"
+      by (simp add: monoid_axioms)
+    show "H \<subseteq> X"
+      using H_def idmem projE1 by auto
+    show "\<And>(x::'a) y::'a. x \<in> H \<Longrightarrow> y \<in> H \<Longrightarrow> x \<cdot> y \<in> H"
+      by (metis H_def idmem leftid qlaw2)
+    show " e \<in> H"
+      using H_def idmem projE2 projE5 by blast
+  qed
+  interpret sub:monoid H "(\<cdot>)" e apply(unfold_locales)
+    apply (meson \<open>submonoid H (X::'a set) (\<cdot>) (e::'a)\<close> submonoid.opsub)
+    apply (simp add: H_def associative idmem projE1)
+    apply (meson \<open>submonoid H (X::'a set) (\<cdot>) (e::'a)\<close> submonoid.idsub)
+    using H_def idmem leftid projE1 apply blast
+    by (simp add: H_def idmem projE1 rightid)
+  show "e \<in> H"
+    by (meson \<open>submonoid H (X::'a set) (\<cdot>) (e::'a)\<close> submonoid.idsub)
+  show "\<And>x::'a. x \<in> H \<Longrightarrow> monoid.invertible H (\<cdot>) e x"
+    using H_def h_inv_closed idmem invertible_left_inverse invertible_right_inverse projE1 by blast
+  show "\<And>x::'a. x \<in> H \<Longrightarrow> inv_elem x \<in> H"
+    by (simp add: h_inv_closed)
+qed
+
+
+end
+
+
+
+locale commutative_semigroup=semigroup X "(\<cdot>)" for X and f (infixl "\<cdot>" 70)+
+  assumes commutes:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y = y \<cdot> x"
+begin
+
+lemma lcomm:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> x \<cdot> (y \<cdot> z) = y \<cdot> (x \<cdot> z)"
+  using associate3 commutes by force
+
+lemma commutative_semigroupI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> 
+                              (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow> 
+                              (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> commutative_semigroup X f" using commutative_semigroup_axioms by blast
+
+end
+
+context monoid begin
+
+definition finprod::"'b set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "finprod I x = (if finite I then foldD X (comp f x) e I else e)"
+
+lemma finprod_empty[simp]:"finprod {} x = e"by (simp add: finprod_def idmem)  
+
+lemma finprod_infinite[simp]: "\<not> finite I \<Longrightarrow> finprod I x = e" by (simp add: finprod_def)
+
+definition pow:: "'a \<Rightarrow> nat \<Rightarrow> 'a" where  "pow x  n  \<equiv> if n=(0::nat) then e else finprod {..n-1} (\<lambda>i. x)"
+
+primrec pow_nat  (infixr "^" 80)where
+   pow_0:"x ^ 0 = e " 
+ | pow_Suc:"x ^ Suc n = x \<cdot> (x ^ n)"
+
+
+lemma power_one[simp]:"e ^ n = e" proof(induct n)  case 0 then show ?case  by simp  next   case (Suc n) then show ?case by (simp add: idmem rightid) qed
+lemma power_on_right[simp]:"x \<in> X \<Longrightarrow> x ^ 1 = x"  by (simp add: rightid)
+lemma power_Suc0_right [simp]: "x \<in> X \<Longrightarrow> x ^ Suc 0 = x" using power_on_right by auto
+lemma pow_closed[simp]:"x \<in> X \<Longrightarrow> x ^ n \<in> X"  proof(induct n)  case 0  then show ?case  by (simp add: idmem)  next   case (Suc n)  then obtain "x ^ Suc n = x \<cdot> x ^ n" and "x ^ n \<in> X"  by simp  then show ?case  by (simp add: Suc.prems closed)  qed
+lemma power_commutes: "x \<in> X \<Longrightarrow> (x ^ n) \<cdot> x = x \<cdot> (x ^ n)"proof( induct n)case 0 then show ?case  by (simp add: leftid rightid)  next case (Suc n)  then show ?case   by (metis associate3 pow_Suc pow_closed)  qed
+lemma power_Suc2: "x \<in> X \<Longrightarrow> x ^ Suc n = x ^ n \<cdot> x"   by (simp add: power_commutes)
+
+lemma power_add: "x \<in> X \<Longrightarrow> x ^ (m + n) = x ^ m \<cdot> x ^ n" proof(induct m) case 0  then show ?case   by (simp add: leftid)  next  case (Suc m)  then show ?case   by (simp add: associate3 local.power_commutes)  qed
+lemma power_mult: "x \<in> X \<Longrightarrow> x ^ (m * n) = (x ^ m) ^ n"  by (induct n) (simp_all add: power_add)
+
+
+definition elem_exponents :: "'a \<Rightarrow> nat set" where "elem_exponents x \<equiv> {n::nat. 0<n \<and> x^n = e}"
+
+definition elem_ord where "elem_ord x \<equiv> if elem_exponents x \<noteq> {} then (Least (\<lambda>n::nat. n \<in> elem_exponents x))  else 0"
+lemma elem_ord_simp1:"elem_ord x \<noteq> 0 \<Longrightarrow> elem_ord x =  Least (\<lambda>n::nat. n \<in> (elem_exponents x))"  using elem_ord_def by auto
+
+lemma elem_ord_exp:"x ^ (elem_ord x) = e"
+proof(cases "elem_ord x =0")
+  case True  then show ?thesis by auto
+next
+  case False
+  then have "elem_ord x = (Least (\<lambda>n::nat. n \<in> elem_exponents x))"   using elem_ord_simp1 by auto
+  also have "... \<in> (elem_exponents x)" by (metis Collect_empty_eq Collect_mem_eq False LeastI elem_ord_def)
+  then show ?thesis   by (simp add: calculation elem_exponents_def) 
+qed
+
+
+lemma order_divides_exponent:assumes "x \<in> X" "elem_ord x \<noteq> 0" "m \<in> elem_exponents x" shows "(elem_ord x) dvd m"
+proof-
+  obtain n where nleast:"n =(Least (\<lambda>k::nat. k \<in> elem_exponents x))" and "n \<in> elem_exponents x"   by (meson LeastI assms) 
+  obtain "x ^ m = e" and "0 < m" using assms elem_exponents_def by auto
+  then obtain "m \<in> elem_exponents x"   by (simp add: assms)
+  then obtain "n \<le> m"   by (simp add: \<open>(n::nat) = (LEAST n::nat. n \<in> elem_exponents (x::'a))\<close> wellorder_Least_lemma(2))
+  define q where "q \<equiv> m div n"
+  define r where "r = m mod n"
+  then obtain mf:"m = q * n + r" and "0 \<le> r" and "r < n"
+    by (metis \<open>(n::nat) = (LEAST n::nat. n \<in> elem_exponents (x::'a))\<close> assms(2) bot_nat_0.extremum bot_nat_0.not_eq_extremum div_mod_decomp elem_ord_def mod_less_divisor q_def)
+  then have "e = x ^ m"  using \<open>(x::'a) ^ (m::nat) = (e::'a)\<close> by auto
+  also  have "...  = x ^ (q * n + r)"  by (simp add: \<open>(m::nat) = (q::nat) * (n::nat) + (r::nat)\<close>)
+  also have "... = (x ^ (q * n)) \<cdot> (x ^ r) " by (simp add: assms(1) local.power_add)
+  also have "... = (e) \<cdot> (x ^ r)"   by (metis \<open>(n::nat) = (LEAST n::nat. n \<in> elem_exponents (x::'a))\<close> assms(1) assms(2) elem_ord_def elem_ord_exp local.power_mult local.power_one mult.commute)
+  also have "... = x ^ r"   by (simp add: assms(1) leftid)
+  finally have "r = 0"
+  proof-
+    assume "e = x ^ r"
+    show " r = (0::nat)"
+    proof(rule ccontr)
+      assume "r \<noteq> 0" then obtain "0<r" and "r < n"   using \<open>(r::nat) < (n::nat)\<close> by blast
+      also have rmem:"r \<in> elem_exponents x"
+        using \<open>(e::'a) = (x::'a) ^ (r::nat)\<close> calculation(1) elem_exponents_def by fastforce
+      show False
+        using not_less_Least[of r "(\<lambda>k. k \<in> elem_exponents x)"] nleast rmem calculation by blast
+    qed
+  qed
+  then have "m = q * n" by (simp add: mf)
+  also have "... = q * (elem_ord x) "   using assms(2) elem_ord_simp1 nleast by presburger
+  finally  show ?thesis by simp
+qed
+
+
+end
+
+
+
+locale commutative_monoid=monoid X "(\<cdot>)" e for X and f (infixl "\<cdot>" 70) and e+
+    assumes commutes:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y = y \<cdot> x"
+begin
+lemma lcomm:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> x \<cdot> (y \<cdot> z) = y \<cdot> (x \<cdot> z)" using associate3 commutes by force
+lemma idmem_simp[simp]:"e \<in> X"  by (simp add: idmem)
+lemma commutative_monoidI: "(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow>    (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow>e \<in> X \<Longrightarrow> (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x \<and> x \<cdot> e = x) \<Longrightarrow>     (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> commutative_monoid X f e" using commutative_monoid_axioms by blast
+lemma commutative_monoidI2:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow>  (\<And>x y z. \<lbrakk>x \<in> X; y \<in> X;z \<in> X\<rbrakk> \<Longrightarrow>(x\<cdot>y)\<cdot>z = x\<cdot>(y\<cdot>z)) \<Longrightarrow> (e \<in> X) \<Longrightarrow>  (\<And>x. x \<in> X \<Longrightarrow> e \<cdot> x = x) \<Longrightarrow>   (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> commutative_monoid X f e"  using commutative_monoid_axioms by blast
+lemma commutative_monoidI3:"monoid X f e \<Longrightarrow>  (\<And>x y. x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> x \<cdot> y \<in> X) \<Longrightarrow> commutative_monoid X f e"  by (simp add: commutative_monoid_axioms)
+
+lemma finprod_insert:assumes "finite I" "j \<notin> I" "\<And>i. i \<in> I \<Longrightarrow> x i \<in> X" "x j \<in> X" shows "finprod(insert j I) x = x j \<cdot> finprod I x"
+proof-
+  have "LCD (insert j I) X (comp f x)"
+    apply(unfold_locales)
+    using assms(3) assms(4) lcomm apply auto[1]
+    using assms(3) assms(4) closed by auto
+  have "finprod (insert j I) x = foldD X ((comp f x)) e (insert j I)"
+    by(simp add:finprod_def  assms)
+  also have "... = (comp f x) j (foldD X (comp f x) e I) "
+    by (meson LCD.foldD_insert \<open>LCD (insert (j::'b) (I::'b set)) (X::'a set) ((\<cdot>) \<circ> (x::'b \<Rightarrow> 'a))\<close> assms(1) assms(2) idmem_simp insertCI subset_insertI)
+  also have "... = x j \<cdot> finprod I x"
+    by (simp add: assms(1) finprod_def)
+  finally show ?thesis
+    by blast
+qed
+
+lemma finprod_insert2[simp]:"\<lbrakk>finite I; j \<notin> I; x \<in> maps_in I X; x j \<in> X\<rbrakk> \<Longrightarrow> finprod(insert j I) x = x j \<cdot> finprod I x" by (simp add: finprod_insert map_in_def maps_in_def) 
+    
+lemma finprod_one_eqI: "(\<And>i. i \<in> I \<Longrightarrow>  x i= e) \<Longrightarrow> finprod I x = e"
+proof (induct I rule: infinite_finite_induct)
+  case empty show ?case by simp
+next
+  case (insert i I)
+  have "\<And>i. i \<in> I \<Longrightarrow> (\<lambda>i. e) i = e " by auto
+  with insert show ?case
+    by (simp add: leftid finprod_insert) 
+qed simp
+
+lemma finprod_one_eqI2: "x \<in> maps_in I {e} \<Longrightarrow> finprod I x = e"  by (simp add: finprod_one_eqI map_in_def maps_in_def) 
+
+
+lemma finprod_closed:
+  fixes I
+  assumes x: "\<And>i. i \<in> I \<Longrightarrow> x i \<in> X"
+  shows "finprod I x  \<in> X"
+using x
+proof (induct I rule: infinite_finite_induct)
+  case empty show ?case by simp
+next
+  case (insert i I)
+  then have i: "x i \<in> X" by fast
+  from insert have I: "\<And>i. i \<in> I \<Longrightarrow> x i \<in> X" by fast
+  from insert I i show ?case
+    by (simp add: closed finprod_insert) 
+qed simp
+
+lemma finprod_closed2:"x \<in> maps_in I X \<Longrightarrow> finprod I x \<in> X"  by (simp add: map_in_def maps_in_def finprod_closed)
+
+
+lemma finprod_one[simp]:"finprod I (\<lambda>i. e) = e"  by (simp add: finprod_one_eqI)
+
+lemma m_assoc:"x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> z \<in> X \<Longrightarrow> (x \<cdot> y) \<cdot> z = x \<cdot> (y \<cdot> z)"   using associative by blast
+
+lemmas m_ac=m_assoc commutes lcomm
+
+lemma tmp_int_left:"\<lbrakk>x \<in> maps_in I C; x \<in> maps_in J C\<rbrakk> \<Longrightarrow> x \<in>  maps_in (I \<inter> J) C" using binary_dom_glue by force
+
+lemma finprod_un_int:"\<lbrakk>finite I; finite J; x \<in> maps_in I X;x \<in> maps_in J X\<rbrakk> \<Longrightarrow> finprod (I \<union> J) x \<cdot> finprod (I \<inter> J) x = (finprod I x) \<cdot> (finprod J x)"
+proof(induct set:finite)
+  case empty then show ?case unfolding maps_in_def map_in_def  by (simp add: empty.prems(3) finprod_closed2 leftid rightid) 
+next
+  case (insert i I)
+  then have i:"x i \<in> X" unfolding maps_in_def map_in_def by blast
+  from insert have I:"\<And>i. i \<in> I \<Longrightarrow> x i \<in> X" unfolding maps_in_def map_in_def by fast
+  show ?case
+  proof-
+    show "finprod (insert i I \<union> J) x \<cdot> finprod (insert i I \<inter> J) x = finprod (insert i I) x \<cdot> finprod J x"
+    using I i insert apply(auto simp add: m_ac Int_insert_left insert_absorb Int_mono2)
+    apply(auto simp add:map_in_def maps_in_def)
+    apply (smt (verit) IntD1 Un_iff commutes finite_Int finprod_closed finprod_insert m_assoc)
+    by (smt (verit, del_insts) IntD1 Un_iff finite_UnI finprod_closed finprod_insert m_assoc)
+  qed
+qed
+
+
+lemma dom_split:"x \<in> maps_in (I \<union> J) X \<longleftrightarrow> x \<in> maps_in I X \<and> x \<in> maps_in J X" by (simp add: binary_dom_glue)
+
+
+lemma finprod_Un_disjoint:"\<lbrakk>finite I; finite J;I \<inter> J = {};x \<in> maps_in I X;x \<in> maps_in J X\<rbrakk> \<Longrightarrow> finprod (I \<union> J) x =  (finprod I x) \<cdot> (finprod J x)"
+  using  finprod_un_int[of I J x] finprod_closed2[of x "I \<union> J"] finprod_closed2 finprod_empty[of x] rightid    by (simp add: binary_dom_glue)
+
+
+lemma finprod_multf [simp]:
+  "\<lbrakk>x \<in> maps_in I X; y \<in> maps_in I X\<rbrakk> \<Longrightarrow> finprod I (\<lambda>z.  x z \<cdot> y z) = (finprod I x  \<cdot> finprod I y)"
+proof (induct I rule: infinite_finite_induct)
+  case (infinite A)
+  then show ?case
+    by (simp add: leftid) 
+next
+  case empty show ?case
+    by (simp add: leftid) 
+next
+  case (insert i I) then
+  have fA: "x \<in> maps_in I X" using dom_split by fastforce 
+  from insert have fa: "x i \<in> X"   by (simp add: map_in_def maps_in_def) 
+  from insert have gA: "y \<in> maps_in I X" using dom_split by fastforce 
+  from insert have ga: "y i \<in>X" by (simp add: map_in_def maps_in_def) 
+  from insert have fgA: "(\<lambda>z. x z \<cdot> y z) \<in>maps_in I X"
+    by (simp add: closed map_in_def maps_in_def)
+  show ?case
+    by (smt (verit) closed commutes fA fa fgA finprod_closed2 finprod_insert2 gA ga insert.hyps(1) insert.hyps(2) insert.hyps(3) lcomm)
+next 
+qed 
+
+lemma finprod_cong':
+  "\<lbrakk>A = B; g \<in> maps_in B X; \<And>i. i \<in> B \<Longrightarrow> h i = g i\<rbrakk> \<Longrightarrow> finprod A h = finprod B g"
+proof -
+  assume prems: "A = B" "g \<in> maps_in B X"  "\<And>i. i \<in> B \<Longrightarrow> h i = g i"
+  show ?thesis
+  proof (cases "finite B")
+    case True
+    then have "\<And>A. \<lbrakk>A = B;g \<in> maps_in B X;  \<And>i. i \<in> B \<Longrightarrow> h i = g i\<rbrakk> \<Longrightarrow> finprod A h= finprod B g"
+    proof induct
+      case empty thus ?case by simp
+    next
+      case (insert x B)
+      then have "finprod A h = finprod (insert x B) h" by simp
+      also from insert have "... = h x \<cdot> finprod B h"
+      proof (intro finprod_insert2)
+        show "finite B" by fact
+      next
+        show "x \<notin> B" by fact
+      next
+        assume "x \<notin> B" "\<And>i. i \<in> insert x B \<Longrightarrow> h i = g i" "g \<in> maps_in (insert x B) X"  
+        then show "h \<in>maps_in B X  "
+          by (simp add: map_in_def maps_in_def) 
+      next
+        assume "x \<notin> B" "\<And>i. i \<in> insert x B \<Longrightarrow> h i = g i" "g \<in> maps_in (insert x B) X"  
+        thus "h x \<in> X"
+          by (simp add: map_in_def maps_in_def) 
+      qed
+      also from insert have "... = g x \<cdot> finprod B g"   by (metis binary_dom_glue insertCI insert_def) 
+      also from insert have "... = finprod(insert x B) g"  by (simp add: map_in_def maps_in_def)
+      finally show ?case .
+    qed
+    with prems show ?thesis by simp
+  next
+    case False with prems show ?thesis by simp
+  qed
+qed
+
+
+lemma finprod_cong:
+  "\<lbrakk>A = B; h  \<in> maps_in B X = True; \<And>i. i \<in> B =simp=> h i = g i\<rbrakk> \<Longrightarrow> finprod A h = finprod B g"
+  apply(rule finprod_cong')
+  apply simp
+  by(auto simp add:maps_in_def map_in_def simp_implies_def)
+
+lemma finprod_0[simp]:
+  "x \<in> maps_in {0::nat} X \<Longrightarrow> finprod {..0}x  = x 0" by (simp add: map_in_def maps_in_def rightid)
+
+lemma finprod_02:
+  "x \<in> maps_in {..n} X \<Longrightarrow> (x 0) \<cdot> finprod {Suc 0..n} x = finprod {..n} x"
+proof -
+  assume A: "x \<in>maps_in {.. n} X"
+  hence "(x 0) \<cdot> finprod  {Suc 0..n} x = finprod {..0} x \<cdot> finprod  {Suc 0..n} x"
+    using finprod_0[of x]  by (simp add: map_in_def maps_in_def) 
+  also have " ... = finprod  ({..0} \<union> {Suc 0..n}) x"
+    using finprod_Un_disjoint[of "{..0}" "{Suc 0..n}" x] A by (simp add: map_in_def maps_in_def)
+  also have " ... = finprod {..n} x"
+    by (simp add: atLeastAtMost_insertL atMost_atLeast0)
+  finally show ?thesis .
+qed
+
+lemma finprod_Suc [simp]:  "x \<in> maps_in {..Suc n} X \<Longrightarrow>finprod {..Suc n} x = (x (Suc n) \<cdot> finprod {..n}x)" by (simp add: map_in_def maps_in_def atMost_Suc)
+
+lemma finprod_Suc2:
+  "x \<in> maps_in {..Suc n} X \<Longrightarrow> finprod  {..Suc n} x = (finprod {..n} (\<lambda>i. x (Suc i)) \<cdot> (x 0))"
+proof (induct n)
+  case 0 thus ?case by(simp add:maps_in_def map_in_def rightid)
+next
+  case Suc thus ?case apply(auto simp add:maps_in_def map_in_def rightid m_ac) by (metis Suc_le_mono atMost_iff finprod_closed le_Suc_eq m_assoc zero_le)
+qed
+
+lemma finprod_Suc3:
+  assumes "x \<in> maps_in {..n :: nat} X"
+  shows "finprod {.. n} x = (x n) \<cdot> finprod {..< n} x"
+proof (cases "n = 0")
+  case True thus ?thesis
+   using assms atMost_Suc rightid m_assoc finprod_closed assms finprod_0 unfolding map_in_def maps_in_def by auto
+next
+  case False
+  then obtain k where "n = Suc k"
+    using not0_implies_Suc by blast
+  thus ?thesis
+    using finprod_Suc[of x k] assms atMost_Suc lessThan_Suc_atMost by simp
+qed
+
+lemma finprod_Suc4:"x \<in> X \<Longrightarrow>  finprod {.. n} (\<lambda>i::nat. x) = ((\<lambda>i::nat. x) n) \<cdot> finprod {..< n}  (\<lambda>i. x)"
+proof-
+  assume xmem:"x \<in> X"
+  then obtain "(\<lambda>i::nat. x) \<in>  maps_in {..n::nat} X"
+    unfolding maps_in_def map_in_def by auto
+  then show "finprod {.. n} (\<lambda>i::nat. x) = ((\<lambda>i::nat. x) n) \<cdot> finprod {..< n}  (\<lambda>i::nat. x)"
+    using finprod_Suc3[of "(\<lambda>i. x)" ] by blast
+qed
+
+lemma finprod_Suc5:"x \<in> X \<Longrightarrow>  finprod {.. n} (\<lambda>i::nat. x) =  finprod {..< n}  (\<lambda>i. x) \<cdot> ((\<lambda>i::nat. x) n)"  by (simp add: commutes finprod_Suc4 finprod_closed)
+
+
+lemma finprod_reindex:
+  "x \<in> maps_in (s`I) X \<Longrightarrow>  inj_on s I \<Longrightarrow> finprod (s ` I) x = finprod I (\<lambda>i. x (s i))"
+proof (induct I rule: infinite_finite_induct)
+  case (infinite I) hence "\<not> finite (s ` I)" using finite_imageD by blast
+  with \<open>\<not> finite I\<close> show ?case by simp
+next
+  case empty  then show ?case  by simp
+next
+  case (insert x F) then show ?case by(simp add: map_in_def maps_in_def)
+qed 
+print_facts 
+
+
+lemma pow_nonzero:"x \<in> X \<Longrightarrow> 0<n \<Longrightarrow> pow x n = finprod {..n-1} (\<lambda>i. x)"  by (simp add: local.pow_def) 
+lemma pow_closed[intro,simp]:"x \<in> X \<Longrightarrow>  pow x (n::nat) \<in> X"  by (simp add: finprod_closed local.pow_def)
+lemma pow_1[simp]:"x \<in> X \<Longrightarrow> pow x (1::nat) = x" unfolding pow_def
+proof(simp)
+  fix x assume xmem:"x \<in> X"
+  then have "(\<lambda>i::nat. x) \<in> maps_in {..0} X"
+    unfolding maps_in_def map_in_def by(auto)
+  then show "finprod {0::nat} (\<lambda>i::nat. x) = x"
+    using finprod_0 by force
+qed
+  
+lemma pow_0[simp]:"x \<in> X \<Longrightarrow> pow x(0::nat) = e"  by (simp add: local.pow_def) 
+
+lemma pow_suc[simp]:"x \<in> X \<Longrightarrow> pow x (Suc n) = (pow x n) \<cdot> x"
+proof-
+  fix x assume xmem:"x \<in> X"
+  show "pow x (Suc n) = (pow x n) \<cdot> x"
+  proof(cases "n = (0::nat)")
+    case True
+    then have "pow x (Suc n) = pow x (1::nat)" by simp
+    also have "... = x"   using pow_1 xmem by auto 
+    also have "... = e \<cdot> x"    by (simp add: leftid xmem)
+    also have "... = (pow x n) \<cdot> x"  using True xmem by auto
+    finally show ?thesis by simp
+  next
+    case False
+    then show ?thesis
+    by(auto simp add: xmem pow_nonzero,metis Suc_pred finprod_Suc5 lessThan_Suc_atMost xmem)
+  qed
+qed
+lemma pow_suc2:"x \<in> X \<Longrightarrow> pow x (Suc n) = x \<cdot> (pow x n) "  by (simp add: commutes)
+lemma id_pow:"pow e n = e" by (simp add: local.pow_def)
+
+notation pow_nat (infixr "^" 80)
+
+lemma pow_nat_eq_pow:"x \<in> X \<Longrightarrow> pow x n = x ^ n"
+proof(induct n)
+  case 0
+  then show ?case
+    by (simp add: local.pow_def) 
+next
+  case (Suc n)
+  then obtain "x \<in> X" and "x ^ n \<in> X" and "x ^ Suc n = x \<cdot> x ^ n" by simp
+  also obtain "pow x (Suc n) = pow x n \<cdot> x"
+    by (simp add: Suc.prems)
+  then show ?case    by (simp add: Suc.hyps Suc.prems commutes) 
+qed
 
 
 
 end
+
+print_commands
+locale_deps 
+
+end
+

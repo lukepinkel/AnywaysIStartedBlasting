@@ -1,27 +1,120 @@
-theory PosetsRel6
+theory PosetsRel7
   imports Main
 begin
 
-hide_const top bot
-hide_const(open) List.list.Nil
-no_notation List.list.Nil ("[]")  
-no_notation Cons (infixr "#" 65) 
-hide_type list
 hide_const rev Sup Inf trans refl Greatest asym
 declare [[show_consts, show_results]]
 declare [[show_abbrevs=true]]
 
 
+datatype 'a "term" = App 'a "'a term list"
+datatype int_op = Number int | UnaryMinus | Plus
+
+inductive_set terms::"'a set \<Rightarrow> 'a term set" for A::"'a set" where 
+              step[intro!]:"\<lbrakk>\<forall>t \<in> set args. t \<in> terms A;  f \<in> A\<rbrakk>   \<Longrightarrow> (App f args) \<in> terms A"
+inductive_cases term_App_elim [elim!]: "App f args \<in> terms A"
+
+lemma terms_iso:"A \<subseteq> B \<Longrightarrow> terms A \<subseteq> terms B"  by(auto elim:terms.induct)
+lemma terms_int1I:"t \<in> terms A \<Longrightarrow> t \<in> terms B \<longrightarrow> t \<in> terms (A\<inter>B)" by(erule terms.induct, blast)
+lemma terms_int12:"terms A \<inter> terms B \<subseteq>  terms (A\<inter>B)"  using terms_int1I by fastforce 
+lemma terms_int13:"terms (A\<inter>B) \<subseteq> terms A \<inter> terms B"  by (simp add: terms_iso) 
+lemma terms_intI4:"terms (A\<inter>B) = terms A \<inter> terms B" using  terms_int12 terms_int13 by blast
+
+inductive_set wffs::"('a \<Rightarrow> nat) \<Rightarrow> 'a term set" for ar::"'a \<Rightarrow> nat" where
+              step[intro!]:"\<lbrakk>\<forall>t \<in> set args. t \<in> wffs ar; length args = ar f\<rbrakk> \<Longrightarrow> (App f args) \<in> wffs ar"
+
+inductive_set wffl::"('a \<Rightarrow> nat) \<Rightarrow> 'a term set" for ar::"'a \<Rightarrow> nat" where
+              step[intro!]:"\<lbrakk>args \<in> lists (wffl ar); length args = ar f\<rbrakk> \<Longrightarrow> (App f args) \<in> wffl ar"
+
+lemma wff_equiv1:"wffs ar \<subseteq> wffl ar" by(auto elim: wffs.induct)
+lemma wff_equiv2:"wffl ar \<subseteq> wffs ar" by(auto elim: wffl.induct)
+
+
+inductive_set wtterm :: "('a \<Rightarrow> 'b list \<times> 'b) \<Rightarrow> ('a term \<times> 'b)set" for sig::"'a \<Rightarrow> 'b list * 'b" where
+  step[intro!]:"\<lbrakk>\<forall>p \<in> set args. p \<in> wtterm sig; sig f = (map snd args, rtype)\<rbrakk>   \<Longrightarrow> (App f (map fst args), rtype)  \<in> wtterm sig"
+
+primrec int_arity::"int_op \<Rightarrow> nat" where
+   "int_arity (Number n)        = 0" 
+  |"int_arity UnaryMinus        = 1"
+  |"int_arity Plus              = 2"
+
+
+inductive_set int_sig :: "(int_op * (unit list \<times> unit)) set" where
+    Number:     "(Number n,   ([], ())) \<in> int_sig"
+   |UnaryMinus: "(UnaryMinus, ([()], ())) \<in> int_sig"
+   |Plus:       "(Plus,       ([(),()], ())) \<in> int_sig"
+
+
 section Definitions
 subsection Bounds
+(*declare [[simp_trace]]*)
 
-definition ubd::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set" where  
+
+inductive_set cl_reftrn::"('a \<times> 'a) set \<Rightarrow> ('a \<times> 'a) set" for R::"('a \<times> 'a) set" where
+   cl_reftrn_ref:"(x, x) \<in> cl_reftrn R" 
+  |cl_reftrn_trn:"\<lbrakk>(x, y) \<in> R; (y, z) \<in> cl_reftrn R\<rbrakk> \<Longrightarrow> (x, z) \<in> cl_reftrn R"
+
+lemma cl_reftrn_ext:"(x, y) \<in> R \<Longrightarrow> (x, y) \<in> cl_reftrn R"  by (simp add: cl_reftrn.cl_reftrn_ref cl_reftrn.cl_reftrn_trn)  
+
+
+lemma subset2I:"(\<And>x y. (x, y) \<in> R \<Longrightarrow> (x, y) \<in> S) \<Longrightarrow> R \<subseteq> S"  by (simp add: subrelI)
+
+
+lemma cl_reftrn_iso0:"(\<forall>x y. (x, y) \<in> R \<longrightarrow> (x,y) \<in> S) \<Longrightarrow> (a,b) \<in> cl_reftrn R \<longrightarrow> (a, b) \<in> cl_reftrn S"
+proof-
+  assume A0:"(\<forall>x y. (x, y) \<in> R \<longrightarrow> (x,y) \<in> S)" 
+  show "(a,b) \<in> cl_reftrn R \<longrightarrow> (a, b) \<in> cl_reftrn S"
+  proof
+    assume A1:"(a, b) \<in> cl_reftrn R "
+    then show "(a, b) \<in> cl_reftrn S"
+    proof(induction rule: cl_reftrn.induct)
+      case (cl_reftrn_ref x) then show ?case  by (simp add: cl_reftrn.cl_reftrn_ref) 
+    next
+      case (cl_reftrn_trn x y z)  then show ?case using A0 cl_reftrn.cl_reftrn_trn[of _ _ S] by blast
+    qed
+  qed
+qed
+
+lemma cl_reftrn_iso1:"R \<subseteq> S \<Longrightarrow> cl_reftrn R \<subseteq> cl_reftrn S"
+proof(rule subset2I)
+  fix x y assume A0:"R \<subseteq> S" and A1:"(x, y) \<in> cl_reftrn R"
+  show "(x, y) \<in> cl_reftrn S"
+  using A1 A0 proof(induction rule:cl_reftrn.induct)
+    case (cl_reftrn_ref x) then show ?case  by (simp add: cl_reftrn.cl_reftrn_ref)
+  next
+    case (cl_reftrn_trn x y z) then show ?case using cl_reftrn.cl_reftrn_trn[of _ _ S] by auto
+  qed
+qed
+
+
+lemma cl_reftrn_trn0:"(x, y) \<in> cl_reftrn R \<Longrightarrow>  (y, z) \<in> cl_reftrn R  \<longrightarrow> (x,z) \<in> cl_reftrn R" by(erule cl_reftrn.induct,simp,simp add: cl_reftrn.cl_reftrn_trn)
+lemma cl_reftrn_trn1:"\<lbrakk>(x, y) \<in> cl_reftrn R;  (y, z) \<in> cl_reftrn R\<rbrakk> \<Longrightarrow> (x,z) \<in> cl_reftrn R" using cl_reftrn_trn0[of x y R z] by auto
+lemma cl_reftrn_trn2:"\<lbrakk>(x, y) \<in> cl_reftrn R; (y, z) \<in> R\<rbrakk> \<Longrightarrow> (x, z) \<in> cl_reftrn R" using cl_reftrn_ext[of y z R] cl_reftrn_trn0[of x y R z] by blast
+
+
+definition bounds::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set" where 
+  "bounds R X A \<equiv> {b \<in> X.  (\<forall>a. a \<in> A \<longrightarrow> (a, b) \<in> R)}"
+
+definition bdp::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow>bool" where 
+  "bdp R A b \<equiv> (\<forall>a. a \<in> A \<longrightarrow> (a, b) \<in> R)"
+
+lemma bdpI[intro!]:"(\<And>a. a \<in> A \<Longrightarrow> (a,b) \<in> R) \<Longrightarrow> bdp R A b" by (simp add:bdp_def)
+lemma bdpE[elim]:"\<lbrakk>bdp R A b; (\<And>a. a \<in> A \<Longrightarrow> (a,b) \<in> R) \<Longrightarrow> P\<rbrakk> \<Longrightarrow> P " by (simp add: bdp_def)
+lemma bdpD1:"bdp R A b \<Longrightarrow> a \<in> A \<Longrightarrow> (a, b)\<in>R" by (simp add: bdp_def)
+
+
+definition is_extremal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
+   "is_extremal R A m \<equiv> m \<in> bounds R A A"
+
+
+definition ubd::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set" where 
   "ubd R X A \<equiv> {b \<in> X.  (\<forall>a. a \<in> A \<longrightarrow> (a, b) \<in> R)}"
 
-abbreviation lbd where 
+abbreviation lbd::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set" where 
   "lbd R X A \<equiv> ubd (converse R) X A"
 
 subsection ExtremeElements
+
 definition is_greatest::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
    "is_greatest R A m \<equiv> m \<in> ubd R A A"
 
@@ -51,13 +144,6 @@ definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarro
 
 definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
-
-(*for reflexive relations I suppose*)
-definition is_maximal_elem::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_maximal_elem R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> (a,x)\<in>R)"
-
-definition is_minimal_elem::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_minimal_elem R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R \<longrightarrow> (x, a)\<in>R)"
 
 
 subsection Lattices
@@ -230,12 +316,6 @@ subsection Functions
 definition isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel  \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where 
   "isotone Rx X Ry f \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1, x2) \<in> Rx \<longrightarrow> (f x1, f x2) \<in> Ry)"
 
-definition order_reflecting::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where
-  "order_reflecting Rx X Ry f \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (f x1, f x2) \<in> Ry \<longrightarrow> (x1, x2) \<in> Rx)"
-
-definition order_full::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"  where
-  "order_full Rx X Ry f \<equiv> (isotone Rx X Ry f) \<and> order_reflecting Rx X Ry f"
-
 abbreviation antitone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel  \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where
    "antitone Rx X Ry f \<equiv> isotone Rx X (converse Ry) f"
 
@@ -310,17 +390,11 @@ abbreviation spreord where
 abbreviation pord where
   "pord R X \<equiv> trans R X \<and> antisym R X \<and> refl R X"
 
-abbreviation tord where
-  "tord R X \<equiv> trans R X \<and> antisym R X \<and> refl R X \<and> total_on X R"
-
 abbreviation spord where
   "spord R X \<equiv> trans R X \<and> asym R X \<and> irrefl R X"
 
 abbreviation dual where
   "dual R \<equiv> (converse R)"
-
-definition covers::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool" where
-    "covers R X x y \<equiv> (x \<in> X \<and> y \<in> X \<and> (x,y) \<in> R \<and> x \<noteq> y \<and> (\<forall>z \<in> X. (x, z) \<in> R \<and> (z, y) \<in> R \<longrightarrow> x = z \<or> y =z ))"
 
 definition disjoint::"'a set set \<Rightarrow> bool" where
   "disjoint A \<equiv> (\<forall>a \<in> A. \<forall>b \<in> A. a \<noteq> b \<longrightarrow>a \<inter> b = {})"
@@ -331,7 +405,6 @@ definition partition::"'a set set \<Rightarrow> 'a set \<Rightarrow> bool" where
 definition diag::"'a set \<Rightarrow> 'a rel" where
   "diag X \<equiv> {(x, x). x \<in> X}"
 
-
 definition ord_embedding::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
   "ord_embedding Rx X Ry f \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> ((x1,x2)\<in>Rx  \<longleftrightarrow> (f x1,f x2)\<in>Ry))"
 
@@ -341,23 +414,19 @@ definition ord_isomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<
 definition meet_homomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
   "meet_homomorphism Rx X Ry Y f \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> f (Inf Rx X {x1, x2}) = Inf Ry Y {f x1, f x2})"
 
+
 definition join_homomorphism::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b)  \<Rightarrow> bool" where
   "join_homomorphism Rx X Ry Y f \<equiv> (\<forall>x1 x2. x1 \<in> X \<and> x2 \<in> X \<longrightarrow> f (Sup Rx X {x1, x2}) = Sup Ry Y {f x1, f x2})"
 
 definition fne_sup_cl::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow>  'a set" where
   "fne_sup_cl R X A\<equiv> {x \<in> X. \<exists>F \<in> Fpow A. F \<noteq> {} \<and> is_sup R X F x}"
 
+
 definition mesh::"'a set set \<Rightarrow> 'a set set \<Rightarrow> bool" (infixl "(#)" 70)
    where "A # B \<equiv> (\<forall>a. \<forall>b. a \<in> A \<longrightarrow> b \<in> B \<longrightarrow> a \<inter> b \<noteq> {})"
 
 definition grill::"'a set set \<Rightarrow> 'a set set \<Rightarrow> 'a set set" 
   where "grill PX A \<equiv> {E \<in> PX. {E}#A}"
-
-definition wellfounded::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "wellfounded R X \<equiv> (\<forall>P. (\<forall>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> P u) \<longrightarrow> P t) \<longrightarrow> (\<forall>x\<in>X. P x))"
-
-definition wellfounded2::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "wellfounded2 R X \<equiv> (\<forall>A\<in>Pow X. (\<forall>t\<in>X. (\<forall>u\<in>X. (u, t)\<in>R \<longrightarrow> u\<in>A) \<longrightarrow> t \<in> A) \<longrightarrow> A = X)"
 
 subsection Convergence
   
@@ -598,29 +667,6 @@ proof(auto)
   show "refl S X"
     by (simp add: S_def refl_def)
 qed
-
-lemma pord_to_strict_inv:
-  assumes "pord R X" and "R \<subseteq> X \<times> X"
-  defines "S \<equiv> {(x, y). x \<in> X \<and> y \<in> X \<and> (x, y) \<in> R \<and> x \<noteq> y}"
-  defines "Q \<equiv> {(x, y). x \<in> X \<and> y \<in> X \<and> ((x, y) \<in> S \<or> x = y)}"
-  shows "Q = R"
-  unfolding S_def Q_def
-  using assms apply(auto)
-  using reflE1 by blast
-
-lemma strict_to_pord_inv:
-  assumes "spord R X" and "R \<subseteq> X \<times> X"
-  defines "S \<equiv> {(x, y). x \<in> X \<and> y \<in> X \<and> (x, y) \<in> R \<or> x = y}"
-  defines "Q \<equiv> {(x, y). x \<in> X \<and> y \<in> X \<and> (x, y) \<in> S \<and> x \<noteq> y}"
-  shows "Q = R"
-proof
-  show "Q \<subseteq> R"
-    unfolding S_def Q_def using assms by(auto)
-  show "R \<subseteq> Q"
-    unfolding S_def Q_def using assms apply(auto)
-    by (metis asym_onD mem_Sigma_iff subsetD)
-qed
-
 
 section MiscRel
 
@@ -1540,64 +1586,6 @@ qed
 
 section MinimaMaxima
 
-lemma minimal_equiv:
-  assumes A0:"E \<in> Pow X" 
-  shows "(\<forall>x \<in> X. x \<in> E \<and> (x,m)\<in>R \<longrightarrow> x=m) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" and
-        "(\<forall>x \<in> X. x \<noteq> m \<and>(x,m)\<in>R \<longrightarrow> x \<notin>E) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" and
-        "(\<forall>x \<in> X. x \<in> E \<and> x\<noteq>m \<longrightarrow> (x,m)\<notin>R) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" and
-        " \<not>(\<exists>x \<in> E. (x,m)\<in>R \<and> x \<noteq> m)       \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" 
-proof-
-  show "(\<forall>x \<in> X. x \<in> E \<and> (x,m)\<in>R \<longrightarrow> x=m) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)"
-  proof-
-    have "(\<forall>x \<in> X. x \<in> E \<and> (x,m)\<in>R \<longrightarrow> x=m) \<longleftrightarrow>(\<forall>x \<in> X. \<not>(x\<in>E \<and> (x,m)\<in>R) \<or> x=m)" by fastforce
-    also have                           "... \<longleftrightarrow>(\<forall>x \<in> X.  (x\<notin>E \<or> (x,m)\<notin>R) \<or> x=m)" by fastforce
-    then show ?thesis by blast
-  qed
-  show "(\<forall>x \<in> X. x \<noteq> m \<and>(x,m)\<in>R \<longrightarrow> x \<notin>E) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" 
-  proof-
-    have "(\<forall>x \<in> X.  (x\<noteq>m \<and> (x,m)\<in>R) \<longrightarrow> x \<notin>E)  \<longleftrightarrow> (\<forall>x \<in> X. \<not>(x\<noteq>m \<and> (x,m)\<in>R) \<or>   x\<notin>E)" by fastforce
-    also have                              "... \<longleftrightarrow> (\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)" by fastforce
-    then show ?thesis  by blast
-  qed
-  show "(\<forall>x \<in> X. x \<in> E \<and> x\<noteq>m \<longrightarrow> (x,m)\<notin>R) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)"
-  proof-
-    have "(\<forall>x \<in> X. x \<in> E \<and> x\<noteq>m \<longrightarrow> (x,m)\<notin>R) \<longleftrightarrow> (\<forall>x \<in> X. \<not>(x \<in> E \<and> x\<noteq>m) \<or> (x,m)\<notin> R)" by blast
-    also have                           "... \<longleftrightarrow> (\<forall>x \<in> X. x \<notin>E \<or> (x,m)\<notin>R \<or> x=m)" by blast
-    then show ?thesis by blast
-  qed
-  show " \<not>(\<exists>x \<in> E. (x,m)\<in>R \<and> x \<noteq> m) \<longleftrightarrow>(\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)"
-  proof-
-    have " \<not>(\<exists>x \<in> E. (x,m)\<in>R \<and> x \<noteq> m) \<longleftrightarrow> (\<forall>x \<in> E. (x,m)\<notin> R \<or> x =m)" by auto
-    also have                     "... \<longleftrightarrow> (\<forall>x \<in> X.  x\<notin>E \<or> (x,m)\<notin>R \<or> x=m)"  using A0 by blast
-    then show ?thesis by blast
-  qed
-qed
-
-
-lemma wf_onE_pf:
-  assumes wf: "wf_on A r" and "B \<subseteq> A" and "B \<subseteq> r `` B"
-  shows "B = {}"
-proof -
-  have "\<And>x. x \<in> A \<Longrightarrow> x \<notin> B"
-  proof-
-    fix x assume "x \<in> A"  show "x \<notin> B"
-    using wf
-      proof (induction x rule: wf_on_induct)
-        case in_set
-        then show ?case by (simp add: \<open>x \<in> A\<close>)
-      next
-        case (less x)
-        then have  "\<And>y. y \<in> A \<Longrightarrow> (y, x) \<in> r \<Longrightarrow> y \<notin> B" by blast
-        then have "x \<notin> r``B"
-          using assms(2) by auto
-      then show ?case
-        using assms(3) by auto
-    qed
-  qed
-  then show ?thesis
-    using assms(2) by blast
-qed
-
 lemma maximalD1:
   "is_maximal R A x \<Longrightarrow> x \<in> A"
   by(simp add:is_maximal_def)
@@ -1622,46 +1610,7 @@ proof(rule ccontr)
   then show False
     by (simp add: xna)
 qed
-
-
-lemma minimalD1:
-  "is_minimal R A x \<Longrightarrow> x \<in> A"
-  by(simp add:is_minimal_def)
-
-lemma minimalD2:
-  "is_minimal R A x \<Longrightarrow>(\<forall>a. a \<in> A \<and> (a, x) \<in> R \<longrightarrow> a =x)"
-  by(simp add:is_minimal_def)
-
-lemma minimalD3:
-  "is_minimal R A x \<Longrightarrow> a \<in> A \<Longrightarrow> (a, x) \<in> R \<Longrightarrow> a = x"
-  by(simp add:is_minimal_def)
-
-lemma minimalD4:
-  assumes max:"is_minimal R A x"
-  shows "\<not>(\<exists>a\<in>A. (a,x)\<in>R \<and> x\<noteq>a)"
-proof(rule ccontr)
-  assume cont:"\<not>\<not>(\<exists>a\<in>A. (a,x)\<in>R \<and> x\<noteq>a)" 
-  then obtain a where "a \<in> A" and "(a,x)\<in>R" and xna:"x\<noteq>a"
-    by blast
-  then obtain "x=a" 
-    using minimalD3[of R A x a] max by blast
-  then show False
-    by (simp add: xna)
-qed
-
-
-lemma maximal_elemD1:
-  "is_maximal_elem R A x \<Longrightarrow> x \<in> A"
-  by(simp add:is_maximal_elem_def)
-
-lemma maximal_elemD2:
-  "is_maximal_elem R A x \<Longrightarrow>(\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> (a, x)\<in>R)"
-  by(simp add:is_maximal_elem_def)
-
-lemma maximal_elemD3:
-  "is_maximal_elem R A x \<Longrightarrow> a \<in> A \<Longrightarrow> (x, a) \<in> R \<Longrightarrow> (a, x)\<in>R"
-  by(simp add:is_maximal_elem_def)
-
+    
 lemma maximalI1:
   "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; (x, a) \<in> R\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_maximal R A x"
   by(simp add:is_maximal_def)
@@ -1676,6 +1625,7 @@ proof(rule maximalI1)
     using nex by blast
 qed
 
+
 lemma maximalI3:
   assumes A0:"x \<in> A" and A1:"\<And>a. \<lbrakk>(x, a) \<in> R; x \<noteq> a\<rbrakk> \<Longrightarrow> a \<notin> A"
   shows "is_maximal R A x"
@@ -1686,71 +1636,16 @@ lemma maximalI4:
   shows "is_maximal R A m"
   using assms unfolding is_maximal_def  by blast
 
-lemma minimalI1:
-  "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; (a, x) \<in> R\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_minimal R A x"
-  by(simp add:is_minimal_def)
-
-lemma minimalI2:
-  assumes xia:"x \<in> A" and nex:"\<not>(\<exists>a \<in> A. (a,x)\<in>R \<and> x \<noteq> a)"
-  shows "is_minimal R A x"
-proof(rule minimalI1)
-  show "x \<in> A" 
-    by (simp add:xia)
-  show "\<And>a. a \<in> A \<Longrightarrow> (a, x) \<in> R \<Longrightarrow> a = x"
-    using nex by blast
-qed
-
-lemma minimalI3:
-  assumes A0:"x \<in> A" and A1:"\<And>a. \<lbrakk>(a,x) \<in> R; x \<noteq> a\<rbrakk> \<Longrightarrow> a \<notin> A"
-  shows "is_minimal R A x"
-  using assms unfolding is_minimal_def by auto
-
-lemma minimalI4:
-  assumes A0:"m \<in> A" and A2:"A \<subseteq> X" and A2:"\<And>x. \<lbrakk>x \<in> X; (x,m) \<in> R; m \<noteq> x\<rbrakk> \<Longrightarrow> x \<notin> A" 
-  shows "is_minimal R A m"
-  using assms unfolding is_minimal_def  by blast
-
-lemma minimal_equivalent_defs:
-  assumes A0:"A \<subseteq> X" and A1:"m \<in> A"
-  shows "is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. x \<notin> A \<or> (x,m) \<notin> R \<or> x=m)" and
-        "is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. (x, m)\<in>R \<and> x \<noteq> m \<longrightarrow> x \<notin> A)" and
-        "is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. x \<in> A \<and> x \<noteq> m \<longrightarrow> (x,m)\<notin> R)"  and
-        "is_minimal R A m \<longleftrightarrow> \<not>(\<exists>x \<in> A. (x,m)\<in>R \<and> x \<noteq> m)" and
-        "irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> X. (x,m)\<in>R \<longrightarrow> x \<notin> A)" and
-        "irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> \<not>(\<exists>x \<in> A. (x,m)\<in>R)" and
-        "irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> A. (x,m)\<notin>R)" and
-        "antisym R X \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> X. x \<in> A \<and> (x,m) \<in> R \<longrightarrow>(m,x)\<in>R)" 
-proof-
-       show P0:"is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. x \<notin> A \<or> (x,m) \<notin> R \<or> x=m)"  unfolding is_minimal_def  using A0 A1 by blast
-       show P1:"is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. (x, m)\<in>R \<and> x \<noteq> m \<longrightarrow> x \<notin> A)"  unfolding is_minimal_def using A0 A1 by blast 
-       show P2:"is_minimal R A m \<longleftrightarrow> (\<forall>x \<in> X. x \<in> A \<and> x \<noteq> m \<longrightarrow> (x,m)\<notin> R)" unfolding is_minimal_def  using A0 A1 by blast
-       show P3:"is_minimal R A m \<longleftrightarrow> \<not>(\<exists>x \<in> A. (x,m)\<in>R \<and> x \<noteq> m)"  unfolding is_minimal_def  using A0 A1 by blast
-       show P4:"irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> X. (x,m)\<in>R \<longrightarrow> x \<notin> A)" using P0 irrefl_onD by fastforce
-  then show P5:"irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> \<not>(\<exists>x \<in> A. (x,m)\<in>R)"   using A0 by blast
-  then show P6:"irrefl_on X R \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> A. (x,m)\<notin>R)" using A0 by blast
-       show P7:"antisym R X \<Longrightarrow> (is_minimal R A m) \<longleftrightarrow> (\<forall>x \<in> X. x \<in> A \<and> (x,m) \<in> R \<longrightarrow>(m,x)\<in>R)" using A0 A1 P0 antisym_onD by fastforce 
-qed
-
 lemma not_maximalD1:
   assumes "x \<in> A" and "\<not> (is_maximal R A x)"
   obtains a where "a \<in> A" and "(x, a) \<in> R" and "x \<noteq> a" 
   using assms maximalI2[of x A R] by blast
 
+
 lemma not_maximalD2:
   assumes "x \<in> A" and "\<not> (is_maximal R A x)"
   shows " \<exists>b \<in> A. (x,b)\<in>R \<and> x \<noteq> b"
   using assms unfolding is_maximal_def by blast
-
-lemma not_minimalD1:
-  assumes "x \<in> A" and "\<not>(is_minimal R A x)"
-  obtains a where "a \<in> A" and "(a,x) \<in> R" and "x \<noteq> a" 
-  using assms minimalI2[of x A R] by blast
-
-lemma not_minimalD2:
-  assumes "x \<in> A" and "\<not>(is_minimal R A x)"
-  shows " \<exists>b \<in> A. (b,x)\<in>R \<and> x \<noteq> b"
-  using assms unfolding is_minimal_def by blast
-
 
 
 (*
@@ -1979,211 +1874,6 @@ proof-
       using A0 A1 by blast
   qed
 qed
-
-section Wellfoundedness
-
-lemma induction_scheme1:
-  assumes wf:"wellfounded R X" and mem:"x \<in> X" and 
-          ihp:"\<And>t. \<lbrakk>t\<in>X; (\<And>u. \<lbrakk>u\<in>X; (u, t)\<in>R\<rbrakk> \<Longrightarrow> P u)\<rbrakk> \<Longrightarrow>P t"
-        shows "P x"
-proof-
-  have "\<forall>t \<in> X. (\<forall>u \<in> X. (u,t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t"
-    using ihp by blast
-  then show "P x" using wf mem unfolding wellfounded_def by blast
-qed
-
-lemma induction_scheme2:
-  assumes wf:"wellfounded R X" and ihp:"\<And>t. \<lbrakk>t\<in>X; (\<And>u. \<lbrakk>u\<in>X; (u, t)\<in>R\<rbrakk> \<Longrightarrow> P u)\<rbrakk> \<Longrightarrow>P t"
-  shows "\<forall>x \<in> X. P x" 
-  using assms induction_scheme1[of R X _ P] by blast
-
-lemma induction_scheme3:
-  assumes wf:"wellfounded R X" and ihp:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t"
-  shows "\<forall>x \<in> X. P x"
-  using ihp local.wf wellfounded_def by blast
-
-lemma wfI1:
-  "(\<And>P. \<lbrakk>\<forall>t \<in> X. (\<forall>u \<in> X. (u, t)\<in>R \<longrightarrow> P u) \<longrightarrow> P t\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. P x)) \<Longrightarrow> wellfounded R X"
-  by(auto simp add:wellfounded_def)
-
-lemma wfI2:
-  "(\<And>P x. \<lbrakk>\<forall>t \<in> X. (\<forall>u \<in> X. (u, t)\<in>R \<longrightarrow> P u) \<longrightarrow> P t\<rbrakk> \<Longrightarrow> P x) \<Longrightarrow> wellfounded R X"
-  by(auto simp add:wellfounded_def)
-
-lemma wf2I1:
-  "(\<And>A. \<lbrakk>A \<in> Pow X; \<forall>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A\<rbrakk> \<Longrightarrow> A=X) \<Longrightarrow> wellfounded2 R X" 
-  unfolding wellfounded2_def by auto
-
-lemma wf2I2:
-  assumes A0:"(\<And>A. \<lbrakk>A \<in> Pow X; \<forall>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A\<rbrakk> \<Longrightarrow> (\<forall>x \<in> X. x \<in> A))" 
-  shows "wellfounded2 R X" 
-proof(intro wf2I1)
-  fix A assume A1:"A\<in>Pow X" and A2:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A"
-  show "A = X"
-  proof
-    show "A \<subseteq> X" using A1 by simp
-    show "X \<subseteq> A" using A0 A1 A2 by blast
-  qed
-qed
-
-lemma wf_implies_wf2:
-  "wellfounded R X \<Longrightarrow> wellfounded2 R X"
-proof-
-  assume A0:"wellfounded R X"
-  show "wellfounded2 R X"
-  proof(rule wf2I2)
-    show "\<And>A. A \<in> Pow X \<Longrightarrow> \<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A \<Longrightarrow> \<forall>x\<in>X. x \<in> A"
-    proof-
-      fix A assume A1:"A \<in> Pow X" and A2:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A"
-      define P where "P \<equiv> \<lambda>x. x \<in> A"
-      show "\<forall>x\<in>X. x \<in> A"
-        using A0 A2 P_def induction_scheme3[of R X P] by blast
-    qed
-  qed
-qed
-
-
-lemma wf2_implies_wf:
-  "wellfounded2 R X \<Longrightarrow> wellfounded R X"
-proof-
-  assume A0:"wellfounded2 R X"
-  show "wellfounded R X"
-  proof(rule wfI1)
-    show "\<And>P. \<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t \<Longrightarrow> \<forall>x\<in>X. P x"
-    proof-
-      fix P assume A1:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t"
-      define A where "A \<equiv>  {t \<in> X. P t}"
-      have B0:"A \<in> Pow X"  by (simp add: A_def)
-      also have B1:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> u \<in> A) \<longrightarrow> t \<in> A"
-        by (simp add: A1 A_def)
-      then obtain "\<forall>x\<in>X. x \<in> A"
-        using A0 calculation wellfounded2_def by blast
-      then show "\<forall>x\<in>X. P x"
-        by (simp add: A_def)
-    qed
-  qed
-qed
-
-lemma wf_equivs:
-  "wellfounded R X \<longleftrightarrow> wellfounded2 R X"
-  using wf2_implies_wf wf_implies_wf2 by auto
-
-lemma wf_min1:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"wellfounded R X" and A2:"A \<in> Pow_ne X"
-  shows "(\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A)"
-proof-
-  obtain A20:"A \<subseteq> X" and A21:"A \<noteq> {}" using A2 Pow_neD by auto
-  define P where "P \<equiv> \<lambda>x. x \<notin> A"
-  have B0:"\<not>(\<forall>x\<in>X. P x)"
-    unfolding P_def using A20 A21 by blast
-  then obtain B1:"\<not>(\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t)"
-    using A1 wellfounded_def by blast
-  then obtain B2:"\<exists>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> P u) \<and> \<not>(P t)" by blast
-  then obtain B3:"\<exists>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> u \<notin> A) \<and> (t \<in> A)"  using P_def by blast
-  then show ?thesis by blast
-qed
-
-lemma wf_min2:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"wellfounded R X"
-  shows "\<And>A. A \<in> Pow_ne X \<Longrightarrow> (\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A)"
-  using A0 A1 wf_min1 by blast
-
-lemma wf_min3:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"\<And>A. A \<in> Pow_ne X \<Longrightarrow> (\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A)"
-  shows "wellfounded R X"
-proof(rule wfI1)
-  show "\<And>P. \<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t \<Longrightarrow> \<forall>x\<in>X. P x"
-  proof-
-    fix P assume A2:"\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t"
-    show "\<forall>x\<in>X. P x"
-    proof(rule ccontr)
-      assume C0:"\<not> (\<forall>x\<in>X. P x)" 
-      then obtain B0:"\<exists>x \<in> X. \<not> P x" by auto
-      define A where "A \<equiv> {x \<in> X. \<not>(P x)}"
-      then obtain "A \<in> Pow_ne X" unfolding A_def using B0 Pow_ne_iff by blast
-      then obtain "(\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A)"  using A1 by auto
-      then have "\<exists>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> u \<notin> A) \<and> (t \<in> A)"  using A_def by blast
-      then have "\<exists>t\<in>X. (\<forall>u\<in>X. (u,t)\<in>R \<longrightarrow> P u) \<and> \<not>(P t)"   by (simp add: A_def)
-      then have "\<not>(\<forall>t\<in>X. (\<forall>u\<in>X. (u, t) \<in> R \<longrightarrow> P u) \<longrightarrow> P t)"   by blast
-      then show False   using A2 by blast
-    qed
-  qed
-qed
-
-lemma wf_min4:
-  "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A))"
-  by(auto simp add:wf_min2 wf_min3)
-
-lemma wf_min5:
-  "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. \<not>(\<exists>z. z \<in> A \<and> (z, t) \<in> R)))"
-  using Pow_ne_iff[of _ X] wf_min4[of R X] subset_iff by metis
-
-lemma wf_min6:
-  "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. (\<forall>z. z \<in> A \<longrightarrow> \<not>(z, t) \<in> R)))"
-  using wf_min5[of R X] by presburger
-
-lemma wf_min_obtain:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"wellfounded R X " and A2:"A \<in> Pow_ne X"
-  obtains t where "t \<in> A" and "(\<forall>z. z \<in> A \<longrightarrow> \<not>(z, t) \<in> R)"
-  using A0 A1 A2 wf_min6[of R X] by fastforce
-
-
-lemma wf_asym:
-  assumes A0:"wellfounded R X" and A1:"R \<subseteq> X \<times> X" and A2:"(a, x) \<in> R"
-  shows "(x, a) \<notin> R"
-proof-                                   
-  obtain B0:"x \<in> X" and B1:"a \<in> X" using A1 A2 by auto
-  define A where "A \<equiv> {a, x}" then obtain B2:"A \<subseteq> X" and B3:"A \<noteq> {}"  by (simp add: B0 B1)
-  then have B4:"A \<in> Pow_ne X"  by (simp add: Pow_ne_iff)
-  then obtain t where B5:"t \<in> A" and B6:"(\<forall>z. z \<in> A \<longrightarrow> \<not>(z, t) \<in> R)"
-    using A0 A1 wf_min_obtain[of R X A] by auto
-  have B7:"t \<noteq> x"
-    using A2 A_def B6 by blast
-  then obtain B8:"t=a"
-    using A_def B5 by blast
-  then show "(x, a) \<notin> R"
-    using A_def B6 by blast
-qed
-
-section OrderHoms
-
-lemma isotoneI:"(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X; (x1,x2) \<in>Rx\<rbrakk> \<Longrightarrow> (f x1, f x2) \<in> Ry) \<Longrightarrow> isotone Rx X Ry f" by(simp add: isotone_def)
-lemma order_reflectingI:"(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X; (f x1, f x2) \<in> Ry\<rbrakk> \<Longrightarrow> (x1,x2) \<in>Rx) \<Longrightarrow> order_reflecting Rx X Ry f" by(simp add: order_reflecting_def)
-lemma order_fullI1:"isotone Rx X Ry f  \<Longrightarrow> order_reflecting Rx X Ry f \<Longrightarrow> order_full Rx X Ry f" by(simp add: order_full_def)
-lemma order_fullI2:"(\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X; (x1,x2) \<in>Rx\<rbrakk> \<Longrightarrow> (f x1, f x2) \<in> Ry)  \<Longrightarrow>
-                    (\<And>x1 x2. \<lbrakk>x1 \<in> X; x2 \<in> X; (f x1, f x2) \<in> Ry\<rbrakk> \<Longrightarrow> (x1,x2) \<in>Rx)  \<Longrightarrow>
-                       order_full Rx X Ry f" by (simp add: isotone_def order_full_def order_reflecting_def)
-
-
-lemma isotoneD:"isotone Rx X Ry f \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (x1,x2) \<in>Rx \<Longrightarrow> (f x1,f x2) \<in> Ry" by (simp add: isotone_def)
-lemma order_reflectingD:"order_reflecting Rx X Ry f \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (f x1,f x2) \<in> Ry \<Longrightarrow> (x1,x2) \<in>Rx " by (simp add: order_reflecting_def) 
-lemma order_fullD1:" order_full Rx X Ry f \<Longrightarrow> (isotone Rx X Ry f) \<and> order_reflecting Rx X Ry f" by(simp add: order_full_def)
-lemma order_fullD2:" order_full Rx X Ry f \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (x1,x2) \<in>Rx \<Longrightarrow> (f x1,f x2) \<in> Ry" by(simp add:isotone_def order_full_def)
-lemma order_fullD3:" order_full Rx X Ry f \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (f x1,f x2) \<in> Ry \<Longrightarrow> (x1,x2) \<in>Rx" by(simp add:order_reflecting_def order_full_def)
-lemma order_fullD4:" order_full Rx X Ry f \<Longrightarrow> x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (f x1,f x2) \<in> Ry \<longleftrightarrow> (x1,x2) \<in>Rx"  by (meson order_fullD2 order_fullD3)
-
-lemma irr_isotoneI:
-  assumes A0:"(\<And>x1 x2.  \<lbrakk>x1 \<in> X; x2 \<in> X; (x1,x2) \<in>Rx; x1 \<noteq> x2\<rbrakk> \<Longrightarrow>  (f x1, f x2) \<in> Ry)" and
-          A1:"f`X \<subseteq> Y" and
-          A2:"refl Ry Y"
-        shows "isotone Rx X Ry f"
-proof(intro isotoneI)
-  fix x1 x2 assume "x1 \<in> X" and "x2 \<in> X" and "(x1,x2)\<in>Rx"
-  show  "(f x1, f x2) \<in> Ry"
-  proof(cases "x1 \<noteq> x2")
-    case True then show ?thesis by (simp add: A0 \<open>(x1, x2) \<in> Rx\<close> \<open>x1 \<in> X\<close> \<open>x2 \<in> X\<close>) 
-  next
-    case False then obtain "f x1 = f x2" by simp
-    then show ?thesis using A1 A2 \<open>x2 \<in> X\<close> reflD2 by fastforce
-  qed
-qed
-
-lemma irr_isotoneD:
-  assumes A0:"isotone Rx X Ry f" 
-  shows   "(\<And>x1 x2.  \<lbrakk>x1 \<in> X; x2 \<in> X; (x1,x2) \<in>Rx; x1 \<noteq> x2\<rbrakk> \<Longrightarrow>  (f x1, f x2) \<in> Ry)"
-  using assms isotoneD by fastforce
-
-
 
 section SupSemilattices
 
@@ -4217,11 +3907,7 @@ lemma is_ord_clE1:
 
 lemma is_ord_clD1:
   "is_ord_cl X A R \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> A; b \<in> X; (a,b)\<in>R\<rbrakk> \<Longrightarrow> b \<in> A )"
-  by (simp add:is_ord_cl_def)
-
-lemma is_ord_cl_trans:"\<lbrakk>A \<subseteq> X; B \<subseteq> A;is_ord_cl X A R; is_ord_cl A B R\<rbrakk> \<Longrightarrow>is_ord_cl X B R" unfolding is_ord_cl_def by blast
-
-lemma is_ord_cl_complement:"U \<subseteq> X \<Longrightarrow> is_ord_cl X U R \<longleftrightarrow> is_ord_cl X (X-U) (converse R)" unfolding is_ord_cl_def by blast
+   by (simp add:is_ord_cl_def)
 
 lemma is_ord_cl_unin:
   assumes A0:"(\<And>E. E \<in>\<E> \<Longrightarrow> is_ord_cl X E R)" 
@@ -6059,8 +5745,14 @@ proof-
         by (simp add: insert_commute)
       also have B18:"... = Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}"
         by (metis B6 B7 B8 B9 lat latt_iff por semilattice_assoc_inf)
-      obtain B19:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},a)\<in>R "
-        by (meson B14 B15 B4 amem2 antisym_on_converse converseD lat lattD4 por ssl_ex_sup0a ssl_ex_sup5 trans_onD)
+      have B19a:"Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}} \<in> X"
+        using B14 B15 lat latt_iff[of R X] por isl_ex_sup5[of X R "Inf R X {a1, a2}" "Inf R X {b1, b2}"] by blast
+      obtain B19b:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}, Inf R X {a1, a2}) \<in> R" and 
+             B19c:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}, Inf R X {b1, b2}) \<in> R"  
+        using B14 B15  por lat latt_iff[of R X] isl_ex_sup0a[of X R "Inf R X {a1, a2}" "Inf R X {b1, b2}"]
+              isl_ex_sup0b[of X R "Inf R X {a1, a2}" "Inf R X {b1, b2}"] by blast
+      then have B19:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},a)\<in>R"
+        using B14 B19a B4 amem2 por trans_onD[of X R "Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}}" "Inf R X {a1, a2}" a] by fastforce
       then obtain B20:"(Inf R X {Inf R X {a1, b1}, Inf R X {a2, b2}},a)\<in>R"
         using B16 B17 B18 by presburger
       obtain B21:"(Inf R X {Inf R X {a1, a2}, Inf R X {b1, b2}},b)\<in>R "
@@ -7076,7 +6768,7 @@ proof-
         have B0:"y = Sup R X {y, Inf R X (x` I)}"
           by (simp add: bsup_or2 ix1mem por ssl ygt ymem2)
         have B1:"... = Inf R X {Sup R X {y,a}|a.  a \<in> (x` I)}"
-          using dlt fin_distr1 por xfin xineq xisub ymem2 by fastforce 
+          using dlt fin_distr1[of R X "x`I" y] por xfin xineq xisub ymem2 by blast
         have B2:"... = Inf R X {Sup R X {y, x i}|i. i \<in> I}"
         proof-
           have "{Sup R X {y, a} |a. a \<in> x ` I} = {Sup R X {y, x i} |i. i \<in> I}" by blast
@@ -14024,38 +13716,38 @@ lemma LimAdh_galois:
   apply (simp add: pwr_antisym pwr_refl pwr_trans)
   by (simp add: pwr_antisym pwr_refl pwr_trans refl_dualI)
 
-section Misc
 
-locale poset_locale=
+
+locale poset=
   fixes R::"'a rel" and X::"'a set"
   assumes trn:"trans R X" and
           asy:"antisym R X" and
           ref:"refl R X"
 
-interpretation powerset: poset_locale "pwr X"  "Pow X"
-  by (simp add: poset_locale_def pwr_antisym pwr_refl pwr_trans)
+interpretation powerset: poset "pwr X"  "Pow X"
+  by (simp add: poset_def pwr_antisym pwr_refl pwr_trans)
 
-locale poset_sup_semilattice=poset_locale+
+locale poset_sup_semilattice=poset+
   assumes isl:"is_sup_semilattice R X"
 
-locale poset_inf_semilattice=poset_locale+
+locale poset_inf_semilattice=poset+
   assumes isl:"is_inf_semilattice R X"
 
-locale poset_lattice=poset_locale+
+locale poset_lattice=poset+
   assumes ila:"is_lattice R X"
 
-locale poset_dist_lattice=poset_locale+
+locale poset_dist_lattice=poset+
     assumes ila:"is_lattice R X" and
             dis:"(\<forall>x \<in> X. \<forall>y \<in> X. \<forall>z \<in> X. Sup R X {x, Inf R X {y, z}} = Inf R X {Sup R X {x, y}, Sup R X {x, z}})"
 
-locale poset_csup_semilattice=poset_locale+
+locale poset_csup_semilattice=poset+
   assumes ics:"is_csup_semilattice R X"
 
-locale poset_cinf_semilattice=poset_locale+
+locale poset_cinf_semilattice=poset+
   assumes ici:"is_cinf_semilattice R X"
 
 
-locale poset_clattice=poset_locale+
+locale poset_clattice=poset+
   assumes icl:"is_clattice R X"
 
 definition equiv_rel_lattice where "equiv_rel_lattice X \<equiv> {R \<in> Pow (X \<times> X). equiv X R}"
@@ -14139,1295 +13831,6 @@ proof(rule moore_clI3)
   show "\<And>E. E \<subseteq> equiv_rel_lattice X \<Longrightarrow> E \<noteq> {} \<Longrightarrow> \<Inter> E \<in> equiv_rel_lattice X"
     by (simp add: Pow_ne_iff equiv_rel_lattice_ne_int)
 qed
-
-lemma coversI:
-  "\<lbrakk>x\<in>X; y\<in>X; (x,y) \<in> R \<and> x \<noteq> y; (\<And>z. \<lbrakk>z\<in>X;(x,z)\<in>R;(z,y)\<in>R\<rbrakk> \<Longrightarrow> x=z \<or> y=z)\<rbrakk> \<Longrightarrow> covers R X x y" 
-  by(simp add:covers_def) 
-
-lemma coversE:
-  assumes "covers R X x y" 
-  obtains "x\<in>X" "y\<in>X" "(x,y) \<in> R"  "x \<noteq> y" "(\<And>z. \<lbrakk>z\<in>X;(x,z)\<in>R;(z,y)\<in>R\<rbrakk> \<Longrightarrow> x=z \<or> y=z)"
-  using assms unfolding covers_def by blast
-
-
-lemma covers_equiv:
-  assumes A0:"x\<in>X" and A1:"y\<in>X" and A2:"(x,y)\<in>R" and A3:"x\<noteq>y"
-  shows "covers R X x y \<longleftrightarrow> (\<forall>z \<in> X. (x, z) \<in> R \<and> z\<noteq>y \<and> (z, y) \<in> R \<longrightarrow> x = z)"
-  using assms unfolding covers_def by auto
-
-lemma knaster_tarski1:
-  assumes A0:"is_clattice R X" and A1:"isotone R X R f" and A2:"f`X \<subseteq> X" and A3:"pord R X"
-  shows "f (Sup R X {x \<in> X. (x, f x) \<in> R}) = Sup R X {x \<in> X. (x, f x) \<in> R}" and 
-        "\<And>x. \<lbrakk>x \<in> X; f x = x\<rbrakk> \<Longrightarrow> (x, Sup R X {x \<in> X. (x, f x) \<in> R}) \<in> R"
-proof-
-  let ?L="{x \<in> X. (x, f x) \<in> R}"
-  obtain s where B0:"s \<in> X" and B1:"s = Sup R X ?L"
-    by (simp add: A0 A3 clatD21 ex_sup5)
-  have B2:"\<And>x. x \<in> ?L \<Longrightarrow> (x, s) \<in> R \<and> (x, f x) \<in> R"
-    by (simp add: A0 A3 B1 clatD21 ex_sup0)
-  have B3:"\<And>x. x \<in> ?L \<Longrightarrow> (f x, f s) \<in> R"
-    using A1 B0 B2 isotoneD1 by fastforce
-  have B4:"\<And>x. x \<in> ?L \<Longrightarrow> (x, f s) \<in> R"
-  proof-
-    fix x assume A4:"x \<in> ?L" 
-    then obtain "(x, f x) \<in> R" and "(f x, f s) \<in> R" and "f x \<in> X" and "f s \<in> X"
-      using A2 B0 B3 by blast
-    then show "(x, f s) \<in> R"
-      using A3 A4 trans_onD[of X R x "f x" "f s"] by blast
-  qed
-  have B5:"f s \<in> X"
-    using A2 B0 by blast
-  have B6:"f s \<in> ubd R X ?L"
-    using B4 B5 ubdI1[of "f s" X ?L R] by blast
-  have B7:"(s, f s) \<in> R"
-    using A0 A3 B1 B6 clatD4 by fastforce
-  have B8:"(f s, f (f s)) \<in> R"
-    using A1 B0 B5 B7 isotoneD1 by fastforce
-  have B9:"f s \<in> ?L"
-    by (simp add: B5 B8)
-  have B10:"(f s, s) \<in> R"
-    using B2 B9 by blast
-  have B11:"f s = s"
-    using A3 B0 B10 B5 B7 antisym_onD[of X R "f s" s] by blast
-  show "f (Sup R X {x \<in> X. (x, f x) \<in> R}) = Sup R X {x \<in> X. (x, f x) \<in> R}"
-    using B1 B11 by blast
-  show "\<And>x. \<lbrakk>x \<in> X; f x = x\<rbrakk> \<Longrightarrow> (x, Sup R X {x \<in> X. (x, f x) \<in> R}) \<in> R"
-    using A3 B1 B2 reflD2 by fastforce
-qed
-
-
-lemma cantors_lemma:
-  assumes surjection:"f`X=Pow X"
-  shows False
-proof-
-  define E where "E \<equiv>{x \<in> X. x \<notin> f x}"
-  then obtain "E \<in> Pow X" and "E \<in> f`X" using surjection by blast 
-  then obtain a where "a \<in> X" and "f a = E" by auto
-  then show False unfolding E_def by blast
-qed
-
-
-definition proset::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "proset R X \<equiv> refl_on X R \<and> trans R X"
-
-definition poset::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "poset R X \<equiv> proset R X \<and> antisym R X"
-
-definition strict_poset::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "strict_poset R X \<equiv> R \<subseteq> X \<times> X \<and> irrefl_on X R \<and> trans R X "
-
-definition strictly_isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel  \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where 
-  "strictly_isotone Rx X Ry f \<equiv> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1, x2) \<in> Rx\<longrightarrow> x1 \<noteq> x2 \<longrightarrow> (f x1, f x2) \<in> Ry \<and> f x1 \<noteq> f x2)"
-
-definition order_iso::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow>'b set  \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where 
-  "order_iso Rx X Ry Y f \<equiv> f`X=Y \<and> (\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1,x2)\<in>Rx \<longleftrightarrow>(f x1, f x2) \<in> Ry)"
-
-
-lemma ord_cl_memI1:"A \<in> Pow X \<Longrightarrow> is_ord_cl X A R \<Longrightarrow> A \<in> ord_cl_sets X R" by (simp add: ord_cl_sets_def)
-lemma ord_cl_memI2:"A \<in> Pow X \<Longrightarrow> is_ord_cl X A (dual R) \<Longrightarrow> A \<in> ord_cl_sets X (dual R)" by (simp add: ord_cl_sets_def)
-lemma ord_cl_memD1:"A \<in> ord_cl_sets X R \<Longrightarrow>  is_ord_cl X A R \<and>  A \<in> Pow X  " by (simp add: ord_cl_sets_def)
-lemma ord_cl_memD2:"A \<in> ord_cl_sets X (dual R) \<Longrightarrow>  is_ord_cl X A (dual R) \<and>  A \<in> Pow X  " by (simp add: ord_cl_sets_def)
-
-lemma strictly_isotoneI:"(\<And>x1 x2. \<lbrakk>x1 \<in>X; x2 \<in>X;(x1,x2)\<in>Rx;x1\<noteq>x2\<rbrakk> \<Longrightarrow>(f x1,f x2)\<in>Ry \<and> f x1 \<noteq> f x2) \<Longrightarrow> strictly_isotone Rx X Ry f" by(simp add:strictly_isotone_def)
-lemma strictly_isotoneD:"strictly_isotone Rx X Ry f \<Longrightarrow>x1 \<in>X\<Longrightarrow> x2 \<in>X\<Longrightarrow>(x1,x2)\<in>Rx\<Longrightarrow>x1\<noteq>x2\<Longrightarrow>(f x1,f x2)\<in>Ry \<and> f x1 \<noteq> f x2"by(simp add:strictly_isotone_def)
-lemma strictly_isotone_sub:"strictly_isotone Rx X Ry f \<Longrightarrow> E \<subseteq> X \<Longrightarrow> strictly_isotone Rx E Ry f" by(auto intro:strictly_isotoneI dest:strictly_isotoneD)
-lemma strictly_isotone_trv:"strictly_isotone Rx {} Ry f" by(auto intro:strictly_isotoneI dest:strictly_isotoneD)
-lemma order_isoI1:" f`X = Y \<Longrightarrow>(\<And>x1 x2. \<lbrakk>x1 \<in>X; x2 \<in>X;(x1,x2)\<in>Rx\<rbrakk> \<Longrightarrow>(f x1,f x2)\<in>Ry) \<Longrightarrow>(\<And>x1 x2. \<lbrakk>x1 \<in>X; x2 \<in>X;(f x1, f x2)\<in>Ry\<rbrakk> \<Longrightarrow>(x1,x2)\<in>Rx) \<Longrightarrow> order_iso Rx X Ry Y f" unfolding order_iso_def by blast 
-lemma order_isoI2:" f`X = Y \<Longrightarrow>(\<forall>x1 \<in>X. \<forall>x2\<in>X. (x1,x2)\<in>Rx \<longleftrightarrow> (f x1,f x2)\<in>Ry) \<Longrightarrow> order_iso Rx X Ry Y f" unfolding order_iso_def by blast 
-lemma order_isoI3:" f`X = Y \<Longrightarrow> order_full Rx X Ry f \<Longrightarrow>order_iso Rx X Ry Y f" by (simp add: order_fullD4 order_isoI2)
-
-lemma order_isoD1:"order_iso Rx X Ry Y f \<Longrightarrow>x1 \<in>X\<Longrightarrow> x2\<in>X\<Longrightarrow> (x1,x2)\<in>Rx \<Longrightarrow>(f x1,f x2)\<in>Ry " unfolding order_iso_def by blast
-lemma order_isoD2:"order_iso Rx X Ry Y f \<Longrightarrow>x1 \<in>X\<Longrightarrow> x2\<in>X\<Longrightarrow> (f x1, f x2)\<in>Ry \<Longrightarrow>(x1, x2)\<in>Rx" unfolding order_iso_def by blast 
-lemma order_isoD3:"order_iso Rx X Ry Y f \<Longrightarrow> f`X=Y" unfolding order_iso_def by blast 
-lemma order_isoD4:"order_iso Rx X Ry Y f \<Longrightarrow> isotone Rx X Ry f" by (simp add: isotone_def order_isoD1) 
-lemma order_isoD5:"order_iso Rx X Ry Y f \<Longrightarrow> order_reflecting Rx X Ry f" by (simp add: order_iso_def order_reflecting_def)
-lemma order_isoD6:"order_iso Rx X Ry Y f \<Longrightarrow> order_full Rx X Ry f" by (simp add: order_full_def order_isoD4 order_isoD5) 
-lemma order_full_im_iso:"order_full Rx X Ry f \<Longrightarrow> order_iso Rx X Ry (f`X) f" by (simp add: order_isoI3)
-lemma order_isoD7:
-    assumes A0:"antisym R X" and 
-            A1:"refl_on X R" and
-            A2:"order_iso R X Ry Y f" 
-          shows "inj_on f X"
-proof(rule inj_onI)
-  fix x y assume A4:"x \<in> X" and A5:"y \<in> X" and A6:"f x= f y" 
-  obtain B0:"(f x,f y)\<in>Ry" and B1:"(f y, f x) \<in>Ry"
-    using A1 A2 A5 A6 order_isoD1 refl_onD by fastforce
-  obtain B2:"(x, y)\<in>R" and B3:"(y,x)\<in>R"
-    using A2 A4 A5 A6 B0 order_isoD2 by fastforce 
-  then show "x = y"
-    by (meson A0 A4 A5 antisym_onD)
-qed
-
-
-
-lemma order_isoD8:
-    assumes A0:"antisym R X" and 
-            A1:"refl_on X R" and
-            A2:"order_iso R X Ry Y f" 
-          shows "strictly_isotone R X Ry f"
-proof-
-  have B0:"inj_on f X"
-    using A0 A1 A2 order_isoD7 by blast
-  show  "strictly_isotone R X Ry f"
-  proof(rule strictly_isotoneI)
-    fix x1 x2 assume A4:"x1 \<in>X" and A5:"x2 \<in>X" and A6:"(x1,x2)\<in>R" and A7:"x1 \<noteq> x2"
-    then obtain "(f x1, f x2)\<in>Ry" and "f x1 \<noteq> f x2"
-      by (meson A2 B0 inj_onD order_isoD1)
-    then show "(f x1, f x2) \<in> Ry \<and> f x1 \<noteq> f x2"
-      by simp
-  qed
-qed
-
-lemma order_isoD9:"antisym R X \<Longrightarrow> refl_on X R \<Longrightarrow> order_iso R X S Y f \<Longrightarrow> bij_betw f X Y" by (simp add: bij_betw_imageI order_isoD3 order_isoD7)
-
-lemma prosetI:"refl_on X R \<Longrightarrow> trans R X\<Longrightarrow> proset R X" by (simp add:proset_def)
-lemma posetI1:"proset R X \<Longrightarrow> antisym R X \<Longrightarrow> poset R X" by (simp add:poset_def)
-lemma posetI2:"refl_on X R \<Longrightarrow> trans R X\<Longrightarrow> antisym R X \<Longrightarrow> poset R X" by (simp add:poset_def proset_def)
-lemma strict_posetI1:"R \<subseteq> X \<times> X \<Longrightarrow> irrefl_on X R \<Longrightarrow> trans R X \<Longrightarrow> strict_poset R X" by (simp add:strict_poset_def)
-lemma strict_posetI2:"R \<subseteq> X \<times> X\<Longrightarrow> asym_on X R \<Longrightarrow> trans R X \<Longrightarrow> strict_poset R X" by (simp add:strict_poset_def)
-
-lemma prosetD1:" proset R X \<Longrightarrow> refl_on X R" by (simp add:proset_def)
-lemma prosetD2:" proset R X \<Longrightarrow> trans R X" by (simp add:proset_def)
-lemma prosetD3:"proset R X \<Longrightarrow> R \<subseteq> X \<times> X"  using prosetD1 refl_on_def by blast
-
-lemma posetD1:"poset R X \<Longrightarrow> proset R X" by (simp add:poset_def)
-lemma posetD2:"poset R X \<Longrightarrow> antisym R X" by (simp add:poset_def)
-lemma posetD3:"poset R X \<Longrightarrow> refl_on X R" by (simp add:poset_def proset_def)
-lemma posetD4:"poset R X \<Longrightarrow> trans R X" by (simp add:poset_def proset_def)
-
-lemma strict_posetD1:"strict_poset R X \<Longrightarrow> trans R X" by (simp add:strict_poset_def)
-lemma strict_posetD2:"strict_poset R X \<Longrightarrow> irrefl_on X R" by (simp add:strict_poset_def)
-lemma strict_posetD3:"strict_poset R X \<Longrightarrow> asym_on X R"  by (simp add: asym_on_iff_irrefl_on_if_trans_on strict_posetD1 strict_posetD2) 
-
-
-lemma iso_I2:"refl_on X Rx \<Longrightarrow> refl_on Y Ry \<Longrightarrow>f`X \<subseteq> Y \<Longrightarrow>(\<And>x y. \<lbrakk>(x, y) \<in> Rx; x \<noteq> y\<rbrakk> \<Longrightarrow> (f x, f y) \<in> Ry) \<Longrightarrow> isotone Rx X Ry f" by (metis image_subset_iff isotoneI1 refl_on_def)
-lemma isoD1:" isotone Rx X Ry f\<Longrightarrow>refl_on X Rx \<Longrightarrow> refl_on Y Ry \<Longrightarrow>f`X \<subseteq> Y \<Longrightarrow>(x, y) \<in> Rx\<Longrightarrow> x \<noteq> y \<Longrightarrow> (f x, f y) \<in> Ry" by (meson isotone_def refl_on_domain)
-
-lemma iso_iff:assumes A0:"refl_on X Rx" and A1:"refl_on Y Ry" and func:"f`X \<subseteq> Y"
-  shows "(\<forall>x y. (x, y) \<in> Rx \<and> x \<noteq> y \<longrightarrow> (f x, f y) \<in> Ry) \<longleftrightarrow> isotone Rx X Ry f"
-  by (metis A0 A1 func isoD1 iso_I2)
-
-lemma iso_comp:assumes A0:"isotone Rx X Ry f" and A2:"isotone Ry Y Rz g" and A3:"f`X \<subseteq> Y"
-  shows "isotone Rx X Rz (g \<circ> f)"
-proof(rule isotoneI)
-  fix x1 x2 assume A4:"x1 \<in> X" and A5:"x2 \<in> X" and A6:"(x1, x2) \<in> Rx"
-  then obtain B0:"(f x1, f x2) \<in> Ry" and B1:"f x1 \<in> Y" and B2:"f x2 \<in> Y"
-    by (meson A0 A3 image_subset_iff isotoneD1)
-  then obtain "(g (f x1), g (f x2)) \<in> Rz"
-    by (meson A2 isotoneD1) 
-  then show "((g \<circ> f) x1, (g \<circ> f) x2) \<in> Rz" by auto
-qed
-
-lemma isotone_strict:"poset Rx X \<Longrightarrow> poset Ry Y\<Longrightarrow> strictly_isotone Rx X Ry f \<Longrightarrow>f`X \<subseteq> Field Ry \<Longrightarrow> isotone Rx X Ry f"
-proof-
-  assume A0:"poset Rx X" and A1:"poset Ry Y"  and A2:"strictly_isotone Rx X Ry f" and A3:"f`X \<subseteq> Field Ry"
-  then obtain ref1:"refl_on X Rx" and ref2:"refl_on Y Ry" and tran1:"trans Rx X" and tran2:"trans Ry Y" and ant1:"antisym Rx X" and  ant2:"antisym Ry Y" using A0 A1 poset_def proset_def   by metis
-  show "isotone Rx X Ry f"
-  proof(rule isotoneI)
-    fix x1 x2 assume A4:"x1 \<in> X" and A5:"x2 \<in> X" and A6:"(x1,x2)\<in>Rx"
-    show "(f x1, f x2) \<in> Ry"
-    proof(cases "x1=x2")
-      case True
-      then show ?thesis
-        by (metis A3 A5 Field_iff image_subset_iff ref2 refl_onD refl_on_domain) 
-    next
-      case False
-      then show ?thesis
-        by (meson A2 A4 A5 A6 strictly_isotoneD) 
-    qed
-  qed
-qed
-
-lemma poset_to_strict:
-  assumes A0:"poset R X" 
-  defines "S \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> R \<and> x \<noteq> y}"
-  shows "strict_poset S X"
-proof(rule strict_posetI1)
-  show "irrefl S X"
-    by (simp add: S_def irrefl_on_def)
-  show "trans S X"
-  proof(rule trans_onI)
-    fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x, y) \<in> S" and A5:"(y, z) \<in> S"
-    then obtain "(x,y)\<in>R" and "(y,z)\<in>R" and "x \<noteq> y" and "y \<noteq> z"
-      using S_def by fastforce
-    then obtain "(x,z)\<in>R" and "x \<noteq> z"
-      by (metis A0 A1 A2 A3 antisym_onD posetD4 poset_def trans_onD)
-    then show "(x, z) \<in> S"
-      by (simp add: A1 A3 S_def)
-  qed
-  show "S \<subseteq> X \<times> X"
-    using S_def by blast
-qed
-
-lemma strict_to_poset:
-  assumes A0:"strict_poset S X" 
-  defines "R \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> S \<or> x = y}"
-  shows "poset R X"
-proof(rule posetI2)
-  show P0:"refl_on X R" using R_def refl_on_def by fastforce
-  show "trans R X"
-  proof(rule trans_onI)
-    fix x y z assume A1:"x \<in> X" and A2:"y \<in> X" and A3:"z \<in> X" and A4:"(x, y) \<in> R" and A5:"(y, z) \<in> R"
-    then obtain B0:"(x, y) \<in> S \<or> x = y" and B1:"(y, z) \<in> S \<or> y = z"
-      using R_def by fastforce
-    have B2:"trans S X"
-      by (simp add: A0 strict_posetD1)
-    show "(x, z) \<in> R"
-    proof(cases "(x, y) \<in> S")
-      case A6:True
-      then show ?thesis 
-      proof(cases "(y, z)\<in>S")
-        case A7:True
-        then show ?thesis
-          using A1 A2 A3 A6 B2 R_def trans_on_def by force 
-      next
-        case False
-        then show ?thesis
-          using A4 B1 by blast 
-      qed
-    next
-      case False
-      then show ?thesis
-        using A5 B0 by blast 
-    qed
-  qed
-  show "antisym R X"
-  proof(rule antisym_onI)
-    fix x y assume A1:"x \<in> X" and A2:"y \<in> X" and  A4:"(x, y) \<in> R" and A5:"(y, x) \<in> R"
-    then obtain B0:"(x, y)\<in> S \<or> x=y" and B1:"(y,x) \<in> S \<or> x=y"
-      using R_def by fastforce
-    then show "x = y"
-      by (metis A0 A1 A2 asym_onD strict_posetD3)
-  qed
-qed
-
-
-lemma poset_to_strict_to_poset:
-  assumes A0:"poset R X" 
-  defines "S \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> R \<and> x \<noteq> y}" 
-  defines "R' \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> S \<or> x = y}"
-  shows "R=R'"
-proof-
-  obtain B0:"R \<subseteq> X \<times> X" and  B1:"strict_poset S X"
-    using A0 S_def posetD1 poset_to_strict prosetD3 by blast
-  have "R \<subseteq> R'"
-    unfolding R'_def S_def using B0 by blast
-  also have "R' \<subseteq> R"
-    unfolding R'_def S_def  using A0 posetD3 refl_on_def by fastforce
-  then show ?thesis
-    using calculation by auto
-qed
-
-lemma strict_to_poset_to_strict:
-  assumes A0:"strict_poset S X" 
-  defines "R \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> S \<or> x=y}" 
-  defines "S' \<equiv> {(x, y) \<in> X \<times> X. (x, y) \<in> R \<and> x \<noteq> y}"
-  shows "S=S'"
-proof-
-  obtain B0:"S \<subseteq> X \<times> X" and  B1:"poset R X"
-    using A0 R_def strict_poset_def strict_to_poset by blast
-  have "S \<subseteq> S'"
-    unfolding S'_def R_def
-    using A0 irrefl_onD strict_poset_def subset_eq by fastforce
-  also have "S' \<subseteq> S"
-    using R_def S'_def by blast
-  then show ?thesis
-    using calculation by auto
-qed
-
-lemma inj_onI2:"(\<And>x1 x2. \<lbrakk>x1 \<in>X; x2 \<in>X; x1 \<noteq> x2\<rbrakk> \<Longrightarrow> f x1 \<noteq> f x2) \<Longrightarrow> inj_on f X" using inj_on_def by blast
-lemma bij_betwI1:"inj_on f X \<Longrightarrow> f`X=Y \<Longrightarrow> bij_betw f X Y" by (simp add: bij_betw_def)
-lemma order_iso_poset:
-  assumes A1:"poset Rx X" and A3:"order_iso Rx X Ry Y f"
-  shows "inj_on f X" and "bij_betw f X Y " and "\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1, x2) \<in> Rx \<and> x1 \<noteq> x2 \<longleftrightarrow> (f x1, f x2)\<in>Ry \<and> f x1 \<noteq> f x2"
-proof-
-  show P0:"inj_on f X"
-  proof(rule inj_onI)
-    fix x y assume A4:"x \<in> X" and A5:"y \<in> X" and A6:"f x= f y" 
-    then obtain "(f x,f y)\<in>Ry" and "(f y, f x) \<in>Ry"  by (metis A1 A3 order_isoD1 posetD3 refl_onD)
-    then obtain "(x, y)\<in>Rx" and "(y,x)\<in>Rx"   by (meson A3 A4 A5 order_isoD2)
-    then show "x = y"
-      by (meson A1 A4 A5 antisym_onD posetD2)
-  qed
-  show P1:"bij_betw f X Y"
-  proof(rule bij_betwI1)
-    show "inj_on f X" using P0 by auto
-    show "f ` X = Y" using A3 order_isoD3 by blast
-  qed
-  have P2:"\<And>x1 x2. \<lbrakk>x1\<in>X; x2 \<in>X; (x1,x2)\<in>Rx; x1 \<noteq> x2\<rbrakk> \<Longrightarrow> (f x1, f x2)\<in>Ry \<and> f x1 \<noteq> f x2"
-    by (meson A3 P0 inj_onD order_isoD1)
-  have P3:"\<And>x1 x2. \<lbrakk>x1 \<in>X; x2 \<in> X; (f x1, f x2)\<in>Ry; f x1 \<noteq> f x2\<rbrakk> \<Longrightarrow> (x1,x2)\<in>Rx \<and> x1 \<noteq> x2"
-    by (meson A3 order_isoD2)
-  show "\<forall>x1 \<in> X. \<forall>x2 \<in> X. (x1, x2) \<in> Rx \<and> x1 \<noteq> x2 \<longleftrightarrow> (f x1, f x2)\<in>Ry \<and> f x1 \<noteq> f x2"
-    using P2 P3 by blast
-qed
-
-
-
-lemma toset_iso1:
-  fixes X::"'a set" and Rx::"'a rel" and Ry::"'b rel" and Y::"'b set"
-  assumes A0:"total_on X Rx"  and A3:"strictly_isotone Rx X Ry f" and A1:"poset Rx X" and A2:"poset Ry Y"
-  shows "inj_on f X"
-proof(rule inj_onI2)
-  fix x y assume A4:"x \<in> X" and A5:"y \<in> X" and A6:"x\<noteq>y" 
-  then obtain B0:"(x,y)\<in>Rx \<or> (y,x)\<in> Rx"  using A0 total_on_def by fastforce
-  then obtain B1:"((f x, f y) \<in> Ry \<and> f x \<noteq> f y) \<or> ((f y, f x) \<in> Ry \<and> f y \<noteq> f x)" 
-    using A3 A4 A5 A6 strictly_isotoneD[of Rx X Ry f] by blast
-  then show "f x \<noteq> f y" by auto
-qed
-
-lemma toset_iso2:
-  fixes X::"'a set" and Rx::"'a rel" and Ry::"'b rel" and Y::"'b set"
-  assumes A0:"total_on X Rx"  and A3:"strictly_isotone Rx X Ry f" and A1:"poset Rx X" and 
-          A2:"poset Ry Y" and surj:"f`X=Y"
-  shows "total_on Y Ry" 
-proof(rule total_onI)
-  fix y1 y2 assume A4:"y1 \<in> Y" and A5:"y2 \<in> Y" and A6:"y1 \<noteq> y2" 
-  then obtain x1 x2 where B0:"x1 \<in>X" and B1:"x2 \<in> X" and B2:"f x1 = y1" and B3:"f x2 = y2"  using surj by blast
-  then obtain B4:"(x1,x2)\<in>Rx \<or> (x2,x1)\<in> Rx"   using A0 A6 total_on_def by fastforce 
-  then obtain B5:"(f x1, f x2) \<in> Ry \<or> (f x2, f x1) \<in> Ry"  using A3 A6 B0 B1 B2 B3 strictly_isotoneD by fastforce
-  then show "(y1, y2) \<in> Ry \<or> (y2, y1) \<in> Ry" using B2 B3 by auto
-qed
-
-
-definition well_ord::"'a rel \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "well_ord R X \<equiv> trans R X \<and> antisym R X \<and> refl_on X R \<and> (\<forall>A \<in> Pow_ne X. \<exists>m \<in> A. is_least R A m)"
-
-
-lemma well_ordI1:"\<lbrakk>trans R X; antisym R X; refl_on X R;(\<And>A. A \<in> Pow_ne X \<Longrightarrow> \<exists>m \<in> A. is_least R A m)\<rbrakk> \<Longrightarrow> well_ord R X"  by (simp add: well_ord_def)
-lemma well_ordI2:"poset R X \<Longrightarrow>(\<And>A. A \<in> Pow_ne X \<Longrightarrow> \<exists>m \<in> A. is_least R A m) \<Longrightarrow> well_ord R X"  by (simp add: posetD3 posetD4 poset_def well_ord_def)
-
-
-definition seg::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a set" where
-  "seg R X a \<equiv> {x \<in> X. (x, a)\<in>R \<and> x \<noteq> a}"
-
-definition segs::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a set set" where
-  "segs R X \<equiv> (\<lambda> a. seg R X a)`X"
-
-lemma seg_memI:
-  "x \<in> X \<Longrightarrow> (x, a)\<in>R \<Longrightarrow> x \<noteq> a \<Longrightarrow> x \<in> seg R X a" 
-  by (simp add: seg_def)
-
-lemma seg_memD:
-  "x \<in> seg R X a \<Longrightarrow> x \<in> X \<and> (x, a) \<in> R \<and> x \<noteq> a"
-  by (simp add: seg_def)
-
-lemma seg_memD1:
-  "x \<in> seg R X a \<Longrightarrow> x \<in> X" 
-  by (simp add: seg_def)
-
-lemma seg_memD2:
-  "x \<in> seg R X a \<Longrightarrow> (x, a) \<in>R"  
-  by (simp add: seg_def)
-
-lemma seg_memD3:
-  "x \<in> seg R X a \<Longrightarrow>  x \<noteq> a" 
-  by (simp add: seg_def)
-
-lemma seg_pow:
-  "seg R X a \<in> Pow X"
-  using seg_memD by fastforce
-
-lemma segs_memI:
-  "\<exists>x \<in> X. A=seg R X x \<Longrightarrow> A \<in> segs R X" 
-  using segs_def by fastforce 
-
-lemma segs_memD:
-  "A \<in> segs R X \<Longrightarrow> \<exists>x \<in> X. A=seg R X x "  
-  by (simp add: image_iff segs_def) 
-
-lemma segs_memD2:"A \<in> segs R X \<Longrightarrow> A \<in> Pow X" unfolding segs_def  using seg_pow by fastforce
-
-lemma not_in_seg:
-  "a \<notin> seg R X a" 
-  by (simp add: seg_def)
-
-lemma seg_ord_cl:
-  assumes A0:"a \<in> X" and A1:"trans R X" and A2:"antisym R X" shows "is_ord_cl X (seg R X a) (converse R)"
-proof(rule is_ord_clI1)
-  fix x y assume A4:"x \<in> seg R X a" and A5:"y \<in> X" and A6:"(x, y) \<in> converse R"
-  then obtain B0:"(x, a) \<in> R" and B1:"x \<in> X" and B2:"x \<noteq> a" and B3:"(y, x)\<in> R"  by (simp add: seg_def)
-  have B4:"(y, a) \<in> R" using A1 A0 A5 B1 B0 B3 trans_onD[of X R y x a] by blast
-  have B5:"y \<noteq> a"  by (metis A0 A2 B0 B1 B2 B3 antisym_onD)
-  then show "y \<in> seg R X a" by (simp add: A5 B4 seg_memI)
-qed   
-
-lemma toset_segs_toset:
-  assumes A0:"total_on X R" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R"
-  shows "\<forall>x \<in> X. \<forall>y \<in> X. (x, y)\<in>R \<longleftrightarrow> seg R X x \<subseteq> seg R X y"
-proof-
-  have B0:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X;(x, y)\<in>R\<rbrakk> \<Longrightarrow> seg R X x \<subseteq> seg R X y"
-  proof-
-    fix x y assume A5:"x \<in> X" and A6:"y \<in> X" and A7:"(x, y)\<in>R"
-    show "seg R X x \<subseteq> seg R X y"
-    proof
-      fix a assume A8:"a \<in> seg R X x"
-      show "a \<in> seg R X y"
-      proof(rule seg_memI)
-        show "a \<in> X"
-          by (meson A8 seg_memD1)
-        show "(a, y) \<in> R"
-          by (meson A2 A5 A6 A7 A8 \<open>a \<in> X\<close> seg_memD2 trans_on_def)
-        show "a \<noteq> y"
-          by (metis A3 A5 A7 A8 antisym_onD seg_memD)
-      qed   
-    qed
-  qed
-  have B1:"\<And>x y. \<lbrakk>x \<in> X;y \<in> X; seg R X x \<subseteq> seg R X y\<rbrakk> \<Longrightarrow>(x,y)\<in>R"
-  proof-
-    fix x y assume A5:"x \<in> X" and A6:"y \<in> X" and A7:"seg R X x \<subseteq> seg R X y"
-    show "(x, y)\<in>R"
-      by (metis A0 A4 A5 A6 A7 B0 refl_onD seg_memD seg_memI subset_antisym total_on_def)
-  qed
-  show ?thesis
-    by (meson B0 B1)
-qed
-
-
-lemma toset_segs_toset2:
-  assumes A0:"total_on X R" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R"
-  shows "\<And>x y. \<lbrakk>x\<in>X;y\<in>X;(x, y)\<in>R\<rbrakk> \<Longrightarrow> (seg R X x,seg R X y) \<in> pwr X"
-  by (meson A0 A2 A3 A4 Pow_iff pwr_mem_iff refl_on_def seg_pow toset_segs_toset)
-
-
-
-lemma toset_segs_toset3:
-  assumes A0:"total_on X R" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R"
-  shows "\<And>x y. \<lbrakk>x\<in>X;y\<in>X;(seg R X x,seg R X y) \<in> pwr X\<rbrakk> \<Longrightarrow>  (x, y)\<in>R"
-  by (meson A0 A2 A3 A4 Pow_iff pwr_mem_iff refl_on_def seg_pow toset_segs_toset)
-
-lemma woset_is_toset:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X"
-  shows "total_on X R"
-proof                           
-  fix x y assume B0:"x \<in> X" and B1:"y \<in> X" and B2:"x \<noteq> y"
-  show "(x, y) \<in> R \<or> (y, x) \<in> R"
-  proof-
-    define A where "A \<equiv> {x, y}"
-    have "A \<in> Pow_ne X"
-      unfolding A_def using B0 B1 by (simp add: Pow_neI1)
-    then obtain m where "m \<in> A" and " is_least R A m"
-      using A0 unfolding well_ord_def by auto
-    then show ?thesis
-      by (metis A_def  emptyE insert_iff is_leastD1)
-  qed
-qed
-lemma woset_segs_toset:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R"
-  shows "\<forall>x \<in> X. \<forall>y \<in> X. (x, y)\<in>R \<longleftrightarrow> seg R X x \<subseteq> seg R X y"
-  by (meson A0 A2 A3 A4 refl_on_def toset_segs_toset woset_is_toset)
-
-lemma woset_total2:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"m \<in> X" and A3:"x \<in> X" and  A4:"(x, m) \<notin>R"
-  shows "(m,x)\<in>R"
-proof-
-  have B0:"x \<noteq> m"
-    by (metis A0 A2 A4 refl_on_def well_ord_def)
-  have B1:"total_on X R"
-    using A0 A1 woset_is_toset by blast
-  then have "(x,m) \<in> R \<or> (m, x) \<in> R"
-    by (simp add: A2 A3 B0 total_on_def)
-  then show ?thesis
-    by (simp add: A4)
-qed
-
-lemma woset_downclosed_seg:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"A \<in> Pow X" and A3:"A \<noteq> X" and A4:"is_ord_cl X A (converse R)"
-  shows woset_downclosed_seg1:"\<exists>a \<in> X. A=seg R X a" and woset_downclosed_seg2:"A \<in> segs R X"  
-proof-
-  have B0:"X-A \<in> Pow X"
-    by simp
-  then obtain m where B1:"m \<in> X-A" and B2:"is_least R (X-A) m"
-    by (metis A0 A2 A3 Diff_partition Pow_iff Pow_ne_iff diff_shunt subset_refl well_ord_def)
-  have "A=seg R X m"
-  proof
-    show "A \<subseteq> seg R X m"
-    proof-
-      have "X-(seg R X m) \<subseteq> X-A"
-      proof
-        fix x assume B3:"x \<in>X-(seg R X m)" 
-        then obtain "\<not>(x \<noteq> m \<and> (x, m)\<in>R)"
-          by (metis Diff_iff seg_memI)
-        then obtain "(m,x)\<in>R"
-          by (meson A0 B1 B3 DiffD1 refl_on_def well_ord_def woset_total2)
-        then show "x \<in> X-A"
-          using A4 B1 B3 is_ord_clE1 by fastforce
-      qed
-      then show ?thesis
-        using A2 Pow_neD by fastforce
-    qed
-    show "seg R X m \<subseteq> A"
-    proof-
-      have "\<forall>x \<in> X. x \<notin> A \<longrightarrow> (m, x) \<in> R"
-        using B2 is_greatestD4 by fastforce
-      then have "\<forall>x \<in> X. (x, m) \<in> R \<and> x \<noteq> m \<longrightarrow> x \<in> A"
-        by (metis A0 B1 Diff_iff antisym_onD well_ord_def)
-      then show ?thesis
-        using seg_def by fastforce
-    qed
-  qed
-  then show "\<exists>a \<in> X. A=seg R X a"
-    using B1 by auto
-  then show "A \<in> segs R X"
-    using segs_def by fastforce
-qed
-
-lemma seg_unique1:
-  assumes  A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-           A5:"a \<in> X" and A6:"b \<in> X" and A7:"seg R X a = seg R X b"
-  shows "a=b"
-  by (metis A0 A2 A3 A4 A5 A6 A7 antisym_onD refl_on_def toset_segs_toset woset_is_toset)
-
-lemma seg_unique2:
-  assumes  A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-           A5:"A \<in> segs R X"
-         shows "\<exists>!x \<in> X. seg R X x=A"
-  by (metis A0 A5 refl_on_def seg_unique1 segs_memD well_ord_def)
-
-lemma woset_downsets:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R"
-  shows "(ord_cl_sets X (converse R))-{X} = segs R X"
-proof
-  show "ord_cl_sets X (dual R) - {X} \<subseteq> segs R X"
-  proof
-    fix A assume "A \<in>  ord_cl_sets X (dual R) - {X}" 
-    then obtain "is_ord_cl X A (converse R)" and A2:"A \<in> Pow X" and A3:"A \<noteq> X"
-      by (simp add: ord_cl_sets_def) 
-    then show "A \<in>  segs R X"
-      by (simp add: A0 A1 woset_downclosed_seg2)
-  qed
-  show "segs R X \<subseteq> ord_cl_sets X (dual R) - {X}"
-  proof
-    fix A assume "A \<in> segs R X"
-    then obtain x where B0:"x \<in> X" and B1:"A =seg R X x"
-      using segs_memD by blast
-    then obtain B2:"x \<notin> A" and B3:"A \<in> Pow X"
-      by (simp add: seg_def)
-    then obtain B4:"A \<noteq> X" and B5:"is_ord_cl X A (dual R)"
-      using A2 A3 B0 B1 seg_ord_cl by fastforce
-    have B6:"A \<in> ord_cl_sets X (dual R)"
-      using B3 B5 ord_cl_memI1 by auto
-    then show "A \<in> (ord_cl_sets X (dual R)) - {X}"
-      by (simp add: B4)
-  qed
-qed
-
-lemma segs_order:
-  assumes A0:"well_ord R X" and 
-          A1:"R \<subseteq> X \<times> X" and 
-          A2:"trans R X" and
-          A3:"antisym R X" and 
-          A4:"refl_on X R"
-        defines "S \<equiv> {(A, B). \<exists>a \<in> X. \<exists>b \<in> X. A=seg R X a \<and> B=seg R X b \<and> (a, b)\<in>R}" and
-                "f \<equiv> (\<lambda>x. seg R X x)"
-        shows  segs_order1:"trans S (segs R X)" and 
-               segs_order2:"antisym S (segs R X)" and 
-               segs_order3:"refl_on (segs R X) S" and 
-               segs_order4:"\<And>A. A \<in> Pow_ne (segs R X) \<Longrightarrow> \<exists>m\<in>A. is_least S A m" and
-               segs_order5:"well_ord S (segs R X)" and
-               segs_order6:"total_on (segs R X) S" and
-               segs_order7:"S \<subseteq> pwr X" and
-               segs_order8:"order_iso R X S (segs R X) f"
-proof-
-  show P0:"trans S (segs R X)"
-  proof(rule trans_onI)
-    fix x y z assume B0:"x\<in>segs R X" and B1:"y \<in> segs R X" and B2:"z \<in> segs R X" and B3:"(x, y) \<in> S" and B4:"(y, z) \<in> S"
-    then obtain a b b' c where B5:"a \<in> X" and B6:"b \<in> X" and B7:"b' \<in> X" and B8:"c \<in> X" and B9:"x=seg R X a" and 
-                            B10:"y=seg R X b" and B11:"y=seg R X b'" and B12:"z=seg R X c" and B13:"(a,b)\<in>R" and B14:"(b',c)\<in>R"
-      using S_def by blast
-    have B15:"b=b'"
-      by (metis A0 A1 A2 A3 A4 B10 B11 B6 B7 dual_order.refl not_in_seg seg_memI toset_segs_toset woset_is_toset)
-    have B16:"(a,c)\<in>R"
-      by (metis A2 B13 B14 B15 B5 B6 B8 trans_onD)
-    obtain B17:"x \<in> Pow X" and B18:"z \<in> Pow X"
-      using B12 B9 seg_pow by fastforce
-    obtain B19:"x \<subseteq> z"
-      by (metis A0 A2 A3 A4 B12 B16 B5 B8 B9 refl_on_def toset_segs_toset woset_is_toset)
-    then obtain B20:"(x,z)\<in> pwr X"
-      by (meson B18 PowD pwr_memI1)
-    show "(x, z) \<in> S"  unfolding S_def using B12 B16 B20 B5 B8 B9 by blast 
-  qed
-  show P1:"antisym S (segs R X)"
-  proof(rule antisym_onI)
-    fix x y assume B0:"x \<in> segs R X" and B1:"y \<in> segs R X" and B2:"(x,y)\<in>S" and B3:"(y,x)\<in>S"
-    then obtain a b a' b' where B4:"a \<in> X" and B5:"b \<in> X" and B6:"a' \<in> X" and B7:"b'\<in> X" and 
-                                B8: "x=seg R X a"  and B9:"y=seg R X b" and
-                                B11:"x=seg R X a'" and B12:"y=seg R X b'" and
-                               B13:"(a,b)\<in>R" and B14:"(b',a')\<in>R" using S_def by blast 
-    then obtain "a=a'" and "b=b'"
-      by (meson A0 A2 A3 A4 refl_on_def seg_unique1)
-    then obtain "a=b"
-      using A3 B13 B14 B4 B5 antisym_onD by fastforce
-    then show "x=y"
-      by (simp add: B11 B12 \<open>a = a'\<close> \<open>b = b'\<close>)
-  qed
-  show P2:"refl_on (segs R X) S"
-  proof(rule refl_onI)
-    show "S \<subseteq> segs R X \<times> segs R X"
-      unfolding segs_def S_def by blast
-    show "\<And>x. x \<in> segs R X \<Longrightarrow> (x, x) \<in> S"
-    proof-
-      fix x assume B0:"x \<in> segs R X"
-      then obtain a where B1:"a \<in> X" and B2:"x=seg R X a"
-        using segs_memD by blast
-      then obtain "(x,x)\<in> pwr X" and "(a,a)\<in>R"
-        by (meson A4 powrel3 refl_onD seg_pow)
-      then show "(x,x) \<in> S" unfolding S_def using B1 B2 by blast
-    qed
-  qed
-  show P3:"\<And>A. A \<in> Pow_ne (segs R X) \<Longrightarrow> \<exists>m\<in>A. is_least S A m"
-  proof-
-    fix A assume B0:"A \<in> Pow_ne (segs R X)"
-    obtain x where B1:"x \<in> A"
-      by (metis B0 Pow_ne_iff all_not_in_conv) 
-    then obtain a where B2:"a \<in> X" and B3:"x=seg R X a"
-      by (meson B0 Pow_ne_iff in_mono segs_memD)
-    define B where "B \<equiv> {x \<in> X. seg R X x \<in> A}"
-    then obtain B4:"a \<in>B" and B5:"B \<in> Pow_ne X"
-      using B1 B2 B3 Pow_ne_iff by blast
-    then obtain l where B6:"l \<in> X" and B7:"is_least R B l"
-      by (metis A0 Pow_ne_iff subset_iff well_ord_def)
-    have "is_least S A (seg R X l)"
-    proof(rule is_leastI3)
-      show "seg R X l \<in> A"
-        using B7 B_def is_leastD1 by force
-      show "\<And>a. a \<in> A \<Longrightarrow> (seg R X l, a) \<in> S"
-      proof-
-        fix a assume B8:"a \<in> A" 
-        then obtain t where B9:"t\<in>X" and B10:"a=seg R X t"
-          by (metis B0 Pow_ne_iff in_mono segs_memD)
-        then obtain B11:"t \<in> B" and B12:"(l,t)\<in>R"
-          using B7 B_def \<open>a \<in> A\<close> is_leastD1 by fastforce
-        obtain B13:"seg R X l \<in> Pow X" and B14:"seg R X t \<in> Pow X" and B15:"seg R X l \<subseteq> seg R X t"
-           by (meson A0 A2 A3 A4 B12 B6 B9 refl_on_def seg_pow toset_segs_toset woset_is_toset)
-         then obtain B16:"(seg R X l, seg R X t) \<in> pwr X"
-           by (simp add: pwr_mem_iff)
-         then show "(seg R X l, a) \<in> S"
-           unfolding S_def  using B10 B12 B6 B9 by blast
-       qed
-     qed
-    then show "\<exists>m \<in> A. is_least S A m"
-      by (meson is_greatestD1)
-  qed
-  then show P4:"well_ord S (segs R X)"
-    by (simp add: P0 P1 P2 posetI2 well_ordI2)
-  show "total_on (segs R X) S"
-    by (meson P2 P4 refl_on_def woset_is_toset) 
-  show "S \<subseteq> pwr X"
-  proof
-    fix u assume B0:"u \<in> S" 
-    then obtain a b where B1:"a \<in> X" and B2:"b \<in> X" and B3: "u = (seg R X a, seg R X b)" and B4:"(a,b)\<in>R"
-      using S_def by blast
-    then obtain B5:"seg R X a \<in> Pow X" and B6:"seg R X b \<in> Pow X" and B7:"seg R X a \<subseteq> seg R X b"
-      by (meson A0 A2 A3 A4 refl_on_def seg_pow toset_segs_toset woset_is_toset)
-    then show "u \<in> pwr X"
-      by (simp add: B3 pwr_mem_iff)
-  qed
-  show "order_iso R X S (segs R X) f"
-  proof(rule order_isoI1)
-    show "f ` X = segs R X"
-      using f_def segs_def by auto
-    show P5:"\<And>x1 x2. x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (x1, x2) \<in> R \<Longrightarrow> (f x1, f x2) \<in> S"
-    proof-
-      fix x1 x2 assume B0:"x1\<in>X" and B1:"x2\<in>X" and B2:"(x1,x2)\<in>R"
-      then obtain B3:"(seg R X x1, seg R X x2)\<in>pwr X"
-        by (simp add: A0 A1 A2 A3 A4 toset_segs_toset2 woset_is_toset)
-      then show "(f x1, f x2) \<in> S"
-        using A1 B2 S_def f_def by blast
-    qed
-    show "\<And>x1 x2. x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (f x1, f x2) \<in> S \<Longrightarrow> (x1, x2) \<in> R"
-     proof-
-      fix x1 x2 assume B0:"x1\<in>X" and B1:"x2\<in>X" and B2:"(f x1,f x2)\<in>S"
-      then obtain B3:"(seg R X x1, seg R X x2)\<in>pwr X"
-        by (metis A0 A2 A3 A4 P1 P5 antisym_onD f_def refl_on_def segs_memI toset_segs_toset2 woset_is_toset
-            woset_total2)
-      then show "(x1, x2) \<in> R"
-        by (meson A0 A2 A3 A4 B0 B1 refl_on_def toset_segs_toset3 woset_is_toset)
-    qed 
-  qed
-qed
-
-lemma order_on_segs:
-  assumes A0:"well_ord R X" and 
-          A1:"R \<subseteq> X \<times> X" and 
-          A2:"trans R X" and
-          A3:"antisym R X" and 
-          A4:"refl_on X R"
-        defines "S \<equiv> {(A, B). A \<subseteq> B \<and> A \<in> segs R X \<and> B \<in> segs R X}" and
-                "f \<equiv> (\<lambda>x. seg R X x)"
-       shows   order_on_segs1:"S= {(A, B). \<exists>a \<in> X. \<exists>b \<in> X. A=seg R X a \<and> B=seg R X b \<and> (a, b)\<in>R}" and
-               order_on_segs2:"trans S (segs R X)" and 
-               order_on_segs3:"antisym S (segs R X)" and 
-               order_on_segs4:"refl_on (segs R X) S" and 
-               order_on_segs5:"\<And>A. A \<in> Pow_ne (segs R X) \<Longrightarrow> \<exists>m\<in>A. is_least S A m" and
-               order_on_segs6:"well_ord S (segs R X)" and
-               order_on_segs7:"order_iso R X S (segs R X) f"
-proof-
-  show P0:"S= {(A, B). \<exists>a \<in> X. \<exists>b \<in> X. A=seg R X a \<and> B=seg R X b \<and> (a, b)\<in>R}" (is "?lhs = ?rhs")
-  proof
-    show "S \<subseteq> {(A, B). \<exists>a\<in>X. \<exists>b\<in>X. A = seg R X a \<and> B = seg R X b \<and> (a, b) \<in> R}"
-    proof
-      fix u assume B0:"u \<in> S"
-      then obtain A B where B1:"A \<in> segs R X" and B2:"B \<in> segs R X" and B3:"u=(A, B)" and B4:"A \<subseteq> B"
-        using S_def by blast
-      then obtain a b where B5:"a \<in> X" and B6:"b \<in> X"  and B7:"(a,b)\<in>R" and B8:"A=seg R X a" and B9:"B=seg R X b "
-        by (metis A0 A2 A3 A4 refl_on_def segs_memD toset_segs_toset woset_is_toset)
-      then show "u \<in> ?rhs"
-        using B3 by blast
-    qed
-    show "?rhs \<subseteq> S"
-    proof
-      fix u assume B0:"u \<in>?rhs"
-      then obtain a b where B1:"a \<in> X" and B2:"b \<in> X" and B3: "u = (seg R X a, seg R X b)" and B4:"(a,b)\<in>R"
-        by blast
-      then obtain "seg R X a \<subseteq> seg R X b" and "seg R X a \<in> segs R X" and "seg R X b \<in> segs R X"
-        by (meson A0 A2 A3 A4 refl_on_def segs_memI toset_segs_toset woset_is_toset)
-      then show "u \<in> ?lhs"
-        unfolding S_def  using B3 by auto
-    qed
-  qed
-  show P1:"trans S (segs R X)"
-    using A0 P0 refl_on_def[of X R] segs_order1[of R X] well_ord_def[of R X] by blast
-  show P2:"antisym S (segs R X)"
-    by (simp add: S_def antisym_on_def)  
-  show P3:"refl_on (segs R X) S"
-    using A0 A1 A2 A3 A4 P0 segs_order3 by blast  
-  show P4:"\<And>A. A \<in> Pow_ne (segs R X) \<Longrightarrow> \<exists>m\<in>A. is_least S A m"
-    using A0 A1 A2 A3 A4 P0 segs_order4 by blast 
-  show "well_ord S (segs R X)"
-    by (simp add: P1 P2 P3 P4 posetI2 well_ordI2)
-  show "order_iso R X S (segs R X) f"
-    using A0 A1 P0 f_def segs_order8 well_ord_def by blast
-qed
-
-lemma first_in_toset1:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"poset R X" and A2: "total_on X R" and A3:"is_least R X a"
-  shows "seg R X a = {}"
-  unfolding seg_def using A1 A3 antisym_onD is_leastD1 poset_def by fastforce
-
-lemma first_in_toset2:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"poset R X" and A2: "total_on X R" and A3:"a \<in> X" and "seg R X a = {}"
-  shows "is_least R X a"
-  using A3 apply(rule is_leastI3)
-  by (metis A1 A2 A3 assms(5) empty_iff posetD3 refl_onD seg_memI total_on_def)
-  
-
-
-lemma satz92:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"\<forall>A \<in> Pow_ne X. (\<exists>!m \<in> A. (\<forall>x \<in> A. (m, x) \<in> R))"
-  shows "well_ord R X"
-proof(rule well_ordI2)
-  show "poset R X"
-  proof(rule posetI2)
-    show P0:"refl_on X R"
-    proof(rule refl_onI)
-      show "R \<subseteq> X \<times> X" using A0 by auto
-      show "\<And>x. x \<in> X \<Longrightarrow> (x, x) \<in> R"
-      proof-
-        fix a assume A2:"a \<in> X"
-        have B0:"{a} \<in> Pow_ne X" by (simp add: A2 Pow_ne_iff)
-        then obtain m where "m \<in> {a}" and  "(\<forall>x \<in> {a}. (m, x) \<in> R)"
-          using A1 by force
-        then show "(a, a) \<in> R"
-          by blast
-      qed
-    qed
-    have P1:"total_on X R"
-    proof(rule total_onI)
-      fix x y assume A2:"x\<in>X" and A3:"y\<in>X" and A4:"x\<noteq>y"
-      then have "{x, y} \<in> Pow_ne X"
-        by (simp add: Pow_ne_iff)
-      then show "(x, y) \<in> R \<or> (y, x) \<in> R"
-        by (metis A1 emptyE insert_iff)
-    qed
-    show P2:"antisym R X"
-    proof(rule antisym_onI)
-      fix x y assume A2:"x\<in>X" and A3:"y\<in>X" and A4:"(x, y) \<in> R" and A5:"(y, x) \<in> R" 
-      then have B0:"{x, y}\<in>Pow_ne X"
-        by (simp add: Pow_ne_iff)
-      obtain B1:"x \<in> {x, y}" and B2:"(\<forall>a \<in> {x,y}. (x, a) \<in> R)" and
-             B3:"y \<in> {x, y}" and B4:"(\<forall>a \<in> {x,y}. (y, a) \<in> R)" 
-        using A2 A4 P0 A3 A5 refl_onD by fastforce
-      then show "x = y"
-        by (metis A1 B0)
-    qed
-    show "trans R X"
-    proof(rule trans_onI)
-      fix x y z  assume A2:"x \<in> X" and A3:"y \<in> X" and A4:"z \<in> X" and A5:"(x, y) \<in> R"  and A6:"(y, z) \<in> R"
-      then obtain B0:"{x, y}\<in>Pow_ne X" and  B1:"{y,z}\<in>Pow_ne X" and B2:"{x,y,z}\<in>Pow_ne X" by (simp add: Pow_ne_iff)
-      obtain B3:"x \<in> {x, y}" and B4:"(\<forall>a \<in> {x,y}. (x, a) \<in> R)" and
-             B5:"y \<in> {y, z}" and B6:"(\<forall>a \<in> {y,z}. (y, a) \<in> R)"
-        using A2 A3 A5 A6 P0 refl_onD by fastforce 
-      obtain m where B7:"m \<in> {x,y,z}" and B8:"\<forall>a \<in> {x,y,z}. (m, a)\<in>R" by(meson A1 B2)
-      show "(x, z) \<in> R"
-      proof(cases "m=z")
-        case C1:True then obtain "(z, y)\<in>R" using B8 by blast
-        then obtain "z=y"  by (meson A3 A4 A6 P2 antisym_onD)
-        then show ?thesis by (simp add: A5) 
-      next
-        case C2:False
-        then show ?thesis
-        proof(cases "m=y")
-          case C3:True then obtain "(y, x)\<in> R"  using B8 by blast
-          then show ?thesis    by (metis A2 A3 A5 A6 P2 antisym_onD) 
-        next
-          case False then obtain "m=x" using B7 C2 by auto
-          then show ?thesis
-            using B8 by blast
-        qed
-      qed
-    qed
-  qed
-  show "\<And>A. A \<in> Pow_ne X \<Longrightarrow> \<exists>m\<in>A. is_least R A m"
-    by (meson A1 is_leastI3)
-qed
-
-lemma p1968a:
-  assumes A0:"R \<subseteq> X \<times> X" and 
-          A1:"S\<subseteq> X \<times> X" and 
-          A2:"S = {(x, y) \<in> X \<times> X. (x, y) \<in> R \<and> x \<noteq> y}" and 
-          A5:"R={(x,y)\<in>X \<times>X. (x,y)\<in>S \<or> x=y}" and
-          A3:"\<forall>x \<in> X. \<forall>y \<in>X. (x,y)\<in>S \<longrightarrow> (y,x) \<notin> S" and
-          A4:"\<forall>A \<in> Pow_ne X. (\<exists>m \<in>A. \<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S)" 
-        shows "well_ord R X" 
-proof-
-  have P0:"trans S X"
-  proof(rule trans_onI)
-    fix x y z assume B0:"x \<in> X" and B1:"y \<in> X" and B2:"z\<in>X" and B3:"(x,y)\<in>S" and B4:"(y,z)\<in>S"
-    have B5:"{x,y,z}\<in>Pow_ne X"
-      by (simp add: B0 B1 B2 Pow_neI1)
-    then obtain m where B6:"m \<in> {x,y,z}" and B7:"(\<forall>a \<in> {x,y,z}. a \<noteq> m \<longrightarrow> (m, a)\<in>S)" using A4 by meson
-    then have "x=m"
-      by (metis A3 B0 B1 B2 B3 B4 empty_iff insert_iff)
-    then show "(x,z)\<in>S"
-      by (metis A3 B1 B2 B4 B7 insertI1 insertI2)
-  qed
-  have P1:"trans  R X"
-  proof(rule trans_onI)
-    fix x y z assume B0:"x \<in> X" and B1:"y \<in> X" and B2:"z\<in>X" and B3:"(x,y)\<in>R" and B4:"(y,z)\<in>R"
-    show "(x,z)\<in>R"
-    proof(cases "x=y")
-      case True then show ?thesis by (simp add: B4) 
-    next
-      case False
-      have B5:"x \<noteq> y"  using False by auto
-      then show ?thesis 
-      proof(cases "y=z")
-        case True then show ?thesis  using B3 by auto 
-      next
-        case False then obtain "x \<noteq> y" and "y \<noteq> z" by(simp add:B5)
-        then obtain B6:"(x,y)\<in>S" and B7:"(y,z)\<in>S"  using A0 A2 B3 B4 by blast
-        then obtain "(x,z)\<in>S"  using B0 B1 B2 P0 trans_onD[of X S x y z] by blast
-        then show ?thesis using A2 by blast
-      qed
-    qed
-  qed
-  have P2:"antisym R X"
-  proof(rule antisym_onI)
-    fix x y assume B0:"x \<in> X" and B1:"y \<in> X" and B2:"(x,y)\<in>R" and B3:"(y,x)\<in>R"
-    then show "x=y"  using A2 A3 by blast
-  qed
-  have P3:"refl_on X R"
-  proof(rule refl_onI)
-    show "R \<subseteq> X \<times> X" by(simp add: A0)
-    show "\<And>x. x \<in> X \<Longrightarrow> (x, x) \<in> R"
-    proof-
-      fix x assume "x \<in> X"
-      then show "(x,x)\<in>R" by (simp add:A5)
-    qed
-  qed
-  have P4:"\<And>A. A \<in> Pow_ne X \<Longrightarrow> \<exists>m\<in>A. is_least R A m"
-  proof-
-    fix A assume B0:"A \<in> Pow_ne X"
-    then obtain m where B1:"m \<in> A" and B2:"\<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S"
-      by (meson A4)
-    have B3:"is_least R A m"
-    proof(rule is_leastI3)
-      show "m \<in> A" using B1 by auto
-      show "\<And>a. a \<in> A \<Longrightarrow> (m, a) \<in> R"
-      proof-
-        fix a assume B4:"a \<in> A"
-        show "(m,a)\<in>R"
-        proof(cases "a=m")
-          case True
-          then show ?thesis  by (meson B0 B1 Pow_ne_iff P3 refl_onD subsetD) 
-        next
-          case False then obtain "(m,a)\<in>S"  using B2 B4 by blast
-          then show ?thesis
-            using A1 A5 by blast 
-        qed
-      qed
-    qed
-    then show "\<exists>m\<in>A. is_least R A m"
-      using B1 by auto
-  qed
-  show ?thesis
-    using well_ordI1 P1 P2 P3 P4 by blast
-qed
-
-lemma p1968b:
-  assumes A0:"R \<subseteq> X \<times> X" and 
-          A1:"S\<subseteq> X \<times> X" and 
-          A2:"S = {(x, y) \<in> X \<times> X. (x, y) \<in> R \<and> x \<noteq> y}" and 
-          A5:"R={(x,y)\<in>X \<times>X. (x,y)\<in>S \<or> x=y}" and
-          A3:"well_ord R X" 
-        shows "\<forall>x \<in> X. \<forall>y \<in>X. (x,y)\<in>S \<longrightarrow> (y,x) \<notin> S" and  
-              "\<forall>A \<in> Pow_ne X. (\<exists>m \<in>A. \<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S)" 
-proof-
-  have "\<And>x y. \<lbrakk>x \<in> X; y\<in>X; (x, y) \<in> S\<rbrakk>\<Longrightarrow> (y, x) \<notin> S"
-  proof-
-    fix x y assume A6:"x \<in> X" and A7:"y \<in> X" and A8:"(x,y)\<in>S"
-    show "(y,x)\<notin> S"
-      using A2 A3 A8 antisym_onD well_ord_def by fastforce
-  qed
-  then show"\<forall>x \<in> X. \<forall>y \<in>X. (x,y)\<in>S \<longrightarrow> (y,x) \<notin> S"  by blast
-  have "\<And>A. \<lbrakk>A \<in> Pow_ne X\<rbrakk> \<Longrightarrow> (\<exists>m \<in>A. \<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S)"
-  proof-
-    fix A assume A7:"A \<in> Pow_ne X"
-    then obtain m where B0: "m \<in> A" and B1:"is_least R A m"
-      by (meson A3 well_ord_def)
-    have "\<And>x. \<lbrakk>x \<in> A; x \<noteq> m\<rbrakk> \<Longrightarrow> (m, x)\<in>S"
-      using A5 B1 is_greatestD4 by fastforce
-    then show "\<exists>m \<in>A. \<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S"
-      using B0 by auto
-  qed 
-  then show "\<forall>A \<in> Pow_ne X. (\<exists>m \<in>A. \<forall>x \<in> A. x \<noteq> m \<longrightarrow> (m, x)\<in>S)" by blast
-qed
-
-lemma trans_on_restr:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"trans R X" and A2:"E \<subseteq> X"
-  shows "trans (R \<inter> (E \<times> E)) E"
-proof(rule trans_onI)
-  fix x y z assume B0:"x \<in> E" and B1:"y \<in> E" and B2:"z\<in>E" and B3:"(x,y)\<in>(Restr R E)" and B4:"(y,z)\<in>(Restr R E)"
-  show "(x,z)\<in>(Restr R E)"
-    using A1 B3 B4 A2 trans_onD by fastforce
-qed
-
-
-lemma antisym_on_restr:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"antisym R X" and A2:"E \<subseteq> X"
-  shows "antisym (R \<inter> (E \<times> E)) E"
-  by (meson A1 A2 antisym_on_def in_mono inf_le1)
-
-
-lemma refl_on_restr:
-  assumes A0:"R \<subseteq> X \<times> X" and A1:"refl_on X R" and A2:"E \<subseteq> X"
-  shows "refl_on E (R \<inter> (E \<times> E))"
-  by (metis A1 A2 equiv_rel_lattice_simp1 equiv_rel_lattice_top2 inf.absorb_iff2 refl_on_Int)
-
-lemma least_restr:assumes A0:"A \<subseteq> E" and A1:"is_least R A m"
-  shows "is_least (Restr R E) A m "
-proof(rule is_leastI3)
-  show" m \<in> A" by(meson A1 is_greatestD1)
-  show "\<And>a. a \<in> A \<Longrightarrow> (m, a) \<in> Restr R E"  using A0 A1 is_leastD1 by fastforce
-qed
-
-lemma woset_heredity:
-  assumes A0:"well_ord R X" and A2:"E \<subseteq> X"
-  shows "well_ord (R \<inter> (E \<times> E)) E"
-proof-
-  obtain B0:"trans R X" and B1:"antisym R X" and B2:"refl_on X R" and B3:"\<And>A. A \<in> Pow_ne X \<Longrightarrow> \<exists>m\<in>A. is_least R A m"
-    using A0 well_ord_def by blast
-  show ?thesis
-  proof(rule well_ordI1)
-    show P0:"trans (Restr R E) E"
-      by (metis A2 B0 B2 refl_on_def trans_on_restr)
-    show P1:"antisym (Restr R E) E"
-      by (metis A2 B1 B2 antisym_on_restr refl_on_def)
-    show P2:"refl_on E (Restr R E)"
-      by (metis A2 B2 refl_on_def refl_on_restr)
-    show "\<And>A. A \<in> Pow_ne E \<Longrightarrow> \<exists>m\<in>A. is_least (Restr R E) A m"
-      by (metis A2 B3 Pow_ne_iff least_restr subset_trans)
-  qed     
-qed
-
-lemma woset_strictly_isotone:
-  assumes A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-          A5:"strictly_isotone R X R f" and A6:"f`X \<subseteq> X"
-        shows woset_strictly_isotone1:"extensive R X f"
-proof-
-  show P0:"extensive R X f"
-  proof(rule ccontr)
-    assume A7:"\<not>(extensive R X f)"
-    have B0:"\<forall>x\<in>X. (x, f x) \<in> R \<or> (f x, x)\<in>R"
-      by (meson A0 A4 A6 image_subset_iff refl_on_def woset_total2)
-    then obtain x where B1:"x \<in> X" and B2:"(f x, x)\<in>R" and B3:"x \<noteq> f x"
-      using A7 extensive_def by force
-    define A where "A \<equiv>{x \<in> X. (f x, x)\<in>R \<and> x \<noteq> f x}"
-    then obtain B4:"A \<noteq> {}"
-      using B1 B2 B3 by blast
-    then obtain B5:"A \<in> Pow_ne X"
-      using A_def Pow_ne_iff by blast
-    then obtain m where B6:"m \<in> A" and B7:"is_least R A m"
-      by (meson A0 well_ord_def)
-    then obtain B8:"(f m, m) \<in> R" and B9:"f m \<noteq> m"
-      using A_def by fastforce
-    then obtain B10:"(f (f m), f m) \<in>R" and B11:"(f m, m)\<in>R" and B12:"f (f m) \<noteq> f m"
-      by (meson A4 A5 refl_on_domain strictly_isotone_def)
-    then obtain B13:"f m \<in> A"
-      using A4 A_def refl_onD2 by fastforce
-    then show False
-      by (meson A3 A4 B7 B8 B9 antisym_onD is_leastD2 refl_onD1)
-  qed
-qed
-
-lemma bij_betw_pointE:
-  assumes A0:"bij_betw f X Y" and A1:"y \<in> Y"
-  obtains x where "x \<in> X" and "y = f x" and "\<And>x'. \<lbrakk>x' \<in> X; y=f x'\<rbrakk> \<Longrightarrow> x' = x"
-  using A0 A1 bij_betw_iff_bijections[of f X Y] by force
-
-lemma order_iso_inv:
-  assumes A0:"order_iso R X S Y f" and A1:"refl_on X R" and A2:"trans R X" and A3:"antisym R X" 
-  shows "order_iso S Y R X (the_inv_into X f)"
-proof(rule order_isoI1)
-  obtain B0:"bij_betw f X Y" and B1:"bij_betw (the_inv_into X f) Y X"
-    by (meson A0 A1 A3 bij_betw_the_inv_into order_isoD9)
-  show P0:"the_inv_into X f ` Y = X"
-    by (simp add: B1 bij_betw_imp_surj_on)
-  show "\<And>y1 y2. \<lbrakk>y1\<in>Y; y2\<in>Y; (y1, y2) \<in> S\<rbrakk> \<Longrightarrow> (the_inv_into X f y1, the_inv_into X f y2) \<in> R"
-  proof-
-    fix y1 y2 assume A4:"y1 \<in> Y" and A5:"y2 \<in> Y" and A6:"(y1, y2) \<in> S"
-    obtain x1 where B2:"x1 \<in> X" and B3:"y1 = f x1" and B4:"\<And>x. \<lbrakk>x \<in>X;y1 = f x\<rbrakk> \<Longrightarrow>x= x1" 
-      using A4 B0 bij_betw_pointE[of f X Y] by blast
-    obtain x2 where B5:"x2 \<in> X" and B6:"y2 = f x2" and B7:"\<And>x. \<lbrakk>x \<in>X;y2 = f x\<rbrakk> \<Longrightarrow>x= x2"
-      using A5 B0 bij_betw_pointE[of f X Y] by blast
-    obtain "the_inv_into X f (f x1) = x1" and "the_inv_into X f (f x2) = x2" 
-      by (meson B0 B2 B5 bij_betw_imp_inj_on the_inv_into_f_eq)
-    then show "(the_inv_into X f y1, the_inv_into X f y2) \<in> R"
-      using A0 A6 B2 B3 B5 B6 order_isoD2 by fastforce
-  qed
-  show "\<And>y1 y2. \<lbrakk>y1\<in>Y;y2\<in>Y;(the_inv_into X f y1, the_inv_into X f y2) \<in> R\<rbrakk> \<Longrightarrow> (y1, y2) \<in> S"
-  proof-
-    fix y1 y2 assume A4:"y1 \<in> Y" and A5:"y2 \<in> Y" and A6:"(the_inv_into X f y1, the_inv_into X f y2) \<in> R"
-    obtain x1 where B2:"x1 \<in> X" and B3:"y1 = f x1" and B4:"\<And>x. \<lbrakk>x \<in>X;y1 = f x\<rbrakk> \<Longrightarrow>x= x1" 
-      using A4 B0 bij_betw_pointE[of f X Y] by blast
-    obtain x2 where B5:"x2 \<in> X" and B6:"y2 = f x2" and B7:"\<And>x. \<lbrakk>x \<in>X;y2 = f x\<rbrakk> \<Longrightarrow>x= x2"
-      using A5 B0 bij_betw_pointE[of f X Y] by blast
-    obtain "the_inv_into X f (f x1) = x1" and "the_inv_into X f (f x2) = x2" 
-      by (meson B0 B2 B5 bij_betw_imp_inj_on the_inv_into_f_eq)
-    then show "(y1, y2)\<in>S"
-      using A0 A6 B2 B3 B5 B6 order_isoD1 by fastforce
-  qed
-qed
-
-lemma woset_initial_iso:
-  assumes  A0:"well_ord R X"  and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" 
-  shows woset_initial_iso1:"\<And>x. x \<in> X \<Longrightarrow> \<not>(\<exists>f. order_iso R X (Restr R (seg R X x)) (seg R X x) f)" and
-        woset_initial_iso2:"\<And>x. x \<in> X \<Longrightarrow> \<not>(\<exists>f. order_iso R X R (seg R X x) f)" 
-proof-
-  show "\<And>x. x \<in> X \<Longrightarrow> \<not>(\<exists>f. order_iso R X (Restr R (seg R X x)) (seg R X x) f)"
-  proof-
-    fix x assume B0:"x \<in> X"
-    show "\<not>(\<exists>f. order_iso R X (Restr R(seg R X x)) (seg R X x) f)"
-    proof(rule ccontr)
-      assume B1:"\<not>(\<not>(\<exists>f. order_iso R X (Restr R(seg R X x)) (seg R X x) f))"
-      then obtain f where B2:"order_iso R X (Restr R(seg R X x)) (seg R X x) f" by auto
-      have B3:"inj_on f X"
-        using A2 A3 A4 B2 order_isoD7 by blast
-      have B4:"strictly_isotone R X R f"
-      proof(rule strictly_isotoneI)
-        fix x1 x2 assume B5:"x1 \<in> X" and B6:"x2 \<in> X" and B7:"(x1,x2)\<in>R" and B8:"x1 \<noteq> x2"
-        obtain B7:"(f x1, f x2)\<in>R"
-          using B2 B5 B6 B7 order_isoD1 by fastforce
-        also obtain B8:"f x1 \<noteq> f x2"
-          by (meson B3 B5 B6 B8 inj_on_contraD)
-        then show "(f x1, f x2) \<in> R \<and> f x1 \<noteq> f x2"
-          by (simp add: calculation)
-      qed
-      then obtain "extensive R X f"
-        by (metis A0 A2 A3 A4 B2 order_isoD3 refl_on_def seg_memD subsetI woset_strictly_isotone1)
-      then obtain "(x, f x)\<in>R"
-        by (meson B0 extensive_def)
-      then obtain "(f x) \<in> seg R X x"
-        by (metis B0 B2 imageI order_iso_def)
-      then show False
-        by (metis A3 B0 \<open>(x, f x) \<in> R\<close> antisym_onD seg_memD)
-    qed
-  qed
-  show "\<And>x. x \<in> X \<Longrightarrow> \<not>(\<exists>f. order_iso R X R (seg R X x) f)" 
-  proof-
-    fix x assume B0:"x \<in> X"
-    show "\<not>(\<exists>f. order_iso R X R (seg R X x) f)"
-    proof(rule ccontr)
-      assume B1:"\<not>(\<not>(\<exists>f. order_iso R X R (seg R X x) f))"
-      then obtain f where B2:"order_iso R X R (seg R X x) f" by auto
-      have B3:"inj_on f X"
-        using A2 A3 A4 B2 order_isoD7 by blast
-      have B4:"strictly_isotone R X R f"
-      proof(rule strictly_isotoneI)
-        fix x1 x2 assume B5:"x1 \<in> X" and B6:"x2 \<in> X" and B7:"(x1,x2)\<in>R" and B8:"x1 \<noteq> x2"
-        obtain B7:"(f x1, f x2)\<in>R"
-          using B2 B5 B6 B7 order_isoD1 by fastforce
-        also obtain B8:"f x1 \<noteq> f x2"
-          by (meson B3 B5 B6 B8 inj_on_contraD)
-        then show "(f x1, f x2) \<in> R \<and> f x1 \<noteq> f x2"
-          by (simp add: calculation)
-      qed
-      then obtain "extensive R X f"
-        by (metis A0 A2 A3 A4 B2 order_isoD3 refl_on_def seg_memD subsetI woset_strictly_isotone1)
-      then obtain "(x, f x)\<in>R"
-        by (meson B0 extensive_def)
-      then obtain "(f x) \<in> seg R X x"
-        by (metis B0 B2 imageI order_iso_def)
-      then show False
-        by (metis A3 B0 \<open>(x, f x) \<in> R\<close> antisym_onD seg_memD)
-    qed
-  qed
-qed
-
-lemma restr_subset:"A \<subseteq> B \<Longrightarrow> (Restr R A) = (Restr (Restr R B) A)" by blast
-
-lemma woset_initial_iso3:
-  assumes A0:"well_ord R X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-          A5:"A \<in> segs R X"
-        shows  "\<not>(\<exists>f. order_iso R X (Restr R A) A f)"
-  by (metis A0 A2 A3 A4 A5 refl_on_def seg_unique2 woset_initial_iso1)
-
-lemma woset_initial_iso4:
-  assumes A0:"well_ord R X" and  A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-          A5:"A \<in> segs R X"
-        shows  "\<not>(\<exists>f. order_iso R X R A f)"
-  by (metis A0 A2 A3 A4 A5 refl_on_def seg_unique2 woset_initial_iso2)
-
-lemma woset_initial_iso5:
-  assumes A0:"well_ord R X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-          A5:"A \<in> segs R X"
-        shows  "\<not>(\<exists>f. order_iso (Restr R A) A R X f)"
-  by (metis A0 A5 Pow_iff order_iso_inv segs_memD2 well_ord_def woset_heredity
-      woset_initial_iso3)
-
-
-lemma non_iso_segs:
-  assumes A0:"well_ord R X"  and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-          A5:"A \<in> segs R X" and A6:"B \<in> segs R X" and A7:"A \<noteq> B"
-  shows non_iso_segs1:"A \<in> segs (Restr R B) B \<or> B \<in> segs (Restr R A) A" and
-        non_iso_segs2:"\<not>(\<exists>f. order_iso (Restr R A) A (Restr R B) B f)"
-proof-
-  obtain B0:"A \<in> Pow X" and B1:"B \<in> Pow X"  using A5 A6 segs_memD2 by blast
-  obtain B2:"well_ord (Restr R A) A" and B3:"well_ord (Restr R B) B"  using A0 B0 B1 woset_heredity by fastforce
-  obtain B2b:"total_on A (Restr R A)" and B3b:"total_on B (Restr R B)"
-    by (metis B2 B3 refl_on_def well_ord_def woset_is_toset)
-  obtain a b where B4:"a \<in> X" and B5:"b \<in> X" and B6:"(a,b)\<in>R \<or> (b,a)\<in>R" and B7:"A=seg R X a" and B8:"B=seg R X b"
-    by (metis A0 A2 A3 A4 A5 A6 refl_on_def seg_unique2 woset_total2)
-  then have B9:"A \<subseteq> B \<or> B \<subseteq> A"
-    by (meson A0 refl_on_def toset_segs_toset well_ord_def woset_is_toset)
-  have B10:"A \<subseteq> B \<Longrightarrow> A \<in> segs (Restr R B) B"
-  proof-
-    assume A8:"A \<subseteq> B"
-    then have B11:"a \<in> B"
-      by (metis A7 B4 B5 B6 B7 B8 not_in_seg seg_memI subsetD)
-    have B12:"A=seg (Restr R B) B a"
-    proof
-      show "A \<subseteq> seg (Restr R B) B a"
-      proof
-        fix x assume A9:"x \<in> A"
-        then obtain "(x,a)\<in>(Restr R B)" and "x \<noteq> a"
-          using A8 B11 B7 seg_def by fastforce
-        then show "x \<in> seg (Restr R B) B a"
-          by (meson A8 A9 seg_memI subset_iff)
-      qed
-      show "seg (Restr R B) B a \<subseteq> A"
-        by (simp add: B7 B8 seg_def subset_iff)
-    qed
-    then show "A \<in> segs (Restr R B) B"
-      by (simp add: B11 segs_def)
-  qed
-  have B11:"B \<subseteq> A \<Longrightarrow> B \<in> segs (Restr R A) A"
-  proof-
-    assume A8:"B \<subseteq> A"
-    then have B11:"b \<in> A"
-      by (metis A7 B4 B5 B6 B7 B8 not_in_seg seg_memI subsetD)
-    have B12:"B=seg (Restr R A) A b"
-    proof
-      show "B \<subseteq> seg (Restr R A) A b"
-      proof
-        fix x assume A9:"x \<in> B"
-        then obtain "(x,b)\<in>(Restr R A)" and "x \<noteq> b"
-          using A8 B11 B8 seg_def by fastforce
-        then show "x \<in> seg (Restr R A) A b"
-          by (metis A8 A9 seg_memI subset_iff)
-      qed
-      show "seg (Restr R A) A b \<subseteq> B"
-        by (simp add: B7 B8 seg_def subset_iff)
-    qed
-    then show "B \<in> segs (Restr R A) A"
-      by (simp add: B11 segs_def)
-  qed
-  show B12:"A \<in> segs(Restr R B) B \<or> B \<in> segs (Restr R A) A"
-    using B10 B11 B9 by blast
-  show "\<not>(\<exists>f. order_iso (Restr R A) A (Restr R B) B f)"
-  proof(cases "B \<in> segs (Restr R A) A")
-    case True
-    then show ?thesis
-      by (metis B2 Pow_iff Restr_subset segs_memD2 well_ord_def woset_initial_iso3) 
-  next
-    case False 
-    then obtain "A \<in> segs(Restr R B) B"
-      using B12 by blast
-    then have "\<not>(\<exists>f. order_iso (Restr R A) A (Restr R B) B f)"
-      using woset_initial_iso5[of "Restr R B" B A] by (metis B11 B3 B9 False restr_subset well_ord_def)
-    then show ?thesis by blast 
-  qed
-qed
-  
-        
-lemma well_ord_auto_id:
-  assumes  A0:"well_ord R X" and A1:"R \<subseteq> X \<times> X" and A2:"trans R X" and A3:"antisym R X" and A4:"refl_on X R" and
-           A5:"order_iso R X R X f"
-         shows "\<And>x. x \<in> X\<Longrightarrow>f x = x"
-proof-
-  have B0:"bij_betw f X X"
-    using A2 A3 A4 A5 order_iso_poset(2) posetI2 by blast
-  have B1:"order_iso R X R X (the_inv_into X f)"
-  proof(rule order_isoI1)
-    show "the_inv_into X f ` X = X"
-      by (metis B0 bij_betw_def the_inv_into_onto)
-    show "\<And>x1 x2. x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (x1, x2) \<in> R \<Longrightarrow> (the_inv_into X f x1, the_inv_into X f x2) \<in> R"
-    proof -
-      fix x1 :: 'a and x2 :: 'a
-      assume a1: "x1 \<in> X"
-      assume a2: "x2 \<in> X"
-      assume "(x1, x2) \<in> R"
-      then have "(f (the_inv_into X f x1), f (the_inv_into X f x2)) \<in> R"
-        using a2 a1 B0 f_the_inv_into_f_bij_betw by fastforce
-      then show "(the_inv_into X f x1, the_inv_into X f x2) \<in> R"
-        using a2 a1 by (meson A5 B0 bij_betwE bij_betw_the_inv_into order_iso_def)
-    qed
-    show "\<And>x1 x2. x1 \<in> X \<Longrightarrow> x2 \<in> X \<Longrightarrow> (the_inv_into X f x1, the_inv_into X f x2) \<in> R \<Longrightarrow> (x1, x2) \<in> R"
-    proof-
-      fix x1 x2  assume B2: "x1 \<in> X" and B3: "x2 \<in> X" and  B4:"(the_inv_into X f x1, the_inv_into X f x2) \<in> R"
-      then have "(f (the_inv_into X f x1), f (the_inv_into X f x2)) \<in> R"
-        by (meson A4 A5 order_iso_def refl_on_domain)
-      then show "(x1, x2) \<in> R"
-        by (metis B0 B2 B3 f_the_inv_into_f_bij_betw)
-    qed
-  qed
-  obtain B4:"strictly_isotone R X R f" and B5:"strictly_isotone R X R (the_inv_into X f)"
-    using A2 A3 A4 A5 B1 order_isoD8 by blast
-  obtain B2:"f`X \<subseteq> X" and B3:"(the_inv_into X f)`X \<subseteq> X"
-    by (metis A5 B1 dual_order.refl order_isoD3)
-  then obtain B6:"extensive R X f" and B7:"extensive R X (the_inv_into X f)"
-    by (meson A0 B4 B5 refl_on_def well_ord_def woset_strictly_isotone1)
-  show "\<And>x. x \<in> X\<Longrightarrow>f x = x"
-  proof-
-    fix x assume A6:"x \<in> X"
-    then obtain B8:"(x, f x) \<in> R" and B9:"(x, (the_inv_into X f) x)\<in>R"
-      by (meson B6 B7 extensiveD1)
-    then obtain B10:"(f x, f ((the_inv_into X f) x))\<in>R"
-      by (meson A4 A5 order_iso_def refl_on_domain) 
-    then obtain B11:"(f x, x)\<in>R"
-      using A6 B0 f_the_inv_into_f_bij_betw by fastforce
-    then show "f x = x"
-      by (meson A3 A4 B8 antisym_onD refl_onD2)
-  qed
-qed
-
-abbreviation word where "word R X \<equiv> (well_ord R X \<and> poset R X \<and> R \<subseteq> X \<times> X)"
-
-
-
-
-
 
 
 

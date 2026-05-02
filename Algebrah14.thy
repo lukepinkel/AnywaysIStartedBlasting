@@ -1,4 +1,4 @@
-theory Algebrah11
+theory Algebrah14
   imports Main
 begin
 
@@ -1714,19 +1714,156 @@ qed
 
 section Magmas
 subsection \<open>Magma Locale\<close>
+
 definition magma_stable :: "'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> bool" where 
   "magma_stable X f A \<equiv> (\<forall>x \<in> A. \<forall>y \<in> A. f x y \<in> A) \<and> (A \<subseteq> X)"
 
+lemma magma_stableI :"\<lbrakk>A \<subseteq> X; (\<And>x y. \<lbrakk>x \<in> A; y \<in> A\<rbrakk> \<Longrightarrow> f x y \<in> A)\<rbrakk> \<Longrightarrow> magma_stable X f A" 
+  by (simp add: magma_stable_def)
 
-lemma mamga_stableI:"A \<subseteq> X \<Longrightarrow> (\<And>x y. \<lbrakk>x \<in> A; y \<in> A\<rbrakk> \<Longrightarrow> f x y \<in> A) \<Longrightarrow> magma_stable X f A" by (simp add: magma_stable_def)
-lemma magma_stableE1: "magma_stable X f A \<Longrightarrow> A \<subseteq> X" by (simp add: magma_stable_def)
-lemma magma_stableE2:  "magma_stable X f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> f x y \<in> A" by (simp add:magma_stable_def)
-lemma magma_stable_int_closed:"(\<And>A. A \<in> \<A> \<Longrightarrow> magma_stable X f A) \<Longrightarrow> \<A> \<noteq> {} \<Longrightarrow> magma_stable X f (\<Inter>\<A>)" unfolding magma_stable_def by(blast)
+lemma magma_stableE1:"magma_stable X f A \<Longrightarrow> A \<subseteq> X" 
+  by (simp add: magma_stable_def)
+
+lemma magma_stableE2:"magma_stable X f A \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> f x y \<in> A"
+  by (simp add:magma_stable_def)
+
+lemma magma_stable_int_closed:"\<lbrakk>(\<And>A. A \<in> \<A> \<Longrightarrow> magma_stable X f A) ;\<A> \<noteq> {}\<rbrakk> \<Longrightarrow> magma_stable X f (\<Inter>\<A>)"
+  unfolding magma_stable_def by(blast)
+
+inductive_set generated_magma::"('a\<Rightarrow> 'a \<Rightarrow> 'a ) \<Rightarrow> 'a set \<Rightarrow> 'a set" for f A where
+    iso[intro, simp]:"a \<in> A \<Longrightarrow> a \<in> generated_magma f A" |
+    opc[intro, simp]:"\<lbrakk>a \<in> generated_magma f A; b \<in> generated_magma f A\<rbrakk> \<Longrightarrow> f a b \<in> generated_magma f A"
+
+
+
 
 locale magma=
   fixes X::"'a set" and f::"'a \<Rightarrow> 'a \<Rightarrow> 'a" (infixl "\<cdot>" 70) 
   assumes closed:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> x\<cdot>y \<in> X" 
 begin
+
+
+abbreviation gen where "gen \<equiv> generated_magma f"
+
+lemma generate_into: "a \<in> gen (X \<inter> A) \<Longrightarrow> a \<in> X"  
+  by (induction rule: generated_magma.induct, simp_all add: closed) 
+
+lemma iso2:"A \<subseteq>gen A"
+  by (simp add: subset_eq)
+
+
+lemma generated_iso1:
+  assumes A0:"(\<And>x. x \<in> A \<Longrightarrow> x \<in> B)" and A1:"x \<in> gen A "
+  shows "x \<in> gen B"
+  using A1 A0 by(induct x, simp_all)
+
+lemma generated_iso2:"A \<subseteq> B \<Longrightarrow> gen A \<subseteq> gen B"
+  by (meson generated_iso1 subset_eq)
+  
+lemma generated_least1:
+  assumes A0:"\<And>x. x \<in> A \<Longrightarrow> x \<in> B" and A1:"\<And>a b. \<lbrakk>a \<in> B; b \<in> B\<rbrakk> \<Longrightarrow> a \<cdot>b \<in> B"
+  shows "\<And>x. x \<in> gen A \<Longrightarrow> x \<in> B"
+  by(erule generated_magma.induct,auto simp add:A0 A1)
+
+lemma generated_least2:
+  assumes A0:"\<And>x. x \<in> A \<Longrightarrow> x \<in> B" and A1:"\<And>a b. \<lbrakk>a \<in> B; b \<in> B\<rbrakk> \<Longrightarrow> a \<cdot>b \<in> B" and
+            A2:"x  \<in> gen A"
+  shows "x \<in> B"
+  using A0 A1 A2 generated_least1 by blast
+
+lemma generated_least3:
+  assumes A0:"A \<subseteq> B" and A1:"\<And>a b. \<lbrakk>a \<in> B; b \<in> B\<rbrakk> \<Longrightarrow> a \<cdot>b \<in> B"
+  shows " gen A \<subseteq> B"
+  apply(rule subsetI)
+  using A0 A1 generated_least2[of A B] by blast
+
+definition cl :: "'a set \<Rightarrow> 'a set"  where 
+  "cl S = gen (X \<inter> S)"
+
+lemma cl_magma_sub:"cl H \<subseteq> X" 
+  using cl_def generate_into by auto
+
+lemma cl_stable:" magma_stable X f (cl H)"
+  using cl_def cl_magma_sub magma_stable_def by fastforce
+
+
+lemma cl_magma_iso:"A \<subseteq> B \<Longrightarrow> cl A \<subseteq> cl B" unfolding cl_def
+  by (simp add: generated_iso2 inf.coboundedI2)
+
+
+lemma cl_magma_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq> cl A"
+  by (simp add: Int_absorb1 cl_def iso2)  
+
+
+lemma cl_magma_stable_ub:"\<lbrakk>A \<subseteq> B; magma_stable X f B\<rbrakk> \<Longrightarrow> cl A \<subseteq> B"
+  by (simp add: cl_def generated_least3 le_infI2 magma_stableE2) 
+
+lemma cl_magma_stable_ub2:"\<lbrakk>A \<subseteq> B; (\<And>a b. \<lbrakk>a \<in> B; b \<in> B\<rbrakk> \<Longrightarrow> a \<cdot>b \<in> B)\<rbrakk>  \<Longrightarrow> cl A \<subseteq> B"
+  by (simp add: generated_least3 inf.coboundedI2 magma.cl_def magma_axioms)
+
+lemma cl_idemp:"A \<subseteq> X \<Longrightarrow> cl A = cl (cl A)"
+  by (simp add: cl_magma_extensive cl_magma_stable_ub cl_magma_sub cl_stable subset_antisym)
+ 
+lemma cl_magma_moore0:
+  assumes A0:"A \<subseteq> X" 
+  shows "cl A = \<Inter>{C. magma_stable X f C \<and> A \<subseteq> C}" (is "?LHS = ?RHS")
+proof
+  show "?LHS \<subseteq> ?RHS"
+    by (simp add: le_Inf_iff magma.cl_magma_stable_ub magma_axioms)
+next
+  show "?RHS \<subseteq> ?LHS"
+    by (simp add: Inter_lower assms cl_magma_extensive cl_stable)
+qed
+
+lemma magma_cl_induct:
+  assumes A0:"A \<subseteq> X" and
+          A1:"a \<in> cl A" and
+          A2:"\<And>x. x \<in> A \<Longrightarrow> P x" and
+          A3:"\<And>x y. \<lbrakk>x \<in> cl A; P x; y \<in> cl A; P y\<rbrakk> \<Longrightarrow> P (x \<cdot> y)"
+        shows "P a"
+  using A1 A2 A3  unfolding cl_def
+proof(induct rule: generated_magma.induct)
+  case (iso a)
+  then show ?case
+    by blast 
+next
+  case (opc a b)
+  then show ?case
+    by blast 
+qed
+
+lemma cl_sub_eq:"A \<subseteq> X \<Longrightarrow> cl A = gen A"
+  by (simp add: cl_def inf.absorb_iff2)
+
+lemma cl_cases:
+  assumes A0:"A \<subseteq> X" and 
+          A1:"a \<in> gen A" and
+         A2:"(\<And>x. a = x \<Longrightarrow> x \<in> A \<Longrightarrow> P)" and 
+         A3:"(\<And>x y. a = x \<cdot> y \<Longrightarrow> x \<in> cl A \<Longrightarrow> y \<in> cl A \<Longrightarrow> P)"
+       shows P
+proof-
+  have B0:"(\<And>x y. a = x \<cdot> y \<Longrightarrow> x \<in> gen A \<Longrightarrow> y \<in> gen A \<Longrightarrow> P)"
+    using A0 A3 cl_sub_eq by blast
+  show ?thesis using A0 A1 A2 B0  generated_magma.cases[of a f A] by blast
+qed
+    
+    
+
+lemma magma_cl_cases:
+  assumes A0:"A \<subseteq> X" and A1:"x \<in> cl A"
+  obtains "x \<in> A" | "\<exists>a\<in> cl A. \<exists>b \<in> cl A. x = a \<cdot> b" 
+proof-
+  have B0:"x \<in> gen A"
+    using A0 A1 cl_sub_eq by auto
+  show ?thesis
+    using A0 B0 cl_cases[of A x] that(1,2) by metis
+qed
+
+lemma magma_cl_non_gen: 
+  assumes A0:"A \<subseteq> X" and A1:"x \<in> cl A" and A2:"x \<notin> A"
+  obtains a b where "a \<in> cl A" and "b \<in> cl A" and "x = a \<cdot> b"
+  using A0 A1 A2 magma_cl_cases[of A x] using that by auto
+
 definition opposite_law where "opposite_law \<equiv> \<lambda>x. \<lambda>y. f y x"
 definition stable where  "stable A \<equiv> magma_stable X f A"
 definition commutes where  "commutes A B \<equiv> (\<forall>a \<in> A. \<forall>b \<in> B. a \<cdot> b = b \<cdot> a)"
@@ -1823,54 +1960,7 @@ lemma r_trans_hom_mem:"r_trans \<in> set_morphisms X (set_morphisms X X)"  using
 lemma id_elem_linj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (l_trans e) X " unfolding inj_on_def l_trans_def id_elem_def by(auto)
 lemma id_elem_rinj:"e \<in> X \<Longrightarrow> id_elem e \<Longrightarrow> inj_on (r_trans e) X " unfolding inj_on_def r_trans_def id_elem_def by(auto)
 
-inductive_set magma_generated::"'a set \<Rightarrow> 'a set" for A where
- iso:"a \<in> A \<Longrightarrow> a \<in> magma_generated A"
- |opc:"a \<in> magma_generated A \<Longrightarrow> b \<in> magma_generated A \<Longrightarrow> a\<cdot>b \<in> magma_generated A"
 
-lemma generate_into: "a \<in> magma_generated (X \<inter> A) \<Longrightarrow> a \<in> X"  
-  apply (induction rule: magma_generated.induct)  
-   apply simp by (simp add: closed)
-
-definition cl :: "'a set \<Rightarrow> 'a set"  where "cl S = magma_generated (X \<inter> S)"
-lemma cl_magma_sub:"cl H \<subseteq> X" using cl_def generate_into by auto
-
-lemma cl_magma_iso:
-  assumes A0:"A \<subseteq> B"  shows "cl A \<subseteq> cl B"
-proof
-  fix x assume "x \<in> cl A"
-  then show "x \<in> cl B" unfolding cl_def
-   apply(induction rule: magma_generated.induct)
-    using assms magma_generated.iso apply auto[1]
-    using magma_generated.opc by auto
-qed
-
-lemma cl_magma_extensive:"A \<subseteq> X \<Longrightarrow> A \<subseteq> cl A" 
-  unfolding cl_def using magma_generated.simps by blast 
-
-lemma cl_magma_stable_ub:"A \<subseteq> B \<Longrightarrow> stable B \<Longrightarrow> cl A \<subseteq> B" 
-  by (metis Int_absorb1 cl_def magma.cl_def magma.cl_magma_sub magma_def stableE1 stableE2 subset_trans) 
-
-lemma cl_magma_idempotent:
-  assumes A0:"A \<subseteq> X" 
-  shows "cl A = cl (cl A)"
-  apply(rule subset_antisym)
-  apply (simp add: cl_magma_extensive cl_magma_sub)
-  using cl_def cl_magma_stable_ub cl_magma_sub magma_generated.opc stableI by auto
-
-lemma cl_magma_moore0:
-  assumes A0:"A \<subseteq> X" 
-  shows "cl A = \<Inter>{C. stable C \<and> A \<subseteq> C}" (is "?LHS = ?RHS")
-proof
-  show "?LHS \<subseteq> ?RHS"
-    by (simp add: le_Inf_iff magma.cl_magma_stable_ub magma_axioms)
-next
-  show "?RHS \<subseteq> ?LHS"
-    using assms cl_def cl_magma_extensive cl_magma_sub magma_generated.opc stableI by force
-qed
-
-
-lemma generated_stable:"stable (cl A)"  
-  using cl_def cl_magma_sub magma_generated.opc stableI by presburger 
 
 definition set_to_list :: "'b set \<Rightarrow> 'b list"
   where "set_to_list s = (SOME l. set l = s)"
@@ -1901,69 +1991,7 @@ definition act_finprod:: "'b list \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarr
 definition list_finprod::"'b list \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "list_finprod L x \<equiv> act_finprod (tl L) x (x (hd L))"
 definition finprod :: "'b set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "finprod I x \<equiv> list_finprod (set_to_list I) x"
 definition fprod::"'b::wellorder set \<Rightarrow> ('b \<Rightarrow> 'a) \<Rightarrow> 'a" where "fprod I x \<equiv> list_finprod (sorted_list_of_set I) x"
-(*
-lemma fprod_ins: 
-  fixes I::"'b::wellorder set"
-  assumes A0:"finite I" and A1:"x \<in> set_morphisms I X" and A2:"I \<noteq> {}" 
-  shows "fprod I x \<in> X"
-proof-
-  obtain L L' where B0:"L=sorted_list_of_set I" and B1:"L'=sorted_list_of_set (I - {Min I})"
-    by simp
-  obtain \<beta> where B2:"\<beta> = Min I"
-    by simp
-  have B3:"\<beta> = hd L"
-    by (simp add: A0 A2 B0 B2 sorted_list_of_set_nonempty)
-  have B4: "L = Min I # sorted_list_of_set (I - {Min I})"
-    using A0 A2 B0 sorted_list_of_set_nonempty by blast
-  have B5:"\<beta> # L' = L"
-    using B1 B2 B4 by blast
-  have B5:"fprod I x = List.foldr (f \<circ> x) L' (x \<beta>)"
-    by (metis B0 B1 B3 B4 list.sel(3) magma.act_finprod_def magma.fprod_def magma.list_finprod_def magma_axioms)
-  have B6:"sorted L'"
-    using B1 sorted_list_of_set.sorted_sorted_key_list_of_set by blast
-  have B7:"foldr ((\<cdot>) \<circ> x) [] (x \<beta>) \<in> X"
-    by (metis A0 A1 A2 B2 Min_in foldr.simps(1) hom9 id_apply)
-  
-  have B6:" List.foldr (f \<circ> x) L (x \<beta>) \<in> X"
-  proof(induct L)
-    case Nil
-    then show ?case using B7 by auto
-  next
-    case (Cons a L)
-    then show ?case 
 
-  qed
-    
-  also have "... =  (f \<circ> x) \<beta> List.foldr (f \<circ> x) L"
-  have B6:"... = "
-  have B2:"\<beta> = hd L"
-    by (metis A0 A1 A4 B1 Collect_mem_eq Least_Min all_not_in_conv list.sel(1))
-  define L' where "L'=tl L" 
-  have B3:"L'=(sorted_list_of_set (I - {Min I}))"
-    by (simp add: B1 L'_def)
-  have B1:"fprod I x = List.fold (f \<circ> x) L' (x \<beta>)"
-    by (simp add: B0 B2 L'_def act_finprod_def fprod_def list_finprod_def)
-  have B2:"f (x \<beta>) (fprod I x) = f (x \<beta>)  (List.fold (f \<circ> x) L' (x \<beta>)) "
-    by (simp add: B1)
-  also have B3:"... =  (f \<circ> x) \<beta>  (List.fold (f \<circ> x) L' (x \<beta>))"
-    by simp
-  also have B4:"... = ()"
-
-lemma fprod_closed:
-  assumes A0:"finite I" and A1:"I \<noteq> {}" and A2:"x \<in> set_morphisms I X" 
-  shows "fprod I x \<in> X"
-proof-
-  obtain L where B0:"L= sorted_list_of_set I "
-    by simp
-  define L' where "L'=butlast L" 
-  define \<beta> where "\<beta>=last L"
-  have B1:"fprod I x = List.fold ((\<cdot>) \<circ> x) L' (x \<beta>)"
-    by (simp add: B0 L'_def \<beta>_def act_finprod_def fprod_def list_finprod_def)
-  
-  (* List.fold ((\<cdot>) \<circ> x) (butlast (sorted_list_of_set I)) (x (last (sorted_list_of_set I))) \<in> X*)
-
-
-*)
 lemma r_coset_singleton_prod:"r_coset H a = set_prod H {a}" unfolding r_coset_def set_prod_def by blast
 lemma l_coset_singleton_prod:"l_coset a H = set_prod {a} H" unfolding l_coset_def set_prod_def by blast
 
@@ -2007,7 +2035,7 @@ lemma cl_submgama: "submagma (cl H) X (\<cdot>)"
   apply (simp add: closed)
   apply(auto simp add:submagma_axioms_def)
   apply (simp add: cl_def generate_into)
-  by (simp add: cl_def sub.magma_generated.opc)
+  using cl_stable local.stable_def stableE2 by blast
 
 lemma cl_magma_ub:
   assumes A0:"A \<subseteq> B" and A1:"submagma B X (\<cdot>)"   shows "cl A \<subseteq> B"
@@ -2015,7 +2043,7 @@ proof
   fix x assume "x \<in> cl A"
   then show "x \<in> B"
     unfolding cl_def
-    apply(induction rule: magma_generated.induct)
+    apply(induction rule: generated_magma.induct)
     using A0 apply blast
     by (meson A1 submagma.subfun)
 qed
@@ -2092,8 +2120,8 @@ proof-
     by (metis assms cod image_subset_iff magma_stableE1 subsetD)
   have B1:"\<And>x y. x \<in> f ` A \<Longrightarrow> y \<in> f ` A \<Longrightarrow> x \<star> y \<in> f ` A"
     using A0 imag_comp2 by(auto)
-  show ?thesis 
-    using mamga_stableI B0 B1 by auto
+  show ?thesis
+    by (simp add: B0 B1 magma_stableI) 
 qed
 
 
@@ -2101,7 +2129,7 @@ lemma magma_stable_vimage:"magma_stable Y (\<star>) B \<Longrightarrow> (vimage 
 proof-
   assume A0:"magma_stable Y (\<star>) B " and A1:" (vimage f B) \<subseteq> X"
   show "magma_stable X (\<cdot>) (vimage f B)"
-    apply(rule mamga_stableI)
+    apply(rule magma_stableI)
     apply (simp add: A1)
     using A0 A1 cmp magma_stable_def subsetD by fastforce
 qed
@@ -2698,7 +2726,7 @@ sublocale magma_homomorphism "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
   using codom_hom.magma_homomorphism_axioms by blast
 
 sublocale first_isomorphism:magma_homomorphism_fundamental "factor_map" "Y" "(\<star>)" "(X/R)" "(\<bullet>)"
-  by (simp add: codom_hom.magma_homomorphism_axioms magma_homomorphism_fundamental_def)
+  by(unfold_locales)
 
 lemma epi_then_iso:
   assumes A0:"f`X=Y"
@@ -2980,7 +3008,8 @@ proof-
   obtain "A \<subseteq> bicentralizer A" and "B \<subseteq> centralizer A"
     using A0 A1 A2 bicentralizer_extensive commutes_sub_centralizer1 by presburger
   then obtain "cl A \<subseteq> bicentralizer A" and "cl B \<subseteq> centralizer A"
-    using A0 bicentralizer_stable centralizer_stable cl_magma_stable_ub by presburger
+    using A0 bicentralizer_stable centralizer_stable cl_magma_stable_ub
+    using local.stable_def by force
   then show ?thesis
     using bicentralizer_commutes1 commutes_def by fastforce
 qed
@@ -7316,7 +7345,7 @@ lemma Imsub:"Im \<subseteq> set_isomorphisms E E"
   by blast
 
 
-sublocale im:monoid Im "(compose E)" "(Algebrah11.Id E)"
+sublocale im:monoid Im "(compose E)" "(Id E)"
     apply(rule monoid.intro)
      apply(rule semigroup.intro)
   apply(rule magma.intro)
@@ -7563,7 +7592,7 @@ begin
 definition Aut where "Aut \<equiv> {\<phi>. group_isomorphism \<phi> G law G law e e}"
 definition Inn where "Inn \<equiv> {(\<lambda>y \<in> G. x \<cdot> y \<cdot> (inv x))|x. x \<in> G}"
 
-sublocale permutations:group "(set_isomorphisms G G)" "(compose G)" "(Algebrah11.Id G)"
+sublocale permutations:group "(set_isomorphisms G G)" "(compose G)" "(Id G)"
   apply(rule group.intro)
   apply (metis group.axioms(1) composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
   by (metis group.axioms(2) composition_monoid monoid.group_of_units transformations_notation.set_iso_unital2)
@@ -7737,16 +7766,1136 @@ lemma Aut_subgroup:
 
 end
 
-thm_deps group_automorphisms.Aut_subgroup
-thm_deps group_automorphisms.Aut_comp_hom
-thm_deps group_automorphisms.inv_group_hom
-thm_deps group_automorphisms.permuation_inv_eq_inv
 
 
-thm_deps group_automorphisms.permuation_inv_eq_inv
-thm_deps monoid_congruence_vimage.epi_then_iso
-thm_deps monoid_epimorphism_congruence_image.epi_then_iso
-print_locale monoid_epimorphism_congruence_image
-thm_deps symmetric_group.inv_set_inv
-thm_deps group_operating_on_set.Imsub
+
+
+
+section \<open>Magma Homomorphism Locale\<close>
+
+
+definition comm::"('a  \<Rightarrow> 'b) \<Rightarrow> 'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'b set  \<Rightarrow> ('b \<Rightarrow>'b \<Rightarrow>'b)  \<Rightarrow> bool" where
+  "comm f X law1 Y law2 \<equiv> (\<forall>x \<in> X. \<forall>y \<in> X. f(law1 x y) = law2 (f x) (f y))"
+
+lemma magma_homE:"comm f X law1 Y law2 \<Longrightarrow> x \<in> X \<Longrightarrow> y \<in> X \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)"
+  by (simp add: comm_def)
+
+lemma commI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f(law1 x y) = law2 (f x) (f y)) \<Longrightarrow> comm f X law1 Y law2"
+  by (simp add: comm_def)
+
+
+
+
+lemma magma_homI:"\<lbrakk>f \<in> set_morphisms X Y; comm f X l1 Y l2; (\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y); magma X l1; magma Y l2\<rbrakk> \<Longrightarrow> magma_homomorphism f X l1 Y l2"
+  by (simp add: magma_homE magma_homomorphism_axioms.intro magma_homomorphism_def set_morphismI1)
+ 
+
+section \<open>Magma Isomorphism\<close> 
+
+(*
+locale magma_iso=hom:magma_homomorphism f X"(\<cdot>)" Y "(\<star>)"
+  for f and X and domain_law (infixl "\<cdot>" 70) and Y and codomain_law (infixl "\<star>" 70)+
+  assumes bij:"bij_betw f X Y" 
+begin
+*)
+
+context magma_isomorphism
+begin
+definition f_inv where "f_inv = (\<lambda>y \<in> Y. inv_into X f y)"
+
+lemma bij:"bij_betw f X Y"
+  by auto
+
+lemma inv_bij:"bij_betw f_inv Y X"
+  by (simp add: bij_betw_inv_into f_inv_def)
+
+lemma inv_hom:"comm f_inv Y(\<star>) X (\<cdot>)"
+proof(rule commI)
+  fix y y' assume A0:"y \<in> Y" and A1:"y' \<in> Y" 
+  have "f_inv (y \<star> y') = f_inv ( ( f ( f_inv y ) ) \<star> ( f ( f_inv y' ) ) )"
+    using A0 A1 bij bij_betw_inv_into_right[of f X Y ] f_inv_def by force
+  also have "... = f_inv ( f ((f_inv y)\<cdot> f_inv y'))"
+    by (metis A0 A1 bij_betw_imp_surj_on cmp imageI inv_bij)
+  also have "... = (f_inv y) \<cdot> (f_inv y')"
+    by (metis A0 A1 bij bij_betw_def f_inv_def dom.closed imageI inv_bij inv_into_f_f restrict_apply1)
+  finally show "f_inv (y\<star>y') = (f_inv y)\<cdot>(f_inv y')"
+    by auto
+qed
+
+sublocale f_inv_iso:magma_homomorphism f_inv Y "(\<star>)" X "(\<cdot>)"
+  apply(unfold_locales)
+  apply (simp add: f_inv_def)
+  apply (meson bij_betwE inv_bij)
+  by (meson inv_hom magma_homE)
+
+
 end
+
+
+lemma magma_iso_intro:"\<lbrakk>f \<in>set_morphisms X Y; bij_betw f X Y; magma X xlaw; magma Y ylaw; comm f X xlaw Y ylaw\<rbrakk> \<Longrightarrow> magma_isomorphism f X xlaw Y ylaw"
+  by (simp add: magma_homE magma_isomorphism_axioms.intro magma_isomorphism_def set_isoI1)
+
+
+section \<open>Free Bobby Shmurda\<close>
+
+datatype 'a frm = 
+      Em 'a ("\<eta>")
+    | Op "'a frm" "'a frm" (infixl "\<star>" 65)
+
+inductive_set free_magma::"'a set \<Rightarrow> 'a frm set" for X::"'a set"  where
+  embeds[intro!, simp]:"x \<in> X \<Longrightarrow> \<eta> x \<in>  free_magma X" |
+  stable[intro!, simp]:"\<lbrakk>x \<in> free_magma X; y \<in> free_magma X\<rbrakk> \<Longrightarrow>  x \<star> y \<in> free_magma  X "
+
+definition ext_free_magma :: "'a set \<Rightarrow> 'a frm set" where
+  "ext_free_magma X = {t. set_frm t \<subseteq> X}"
+
+lemma ext_free_magma_eta[simp, intro]:
+  "x \<in> X \<Longrightarrow> \<eta> x \<in> ext_free_magma X"
+  by (simp add: ext_free_magma_def)
+
+lemma ext_free_magma_op[simp, intro]:
+  "\<lbrakk>s \<in> ext_free_magma X; t \<in> ext_free_magma X\<rbrakk> \<Longrightarrow> s \<star> t \<in> ext_free_magma X"
+  by (simp add: ext_free_magma_def)
+
+lemma ext_free_magma_iff[simp]:
+  "t \<in> ext_free_magma X \<longleftrightarrow> set_frm t \<subseteq> X"
+  by (simp add: ext_free_magma_def)
+
+
+inductive_cases free_magmaE[]:"x \<star> y \<in> free_magma  X"
+inductive_cases free_magma_embeds:"\<eta> x \<in>  free_magma X"
+inductive_cases free_magma_embeds_stable1[]:"(\<eta> x)\<star> y \<in>  free_magma X"
+inductive_cases free_magma_embeds_stable2[]:"x \<star> (\<eta> y) \<in>  free_magma X"
+inductive_cases free_magma_embeds_stable3[]:"(\<eta> x) \<star> (\<eta> y) \<in>  free_magma X"
+
+
+lemma frm_set_emb_case:
+  "y \<in> set_frm (\<eta> x) \<Longrightarrow> y = x"
+  by auto
+
+lemma frm_set1:
+  "set_frm x \<union> set_frm y = set_frm (x \<star> y)" 
+  by simp
+
+lemma frm_set2:
+  "set_frm (frm.map_frm f x) = f`(set_frm x)" 
+  by(induct x, auto) 
+
+lemma frm_set3: assumes
+  "x \<in> (free_magma X)" shows 
+  "set_frm x \<subseteq> X" using assms
+proof(induct x)
+  case (embeds x)
+  then show ?case
+    by simp 
+next
+  case (stable x y)
+  then show ?case
+    by simp 
+qed
+
+lemma free_magma_frm_set:"x \<in> free_magma X \<longleftrightarrow> (\<forall>y \<in> set_frm x. y \<in> X)"
+proof(induct x)
+  case (Em x)
+  then show ?case
+    using free_magma_embeds by force
+next
+  case (Op x1 x2)
+  then show ?case
+    by (meson free_magma.stable frm.set_intros(2,3) frm_set3 in_mono)
+qed 
+
+lemma frm_set4:
+  "\<forall>y \<in> set_frm x. y \<in> X \<Longrightarrow> x \<in>(free_magma X)"
+  by (simp add: free_magma_frm_set)
+
+
+lemma ext_free_magma_eq_free_magma:
+  "ext_free_magma X = free_magma X"
+proof
+  show "ext_free_magma X \<subseteq> free_magma X"
+    using free_magma_frm_set by fastforce
+  show "free_magma X \<subseteq> ext_free_magma X"
+    by (simp add: frm_set3 subsetI)
+qed
+
+definition generator_image (\<open>'\<langle>_'\<rangle>\<close>) where "generator_image X = (\<eta>`X)"
+
+
+section \<open>Length\<close>
+
+fun l::"'a frm \<Rightarrow> nat" where
+  "l (\<eta> x) = 1" |
+  "l (x \<star> y) = (l x) + (l y)"
+
+lemma len_gt_0:"l x > 0"
+proof(induct x)
+  case (Em x)
+  then show ?case
+    by simp
+next
+  case (Op x1 x2)
+  then show ?case
+    by simp 
+qed
+
+lemma len_lt:"x = a \<star> b \<Longrightarrow> l a < l x"
+  by (simp add: len_gt_0)
+
+lemma free_magma_cases2:
+  assumes "x \<in> free_magma X"
+  obtains "(\<exists>a \<in> X. x = \<eta> a) \<or> (\<exists>a \<in> free_magma X. \<exists>b\<in>free_magma X. (x = a \<star>b)) " 
+using assms proof(induct x)
+  case (embeds x)
+  then show ?case
+    by blast 
+next
+  case (stable x y)
+  then show ?case
+    by blast 
+qed
+
+
+lemma free_magma_cases2b:
+  assumes "x \<in> free_magma X"
+  obtains "(\<exists>a \<in> X. x = \<eta> a)"| " (\<exists>a \<in> free_magma X. \<exists>b\<in>free_magma X. (x = a \<star>b)) "
+  using assms free_magma_cases2 by blast
+
+
+
+lemma free_magma_cases2c:
+  assumes "x \<in> free_magma X"
+  obtains a where  "x = \<eta> a " "a \<in> X"|
+  a b where "(x = a \<star>b)" "a \<in> free_magma X" "b\<in>free_magma X" 
+  using assms free_magma.cases
+  by blast
+
+
+
+fun frm_set::"'a frm \<Rightarrow> 'a set" where
+  "frm_set (\<eta> x) = {x}"|
+  "frm_set (x \<star> y) = frm_set x \<union> frm_set y"
+
+
+
+section \<open>Free magma Locale\<close>
+locale free_magma_locale=fixes X::"'a set"
+begin
+
+lemma eta_inj1:
+  "\<And>x x'. \<lbrakk>x \<in>X; x' \<in> X; \<eta> x = \<eta> x'\<rbrakk> \<Longrightarrow> x=x'" 
+  by blast
+
+lemma eta_inj2:
+  "inj_on \<eta> X"  
+  by (simp add: eta_inj1 inj_onI)
+
+lemma eta_inj3:
+  "\<lbrakk>x \<in>X; x' \<in> X; \<eta> x = \<eta> x'\<rbrakk> \<Longrightarrow> x=x'" 
+  by blast
+
+lemma eta_surj1:
+  "\<And>y. y \<in> \<eta>`X \<Longrightarrow> (\<exists>x \<in> X. y = \<eta> x)" 
+  by blast
+
+lemma eta_surj2:
+  "y \<in> \<eta>`X \<Longrightarrow> (\<exists>x \<in> X. y = \<eta> x)"
+  by blast
+
+lemma eta_bij:
+  "bij_betw \<eta> X \<langle>X\<rangle>" 
+  by (simp add: bij_betw_def eta_inj2 generator_image_def)
+
+definition eta_inv where
+  "eta_inv = (\<lambda>y.  if y \<in>  \<langle>X\<rangle>then (THE x. x \<in> X \<and> y = \<eta> x) else undefined)"
+
+lemma eta_inv_simp[intro]:
+  "y \<in> \<langle>X\<rangle> \<Longrightarrow> eta_inv y = (THE x. x \<in> X \<and> y = \<eta> x)"  
+  by (simp add: eta_inv_def)
+
+lemma eta_inv_unique1:
+  assumes A0:"y \<in> \<langle>X\<rangle>" 
+  obtains  x where "x \<in> X" and "y = \<eta> x" and "\<And>x'. x' \<in> X \<and> y = \<eta> x' \<Longrightarrow> x=x'"
+  using A0 unfolding generator_image_def by blast
+
+lemma eta_inv_unique2:
+  assumes A0:"y \<in> \<langle>X\<rangle>" 
+  obtains  x where "x \<in> X \<and> y = \<eta> x" and "\<forall>x'. x' \<in> X \<and> y = \<eta> x' \<longrightarrow> x=x'"
+  using A0 unfolding generator_image_def by blast
+
+lemma eta_inv_unique3:
+  "y \<in> \<langle>X\<rangle> \<Longrightarrow> (\<exists>!x. x \<in> X \<and> y = \<eta> x)"
+  using eta_inv_unique2[of y] by auto
+
+lemma eta_inv_left:
+  assumes A0:"x \<in> X"
+  shows "eta_inv (\<eta> x) = x"
+  using assms eta_inv_def generator_image_def by auto
+
+lemma eta_inv_right:
+  assumes A0:"y \<in> \<langle>X\<rangle>"
+  shows "\<eta> (eta_inv y) = y"
+  using assms eta_inv_left eta_inv_unique3 by blast
+
+lemma eta_inv_inj1:
+  " \<lbrakk>y \<in> \<langle>X\<rangle>;y' \<in> \<langle>X\<rangle>; eta_inv y = eta_inv y'\<rbrakk> \<Longrightarrow> y=y'" 
+  using eta_inv_right[of y] eta_inv_right[of y'] by presburger
+
+lemma eta_inv_inj2:
+  "\<And>y y'. \<lbrakk>y \<in> \<langle>X\<rangle>;y' \<in> \<langle>X\<rangle>; eta_inv y = eta_inv y'\<rbrakk> \<Longrightarrow> y=y'" 
+  using eta_inv_inj1 by presburger 
+
+lemma eta_inv_inj3:
+  "inj_on eta_inv  \<langle>X\<rangle>"
+  using eta_inv_inj2 inj_onI by blast 
+
+lemma eta_inv_surj1:
+  "x \<in>X \<Longrightarrow> (\<exists>y \<in> \<langle>X\<rangle>. x = eta_inv y)"
+  by (simp add: free_magma_locale.eta_inv_left generator_image_def) 
+
+lemma eta_inv_surj2:
+  "\<And>x. x \<in>X \<Longrightarrow> (\<exists>y \<in> \<langle>X\<rangle>. x = eta_inv y)"
+  by (simp add: eta_inv_surj1)
+
+
+lemma eta_inv_surj3:
+  assumes A0:"y \<in> \<langle>X\<rangle>" 
+  shows "eta_inv y \<in>X" 
+proof-
+  obtain x where "x \<in> X \<and> y = \<eta> x" and "\<forall>x'. x' \<in> X \<and> y = \<eta> x' \<longrightarrow> x=x'"
+    using assms eta_inv_unique3 by blast
+  then show ?thesis
+    using eta_inv_left by force
+qed
+
+lemma eta_inv_surj4:"\<And>y. y \<in> \<langle>X\<rangle> \<Longrightarrow>eta_inv y \<in>X"
+  by (simp add: eta_inv_surj3) 
+
+lemma eta_inv_surj5:"eta_inv`\<langle>X\<rangle>  \<subseteq>X"
+  using eta_inv_surj4 by blast
+
+lemma eta_inv_surj6:"eta_inv`(\<langle>X\<rangle>) = X"
+  using eta_inv_surj2 eta_inv_surj5 by blast
+
+lemma "bij_betw eta_inv \<langle>X\<rangle> X"
+  by (simp add: bij_betw_imageI eta_inv_inj3 eta_inv_surj6) 
+
+
+end
+
+
+context free_magma_locale
+begin
+abbreviation "M \<equiv> free_magma X"
+
+sublocale is_magma:magma M Op
+  by (simp add: magma.intro)
+
+end
+
+fun extend0::"('b \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow>('a \<Rightarrow> 'b)  \<Rightarrow> ('a frm) \<Rightarrow> 'b"   where
+  "extend0 Op' f (\<eta> x)  = f x" |
+  "extend0 Op' f (x \<star> y) =  Op' (extend0 Op' f x) (extend0 Op' f y)"
+
+
+
+section \<open>X/U Category\<close>
+
+locale free_magma_forget_under=dom:free_magma_locale X + cod:magma Y "(\<cdot>)" 
+  for f::"'a \<Rightarrow> 'b" and X::"'a set" and Y::"'b set" and codomain_law (infixl "\<cdot>" 70) +
+  assumes into[intro,simp]:"x \<in> X \<Longrightarrow> f x \<in> Y" and
+          mor:"f \<in> set_morphisms X Y"
+begin
+
+abbreviation extend1::"('a frm \<Rightarrow> 'b)"  ("M'(f')")
+  where "M(f) \<equiv> (\<lambda>x \<in> dom.M. (extend0 (\<cdot>) f) x)"
+
+
+lemma peen1:"x \<in> X \<Longrightarrow> (M(f) \<circ> \<eta>) x = f x" by simp
+lemma peen2:  "\<And>x. x \<in> X \<Longrightarrow> (M(f) \<circ> \<eta>) x = f x"  using peen1 by blast 
+lemma peen3:"\<lbrakk>x \<in> dom.M;x' \<in> dom.M\<rbrakk> \<Longrightarrow> M(f) (x \<star> x') = (M(f) x) \<cdot> (M(f) x')"
+  by auto 
+lemma peen3b:"\<And>x x'. \<lbrakk>x \<in> dom.M; x' \<in> dom.M\<rbrakk> \<Longrightarrow> M(f) (x \<star> x') = (M(f) x) \<cdot> (M(f) x')" using peen3 by blast
+lemma peen4:"comm M(f) dom.M Op Y (\<cdot>)" using comm_def peen3b by blast
+
+lemma mega_peen:
+  assumes  "x \<in> dom.M"  shows "M(f) x \<in> Y"
+  using assms apply(induct)
+  apply simp
+  by (simp add: cod.opposite.closed)
+ 
+
+lemma peen6:"\<And>x. x \<in> dom.M \<Longrightarrow> M(f) x \<in> Y"  using mega_peen by force
+
+lemma peen7:"M(f)`dom.M \<subseteq> Y"
+  using peen6 by auto 
+
+lemma peen8:"magma_homomorphism M(f) dom.M Op Y (\<cdot>)"
+  apply(unfold_locales)
+  apply simp
+  using peen6 apply blast
+  using peen3b by blast
+
+
+
+lemma peen9:
+  assumes A0:"\<And>x. x \<in> X \<Longrightarrow> (M(f) (\<eta> x)) = (g (\<eta> x))" and
+          A1:"\<And>x x'. \<lbrakk>x \<in> dom.M; x' \<in> dom.M\<rbrakk> \<Longrightarrow>g (x \<star> x') = (g x) \<cdot> (g x')" and 
+          A2:"x \<in> dom.M"
+  shows "M(f) x = g x"
+  using A2 A0 A1 by(induct x; auto)
+
+
+lemma peen11:
+  assumes A0:"\<And>x. x \<in> X \<Longrightarrow> (M(f) (\<eta> x)) = (g  (\<eta> x))" and
+          A1:"comm g dom.M (\<star>) Y (\<cdot>)"  and
+          A2:"x \<in> dom.M"
+        shows "M(f) x = g x"
+  using A0 A1 A2  peen9[of g x] by (simp add: magma_homE)
+
+end
+
+
+
+lemma free_magma_inf0:
+  assumes A0:"a \<in> (\<Inter>X \<in>\<X>. free_magma X)" 
+  shows "a \<in> free_magma (\<Inter>\<X>)" using A0
+proof(induct a)
+  case (Em x)
+  then obtain "\<eta> x \<in> \<Inter> (free_magma ` (\<X>))" and "\<forall>X \<in> \<X>. \<eta> x \<in> free_magma X"
+    by auto
+  then obtain "\<forall>X \<in> \<X>. x \<in> X" using free_magma_embeds[of x] by blast
+  then show ?case
+    by simp 
+next
+  case (Op a b)
+  obtain "\<forall>X \<in> \<X>. a \<star> b \<in> free_magma X"
+    using Op.prems by auto
+  obtain "\<forall>X \<in> \<X>. a \<in> free_magma X" and "\<forall>X \<in> \<X>. b \<in> free_magma X" 
+    using Op.prems INT_iff[of _ free_magma \<X>] free_magmaE by metis
+  then obtain "a \<in>free_magma (\<Inter> \<X> )" and "b \<in> free_magma (\<Inter> \<X> )"
+    using Op.hyps(1,2) by blast
+  then show ?case
+    by simp
+qed
+
+lemma free_magma_iso:assumes A0:"X \<subseteq> X' "
+  shows "free_magma X \<subseteq> free_magma X'"
+  using A0 free_magma.induct[of _ X "\<lambda>x. x \<in> free_magma X'"] by blast
+
+lemma free_magma_inf1:
+  assumes A0: "a \<in> free_magma (\<Inter>\<X>)"
+  shows"a \<in> (\<Inter>X \<in>\<X>. free_magma X)"  using A0
+  using Inter_lower free_magma_iso by fastforce
+
+lemma free_magma_inf:"free_magma (\<Inter>\<X>) = (\<Inter>X \<in>\<X>. free_magma X)"
+  by(intro subset_antisym, auto elim!: free_magma_inf1 free_magma_inf0)
+
+
+
+section \<open>Free Magma Functor\<close>
+locale free_magma_funct=dom:free_magma_locale X + cod:free_magma_locale Y
+  for f::"'a \<Rightarrow> 'b" and X::"'a set" and Y::"'b set"+
+  assumes set_hom:"\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y"
+begin
+
+abbreviation extension ("M'(_')") where "extension g \<equiv> (\<lambda>x \<in> (free_magma X). (frm.map_frm g x))"
+
+lemma extendo_peen:
+  assumes A0:"\<And>x. x \<in> X \<Longrightarrow> (r \<circ> g) x = id x" and A1:"x \<in> free_magma X"
+  shows "frm.map_frm (r \<circ> g) x= frm.map_frm id x "
+  using A0 A1 free_magma_frm_set[of _ X] frm.map_cong0[of x "r \<circ> g" "id"] by blast
+
+lemma extendo_peen2:
+  assumes A0:"\<And>y. y \<in> Y \<Longrightarrow> (g \<circ> r) y = id y" and A1:"y \<in> free_magma Y"
+  shows "frm.map_frm (g \<circ> r) y= frm.map_frm id y"
+  using A0 A1 free_magma_frm_set[of _ Y] frm.map_cong0[of y "g \<circ> r" "id"] by blast
+
+lemma is_hom1:"\<lbrakk>x \<in> dom.M;x' \<in> dom.M\<rbrakk> \<Longrightarrow> (M(f) x )\<star> (M(f) x') = M(f) (x \<star> x')"
+  by simp
+
+lemma is_hom2:"comm M(f) dom.M Op cod.M Op" 
+  by (simp add: comm_def)
+
+
+lemma inj_onI1:
+  assumes A0:"inj_on f X"
+  shows "inj_on M(f) dom.M"
+proof-
+  obtain g where B0:"\<And>x. x \<in> X \<Longrightarrow> (g \<circ> f) x = id x"
+    using A0 comp_def[of _ f] the_inv_into_f_f[of f X] by auto
+  have B1:"\<And>x. x \<in> dom.M \<Longrightarrow> ((frm.map_frm (g)) \<circ> (M(f))) x = M((g \<circ> f)) x"
+    by (simp add: frm.map_comp)
+  have B2:"\<And>x. x \<in> X \<Longrightarrow>  M(g \<circ> f) (\<eta> x) = M(id) (\<eta> x)"
+    using B0 by auto
+  have B3:"\<And>x. x \<in> dom.M \<Longrightarrow>  (frm.map_frm (g) \<circ> M(f)) x = id x"
+  proof-
+    fix x assume A1:"x \<in> dom.M"
+    then have "(frm.map_frm (g) \<circ> M(f)) x = M(g \<circ> f) x"
+      using B1 by auto
+    also have "... = M(id) x"
+      using B0 extendo_peen by auto
+    also have "... = id x"
+      by (simp add: A1 frm.map_id0)
+    then show "(frm.map_frm (g) \<circ> M(f)) x = id x"
+      using calculation by auto
+  qed
+  then show ?thesis
+    using inj_on_inverseI by auto
+qed
+
+
+lemma surj1:
+  assumes A0:"Y=f`X" and A1:"y \<in> cod.M"
+  shows "\<exists>x \<in> dom.M. M(f) x = y"
+  using A1 proof(induct)
+  case (embeds x)
+  then show ?case
+    using A0 free_magma.embeds[of _ X] image_iff[of _ f X]  frm.simps(9)[of f]
+    by (metis restrict_apply1) 
+next
+  case (stable x y)
+  then show ?case
+    by (metis dom.is_magma.closed is_hom1)
+qed
+
+lemma surj2:
+  assumes A0:"x \<in> dom.M"
+  shows "M(f) x \<in> cod.M"
+  using A0 by(induct x; auto;simp add:set_hom)
+
+
+
+lemma surj_onI1:
+  assumes A0:"Y= f`X"
+  shows " cod.M = (M(f)`dom.M)"
+proof-
+  let ?s="inv_into X f"
+  have B0:"\<And>y. y \<in> Y \<Longrightarrow> (f \<circ> ?s) y = id y"
+    by (simp add: Hilbert_Choice.f_inv_into_f assms)
+  have B1:"\<And>y. y \<in> cod.M \<Longrightarrow> (M(f) \<circ> frm.map_frm (?s)) y = frm.map_frm (f \<circ> ?s) y"
+    by (simp add: assms free_magma_frm_set frm.map_comp frm_set2 inv_into_into)
+  have B2:"\<And>y. y \<in> Y\<Longrightarrow>  frm.map_frm (f \<circ> ?s) (\<eta> y) = frm.map_frm (id) (\<eta> y)"
+    using B0 by auto
+  have B3:"\<And>y. y \<in> cod.M \<Longrightarrow>  (M(f) \<circ> frm.map_frm (?s)) y = id y"
+  proof-
+    fix y assume A1:"y \<in> cod.M"
+    then have "(M(f) \<circ> frm.map_frm (?s)) y = frm.map_frm (f \<circ> ?s) y"
+      using B1 by auto
+    also have "... = frm.map_frm (id) y"
+      using A1 B0 extendo_peen2 by blast
+    also have "... = id y"
+      by (simp add: frm.map_id0)
+    then show "(M(f) \<circ> frm.map_frm (?s)) y = id y"
+      using calculation by auto
+  qed
+  have B4:"\<And>y. y \<in> cod.M \<Longrightarrow> frm.map_frm (?s) y \<in> dom.M"
+  proof-
+    fix y assume A1:"y \<in>cod.M" 
+    show "frm.map_frm (?s) y \<in> dom.M"
+    using A1 proof(induct)
+    case (embeds x)
+    then show ?case
+        by (simp add: assms inv_into_into) 
+    next
+      case (stable x y)
+      then show ?case
+        by simp 
+    qed
+  qed
+  show ?thesis
+  proof
+    show "cod.M \<subseteq>M(f)`dom.M"
+    proof
+      fix y assume A1:"y \<in> cod.M"
+      then obtain  "M(f) (frm.map_frm (?s) y) = y" and "frm.map_frm (?s) y \<in> dom.M"
+        using A1 B3 B4 by auto
+      then show "y \<in> M(f)`dom.M"
+        using image_iff by fastforce
+    qed
+    show "M(f)` dom.M \<subseteq> cod.M"
+      using surj2 by force
+  qed
+qed
+
+
+lemma bij_betw_lifting:
+  assumes A0:"bij_betw f X Y"
+  shows "bij_betw M(f) dom.M cod.M"
+  using A0 unfolding  bij_betw_def
+  using inj_onI1 surj_onI1 by presburger
+
+end
+
+
+
+lemma aut_stable1:
+  assumes A0:"comm f (free_magma X) Op (free_magma X) Op" and
+          A1:"bij_betw  f (free_magma X)  (free_magma X)" 
+        shows "f`(\<eta>`X) \<subseteq> \<eta>`X" and
+              "(f \<circ> \<eta>)`X \<subseteq> \<eta>`X"
+proof-
+  show "f`(\<eta>`X) \<subseteq> \<eta>`X" 
+  proof
+    let ?M="(free_magma X)"
+    fix x assume A4:"x \<in> f`\<eta>`X"
+    then obtain u where B0:"u \<in> X" and B1:"x = f (\<eta> u)" by blast
+    have  B2:"x \<in> free_magma X"
+      using  B0 B1 A1 bij_betw_imp_surj_on[of f ?M ?M]  free_magma.embeds by fastforce
+    have B0d:"\<eta> u \<in> ?M"
+      by (simp add: B0)
+    have B0e:"inj_on f ?M"
+      using A1 bij_betw_def by blast
+    show "x \<in> \<eta> ` X"
+    proof(cases x)
+      case (Em x1)
+      then obtain x1 where "x1 \<in> X" and "x = \<eta> x1"
+        by (metis B2 free_magma_embeds)
+      then show ?thesis
+        by simp 
+    next
+      case (Op x21 x22)
+      then obtain A3:"x \<notin> (\<eta>`X)" and A4:"\<And>a. a \<in> X \<Longrightarrow> x \<noteq> \<eta> a"
+        by blast
+      then obtain x21 x22 where B3:"x21 \<in>?M" and B4:"x22\<in>?M" and B5:"x=Op x21 x22"
+        by (metis B2 Op free_magmaE) 
+      then obtain B6:"\<exists>a \<in> free_magma X. x21 = f a" and B7:"\<exists>b \<in> free_magma X. x22 = f b"
+        using A1 bij_betw_imp_surj_on[of f ?M ?M] by blast
+      then obtain a b where B8:"a\<in>?M" and B9:"b\<in>?M" and B10:"x21=f a" and B11:"x22=f b" and  B12:"a\<star>b\<in>?M"
+         using free_magma.stable by blast
+      then obtain B13:"(f a)\<star>(f b) = f (a\<star> b)" and B14:"f (\<eta> u ) = f (a\<star> b)"
+        using A0 B1 B5 magma_homE by fastforce
+      then obtain "\<eta> u  = a\<star>b"
+        using B14 B0e by (simp add: B0d B12 inj_on_eq_iff)
+      then have False
+        by simp
+      then show ?thesis
+        by simp 
+    qed
+  qed
+  then show "(f \<circ> \<eta>)`X \<subseteq> \<eta>`X"
+    by (simp add: image_comp)
+qed
+
+
+
+lemma aut_stable4:
+  assumes A0:"comm f (free_magma X) Op (free_magma X) Op" and
+          A1:"bij_betw  f (free_magma X)  (free_magma X)" and
+          A2:"f \<in> set_morphisms (free_magma X) (free_magma X)"
+        shows  aut_stable4c:"(magma_isomorphism.f_inv f (free_magma X) (free_magma X))`(\<eta>`X) \<subseteq> \<eta>`X"  and
+         aut_stable4b:"\<And>a. a \<in> X \<Longrightarrow> (\<exists>b \<in> X. f (\<eta> b) = \<eta> a)"
+proof-
+  let ?g="\<lambda>y \<in> (free_magma X). inv_into (free_magma X) f y"
+  interpret iso:magma_isomorphism f "free_magma X" Op "free_magma X" Op
+    apply(unfold_locales)
+    using A2 hom10 apply fastforce
+    using A1 bij_betwE apply blast
+    apply (simp add: A1)
+    apply simp
+    by (meson A0 magma_homE)
+  have iso_eq:"?g = iso.f_inv"
+    using iso.f_inv_def by auto
+  have B0:"comm iso.f_inv (free_magma X) Op (free_magma X) Op"
+    by (simp add: iso.inv_hom)
+  have B1:"bij_betw iso.f_inv (free_magma X)  (free_magma X)"
+    by (simp add: iso.inv_bij)
+  then have B2:"iso.f_inv`(\<eta>`X) \<subseteq> \<eta>`X"
+    using B0 aut_stable1 by blast
+  then show P0:"(magma_isomorphism.f_inv f (free_magma X) (free_magma X))`(\<eta>`X) \<subseteq> \<eta>`X"
+    by auto
+  show "\<And>a. a \<in> X \<Longrightarrow>  (\<exists>b \<in> X. f (\<eta> b) = \<eta> a)"
+  proof-
+    fix a assume A2:"a \<in> X"
+    have B3: "iso.f_inv (\<eta> a) \<in> \<eta>`X"
+      using B2 A2 by blast
+    then show "\<exists>b \<in> X. f (\<eta> b) = \<eta> a"
+    proof-
+      have "\<eta> a \<in> free_magma X"
+        using A2 by force
+      then have "\<eta> a = f (?g (\<eta> a))"
+        by (metis A1 bij_betw_inv_into_right restrict_apply1)
+      then show ?thesis
+        by (metis B3 imageE iso.f_inv_def)
+    qed
+  qed
+qed
+
+
+section \<open>Automorphisms\<close>
+
+definition set_automorphisms :: "'a set \<Rightarrow> ('a \<Rightarrow> 'a) set" where
+  "set_automorphisms X \<equiv> {f. bij_betw f X X}"
+
+definition magma_automorphisms::"'a set \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> 'a) set" where
+  "magma_automorphisms X op \<equiv> {f. bij_betw f X X \<and> comm f X op X op}"
+
+context magma
+begin
+interpretation free_magma_magma:magma "free_magma X" "Op"  by (unfold_locales, simp)
+end
+
+
+subsection \<open>Automorphism of Free Magma\<close>
+locale free_magma_aut=dom:free_magma_locale X
+  for \<phi>::"'a frm \<Rightarrow> 'a frm" and X::"'a set" +
+  assumes bij:"bij_betw \<phi> dom.M dom.M" and
+          comm:"comm \<phi> dom.M Op dom.M Op" and
+          hom:"\<phi> \<in> set_morphisms dom.M dom.M"
+begin
+
+
+interpretation iso:magma_isomorphism \<phi> dom.M Op dom.M Op
+  by (simp add: bij comm dom.is_magma.magma_axioms hom magma_iso_intro)
+
+definition f::"'a \<Rightarrow> 'a" where "f \<equiv> (\<lambda>x. dom.eta_inv (\<phi> (\<eta> x)))"
+abbreviation \<psi>::"'a frm \<Rightarrow> 'a frm" where "\<psi> \<equiv> (\<lambda>y \<in> dom.M. inv_into dom.M \<phi> y)"
+
+lemma f_eq:"f = (dom.eta_inv \<circ> \<phi> \<circ> \<eta>)" using f_def by auto
+
+
+lemma f_inj0:"inj_on \<phi> dom.M"
+  using bij bij_betw_def by blast
+
+
+lemma gen_sub:"(\<eta>`X) \<subseteq> dom.M"
+  by blast
+
+lemma f_inj1:"inj_on \<phi> (\<eta>`X)"
+  by (meson f_inj0 gen_sub inj_on_subset)
+
+lemma f_inj2:"inj_on (\<phi> \<circ> \<eta>) X"
+  by (simp add: comp_inj_on dom.eta_inj2 f_inj1)
+
+lemma f_inj3:"(\<phi> \<circ> \<eta>)`X \<subseteq> \<eta>`X"
+  using aut_stable1(2) bij comm by blast
+
+lemma f_inj4:"inj_on dom.eta_inv ((\<phi> \<circ> \<eta>)`X)"
+  by (metis dom.eta_inv_inj3 f_inj3 generator_image_def inj_on_subset)
+
+lemma f_inj5: "inj_on (dom.eta_inv \<circ> (\<phi> \<circ> \<eta>)) X"
+  using comp_inj_on f_inj2 f_inj4 by blast
+
+lemma f_inj6:"inj_on f X"
+  by (simp add: comp_assoc f_eq f_inj5)
+
+lemma f_surj:"f`X \<subseteq> X"
+proof-
+  have "\<eta> ` X = \<langle>X\<rangle>"
+    by (simp add: bij_betw_imp_surj_on dom.eta_bij)
+  then have "(\<phi> \<circ> \<eta>) ` X \<subseteq> \<langle>X\<rangle>"
+    using f_inj3 by argo
+  then show ?thesis
+    using dom.eta_inv_surj6 f_eq by auto
+qed
+
+lemma gen_cong:
+  assumes A0:"x \<in> X"
+  shows "(free_magma_funct.extension X f) (\<eta> x) = \<phi> (\<eta> x) "
+  using assms
+proof-
+  have "\<phi> (\<eta> x) = \<phi> (\<eta> x) \<and> \<phi> (\<eta> x) \<in> \<eta> ` X"
+    using assms aut_stable1 bij comm by blast
+  then show "(free_magma_funct.extension X f) (\<eta> x) = \<phi> (\<eta> x) "
+    by (metis assms dom.eta_inv_right f_def free_magma.embeds frm.simps(9) generator_image_def restrict_apply1)
+qed
+
+lemma is_bij_btw:
+  "bij_betw f X X"
+  unfolding bij_betw_def proof
+  show "inj_on f X"
+    by (simp add: f_inj6)
+  show "f ` X = X"
+  proof
+    show left:"f`X \<subseteq> X"
+      using f_surj by force
+    show "X \<subseteq> f`X"  
+    proof
+      fix a assume A3:"a \<in> X"
+      have "\<exists>b \<in> X. \<phi> (\<eta> a) = \<eta> b"
+        using A3 f_inj3 by auto
+      have B0:"\<eta> a \<in> dom.M"
+        using A3 by blast
+      have "\<phi> ( \<psi> (\<eta> a)) = \<eta> a"
+        by (metis B0 bij bij_betw_inv_into_right restrict_apply)
+      have "\<exists>b \<in> X. a = f b"
+        using aut_stable4b[of \<phi> X]
+        by (metis A3 bij comm f_def free_magma_locale.eta_inv_left hom)
+      then show "a \<in> f`X"
+        by blast
+    qed
+  qed
+qed
+
+lemma is_set_aut:"f \<in>set_automorphisms X"
+  by (simp add: is_bij_btw set_automorphisms_def)
+
+
+lemma aut_stable3:"(\<eta>`X) \<subseteq> \<phi>`(\<eta>`X) "
+  by (metis bij_betw_imp_surj_on dom.eta_inv_surj6 dual_order.refl f_eq f_inj3 free_magma_locale.eta_inv_inj3
+      generator_image_def image_comp inj_on_image_eq_iff is_bij_btw)
+
+lemma aut_stable5:
+  "(\<eta>`X) = \<phi>`(\<eta>`X) "
+  using aut_stable3 f_inj3 by auto
+
+end
+
+
+
+section \<open>Free Submagmas\<close>
+
+
+subsection \<open>Free Magma of Subset\<close>
+locale free_magma_submagma=tmp:free_magma_funct id A X
+  for X::"'a set" and A::"'a set"+
+  assumes sub:"A \<subseteq> X"
+begin
+
+abbreviation N  where "N  \<equiv> magma.cl tmp.cod.M Op (\<eta>`A)"
+abbreviation N' where "N' \<equiv> tmp.dom.M"(*M(A)*)
+abbreviation M  where "M  \<equiv> tmp.cod.M"(*M(X)*)
+abbreviation f  where "f  \<equiv> tmp.extension (id)"
+ (* f (\<eta> a) = (\<eta> a)
+    f (x \<star> y) = (f x) \<star> (f y)                           
+*)
+
+interpretation nmag:magma N Op
+  by (simp add: magma.intro tmp.cod.is_magma.cl_def)
+
+interpretation npmag:magma N' Op
+  by (simp add: tmp.dom.is_magma.magma_axioms)
+
+lemma inclusion_inj:"inj_on id A" 
+  by simp
+
+lemma extension_inj:"inj_on f N'"
+  using tmp.inj_onI1 by auto
+
+lemma extension_bij1:"bij_betw f N' (f`N')"
+  using bij_betw_def extension_inj by blast
+
+lemma ext_sub0:
+  assumes A0:"x \<in> N'"
+  shows "x \<in> N"
+  using A0 proof(induct x)
+  case (embeds a)
+  then obtain "a \<in> A" and "\<eta> a \<in> \<eta>`A"
+    by simp
+  then show ?case
+    using sub tmp.cod.is_magma.cl_def by auto 
+next
+  case (stable a1 a2)
+  then show ?case
+    using nmag.closed by presburger
+qed
+
+lemma ext_sub1:
+  assumes A0:"x \<in> N"
+  shows "x \<in> N'"
+  using A0 proof(induct x)
+  case (Em a)
+  then have "\<eta> a \<in> N"
+    by simp
+  then show ?case
+    by (metis free_magma.embeds frm.distinct(1) image_subsetI in_mono sub tmp.cod.is_magma.magma_cl_cases)
+next
+  case (Op a1 a2)
+  then show ?case
+  proof -
+    have "\<forall>A. \<eta> ` (A::'a set) \<subseteq> free_magma A"
+      by blast
+    then show ?thesis
+      by (metis Op.prems antisym ext_sub0 free_magma.stable subsetI tmp.cod.is_magma.cl_magma_stable_ub2)
+  qed
+qed
+
+lemma ext_sub2:"(f`N') \<subseteq> N"
+  by (simp add: ext_sub0 frm.map_id0 subsetI) 
+
+
+
+lemma ext_sub3:"N \<subseteq> (f`N')"
+  by (simp add: ext_sub1 frm.map_id0 subsetI) 
+
+  
+lemma inc_comm:"comm f N' Op N Op"
+  by (simp add: commI)
+
+lemma ext_eq:"f`N' = N"
+  using ext_sub2 ext_sub3 by blast
+
+lemma extension_bij2:"bij_betw f N' N"
+  using ext_eq extension_bij1 by force
+
+lemma inc_iso:"magma_isomorphism f N' Op N Op"
+  by (metis bij_betw_def bij_betw_id extension_bij2 frm.map_id frm.map_id0 hom7 image_restrict_eq inc_comm
+      magma_iso_intro restrict_ext tmp.dom.is_magma.magma_axioms)
+
+lemma inc_sub:"submagma (tmp.extension(id)`(N')) M Op"
+  by (simp add: free_magma_iso frm.map_id0 sub submagmaI tmp.cod.is_magma.magma_axioms)
+
+
+end
+
+subsection \<open>Submagma of a Free Magma\<close>
+locale free_submagma_magma=
+  fixes X::"'a set" and N::"'a frm set" 
+  assumes sub:"submagma N (free_magma X) Op"
+begin
+
+abbreviation M where "M \<equiv> free_magma X"
+abbreviation B where "B \<equiv> N - ((\<Union>a\<in>N. \<Union>b \<in> N. {Op a b}))"
+abbreviation Y where "Y \<equiv> free_magma B"
+abbreviation f where "f \<equiv> (free_magma_forget_under.extend1 (id::('a frm \<Rightarrow> 'a frm)) B Op)"
+
+lemma B_iff:"y \<in> B \<longleftrightarrow> y \<in> N \<and> (\<forall>a \<in> N. \<forall>b \<in> N. y \<noteq> a \<star> b)"
+  by(auto)
+
+lemma B_memE1:"y \<in> B \<Longrightarrow> (y \<in> N)" by auto
+lemma B_memE2:"y \<in> B \<Longrightarrow> a \<in> N \<Longrightarrow> b \<in> N \<Longrightarrow> y \<noteq> a \<star> b" by auto
+lemma B_memE3:"y \<in> B \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> N;b \<in> N\<rbrakk> \<Longrightarrow> y \<noteq> a \<star> b)" by auto
+lemma B_memI:"y \<in> N \<Longrightarrow> (\<And>a b. \<lbrakk>a \<in> N;b \<in> N\<rbrakk> \<Longrightarrow> y \<noteq> a \<star> b) \<Longrightarrow> y \<in> B" by auto
+
+
+lemma inc_bij:"inj_on (id::('a frm \<Rightarrow> 'a frm))  B"
+  by simp
+
+lemma l1:"magma Y (\<star>)"
+  by (simp add: magma.intro)
+
+lemma l2:"magma N (\<star>)"
+  by (meson magma.intro sub submagma.subfun)
+
+lemma l3:"comm f Y (\<star>) N (\<star>)"
+  by (simp add: commI)
+
+
+lemma l4:"\<And>x::'a frm frm. x \<in> free_magma B \<Longrightarrow> f x \<in> N"
+proof-
+  fix x::"'a frm frm" assume A0:"x \<in> Y"
+  show "f x \<in> N"
+  using A0 proof(induct)
+    case (embeds x)
+    then show ?case
+      by auto 
+  next
+    case (stable x y)
+    then show ?case
+      by (simp add: l2 magma.closed) 
+  qed
+qed
+
+   
+lemma l5:"magma_homomorphism f Y (\<star>) N (\<star>)"
+  apply(unfold_locales)
+  apply simp
+  using l4 apply blast
+  apply blast
+  apply (simp add: l2 magma.closed)
+  by force
+
+
+lemma l6:"\<lbrakk>a \<in> B; b \<in> B; f (\<eta> a) = f (\<eta> b) \<rbrakk> \<Longrightarrow> a = b"
+  by (metis (no_types, lifting) eq_id_iff extend0.simps(1) free_magma.embeds restrict_apply)
+
+
+lemma free_magma_rcancellative:"\<lbrakk>a \<in> free_magma X;b \<in> free_magma X; c \<in> free_magma X; a\<star>b=a\<star>c\<rbrakk> \<Longrightarrow> b =c"
+  by fastforce
+
+lemma free_magma_lcancellative:"\<lbrakk>a \<in> free_magma X;b \<in> free_magma X; c \<in> free_magma X; b\<star>a=c\<star>a\<rbrakk> \<Longrightarrow> b =c"
+  by fastforce
+
+lemma l7:"inj_on f Y"
+proof(rule inj_onI)
+  fix x y::"'a frm frm"  assume A0:"x \<in> Y" and A1:"y \<in> Y" and A2:"f x = f y"
+  show "x = y"
+   using A0 A1 A2 proof(induct x arbitrary: y)
+   case (embeds x)
+   then show ?case
+   proof(cases y)
+     case (Em x1)
+     then show ?thesis
+       by (metis embeds.hyps embeds.prems(1,2) free_magma_embeds l6)
+   next
+     case (Op x21 x22)
+     then obtain B0:"y = x21 \<star> x22"
+       by auto
+     then obtain "f (\<eta> x) = f y" and "f y = f (x21 \<star> x22)" and "f (x21 \<star> x22) = (f x21) \<star> (f x22)"
+       by (metis (mono_tags, lifting) embeds.prems(1,2) free_magmaE l3 magma_homE)
+     then obtain "f (\<eta> x) = (f x21) \<star> (f x22)"
+       by presburger
+     then obtain a b where "a \<in>Y" and "b \<in> Y" and "\<eta> x = a \<star> b"
+       by (metis (no_types, lifting) B_memE3 Op embeds.hyps embeds.prems(1) eq_id_iff extend0.simps(1) free_magma.embeds
+           free_magmaE l4 restrict_apply1)
+     show ?thesis
+       using \<open>\<eta> (x::'a frm) = (a::'a frm frm) \<star> (b::'a frm frm)\<close> by auto
+   qed
+ next
+   case (stable x1 x2)
+   then obtain B0:"x1 \<in> Y" and B1:"x2 \<in> Y" and B2:"y \<in> Y" and B3:"f (x1 \<star> x2) = f y" and 
+               B4:"\<And>z. \<lbrakk>z \<in> Y; f x1 = f z\<rbrakk> \<Longrightarrow> x1 = z" and 
+               B5:"\<And>z. \<lbrakk>z \<in> Y; f x2 = f z\<rbrakk> \<Longrightarrow> x2 = z"
+     by blast
+   then have B6:"f (x1 \<star> x2) = (f x1) \<star> (f x2)"
+     by fastforce
+   show "x1 \<star> x2 = y"
+   proof(cases y)
+     case (Em b)
+     then obtain B7:"b \<in> B" and B8:"y = \<eta> b"
+       using Em B2 free_magma_embeds[of b B] by argo
+     then obtain "f y = b"
+       by (metis (no_types, lifting) B2 extend0.simps(1) id_apply restrict_apply)
+     then have " (f x1) \<star> (f x2) = b"
+       using B6 stable.prems(2) by argo
+     then have False
+       by (metis B0 B1 B7 B_memE3 l4)
+     then show ?thesis
+       by simp
+   next
+     case (Op y1 y2)
+     then obtain B7: "f x1 = f y1" and B8:"f x2 = f y2" and B9:"y = y1 \<star> y2"
+       using B3
+     proof -
+       assume a1: "restrict (extend0 (\<star>) id) (free_magma B) x1 = restrict (extend0 (\<star>) id) (free_magma B) y1 \<Longrightarrow> restrict (extend0 (\<star>) id) (free_magma B) x2 = restrict (extend0 (\<star>) id) (free_magma B) y2 \<Longrightarrow> y = y1 \<star> y2 \<Longrightarrow> thesis"
+       have "y1 \<star> y2 \<in> free_magma B"
+         using B2 Op by fastforce
+       then have f2: "y1 \<in> free_magma B \<and> y2 \<in> free_magma B"
+         using free_magmaE by blast
+       then have f3: "y1 \<in> free_magma B"
+         by blast
+       have "y2 \<in> free_magma B"
+         using f2 by fastforce
+       then show ?thesis
+         using f3 a1 B3 B6 Op by force
+     qed
+     then obtain "x1 = y1" and "x2 = y2"
+       using B2 B4[of y1] B5[of y2] free_magmaE by blast
+     then show ?thesis
+       by (simp add: Op)
+   qed
+ qed
+qed
+
+lemma l8:"f`Y=N" 
+proof
+  show "f ` Y\<subseteq> N"
+    using l4 by force
+  show "N \<subseteq> f`Y"
+  proof-
+    have "\<And>y. y \<in> N \<Longrightarrow> (\<exists>a \<in> Y. y = f a)"
+    proof-
+      fix y assume A0:"y \<in> N"
+      then have A1:"y \<in> M"
+        using sub submagma.sub[of N M Op y] by auto
+      show  "(\<exists>a \<in> Y. y = f a)"
+      using A0
+      proof(induct y)
+        case (Em b)
+        then obtain "b \<in> X" and "(\<eta> b) \<in> N" 
+          by (meson free_magma_embeds sub submagma.sub)
+        then obtain "\<eta> (\<eta> b) \<in> Y" and "f (\<eta> (\<eta> b)) = (\<eta> b)"
+          by fastforce
+        then show "\<exists>a\<in>free_magma B. \<eta> b = f a"
+          by force
+      next
+        case (Op y1 y2)
+        then show ?case 
+        proof(cases "y1 \<in> N \<and> y2 \<in> N")
+          case True
+          then obtain a1 where B0:"a1 \<in> Y" and B1:"y1 = f a1"
+            using Op.hyps(1) by blast
+          obtain a2 where B2:"a2 \<in> Y" and B3:"y2 = f a2"
+            using True Op.hyps(2) by blast
+          then obtain "a1 \<star> a2 \<in> Y" and "f (a1 \<star> a2) = (f a1) \<star> (f a2)"
+            using B0 by simp
+          then obtain "y1 \<star> y2 = f (a1 \<star> a2)"
+            using B1 B3 by argo
+          then show ?thesis
+            using \<open>(a1::'a frm frm) \<star> (a2::'a frm frm) \<in> free_magma B\<close> by blast
+        next
+          case False
+          then obtain "y1 \<star> y2 \<in> B" and B4:"\<eta> (y1 \<star> y2) \<in> Y" and B5:"y1 \<star> y2 = f (\<eta> (y1 \<star> y2))"
+            by (simp add: Op.prems)
+          show ?thesis
+            using B4 B5 by(rule rev_bexI)
+        qed
+      qed
+    qed
+    then show ?thesis by blast
+  qed
+qed
+
+
+lemma inc_iso:"magma_isomorphism f Y Op N Op"
+  apply(unfold_locales)
+  apply force
+  using l4 apply blast
+  using bij_betw_imageI l7 l8 apply blast
+  apply blast
+  apply (simp add: l2 magma.closed)
+  by simp
+
+end
+
+section \<open>Magma Generated by Single Element\<close>
+locale singleton_magma=fixes X::"'a set" and x::"'a frm"
+  assumes elem:"x \<in> free_magma X"
+begin
+
+abbreviation "M \<equiv> (free_magma X)"
+abbreviation "Cl \<equiv> magma.cl M Op"
+
+definition deez ("M'(x')") where "M(x) \<equiv> Cl {x}"
+
+interpretation Mx_magma:magma "M(x)" Op
+  by (simp add: deez_def magma.cl_def magma.intro)
+
+interpretation Mx_sub:submagma"M(x)" M Op
+  by (metis deez_def empty_iff empty_subsetI free_magma.stable magma.intro submagma.cl_submgama submagmaI)
+
+interpretation Mx_free_sub:free_submagma_magma X "M(x)"
+  by (simp add: Mx_sub.submagma_axioms free_submagma_magma_def)
+
+abbreviation deez2 ("N'(x')") where "N(x) \<equiv> free_submagma_magma.Y M(x)"
+
+
+end
+
+
+
+lemma he_disconnected:
+  fixes X::"'a set" and x::"'a frm" and  y::"'a frm" 
+  defines "Mx \<equiv> magma.cl (free_magma X) Op {x}" 
+  defines "My \<equiv> magma.cl (free_magma X) Op {y}"
+  assumes A0:"x \<in> free_magma X" and A1:"y \<in> free_magma X" and
+  A2:"w \<in> Mx \<inter> My"  and  A3:"\<forall>w' \<in>  Mx \<inter> My.  \<not>((l w') < (l w))" and
+  A4:"w \<noteq> y"
+  shows cumtown:"w=x"
+proof-
+  obtain B0:"magma (free_magma X) Op"
+    by (simp add: Mx_def My_def magma.cl_def magma.intro)
+  have B7:"w \<notin> {y}"
+    by (simp add: A4)
+  have B8:"w \<in> {x}"
+  proof(rule ccontr)
+    assume C0:"w \<notin> {x}"
+    then obtain a b where C1:"a \<in> Mx" and C2:"b \<in> Mx" and C3:"w = a \<star> b"
+      by (metis A2 B0 Int_iff Mx_def generated_magma.simps magma.cl_def)
+    obtain a' b' where C4:"a' \<in> My" and C5:"b' \<in> My" and C6:"w = a' \<star> b'"
+      by (metis A2 B0 B7 Int_iff My_def generated_magma.simps magma.cl_def)
+    then obtain C7:"a=a'" and C8:"b=b'"
+      by (simp add: C3)
+    then obtain C9:"a \<in> Mx \<inter> My" and "l a < l w"
+      using C1 C3 C4 len_lt by fastforce
+    then show False
+      using A3 by blast
+  qed
+  then show ?thesis
+    by simp
+qed
+
+
+
+end
+

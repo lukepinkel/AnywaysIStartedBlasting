@@ -2166,8 +2166,10 @@ interpretation units: monoid_subgroup Units X f e
 lemma group_of_units:"group Units f e" by (simp add: units.sub.group_axioms)
 
 lemma composition_invertible [simp, intro]:  "\<lbrakk> invertible x; invertible y; x \<in> X; y \<in>X \<rbrakk> \<Longrightarrow> invertible (x \<cdot> y)" using invprod(1) by presburger 
-lemma invertible_right_inverse2:  "\<lbrakk> invertible u; u \<in> X; v \<in> X\<rbrakk> \<Longrightarrow> u \<cdot> ((inv_elem u) \<cdot> v) = v"  using inv_right_cancel by blast
+lemma invertible_right_inverse2:"\<lbrakk> invertible u; u \<in> X; v \<in> X\<rbrakk> \<Longrightarrow> u \<cdot> ((inv_elem u) \<cdot> v) = v"  using inv_right_cancel by blast
+lemma invertible_right_inverse3:"\<lbrakk> invertible u; u \<in> X; v \<in> X\<rbrakk> \<Longrightarrow> (u \<cdot> (inv_elem u)) \<cdot> v = v" using invertible_right_inverse leftid by presburger 
 lemma invertible_left_inverse2: "\<lbrakk> invertible u; u \<in> X; v\<in>X\<rbrakk> \<Longrightarrow> (inv_elem u) \<cdot> (u \<cdot> v) = v" by (simp add: monoid.inv_left_cancel monoid_axioms)
+lemma invertible_left_inverse3: "\<lbrakk> invertible u; u \<in> X; v\<in>X\<rbrakk> \<Longrightarrow> ((inv_elem u \<cdot> u)) \<cdot> v = v"using invertible_left_inverse leftid by presburger 
 lemma inverse_composition_commute: assumes [simp]: "invertible x" "invertible y" "x \<in> X" "y \<in> X"  shows "inv_elem (x \<cdot> y) = inv_elem y \<cdot> inv_elem x"  by (simp add: monoid.invprod(2) monoid_axioms)
 end
 
@@ -2183,6 +2185,7 @@ lemma Units_bij_betwI [intro, simp]: "u \<in> Units \<Longrightarrow> bij_betw u
 lemma Units_bij_betwD [dest, simp]: "\<lbrakk>u \<in> hom E E; bij_betw u E E \<rbrakk> \<Longrightarrow> u \<in> Units" unfolding Units_bijective by simp
 sublocale symmetric: group "Units" "compose E" "Id E" by (fact group_of_units)
 end
+
 
 
 
@@ -2280,6 +2283,7 @@ end
 section LiftingLawToSets
 
 definition set_prod ::"('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a set"  where "set_prod f H K = (\<Union>h\<in>H. \<Union>k\<in>K. {f h k})"
+
 lemma set_prod_memI:"\<exists>h \<in> H. \<exists>k \<in> K. y = f h k \<Longrightarrow> y \<in> set_prod f H K" by(auto simp add:set_prod_def)
 lemma set_prod_memD:" y \<in> set_prod f H K \<Longrightarrow> (\<exists>h \<in> H. \<exists>k \<in> K. y = f h k)" by(auto simp add:set_prod_def)
 lemma set_prod_singletonD1:" y \<in> set_prod f {x} K \<Longrightarrow> (\<exists>k \<in> K. y= f x k)" by(auto simp add:set_prod_def)
@@ -2293,6 +2297,7 @@ lemma set_prod_singleton_mem2:" set_prod f H {x} = {f h x|h. h \<in> H}" by(auto
 
 context magma 
 begin
+
 lemma set_prod_closed:"A \<subseteq> X \<Longrightarrow> B \<subseteq> X \<Longrightarrow> set_prod f A B \<subseteq> X" by(auto simp add:closed set_prod_def subsetD)
 definition l_coset (infixl "\<cdot>|" 70) where "x \<cdot>| H \<equiv> {x \<cdot>h |h. h \<in> H}"
 definition r_coset (infixl "|\<cdot>" 70) where "H |\<cdot> x \<equiv> {h \<cdot>x |h. h \<in> H}"
@@ -2712,7 +2717,135 @@ proof-
   show "elem_ord (a \<cdot> b) dvd (lcm (elem_ord a) (elem_ord b))"   by (metis (no_types, lifting) B0 B6 B8 aford amem bford bmem bot_nat_0.not_eq_extremum closed div_greater_zero_iff div_mult_swap elem_ord_exp elem_pow_eq_id gcd_dvd2 gcd_le2_nat gcd_pos_nat lcm_nat_def)
 qed
 
+
+
 definition set_exponents where "set_exponents A \<equiv> {n::nat. 0<n \<and> (\<forall>a. a \<in> A \<longrightarrow> a^n = e)}"
+
+definition pow_int where "pow_int x (z::int) \<equiv> if z < 0 then inv_elem (x^(nat(-z))) else x^(nat z)"
+lemma int_pow_int: "pow_int x (int n) = x ^ n" by (simp add: pow_int_def)
+
+lemma pow_nat:
+  assumes "i\<ge>0"
+  shows "x^ nat i = pow_int x i"
+proof (cases i rule: int_cases)
+  case (nonneg n)
+  then show ?thesis
+    by (simp add: int_pow_int)
+next
+  case (neg n)
+  then show ?thesis
+    using assms by linarith
+qed
+
+lemma int_pow_0 [simp]: "pow_int x (0::int) = e" by (metis int_ops(1) monoid.int_pow_int monoid.pow_0 monoid_axioms)
+
+lemma int_pow_def2: "pow_int a z = (if z < 0 then inv_elem (a^(nat (-z))) else a^(nat z))" by (simp add: pow_int_def)
+lemma int_pow_one [simp]: "pow_int e (z::int) = e"  by (simp add: int_pow_def2)
+
+end
+
+context group
+begin
+
+lemma int_pow_closed [intro, simp]:"x \<in> X \<Longrightarrow> pow_int x (i::int) \<in> X" by (simp add: int_pow_def2)
+
+lemma int_pow_1 [simp]: "x \<in> X \<Longrightarrow> pow_int x (1::int) = x"  by (metis int_ops(2) int_pow_int power_on_right)
+
+lemma int_pow_neg: "x \<in> X \<Longrightarrow> pow_int x (-i::int) = inv_elem (pow_int x i)" by (simp add: int_pow_def2)
+
+lemma int_pow_neg_int: "x \<in> X \<Longrightarrow>pow_int x (-(int n)) = inv_elem (x^ n)" by (simp add: int_pow_neg int_pow_int)
+
+lemma inv_solve_left:  "\<lbrakk> a \<in> X; b \<in>X; c \<in>X \<rbrakk> \<Longrightarrow> a = inv_elem b \<cdot> c \<longleftrightarrow> c = b \<cdot> a" by (metis inv_left_cancel inv_right_cancel invertible)
+
+lemma nat_pow_inv:
+  assumes "x \<in>X" shows "(inv_elem x) ^ (i :: nat) = inv_elem (x ^ i)"
+proof (induction i)
+  case 0 thus ?case by simp
+next
+  case (Suc i)
+  have "(inv_elem x) ^ Suc i = ((inv_elem x) ^ i) \<cdot> inv_elem x" using assms local.power_Suc2 by blast
+  also have " ... = (inv_elem (x ^ i)) \<cdot> inv_elem x"   by (simp add: Suc.IH Suc.prems)
+  also have " ... = inv_elem (x \<cdot> (x ^ i))"  using assms inverse_composition_commute invertible pow_closed by presburger
+  also have " ... = inv_elem (x ^ (Suc i))"   by simp
+  finally show ?case  by blast
+qed
+lemma inv_solve_right: "\<lbrakk> a \<in>X; b \<in>X; c \<in>X\<rbrakk> \<Longrightarrow> a = b \<cdot> inv_elem c \<longleftrightarrow> b = a \<cdot> c"  using associative rightid by force
+lemma nat_pow_mult:  "x \<in>X \<Longrightarrow> x ^ (n::nat) \<cdot> x ^ m = x ^ (n + m)" by (simp add: local.power_add)
+lemma int_pow_mult:  assumes A0:"x \<in>X" shows "pow_int x (i + j::int) = (pow_int x i) \<cdot> (pow_int x j)"
+proof -
+  have [simp]: "-i - j = -j - i" by simp
+  show ?thesis
+  apply(auto simp add:assms int_pow_def2 inv_solve_left inv_solve_right nat_add_distrib[symmetric] power_add)
+    apply (metis add_uminus_conv_diff assms less_imp_le local.power_add nat_add_distrib neg_0_le_iff_le)
+    apply (smt (verit, best) assms local.power_add nat_add_distrib)
+    apply (metis add_minus_cancel assms less_imp_le local.power_add nat_add_distrib neg_0_le_iff_le not_less)
+    apply (smt (verit) assms local.power_add nat_add_distrib)
+    apply (metis ab_group_add_class.ab_diff_conv_add_uminus add.assoc add_diff_cancel_left' assms less_imp_le linorder_not_le local.power_add nat_add_distrib neg_0_equal_iff_equal neg_less_iff_less)
+    by (simp add: assms local.power_add nat_add_distrib)
+qed
+
+lemma int_pow_inv: "x \<in>X \<Longrightarrow> pow_int (inv_elem x) (i :: int) = inv_elem (pow_int x i)"  by (metis int_pow_def2 nat_pow_inv)
+lemma nat_pow_pow:  "x \<in> X \<Longrightarrow> (x ^ n) ^ m = x^ (n * m::nat)"  by (induct m) (simp, simp add: nat_pow_mult add.commute)
+lemma int_pow_pow:
+  assumes "x \<in> X"
+  shows "pow_int (pow_int x (n :: int)) (m :: int) = pow_int x (n * m :: int)"
+proof (cases)
+  assume n_ge: "n \<ge> 0" thus ?thesis
+  proof (cases)
+    assume m_ge: "m \<ge> 0" thus ?thesis
+      by (metis assms monoid.pow_nat monoid.power_mult monoid_axioms mult_nonneg_nonneg n_ge nat_mult_distrib)
+  next
+    assume m_lt: "\<not> m \<ge> 0" 
+    with n_ge show ?thesis
+      apply (simp add: int_pow_def2 mult_less_0_iff)
+      by (metis assms minus_mult_commute minus_mult_left monoid.power_mult monoid_axioms nat_mult_distrib)
+  qed
+next
+  assume n_lt: "\<not> n \<ge> 0" thus ?thesis
+  proof (cases)
+    assume m_ge: "m \<ge> 0" 
+    have "inv_elem x ^ (nat m * nat (- n)) = inv_elem x ^ nat (- (m * n))"
+      by (metis (full_types) m_ge mult_minus_right nat_mult_distrib)
+    with m_ge n_lt show ?thesis
+      by (simp add: int_pow_def2 mult_less_0_iff assms mult.commute nat_pow_inv nat_pow_pow)
+  next
+    assume m_lt: "\<not> m \<ge> 0" thus ?thesis
+      using n_lt by (auto simp: int_pow_def2 mult_less_0_iff assms nat_mult_distrib_neg nat_pow_inv nat_pow_pow)
+  qed
+qed
+
+lemma int_pow_diff:  "x \<in> X \<Longrightarrow> pow_int x (n - m :: int) =  pow_int x n \<cdot> inv_elem (pow_int x m)" by(simp only: diff_conv_add_uminus int_pow_mult int_pow_neg)
+lemma inj_on_multc: "c \<in> X \<Longrightarrow> inj_on (\<lambda>x. x \<cdot> c) X" by(simp add: inj_on_def)
+lemma inj_on_cmult: "c \<in>X \<Longrightarrow> inj_on (\<lambda>x. c \<cdot> x) X" by(simp add: inj_on_def)
+
+lemma inv_mult_group: "\<lbrakk> x \<in> X; y \<in>X\<rbrakk> \<Longrightarrow> inv_elem (x \<cdot> y) = inv_elem y \<cdot> inv_elem x" using inverse_composition_commute by blast
+lemma int_pow_mult_distrib:
+  assumes eq: "x \<cdot> y = y \<cdot> x" and xy: "x \<in>X" "y \<in> X"
+  shows "pow_int (x \<cdot> y) (i::int) = (pow_int x i) \<cdot> (pow_int y i)"
+proof (cases i rule: int_cases)
+  case (nonneg n)
+  then show ?thesis
+    using commute_pow3 eq int_pow_int xy(1) xy(2) by presburger
+next
+  case (neg n)
+  then show ?thesis
+    unfolding neg
+    apply (simp add: xy int_pow_neg_int del: of_nat_Suc)
+    by (metis closed commute_pow3 eq int_pow_neg_int inv_mult_group pow_Suc pow_closed xy)
+qed
+
+lemma pow_eq_div2:
+  fixes m n :: nat
+  assumes x_car: "x \<in> X"
+  assumes pow_eq: "x ^ m = x ^ n"
+  shows "x ^ (m - n) = e"
+proof (cases "m < n")
+  case False
+  have "e \<cdot> x ^ m = x ^ m"  by (simp add: leftid x_car) 
+  also have "\<dots> = x ^ (m - n) \<cdot> x ^n"  using False by (simp add: nat_pow_mult x_car)
+  also have "\<dots> = x ^ (m - n) \<cdot> x ^ m"   by (simp add: pow_eq)
+  finally show ?thesis  by (simp add: idmem x_car)
+qed simp
 
 end
 
@@ -2768,13 +2901,28 @@ lemma subgroupE1:
   assumes "subgroup H X f e"
   shows "H \<subseteq> X" and "H \<noteq> {}" and "\<And>a. a \<in> H \<Longrightarrow> inv_elem a \<in> H" and "\<And>a b. \<lbrakk>a \<in> H; b \<in> H\<rbrakk> \<Longrightarrow> a \<cdot> b \<in> H"
   using assms unfolding subgroup_def subgroup_axioms_def by(auto)+
-  
 
+lemma trivial_subgroup:"subgroup {e} X f e"  using idmem rightid subgroupI1 by fastforce
+lemma subgroup_inverse_equality[simp]:
+  assumes A0:"subgroup H X f e" and "x \<in> H"
+  shows "monoid.inv_elem H f e x= inv_elem x"
+  by (metis A0 assms(2) subgroup.subgroup_inverse_equality)
 end
 
 section Subgroups
 context subgroup
 begin
+
+lemma subgroup_is_group [intro]:
+  assumes "group G f e"
+  shows "group H f e"
+proof -
+  interpret group G by fact
+  have "monoid G f e"
+    by (simp add: monoid_axioms)
+  then show ?thesis
+    by (simp add: sub.group_axioms)
+qed
 
 
 lemma assoc_cancel:"a \<in> G \<Longrightarrow> b \<in> G \<Longrightarrow> h \<in> H \<Longrightarrow> (b \<cdot> inv_elem a) \<cdot> (a \<cdot> h) = b \<cdot> h"  using remove_id1 by blast
@@ -3094,15 +3242,104 @@ lemma lagrange_r:
   "(card H) * (card l_cosets) = card G"
   by (metis card.infinite card_partition finite_Union finite_UnionD l_cosets_card l_cosets_disj l_cosets_un mult_is_0)
 
-
-
-
 end
 
 
+locale normal_subgroup=subgroup H G "(\<cdot>)" e for H and G and f (infixl "\<cdot>" 70) and e+
+      assumes normal:"g \<in> G \<Longrightarrow> h \<in> H \<Longrightarrow> g \<cdot> h \<cdot> inv_elem g \<in>  H"
+begin
+lemma conj_closed:"g \<in> G \<Longrightarrow> h \<in> H \<Longrightarrow> inv_elem g \<cdot> h \<cdot> g \<in> H"  by (metis invertible invertible_inverse_inverse monoid.invertible_inverse_closed monoid_axioms normal)
+lemma l_coset_eq_r_coset:"\<And>g. g \<in> G \<Longrightarrow> l_coset g H = r_coset H g"
+proof-
+  fix g assume A0:"g \<in> G"
+  show "l_coset g H = r_coset H g"
+  proof
+    show "l_coset g H \<subseteq> r_coset H g"
+    proof
+      fix x assume A1:"x \<in> l_coset g H"
+      then obtain h where A2:"h \<in> H" and A3:"x = g \<cdot> h" by blast
+      then have B0:"x \<cdot> (inv_elem g) = g \<cdot> h \<cdot> (inv_elem g)" by blast
+      also have B1:"... \<in> H"  by (simp add: A0 A2 normal)
+      then obtain B2:"x \<cdot> (inv_elem g) \<in> H"  using calculation by presburger
+      have "(x \<cdot> (inv_elem g)) \<cdot> g = x" by (metis A0 A1 A3 B1 inv_solve_right l_coset_sub_mem sub_mem)
+      then show "x\<in> r_coset H g"  using A0 A1 B2 l_coset_sub_mem rcoset_mem by blast
+    qed
+    show "r_coset H g \<subseteq> l_coset g H"
+    proof
+      fix x assume A1:"x \<in> r_coset H g"
+      then obtain h where A2:"h \<in> H" and A3:"x = h \<cdot> g" by blast
+      then have B0:"(inv_elem g) \<cdot> x =  (inv_elem g) \<cdot> h \<cdot> g"   by (simp add: A0 associative) 
+      also have B1:"... \<in> H"   by (simp add: A0 A2 conj_closed)
+      then obtain B2:"(inv_elem g) \<cdot> x \<in> H"  using calculation by presburger
+      have "(g \<cdot> (inv_elem g)) \<cdot> x = x"   using A0 A1 invertible invertible_right_inverse leftid r_coset_sub_mem by presburger
+      then show "x\<in> l_coset g H"  using A0 A1 B2 lcoset_mem r_coset_sub_mem by blast  
+    qed
+  qed
+qed
+
+end
+
+context subgroup begin
+lemma l_coset_eq_r_coset_normal:
+  assumes [simp]: "\<And>g. g \<in> G \<Longrightarrow> l_coset g  H = r_coset H g"
+  shows "normal_subgroup H G (\<cdot>) e"
+proof
+  fix g h
+  assume[simp]: "g \<in> G" "h \<in> H"
+  have "h \<cdot> g \<in> l_coset g  H" by auto
+  then obtain k where "h \<cdot> g = g \<cdot> k" and "k \<in> H" by blast
+  then show "g \<cdot> h \<cdot> inv_elem g \<in> H" by (metis \<open>(g::'a) \<in> (G::'a set)\<close> \<open>(h::'a) \<in> (H::'a set)\<close> assms magma.closed magma.l_coset_memI magma_axioms sub_mem subgroup.rcoset_mem subgroup_axioms) 
+qed
+
+end
 
 context group
 begin
+
+
+lemma l_coset_cancel:"A \<subseteq> X \<Longrightarrow> b \<in> X \<Longrightarrow> x \<in> l_coset b A \<Longrightarrow> inv_elem b \<cdot> x \<in> A"  using monoid.invertible_left_inverse2 monoid_axioms by fastforce
+lemma r_coset_cancel:"A \<subseteq> X \<Longrightarrow> b \<in> X \<Longrightarrow> x \<in> r_coset A b \<Longrightarrow> x \<cdot> inv_elem b \<in> A"  by (metis IntD2 closed inf.orderE inv_solve_right r_coset_memE)  
+lemma l_coset_eq_r_cosetE:"A \<subseteq> X \<Longrightarrow> b \<in> X \<Longrightarrow> l_coset b A = r_coset A b \<Longrightarrow>  a \<in> A \<Longrightarrow> b \<cdot> a \<cdot> (inv_elem b) \<in> A" using r_coset_cancel by blast
+
+lemma l_coset_sub_r_cosetI:
+  assumes A0:"A \<subseteq> X" and A1:"b \<in> X" and A2:"(\<And>a.  a \<in> A \<Longrightarrow> b \<cdot> a \<cdot> (inv_elem b) \<in> A)"
+  shows "l_coset b A \<subseteq> r_coset A b"
+proof
+    fix x assume "x \<in> l_coset b A" then obtain a where "a \<in> A" and "x = b \<cdot> a" by blast
+    then obtain "b \<cdot> a \<cdot> (inv_elem b) \<in> A" and "x = b \<cdot> a \<cdot> (inv_elem b) \<cdot> b"   using A0 A1 A2 associative closed rightid by auto
+    then show "x \<in> r_coset A b" by blast
+qed
+
+lemma r_coset_sub_l_cosetI:
+  assumes A0:"A \<subseteq> X" and A1:"b \<in> X" and A2:"(\<And>a.  a \<in> A \<Longrightarrow> (inv_elem b) \<cdot> a \<cdot> b \<in> A)"
+  shows "r_coset A b \<subseteq> l_coset b A"
+proof
+    fix x assume "x \<in> r_coset A b" then obtain a where "a \<in> A" and "x = a \<cdot> b" by blast
+    then obtain "(inv_elem b) \<cdot> a \<cdot> b \<in> A" and "x = b \<cdot> ((inv_elem b) \<cdot> a \<cdot> b)"  using A0 A1 A2 associative closed inv_right_cancel by auto 
+    then show "x \<in> l_coset b A" by blast 
+qed
+
+definition normalizer where "normalizer A \<equiv> {b \<in> X. l_coset b A = r_coset A b}" 
+lemma normalizer_eq:
+  assumes A0:"A \<subseteq> X" 
+  shows "normalizer A = {b \<in> X. \<forall>a \<in> A. b \<cdot> a \<cdot> (inv_elem b) \<in> A}" (is "?LHS = ?RHS")
+proof
+  show "?LHS \<subseteq>?RHS"
+  proof
+    fix b assume A1:"b \<in> normalizer A" then obtain A2:"b \<in> X" and A3:"l_coset b A = r_coset A b" by (simp add: normalizer_def)
+    have "\<And>a. a \<in> A \<Longrightarrow> b \<cdot> a \<cdot> (inv_elem b) \<in> A"
+    proof-
+      fix a assume A4:"a \<in> A"
+      then obtain B0:"b \<cdot> a \<in> l_coset b A" by (simp add: l_coset_memI)
+      then obtain B1:"b \<cdot> a \<in> r_coset A b" by (simp add: A3) 
+      then show "b \<cdot> a \<cdot> (inv_elem b) \<in> A" using A2 assms r_coset_cancel by auto
+    qed
+    then show "b\<in>?RHS"  using A2 by blast
+  qed
+  show "?LHS \<supseteq> ?RHS"
+  proof
+    fix b assume A1:"b \<in> ?RHS" then obtain A2:"b \<in> X" and A3:"\<And>a. a \<in> A \<Longrightarrow> b \<cdot> a \<cdot> (inv_elem b) \<in> A" by blast
+    show "b \<in> ?LHS"
 
  
 end 
@@ -3269,58 +3506,336 @@ next
     by (simp add: Inter_lower assms cl_magma_extensive cl_submgama)
 qed
 
+
+
 end
       
 
 
 context group
 begin
-inductive_set generated::"'a set \<Rightarrow> 'a set" for A where
-  idm:"e \<in> generated A"
- |iso:"a \<in> A \<Longrightarrow> a \<in> generated A"
- |inv:"a \<in> A \<Longrightarrow> inv_elem a \<in> generated A"
- |opc:"a \<in> generated A \<Longrightarrow> b \<in> generated A \<Longrightarrow> a\<cdot>b \<in> generated A"
+inductive_set group_generated::"'a set \<Rightarrow> 'a set" for A where
+  idm:"e \<in> group_generated A"
+ |iso:"a \<in> A \<Longrightarrow> a \<in> group_generated A"
+ |inv:"a \<in> A \<Longrightarrow> inv_elem a \<in> group_generated A"
+ |opc:"a \<in> group_generated A \<Longrightarrow> b \<in> group_generated A \<Longrightarrow> a\<cdot>b \<in> group_generated A"
 
-lemma generate_into: "a \<in> generated (X \<inter> A) \<Longrightarrow> a \<in> X"
-  apply (induction rule: generated.induct)
+lemma group_generate: "a \<in> group_generated (X \<inter> A) \<Longrightarrow> a \<in> X"
+  apply (induction rule: group_generated.induct)
   apply (simp add: idmem)
   apply simp
   apply simp
   by (simp add: closed) 
 
 
-definition cl :: "'a set \<Rightarrow> 'a set"  where "cl S = generated (X \<inter> S)"
+definition cl_group:: "'a set \<Rightarrow> 'a set"  where "cl_group S = group_generated (X \<inter> S)"
 
-lemma inverse_in_cl: "a \<in> cl H \<Longrightarrow> inv_elem a \<in> cl H"
-  unfolding cl_def
-apply(induction rule: generated.induct)
-  apply (simp add: generated.idm)
-  using generated.inv apply force
-  using generated.iso apply force
-  by (simp add: generate_into generated.opc invprod(2))
+lemma inverse_in_cl: "a \<in> cl_group H \<Longrightarrow> inv_elem a \<in> cl_group H"
+  unfolding cl_group_def
+apply(induction rule: group_generated.induct)
+  apply (simp add: group_generated.idm)
+  using group_generated.inv apply force
+  using group_generated.iso apply force
+  by (simp add: group_generate group_generated.opc invprod(2))
 
-lemma cl_monoid: "monoid (cl H) (\<cdot>) e"
-  unfolding cl_def monoid_def semigroup_def magma_def semigroup_axioms_def monoid_axioms_def
+lemma cl_monoid: "monoid (cl_group H) (\<cdot>) e"
+  unfolding cl_group_def monoid_def semigroup_def magma_def semigroup_axioms_def monoid_axioms_def
   apply(auto)
-  using generated.opc apply auto[1]
-  apply (simp add: associative generate_into)
-  apply (simp add: generated.idm)
-  apply (simp add: generate_into leftid)
-  by (simp add: generate_into rightid)
-  
-lemma cl_sub: "cl H \<subseteq> X" using cl_def generate_into by auto
+  using group_generated.opc apply blast
+  apply (simp add: associative group_generate)
+  apply (simp add: group_generated.idm)
+  apply (simp add: group_generate leftid)
+  by (simp add: group_generate rightid)
 
-lemma cl_subgroup: "subgroup (cl H) X (\<cdot>) e"
+  
+lemma cl_sub: "cl_group H \<subseteq> X" using cl_group_def group_generate by blast 
+
+lemma cl_subgroup: "subgroup (cl_group H) X (\<cdot>) e"
   apply(rule subgroupI1)
   apply (simp add: cl_sub)
-  using cl_def generated.idm apply auto[1]
-  apply (simp add: cl_def generated.opc)
+  using cl_group_def group_generated.idm apply blast
+  apply (simp add: cl_group_def group_generated.opc)
   by (simp add: inverse_in_cl)
 
 
-end
-      
 
+lemma cl_group_ub:
+  assumes A0:"A \<subseteq> B" and A1:"subgroup B X (\<cdot>) e" 
+  shows "cl_group A \<subseteq> B"
+proof
+  fix x assume "x \<in> cl_group A"
+  then show "x \<in> B"
+    unfolding cl_group_def
+    apply(induction rule: group_generated.induct)
+    apply (meson A1 subgroup.id_mem)
+    using A0 apply blast
+    apply (metis A0 A1 Int_iff group.subgroupE1(3) group_axioms inf.absorb_iff2)
+    by (simp add: A1 subgroupE1(4))
+qed
+
+lemma cl_group_iso:
+  assumes A0:"A \<subseteq> B"  shows "cl_group A \<subseteq> cl_group B"
+proof
+  fix x assume "x \<in> cl_group A"
+  then show "x \<in> cl_group B" unfolding cl_group_def
+   apply(induction rule: group_generated.induct)
+    apply (simp add: group_generated.idm)
+    using assms group_generated.iso apply auto[1]
+    using assms group_generated.inv apply auto[1]
+    using group_generated.opc by blast
+qed
+
+lemma cl_group_extensive:
+   assumes A0:"A \<subseteq> X" shows "A \<subseteq>cl_group A"
+proof
+  fix x assume "x \<in> A" then show "x \<in>cl_group A"
+  unfolding cl_group_def
+  using assms group_generated.iso by auto
+qed
+
+lemma cl_group_idempotent:
+  assumes A0:"A \<subseteq> X" shows "cl_group A = cl_group (cl_group A)"
+  by (simp add: cl_sub cl_subgroup group.cl_group_extensive group.cl_group_ub group_axioms subset_antisym)
+
+lemma cl_group_moore1:
+  assumes A0:"A \<subseteq> X" 
+  shows "cl_group A = \<Inter>{C. subgroup C X (\<cdot>) e \<and> A \<subseteq> C}" (is "?LHS = ?RHS")
+proof
+  show "?LHS \<subseteq> ?RHS"
+    by (metis (no_types, lifting) CollectD Inf_greatest cl_group_ub)
+next
+  show "?RHS \<subseteq> ?LHS"
+    by (simp add: Inter_lower assms cl_group_extensive cl_subgroup)
+qed
+
+lemma generate_is_subgroup:  assumes "H \<subseteq> X" shows "subgroup (cl_group H) X f e" using cl_subgroup by simp
+
+
+
+lemma subgroup_imp_group:
+  "subgroup H X (\<cdot>) e \<Longrightarrow>  group H (\<cdot>) e"
+  by (erule subgroup.subgroup_is_group) (rule group_axioms)
+
+lemma subgroup_pow_equality[simp]:
+  assumes A0:"subgroup H X f e" and "x \<in> H"
+  shows "monoid.pow_int H f e x n= pow_int x n"
+  by (smt (verit) A0 group_def assms(2) group.nat_pow_inv group_axioms monoid.pow_int_def subgroup.sub_mem subgroup_imp_group subgroup_inverse_equality)
+
+
+lemma subgroup_int_pow_closed:
+  assumes "subgroup H X (\<cdot>) e" "h \<in> H" shows "pow_int h (k :: int) \<in> H"
+  using group.int_pow_closed[OF subgroup_imp_group[OF assms(1)]] assms(2)
+  unfolding subgroup_pow_equality[OF assms]
+  using \<open>\<And>n::int. monoid.pow_int (H::'a set) (\<cdot>) e (h::'a) n = pow_int h n\<close> by fastforce 
+
+
+lemma generate_pow:
+  assumes "a \<in>X" shows "cl_group {a} = { pow_int a (k :: int) | k. k \<in> UNIV }" (is "?LHS = ?RHS")
+proof
+  show "?RHS \<subseteq> ?LHS"
+  proof
+    fix x assume "x \<in> ?RHS"
+    then obtain k::"int" where "x = pow_int a k" by blast
+    then show "x \<in> ?LHS"
+      by (metis IntI assms cl_group_def cl_subgroup group.subgroup_int_pow_closed group_axioms group_generated.iso singletonI)
+  qed
+next
+  show "?LHS \<subseteq> ?RHS"
+  proof
+    fix h assume "h \<in> cl_group {a}" hence "\<exists>k :: int. h = pow_int a k"
+    unfolding cl_group_def
+    proof(induction rule: group_generated.induct)
+      case idm
+      then show ?case  by (metis int_pow_0) 
+    next
+      case (iso a)
+      then show ?case  by (metis IntD2 assms int_pow_1 singletonD) 
+    next
+      case (inv a)
+      then show ?case  by (metis IntD2 assms int_pow_1 int_pow_neg singletonD) 
+    next
+      case (opc a b)
+      then show ?case  by (metis assms int_pow_mult) 
+    qed
+    then show "h \<in> ?RHS"
+      by blast
+  qed
+qed
+
+lemma generate_id: "cl_group {e} = {e}"by (meson cl_subgroup group.cl_group_ub group.trivial_subgroup subgroup.subset subgroup_def subgroup_imp_group subset_antisym)
+lemma generate_empty: "cl_group {} = {e}" by (metis cl_group_iso cl_subgroup empty_subsetI generate_id group.subgroupE1(2) group_axioms subset_singletonD)
+
+
+definition cyclic_group where "cyclic_group G \<equiv> (\<exists>x \<in> X. cl_group {x} = G)"
+lemma cyclic_group_eq: assumes A0:"G \<subseteq> X" shows "cyclic_group G \<longleftrightarrow> (\<exists>g \<in> X. G =  { pow_int g (k :: int) | k. k \<in> UNIV })"   using cyclic_group_def generate_pow by auto
+lemma cylic_subgroup_pow:
+  assumes A0:"x \<in> X"
+  shows "cl_group {x} = cl_group {inv_elem x}"
+proof-
+  have "cl_group {x} = { pow_int x (k :: int) | k. k \<in> UNIV }" by (simp add: assms generate_pow)
+  also have "... = { pow_int x (-(k :: int)) | k. k \<in> UNIV }" by (metis UNIV_I add.inverse_inverse)
+  also have "... = {pow_int (inv_elem x) (k :: int)|k. k \<in> UNIV}" using assms int_pow_inv int_pow_neg by presburger
+  also have "... = cl_group {inv_elem x}"  using assms generate_pow invertible invertible_inverse_closed by presburger
+  finally show ?thesis by auto
+qed
+end
+
+locale cyclic_group=group G "(\<cdot>)" e for G and f (infixl "\<cdot>" 70) and e+
+  assumes cyclic:"\<exists>g \<in> G. cl_group {g} = G"
+begin
+
+(*turbo scuffed*)
+lemma cyclic_subgroup:
+  assumes A0:"cyclic_group G" and A1:"subgroup H G (\<cdot>) e"
+  shows "cyclic_group H"
+proof-
+  obtain g where A2:"g \<in> G" and A3:"G = cl_group {g}" using A0 cyclic_group_def by auto
+  have B0:"H \<subseteq> G"  by (simp add: A1 subgroupE1(1)) 
+  show ?thesis
+  proof(cases "H={e}")
+    case True
+    then show ?thesis  using generate_id idmem local.cyclic_group_def by auto
+  next
+    case False
+    define M where "M \<equiv> {n::nat. n >0 \<and> monoid.pow_nat f e g n \<in> H}"
+    have B0:"M \<noteq> {}"
+    proof-
+      obtain h where A4:"h \<in> H" and A4b:"h \<noteq> e"  using A1 False subgroup.id_mem by fastforce 
+      obtain A5:"inv_elem h \<in> H" and A6:"h \<in> G"   by (meson A1 A4 subgroup.inv_cl subgroup.sub_mem)  
+      obtain k::"int" where A7:"h = monoid.pow_int G f e g k"  using A2 A3 A6 generate_pow by fastforce 
+      show ?thesis
+      proof(cases "k < 0")
+        case True
+        then have "inv_elem h = monoid.pow_int G f e g (-k)" using A2 A7 int_pow_neg by presburger
+        also have "... \<in> H"  using A5 calculation by auto  
+        then have "nat (-k) \<in> M" unfolding M_def using True int_pow_def2 by force
+        then show ?thesis by auto
+      next
+        case False
+        then obtain A7:"nat k \<in> M" unfolding M_def using A4 A7 int_pow_def2 A4b by force
+        then show ?thesis by auto
+      qed
+    qed
+    define n where "n \<equiv> Least (\<lambda>n::nat. n \<in> M)"
+    define h where "h \<equiv> pow_nat g n"
+    have B3:"h \<in> G"  by (simp add: A2 h_def)  
+    have B5:"n > 0" unfolding n_def M_def using B0   by (metis (no_types, lifting) LeastI M_def ex_in_conv mem_Collect_eq) 
+    have B1:"h \<in> H" unfolding h_def n_def M_def using B0  by (metis (mono_tags, lifting) Collect_empty_eq LeastI M_def mem_Collect_eq) 
+    have B2:"cl_group {h} \<subseteq> H"  by (simp add: A1 B1 cl_group_ub)
+    have B4:"H \<subseteq> cl_group {h}"
+    proof
+      fix x assume A8:"x \<in> H"
+      then obtain A9:"x \<in> G"  by (meson A1 subgroup.sub_mem) 
+      then obtain k::"int" where A10:"x = pow_int g k"  using A2 A3 generate_pow by fastforce
+      show "x \<in> cl_group {h}"
+      proof(cases "k > 0")
+        case True
+        define m where "m \<equiv> nat k"
+        define q where "q \<equiv> m div n"
+        define r where "r \<equiv> m mod n"
+        then obtain B6:"m = n * q + r" and "0 \<le> r" and "r < n"   by (metis (no_types, lifting) B0 CollectD LeastI_ex M_def bot_nat_0.extremum ex_in_conv mod_less_divisor mult_div_mod_eq n_def q_def r_def)
+        have "x = pow_int g k"  by (simp add: A10)
+        also have "... = pow_nat g m" using True int_pow_def2 m_def by auto
+        also have "... = pow_nat g (n * q + r)"  by (simp add: B6)
+        also have "... = pow_nat g (n * q) \<cdot> (pow_nat g r)" by (simp add: A2 nat_pow_mult)
+        finally have B7:"x = pow_nat (pow_nat g n) q \<cdot> (pow_nat g r)"  using A2 nat_pow_pow by auto
+        then obtain B8:"pow_int (pow_nat g n) (-(int q)) \<cdot> x = (pow_nat g r)"  by (metis A2 A9 group.int_pow_neg group_axioms int_pow_closed int_pow_int inv_solve_left)
+        then have "inv_elem (pow_nat (pow_nat g n) q) \<cdot> x = (pow_nat g r)"  by (simp add: A2 int_pow_neg_int)
+        also have "... \<in> H"  by (metis A1 A8 B1 B8 h_def subgroup.closed subgroup_int_pow_closed)
+        then have "r = 0"  by (metis CollectI M_def \<open>\<And>thesis::bool. (\<lbrakk>(m::nat) = (n::nat) * (q::nat) + (r::nat); (0::nat) \<le> r; r < n\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> gr0I n_def not_less_Least)
+        then have "n dvd m"  by (simp add: mod_eq_0_iff_dvd r_def)
+        then have "x \<in> cl_group {h}"
+          by (metis A10 A2 B3 B6 \<open>(r::nat) = (0::nat)\<close> \<open>pow_int (g::'a) (k::int) = pow_nat g (m::nat)\<close> add.right_neutral cl_group_extensive cl_subgroup group.subgroup_int_pow_closed group_axioms h_def insert_subset int_pow_int local.power_mult subgroup.subset trivial_subgroup)
+        then show ?thesis by auto
+      next
+        case False
+        have B9:"(-k) \<ge> 0"  using False by auto
+        define m where "m \<equiv> nat (-k)"
+        define q where "q \<equiv> m div n"
+        define r where "r \<equiv> m mod n"
+        then obtain B6:"m = n * q + r" and "0 \<le> r" and "r < n"   by (metis (no_types, lifting) B0 CollectD LeastI_ex M_def bot_nat_0.extremum ex_in_conv mod_less_divisor mult_div_mod_eq n_def q_def r_def)
+        have "inv_elem x = pow_int g (-k)" using A10 A2 int_pow_neg by presburger
+        also have "... = pow_nat g m"   using B9 m_def pow_nat by presburger
+        also have "... = pow_nat g (n * q + r)"  by (simp add: B6)
+        also have "... = pow_nat g (n * q) \<cdot> (pow_nat g r)" by (simp add: A2 nat_pow_mult)
+        finally have B7:"(inv_elem x) = pow_nat (pow_nat g n) q \<cdot> (pow_nat g r)"   using A2 local.power_mult by presburger 
+        then obtain B8:"pow_int (pow_nat g n) (-(int q)) \<cdot> (inv_elem x) = (pow_nat g r)"    by (metis A2 closed int_pow_closed int_pow_int int_pow_neg inv_solve_left) 
+        then have "inv_elem (pow_nat (pow_nat g n) q) \<cdot> (inv_elem x) = (pow_nat g r)"  by (simp add: A2 int_pow_neg_int)
+        also have "... \<in> H"  by (metis A1 A8 B1 B8 group.subgroupE1(3) group_axioms h_def subgroupE1(4) subgroup_int_pow_closed)
+        then have "r = 0"  using M_def \<open>\<And>thesis::bool. (\<lbrakk>(m::nat) = (n::nat) * (q::nat) + (r::nat); (0::nat) \<le> r; r < n\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis\<close> n_def not_less_Least by auto 
+        then have "n dvd m"  by (simp add: mod_eq_0_iff_dvd r_def)
+        then have "inv_elem x \<in> cl_group {h}" by (metis B3 B7 \<open>(r::nat) = (0::nat)\<close> cl_group_extensive cl_monoid empty_subsetI h_def insert_subset monoid.pow_closed pow_0 pow_closed rightid)
+        then obtain "x \<in> cl_group {h}" using A10 A2 inverse_in_cl by fastforce
+        then show ?thesis by auto
+      qed
+    qed
+    then show ?thesis  using B2 B3 local.cyclic_group_def by blast
+  qed
+qed
+
+end
+
+context group
+begin
+
+lemma centralizer_eq:
+  assumes A0:"A \<subseteq> X"
+  shows "centralizer A = {b \<in> X. \<forall>a \<in> A. b \<cdot> a \<cdot> (inv_elem b) = a}" 
+  unfolding centralizer_def commutes_def apply(auto)
+  using assms associative rightid apply auto[1]
+  by (metis assms closed inv_solve_right subset_iff)
+
+
+end
+
+
+section Conjugation
+context group begin
+
+definition rconj where "rconj g x \<equiv> x \<cdot> g \<cdot> inv_elem x"
+definition conjugacy_class where "conjugacy_class g \<equiv> {x \<cdot> g \<cdot> inv_elem x|x. x \<in> X}"
+
+
+lemma rconj_pow:
+  assumes A0:"g \<in> X" and A1:"x \<in> X"
+  shows "(rconj g x)^n = x \<cdot> g ^n \<cdot> inv_elem x"
+proof(induct n)
+  case 0
+  then show ?case 
+  unfolding rconj_def by (simp add: A1 rightid)
+next
+  case (Suc n)  then show ?case   unfolding rconj_def  using A0 A1 associative closed remove_id1 by force
+qed 
+
+lemma conj_class_ord_lt:
+  assumes A0:"g \<in> X" and A1:"h \<in> conjugacy_class g"
+  shows "\<And>n. g^n = e \<Longrightarrow> h^n = e" and "\<And>n. h^n = e \<Longrightarrow> g^n = e"
+proof-
+  obtain x where A2:"x \<in> X" and A3:"h = x \<cdot> g \<cdot> inv_elem x" using A1 conjugacy_class_def by auto
+  have B0:"h = rconj g x"  by (simp add: A3 rconj_def)
+  show B1:"\<And>n. g^n = e \<Longrightarrow> h^n = e"  by (simp add: A0 A2 B0 rconj_pow rightid)
+  show B2:"\<And>n. h^n = e \<Longrightarrow> g^n = e"
+  proof-
+    fix n assume A4:"h^n = e"
+    then obtain " x \<cdot> g ^n \<cdot> inv_elem x = e"  by (simp add: A0 A2 B0 rconj_pow)
+    then obtain "inv_elem x \<cdot> x \<cdot> g^n \<cdot> inv_elem x \<cdot> x = inv_elem x \<cdot>e \<cdot> x"  by (metis A0 A2 associative closed invertible monoid.invertible_inverse_closed monoid_axioms pow_closed)
+    then show "g^n = e"   by (simp add: A0 A2 associative leftid rightid)
+  qed
+qed
+
+lemma conj_class_ord:
+  assumes A0:"g \<in> X" and A1:"h \<in> conjugacy_class g"
+  shows "elem_ord g = elem_ord h"
+proof-
+  have B0:"elem_exponents g \<subseteq> elem_exponents h" unfolding elem_exponents_def using A0 A1 conj_class_ord_lt(1) by blast
+  also have B1:"elem_exponents h \<subseteq> elem_exponents g" unfolding elem_exponents_def using A0 A1 conj_class_ord_lt(2) by blast
+  then show ?thesis
+    using calculation elem_ord_def by auto
+qed
+(*converse is false viz. abelian groups*)
+
+
+end
 end
 
  

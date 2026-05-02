@@ -149,6 +149,11 @@ proof-
     using A0 B0 cl_cases[of A x] that(1,2) by metis
 qed
 
+lemma magma_cl_non_gen: 
+  assumes A0:"A \<subseteq> X" and A1:"x \<in> cl A" and A2:"x \<notin> A"
+  obtains a b where "a \<in> cl A" and "b \<in> cl A" and "x = a \<cdot> b"
+  using A0 A1 A2 magma_cl_cases[of A x] using that by auto
+
 end
 
 
@@ -245,7 +250,7 @@ proof-
   fix x y assume A0:"submagma A X (\<cdot>)" "x \<in> f ` A" "y \<in> f `A" then obtain a b where A1:"a \<in> A" "b \<in> A" "x = f a" "y = f b"  by blast
   then obtain "a\<cdot>b \<in> A" by (meson A0 submagma.subfun) 
   then obtain "f (a \<cdot>b) \<in> f `A" and  "f (a \<cdot> b) = (f a)\<star>(f b)"
-    using A0(1) A1(1,2) cmp magma_homE submagma.sub by fastforce 
+    by (meson A0(1) A1(1,2) comE imageI submagma.sub)
   then show "x \<star> y \<in> f ` A"  by (simp add: A1(3) A1(4)) 
 qed
 
@@ -1236,12 +1241,12 @@ proof(rule inj_onI)
      case (Op x21 x22)
      then obtain B0:"y = x21 \<star> x22"
        by auto
-     then obtain "f (\<eta> x) = f y" and "f y = f (x21 \<star> x22)" and "f (x21 \<star> x22) = (f x21) \<star> (f x22)"
+     then obtain B1:"f (\<eta> x) = f y" and B2:"f y = f (x21 \<star> x22)" and B3:"f (x21 \<star> x22) = (f x21) \<star> (f x22)"
        using embeds.prems(2) extend0.simps(2) by blast
      then obtain "f (\<eta> x) = (f x21) \<star> (f x22)"
        by force
      then obtain a b where "a \<in>Y" and "b \<in> Y" and "\<eta> x = a \<star> b"
-       by (metis B_iff Op embeds.hyps embeds.prems(1) extend0.simps(1) free_magmaE id_apply l4)     
+       using Op embeds.hyps embeds.prems(1) free_magma.cases[of y B] by auto
      show ?thesis
        using \<open>\<eta> (x::'a frm) = (a::'a frm frm) \<star> (b::'a frm frm)\<close> by auto
    qed
@@ -1348,11 +1353,17 @@ abbreviation "Cl \<equiv> magma.cl M Op"
 
 definition deez ("M'(x')") where "M(x) \<equiv> Cl {x}"
 
+lemma is_magma:"magma M(x) Op"
+  by (simp add: deez_def magma.cl_def magma.intro)
+
+lemma sub:"M(x) \<subseteq> M"
+  by (simp add: deez_def magma.cl_magma_sub magma.intro)
+
 interpretation Mx_magma:magma "M(x)" Op
   by (simp add: deez_def magma.cl_def magma.intro)
 
 interpretation Mx_sub:submagma"M(x)" M Op
-  by (metis deez_def empty_iff empty_subsetI free_magma.stable magma.intro submagma.cl_submgama submagmaI)
+  by (simp add: magma.intro sub submagmaI)
 
 interpretation Mx_free_sub:free_submagma_magma X "M(x)"
   by (simp add: Mx_sub.submagma_axioms free_submagma_magma_def)
@@ -1369,31 +1380,84 @@ lemma sugma:
   defines "Mx \<equiv> magma.cl (free_magma X) Op {x}" 
   defines "My \<equiv> magma.cl (free_magma X) Op {y}"
   assumes A0:"x \<in> free_magma X" and A1:"y \<in> free_magma X" and
-  A2:"w \<in> Mx \<inter> My"  and  A3:"\<forall>w' \<in>  Mx \<inter> My.  \<not>((l w') < (l w))" and
-  A4:"w \<noteq> y"
-  shows dat_boi:"w=x"
+          A2:"w \<in> Mx \<inter> My"  and  A3:"\<forall>w' \<in>  Mx \<inter> My.  \<not>((l w') < (l w))" and
+          A4:"w \<noteq> y"
+  shows dat_boi:"w=x" and
+        zucc:"Mx \<subseteq> My"
 proof-
-  obtain B0:"magma (free_magma X) Op"
-    by (simp add: Mx_def My_def magma.cl_def magma.intro)
-  have B7:"w \<notin> {y}"
-    by (simp add: A4)
-  have B8:"w \<in> {x}"
-  proof(rule ccontr)
-    assume C0:"w \<notin> {x}"
-    then obtain a b where C1:"a \<in> Mx" and C2:"b \<in> Mx" and C3:"w = a \<star> b"
-      by (metis A2 B0 Int_iff Mx_def generated_magma.simps magma.cl_def)
-    obtain a' b' where C4:"a' \<in> My" and C5:"b' \<in> My" and C6:"w = a' \<star> b'"
-      by (metis A2 B0 B7 Int_iff My_def generated_magma.simps magma.cl_def)
-    then obtain C7:"a=a'" and C8:"b=b'"
-      by (simp add: C3)
-    then obtain C9:"a \<in> Mx \<inter> My" and "l a < l w"
-      using C1 C3 C4 len_lt by fastforce
-    then show False
-      using A3 by blast
+  show P0:"w = x"
+  proof-
+    have B0:"magma (free_magma X) Op"
+      by (simp add: Mx_def My_def magma.cl_def magma.intro)
+    obtain B0b:"w \<in> Mx" and B0c:"w \<in> My" and B0d:"{x} \<subseteq> (free_magma X)" and B0e:"{y} \<subseteq> (free_magma X)"
+      using A0 A1 A2 by blast
+    interpret m:magma "(free_magma X)" Op
+      by (simp add: B0)
+    have B7:"w \<notin> {y}"
+      by (simp add: A4)
+    have B8:"w \<in> {x}"
+    proof(rule ccontr)
+      assume C0:"w \<notin> {x}"
+      then obtain a b where C1:"a \<in> Mx" and C2:"b \<in> Mx" and C3:"w = a \<star> b"
+        using B0 B0b B0d Mx_def magma.magma_cl_non_gen[of "free_magma X" Op "{x}" w] by blast
+      obtain a' b' where C4:"a' \<in> My" and C5:"b' \<in> My" and C6:"w = a' \<star> b'"
+        using B0 B0c B7 B0e My_def magma.magma_cl_non_gen[of "free_magma X" Op "{y}" w] by blast
+      then obtain C7:"a=a'" and C8:"b=b'"
+        by (simp add: C3)
+      then obtain C9:"a \<in> Mx \<inter> My" and "l a < l w"
+        using C1 C3 C4 len_lt by fastforce
+      then show False
+        using A3 by blast
+    qed
+    then show "w=x"
+      by simp
+  qed
+  show P1:"Mx \<subseteq> My"
+  proof-
+    have "{x} \<subseteq> My"
+      using A2 P0 by force
+    then show "Mx \<subseteq> My"
+      by (simp add: Mx_def My_def magma.cl_magma_stable_ub magma.cl_stable magma.intro)
+  qed
+qed
+
+lemma scale_daddy:
+  fixes X::"'a set" and x::"'a frm" and  y::"'a frm" 
+  assumes A0:"x \<in> free_magma X" and A1:"y \<in> free_magma X" 
+  defines "Mx \<equiv> magma.cl (free_magma X) Op {x}" 
+  defines "My \<equiv> magma.cl (free_magma X) Op {y}"
+  shows " (Mx \<inter> My = {}) \<or> (Mx \<subseteq> My) \<or> (My \<subseteq> Mx) "
+proof-
+  let ?dirty_mike="l`(Mx \<inter> My)"
+  let ?dirty_dan="(\<lambda>k. k \<in>?dirty_mike)"
+  have done_making_league_of_legends_videos:"Mx \<inter> My \<noteq> {} \<Longrightarrow> (Mx \<subseteq> My) \<or> (My \<subseteq> Mx) "
+  proof-
+    assume fleisch:"Mx \<inter> My \<noteq> {}"
+    then have "?dirty_mike \<noteq> {}" by simp
+    then obtain k where di:"k \<in> ?dirty_mike" and cks:"k = Least ?dirty_dan"
+      using LeastI[of ?dirty_dan] all_not_in_conv[of ?dirty_mike] by presburger
+    then obtain w where outfo:"w \<in> Mx \<inter> My" and rharambe:"l w = k"
+      by blast
+    then have clean_this_up:"\<forall>w' \<in>  Mx \<inter> My.  \<not>((l w') < (l w))"
+      using cks image_eqI not_less_Least[of _ ?dirty_dan] by metis
+    then show "(Mx \<subseteq> My) \<or> (My \<subseteq> Mx)"
+    proof(cases "w \<noteq> y")
+      case True
+      then show ?thesis using sugma(2)
+        using A0 A1 Mx_def My_def clean_this_up outfo by blast
+    next
+      case False
+      then show ?thesis
+        by (metis A0 A1 Int_commute Mx_def My_def clean_this_up outfo subsetI zucc) 
+    qed
   qed
   then show ?thesis
-    by simp
+    by auto
 qed
+    
+    
+  
+
 
 
 end

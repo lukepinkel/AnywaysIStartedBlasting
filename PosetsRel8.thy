@@ -1,12 +1,9 @@
-theory PosetsRel6
+theory PosetsRel8
   imports Main
 begin
 
 hide_const top bot
-hide_const(open) List.list.Nil
-no_notation List.list.Nil ("[]")  
 no_notation Cons (infixr "#" 65) 
-hide_type list
 hide_const rev Sup Inf trans refl Greatest asym
 declare [[show_consts, show_results]]
 declare [[show_abbrevs=true]]
@@ -51,13 +48,6 @@ definition is_maximal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarro
 
 definition is_minimal::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_minimal R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R\<longrightarrow> a = x)"
-
-(*for reflexive relations I suppose*)
-definition is_maximal_elem::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_maximal_elem R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> (a,x)\<in>R)"
-
-definition is_minimal_elem::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_minimal_elem R A x \<equiv> (x \<in> A) \<and> (\<forall>a. a \<in> A \<and> (a, x) \<in> R \<longrightarrow> (x, a)\<in>R)"
 
 
 subsection Lattices
@@ -1650,18 +1640,6 @@ proof(rule ccontr)
 qed
 
 
-lemma maximal_elemD1:
-  "is_maximal_elem R A x \<Longrightarrow> x \<in> A"
-  by(simp add:is_maximal_elem_def)
-
-lemma maximal_elemD2:
-  "is_maximal_elem R A x \<Longrightarrow>(\<forall>a. a \<in> A \<and> (x, a) \<in> R \<longrightarrow> (a, x)\<in>R)"
-  by(simp add:is_maximal_elem_def)
-
-lemma maximal_elemD3:
-  "is_maximal_elem R A x \<Longrightarrow> a \<in> A \<Longrightarrow> (x, a) \<in> R \<Longrightarrow> (a, x)\<in>R"
-  by(simp add:is_maximal_elem_def)
-
 lemma maximalI1:
   "\<lbrakk>x \<in> A; (\<And>a. \<lbrakk>a \<in> A; (x, a) \<in> R\<rbrakk> \<Longrightarrow> a = x)\<rbrakk> \<Longrightarrow> is_maximal R A x"
   by(simp add:is_maximal_def)
@@ -2111,8 +2089,24 @@ proof(rule wfI1)
 qed
 
 lemma wf_min4:
-  "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A))"
-  by(auto simp add:wf_min2 wf_min3)
+  "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. \<forall>u \<in> X. (u, t) \<in> R \<longrightarrow> u \<notin> A))" (is "?P \<Longrightarrow> ?lhs \<longleftrightarrow> ?rhs")
+proof-
+  assume A0:?P
+  show "?lhs \<longleftrightarrow> ?rhs"
+  proof
+    assume A1:?lhs 
+    then show ?rhs
+      using A0 wf_min2[of R X] by blast
+  next
+    assume A2:?rhs
+    then show ?lhs
+      using A0 A2 wf_min3[of R X]
+      by blast
+  qed
+qed
+  
+    
+
 
 lemma wf_min5:
   "R \<subseteq> X \<times> X \<Longrightarrow> wellfounded R X \<longleftrightarrow> (\<forall>A \<in> Pow_ne X. (\<exists>t \<in> A. \<not>(\<exists>z. z \<in> A \<and> (z, t) \<in> R)))"
@@ -14300,7 +14294,24 @@ lemma strict_posetD2:"strict_poset R X \<Longrightarrow> irrefl_on X R" by (simp
 lemma strict_posetD3:"strict_poset R X \<Longrightarrow> asym_on X R"  by (simp add: asym_on_iff_irrefl_on_if_trans_on strict_posetD1 strict_posetD2) 
 
 
-lemma iso_I2:"refl_on X Rx \<Longrightarrow> refl_on Y Ry \<Longrightarrow>f`X \<subseteq> Y \<Longrightarrow>(\<And>x y. \<lbrakk>(x, y) \<in> Rx; x \<noteq> y\<rbrakk> \<Longrightarrow> (f x, f y) \<in> Ry) \<Longrightarrow> isotone Rx X Ry f" by (metis image_subset_iff isotoneI1 refl_on_def)
+lemma iso_I2:
+  assumes"refl_on Y Ry" "f`X \<subseteq> Y" "(\<And>x y. \<lbrakk>(x, y) \<in> Rx; x \<noteq> y\<rbrakk> \<Longrightarrow> (f x, f y) \<in> Ry)" 
+  shows"isotone Rx X Ry f"
+proof(rule isotoneI1)
+  fix x1 x2 assume A0:"x1 \<in> X" and A1:"x2 \<in> X" and A2:"(x1, x2) \<in> Rx"
+  show "(f x1, f x2) \<in> Ry"
+  proof(cases "x1=x2")
+    case True
+    then show ?thesis
+      using A0 assms(1,2) refl_onD by fastforce 
+  next
+    case False
+    then show ?thesis
+      using A2 assms(3) by blast 
+  qed
+qed
+  
+
 lemma isoD1:" isotone Rx X Ry f\<Longrightarrow>refl_on X Rx \<Longrightarrow> refl_on Y Ry \<Longrightarrow>f`X \<subseteq> Y \<Longrightarrow>(x, y) \<in> Rx\<Longrightarrow> x \<noteq> y \<Longrightarrow> (f x, f y) \<in> Ry" by (meson isotone_def refl_on_domain)
 
 lemma iso_iff:assumes A0:"refl_on X Rx" and A1:"refl_on Y Ry" and func:"f`X \<subseteq> Y"
@@ -14378,8 +14389,12 @@ proof(rule posetI2)
       then show ?thesis 
       proof(cases "(y, z)\<in>S")
         case A7:True
+        then obtain D0:"(x, y) \<in> S" and D1:"(y, z) \<in> S"
+          by (simp add: A6)
+        then have "(x, z)\<in>S"
+          using B2 A1 A2 A3 D0 D1 trans_onD[of X S x y z]  by blast 
         then show ?thesis
-          using A1 A2 A3 A6 B2 R_def trans_on_def by force 
+          by (simp add: A1 A3 R_def)
       next
         case False
         then show ?thesis
@@ -15321,10 +15336,12 @@ proof-
       show "A \<subseteq> seg (Restr R B) B a"
       proof
         fix x assume A9:"x \<in> A"
-        then obtain "(x,a)\<in>(Restr R B)" and "x \<noteq> a"
-          using A8 B11 B7 seg_def by fastforce
+        then obtain "x \<in> B" and "x \<noteq> a"
+          using A8 B7 not_in_seg by fastforce 
+        then obtain "(x,a)\<in>(Restr R B)"
+          using A9 B11 B7 seg_memD by fastforce 
         then show "x \<in> seg (Restr R B) B a"
-          by (meson A8 A9 seg_memI subset_iff)
+          by (simp add: \<open>x \<noteq> a\<close> seg_memI)
       qed
       show "seg (Restr R B) B a \<subseteq> A"
         by (simp add: B7 B8 seg_def subset_iff)
@@ -15343,7 +15360,7 @@ proof-
       proof
         fix x assume A9:"x \<in> B"
         then obtain "(x,b)\<in>(Restr R A)" and "x \<noteq> b"
-          using A8 B11 B8 seg_def by fastforce
+          using A8 B11 B8 seg_def[of R X b] by fastforce
         then show "x \<in> seg (Restr R A) A b"
           by (metis A8 A9 seg_memI subset_iff)
       qed
@@ -15358,8 +15375,16 @@ proof-
   show "\<not>(\<exists>f. order_iso (Restr R A) A (Restr R B) B f)"
   proof(cases "B \<in> segs (Restr R A) A")
     case True
-    then show ?thesis
-      by (metis B2 Pow_iff Restr_subset segs_memD2 well_ord_def woset_initial_iso3) 
+    then obtain C0:"B \<in> segs (Restr R A) A" and C1:"trans (Restr R A) A"  and C2:"antisym (Restr R A) A" and
+                C3:"refl_on A (Restr R A)"
+      using B2 well_ord_def by blast
+    have C4:"B \<subseteq> A"
+      using True segs_memD2 by auto
+    have C5:"(Restr (Restr R A) B) = Restr R B"
+      using C4 by blast
+   show ?thesis
+      using C0 C1 C2 C3 B2 C5 woset_initial_iso3[of "(Restr R A)" A B]
+      by presburger
   next
     case False 
     then obtain "A \<in> segs(Restr R B) B"
