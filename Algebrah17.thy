@@ -7365,6 +7365,12 @@ lemma fixer_sub_stab:"fixer A \<subseteq> stabilizer A"
 
 lemma stabilizer_memI:"\<lbrakk>A \<in> Pow E; m \<in> M; (\<And>a. a \<in> A \<Longrightarrow> \<alpha> m a \<in> A)\<rbrakk> \<Longrightarrow> m \<in> stabilizer A"  unfolding stabilizer_def by(auto)
 
+lemma singleton_stabilizer_memE:
+  assumes A0:"x \<in> E" and A1:"m \<in> stabilizer {x}"
+  obtains "m \<in> M" and "\<alpha> m x = x"
+  using assms unfolding stabilizer_def by auto
+
+
 lemma stab_memI:"\<lbrakk>A \<in> Pow E;  m \<in>stabilizer A; n \<in> stabilizer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> stabilizer A"
 proof-
   fix A m n assume A0:"A \<in> Pow E"  and m0:"m \<in>stabilizer A" and n0:"n \<in> stabilizer A"
@@ -7382,7 +7388,7 @@ proof-
     using A0 m2 m_closed n2 stabilizer_def by force
 qed
 
-lemma stict_stab_memI:"\<lbrakk>A \<in> Pow E; m \<in>strict_stabilizer A; n \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> strict_stabilizer A"
+lemma strict_stab_memI:"\<lbrakk>A \<in> Pow E; m \<in>strict_stabilizer A; n \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> strict_stabilizer A"
 proof-
   fix A m n assume A0:"A \<in> Pow E" and m0:"m \<in>strict_stabilizer A" and n0:"n \<in> strict_stabilizer A"
   then obtain m1:"(\<alpha> m)`A = A" and n1:"(\<alpha> n)`A = A" and m2:"m \<in> M" and n2:"n \<in> M"
@@ -7493,9 +7499,9 @@ proof-
   show P5:"\<And>m n. \<lbrakk>m \<in>stabilizer A; n \<in> stabilizer A\<rbrakk> \<Longrightarrow>(m \<cdot> n) \<in> stabilizer A"
     using assms stab_memI by auto
   show P6:"\<And>m n. \<lbrakk>m \<in>strict_stabilizer A; n \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> \<alpha> (m \<cdot> n)`A =A"
-    using assms stict_stab_memI strict_stabilizer_def by force 
+    using assms strict_stab_memI strict_stabilizer_def by force 
   show P7:"\<And>m n. \<lbrakk>m \<in>strict_stabilizer A; n \<in> strict_stabilizer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> strict_stabilizer A"
-    using assms stict_stab_memI by auto 
+    using assms strict_stab_memI by auto 
   show P8:"\<And>m n. \<lbrakk>m \<in>fixer A; n \<in> fixer A\<rbrakk> \<Longrightarrow> \<alpha> (m \<cdot> n)`A  = A" 
     using assms fix_memI fixer_def by auto
   show P9:  "\<And>m n. \<lbrakk>m \<in>fixer A; n \<in> fixer A\<rbrakk> \<Longrightarrow> (m \<cdot> n) \<in> fixer A" 
@@ -7782,7 +7788,7 @@ lemma strict_stab_sub:
   apply(rule subgroupI1)
   using assms b151prop11(12) apply blast
   using assms b151prop11(4) apply blast
-  using assms stict_stab_memI apply blast
+  using assms strict_stab_memI apply blast
   using assms sstab_inv_closed by blast
 
 
@@ -8016,6 +8022,51 @@ end
 context
 group_operating_on_set
 begin
+
+lemma stabilizer_conj1:
+  assumes A0:"h \<in> stabilizer {x}" and A1:"x \<in> E" and A2:"g \<in> G"
+  shows "g \<cdot> h \<cdot> (inv g) \<in> stabilizer {\<alpha> g x}"
+proof-
+  obtain B0:"h \<in> G" and B1:"\<alpha> g x \<in> E" 
+    using A0 A1 A2 singleton_stabilizer_memE by blast
+  then have B2:" g \<cdot> h \<cdot> local.inv g \<in> G"
+    by (simp add: A2 m_closed)
+  have "\<alpha> (g \<cdot> h \<cdot> local.inv g) (\<alpha> g x) = (\<alpha> ((g \<cdot> h \<cdot> inv g) \<cdot> g) x)"
+    using A1 A2 B2 comp_simp by presburger
+  also have "... = \<alpha> (g \<cdot> h) x"
+    by (simp add: A2 B0 asc m_closed)
+  also have "... = \<alpha> g (\<alpha> h x)"
+    using A1 A2 B0 comp_simp by blast
+  also have "... = \<alpha> g x"
+    using A0 A1 singleton_stabilizer_memD by presburger
+  finally show ?thesis
+    using singleton_stabilizer_memI B1 B2 by blast
+qed
+
+
+lemma stabilizer_conj2:
+  assumes A0:"h \<in> stabilizer {\<alpha> g x}" and A1:"x \<in> E" and A2:"g \<in> G"
+  shows "(inv g) \<cdot> h \<cdot> g \<in> stabilizer {x}"
+proof-
+  obtain B0:"h \<in> G" and B1:"\<alpha> g x \<in> E" 
+    using A0 A1 A2 singleton_stabilizer_memE by blast
+  then obtain B2:"(inv g) \<cdot> h \<cdot> g \<in> G" and "\<alpha> h (\<alpha> g x) \<in> E"
+    by (simp add: A2 m_closed)
+  have "\<alpha> ((inv g) \<cdot> h \<cdot> g) x = \<alpha> ((inv g) \<cdot> h) (\<alpha> g x)"
+    using A1 A2 B0 comp_simp invertible m_closed unit_inv_closed by presburger
+  also have "... = \<alpha> (inv g) (\<alpha> h (\<alpha> g x))"
+    using A2 B0 B1 comp_simp invertible unit_inv_closed by presburger
+  also have "... = \<alpha> (inv g) (\<alpha> g x)"
+    using A0 B1 singleton_stabilizer_memD by presburger
+  also have "... = x"
+    by (simp add: A1 A2 act_inv_comp(1))
+  finally show ?thesis
+    using A1 B2 singleton_stabilizer_memI by blast
+qed
+  
+  
+
+
 lemma stabilizer_conj:
   assumes A0:"x \<in> E" and A1:"g \<in> G"
   shows "stabilizer {\<alpha> g x} = {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
@@ -8023,68 +8074,20 @@ proof-
   have P0:"\<alpha> g x \<in> E"
     by (simp add: A0 A1)
   have B0:" {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}} \<subseteq> stabilizer {\<alpha> g x}"
+    using A0 A1 stabilizer_conj1 by auto
+  also have B1:"stabilizer {\<alpha> g x} \<subseteq> {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}" (is "?lhs \<subseteq> ?rhs")
   proof
-    fix s assume A2:"s \<in> {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
-    then obtain h where B1:"h \<in> stabilizer {x}" and B2:"s = g \<cdot> h \<cdot> (inv g)" 
-      by blast
-    then obtain B3:"h \<in> G" and B4:"\<alpha> h x = x"
-      using B1 A0 unfolding stabilizer_def by auto
-    have B5:"g \<cdot> h \<cdot> (inv g) \<in> G"
-      using B3 A1 by (simp add: m_closed) 
-    then have "\<alpha> s (\<alpha> g x) = \<alpha> (g \<cdot> h \<cdot> (inv g)) (\<alpha> g x) "
-      using B2 by blast
-    also have "... = \<alpha> (g \<cdot> h \<cdot> (inv g) \<cdot> g) x"
-      using A0 A1 B5 comp_simp by presburger
-    also have "... = \<alpha> (g \<cdot> h) x"
-      by (simp add: A1 B3 asc m_closed)
-    also have "... = \<alpha> g (\<alpha> h x)"
-      using A0 A1 B3 comp_simp by presburger
-    also have "... = \<alpha> g x"
-      using B4 by presburger
-    finally obtain B6:"\<alpha> s (\<alpha> g x) = \<alpha> g x"
-      by blast
-    show "s \<in>  stabilizer {\<alpha> g x}" 
-      apply(rule stabilizer_memI)
-      apply (simp add:P0)
-      using B2 B5 apply blast
-      using B6 by fastforce
+    fix k assume A2:"k \<in> ?lhs"
+    then have B2:"(inv g) \<cdot> k \<cdot> g \<in> stabilizer {x}"
+      using A0 A1 stabilizer_conj2 by blast
+    then have B3:"g \<cdot> ((inv g) \<cdot> k \<cdot> g) \<cdot> (inv g) = k"
+      using A1 A2 P0 asc inv_rcancel invertible m_closed r_inv_simp rid singleton_stabilizer_memD unit_inv_closed
+      by presburger
+    then show "k \<in> ?rhs"
+      using B2 by force
   qed
-  have B2:"x = \<alpha> (inv g) (\<alpha> g x)"
-    by (metis A0 A1 actsE211 comp_simp idin inv2_prod inv_ident iso_inj l_inv_simp rid)
-  have B3:"{inv g \<cdot> h \<cdot> g|h. h \<in> stabilizer {\<alpha> g x}} \<subseteq> stabilizer {x}"
-  proof
-    fix k assume A2:"k \<in> {inv g \<cdot> h \<cdot> g|h. h \<in> stabilizer {\<alpha> g x}}" 
-    then obtain h where B4:"h \<in> stabilizer {\<alpha> g x}" and B5:"k = inv g \<cdot> h \<cdot> g" 
-      by blast
-    then obtain B6:"h \<in> G" and B7:"k \<in> G" and B8:"\<alpha> h (\<alpha> g x) = \<alpha> g x"
-      using P0 A1 m_closed singleton_stabilizer_memD  subgroupE1(3) top_subgroup by presburger
-    have "\<alpha> k x = \<alpha> (inv g \<cdot> h \<cdot> g) x"
-      using B5 by blast
-    also have "... = \<alpha> (inv g) (\<alpha> h (\<alpha> g x))"
-      by (metis A0 A1 B6 P0 comp_simp idin inv2_prod inv_ident m_closed rid)
-    also have "... = \<alpha> (inv g) (\<alpha> g x)"
-      using B8 by presburger
-    also have "... = x"
-      using B2 by presburger
-    finally have "\<alpha> k x = x"
-      by blast
-    then show "k \<in> stabilizer {x}"
-      using A0 B7 singleton_stabilizer_memI by blast
-  qed
-  have B3:"stabilizer {\<alpha> g x} \<subseteq> {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}} "
-  proof
-    fix s assume A2:"s \<in> stabilizer {\<alpha> g x}"
-    then obtain B4:"s \<in> G" and B5:"\<alpha> s (\<alpha> g x) = \<alpha> g x"
-      using P0 singleton_stabilizer_memD[of "\<alpha> g x" s] by blast 
-    have B6:"inv g \<cdot> s \<cdot> g \<in> stabilizer {x}"
-      using A2 B3 by blast
-    have B7:"s = g \<cdot> (inv g \<cdot> s \<cdot> g) \<cdot> (inv g)"
-      by (metis A1 B4 asc inv2_prod inv_lsolve1 inv_rsolve1 m_closed)
-    then show "s \<in> {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
-      using B6 by auto
-  qed
-  show "stabilizer {\<alpha> g x} = {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
-    using B0 B3 by auto
+  finally show "stabilizer {\<alpha> g x} = {g \<cdot> h \<cdot> (inv g)|h. h \<in> stabilizer {x}}"
+    by blast
 qed
     
 end
