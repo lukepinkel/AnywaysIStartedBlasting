@@ -7337,6 +7337,8 @@ end
 subsection \<open>Group Actions\<close>
 context monoid_operating_on_set
 begin
+definition "orbit \<equiv> (\<lambda>a \<in> E. {y \<in> E. \<exists>m \<in> M. y=\<alpha> m a})"
+
 definition "transporter \<equiv> (\<lambda>A \<in> Pow E. \<lambda>B \<in> Pow E. {m \<in> M. (\<alpha> m)`A \<subseteq> B})"
 definition "strict_transporter \<equiv> (\<lambda>A \<in> Pow E. \<lambda>B \<in> Pow E. {m \<in> M. (\<alpha> m)`A = B})"
 
@@ -7974,7 +7976,63 @@ lemma conj_equiv_rel:"is_eqrel E conjugacy_rel"
   apply (simp add: conj_refl_on)
   apply (simp add: conj_rel_sym2)
   by (simp add: conj_rel_trans2)
- 
+
+lemma orbit_mem:
+  assumes A0:"y \<in> orbit a" and A1:"a \<in> E"
+  obtains g where "g \<in> G" and "y = \<alpha> g a"
+  using A0 A1 orbit_def by auto
+
+lemma orb_partition:
+  assumes A0:"a \<in> E" and A1:"b \<in> E" and A2:"orbit a \<inter> orbit b \<noteq> {}"
+  shows "orbit a = orbit b"
+proof-
+  obtain c where B0:"c \<in> orbit a \<inter> orbit b"
+    using A2 by blast
+  then obtain B1:"c \<in> orbit a" and B2:"c \<in> orbit b"
+    by blast
+  then obtain ga gb where B3:"ga \<in> G" and B4:"gb \<in> G" and B5:"c = \<alpha> ga a" and B6:"c = \<alpha> gb b"
+    by (meson A0 A1 orbit_mem)
+  then have B7:"a = \<alpha> (inv ga) c"
+    by (simp add: A0 act_inv_comp(1))
+  also have B8:"... = \<alpha> (inv ga) (\<alpha> gb b)"
+    using B6 by blast
+  also have B9:"... = \<alpha> ((inv ga) \<cdot> gb) b"
+    using A1 B3 B4 comp_simp invertible unit_inv_closed by presburger
+  then have B10:"a = \<alpha> ((inv ga) \<cdot> gb) b"
+    using calculation by blast
+  have B11:"b = \<alpha> (inv gb) c"
+    using A1 B4 B6 act_inv_comp(1) by auto
+  also have B12:"... = \<alpha> (inv gb) (\<alpha> ga a)"
+    using B5 by blast
+  also have B13:"... = \<alpha> ((inv gb) \<cdot> ga) a"
+    using A0 B3 B4 comp_simp invertible unit_inv_closed by presburger
+  have B14:"b = \<alpha> ((inv gb) \<cdot> ga) a"
+    using B11 B13 B5 by blast
+  have B15:"\<And>x. x \<in> orbit a \<Longrightarrow> x \<in> orbit b"
+  proof-
+    fix x assume A3:"x \<in> orbit a"
+    then obtain gx where "gx \<in> G" and "x = \<alpha> gx a"
+      using A0 orbit_mem by blast
+    then obtain "x = \<alpha> (gx \<cdot> ((inv ga) \<cdot> gb)) b" and "(gx \<cdot> ((inv ga) \<cdot> gb)) \<in> G"
+      using A1 B10 B3 B4 comp_simp invertible m_closed unit_inv_closed by presburger
+    then show "x \<in> orbit b"
+      using A1 orbit_def by auto
+  qed
+  have B16:"\<And>x. x \<in> orbit b \<Longrightarrow> x \<in> orbit a"
+  proof-
+    fix x assume A3:"x \<in> orbit b"
+    then obtain gx where "gx \<in> G" and "x = \<alpha> gx b"
+      using A1 orbit_mem by blast
+    then obtain "x = \<alpha> (gx \<cdot> ((inv gb) \<cdot> ga)) a" and "(gx \<cdot> ((inv gb) \<cdot> ga)) \<in> G"
+      using A0 B14 B3 B4 comp_simp invertible m_closed unit_inv_closed by presburger
+    then show "x \<in> orbit a"
+      using A0 orbit_def by auto
+  qed
+  then show ?thesis
+    using B15 by blast
+qed
+    
+
 end
 
 locale group_acting_on_self=group G "(\<cdot>)" e for G and law (infixl "\<cdot>" 70) and e
