@@ -7554,6 +7554,39 @@ lemma singleton_stabilizer_memD:"x \<in> E \<Longrightarrow> m \<in> stabilizer 
 lemma singleton_stabilizer_memD1:"x \<in> E \<Longrightarrow> m \<in> stabilizer {x} \<Longrightarrow>  \<alpha> m x  = x"  unfolding stabilizer_def by(auto)
 lemma singleton_stabilizer_memD2:"x \<in> E \<Longrightarrow> m \<in> stabilizer {x} \<Longrightarrow> m \<in> M"  unfolding stabilizer_def by(auto)
 
+lemma orbit_mem:
+  assumes A0:"y \<in> orbit a" and A1:"a \<in> E"
+  obtains g where "g \<in> M" and "y = \<alpha> g a"
+  using A0 A1 orbit_def by auto
+
+lemma orbit_memI:"\<lbrakk>a \<in> E; g \<in> M; y = \<alpha> g a\<rbrakk> \<Longrightarrow> y \<in> orbit a"
+  using orbit_def by auto
+
+lemma orbit_reach_around:
+  assumes A0:"a \<in> E" and A1:"b \<in> orbit a"
+  shows "orbit b \<subseteq> orbit a"
+proof-
+  obtain mb where B0:"mb \<in> M" and B1:"b = \<alpha> mb a"
+    using A0 A1 orbit_mem by blast
+  then have B2:"b \<in> E"
+    using A0 by blast
+  show "orbit b \<subseteq> orbit a"
+  proof
+    fix x assume A2:"x \<in> orbit b"
+    obtain B3:"x \<in> E"
+      using A2 B2 orbit_mem by auto
+    then obtain m where B4:"m \<in> M" and B5:"x = \<alpha> m b"
+      using A2 B2 orbit_mem by blast
+    have B6:"x = \<alpha> m (\<alpha> mb a)"
+      using B1 B5 by blast
+    then have B7:"x = \<alpha> (m \<cdot> mb) a"
+      using A0 B0 B1 B4 B5 comp_simp by presburger
+    then show "x \<in> orbit a"
+      using A0 B0 B4 m_closed orbit_memI by presburger
+  qed
+qed
+  
+
 end
 
 locale transformations_notation=fixes X::"'a set"
@@ -7977,10 +8010,7 @@ lemma conj_equiv_rel:"is_eqrel E conjugacy_rel"
   apply (simp add: conj_rel_sym2)
   by (simp add: conj_rel_trans2)
 
-lemma orbit_mem:
-  assumes A0:"y \<in> orbit a" and A1:"a \<in> E"
-  obtains g where "g \<in> G" and "y = \<alpha> g a"
-  using A0 A1 orbit_def by auto
+
 
 lemma orb_partition:
   assumes A0:"a \<in> E" and A1:"b \<in> E" and A2:"orbit a \<inter> orbit b \<noteq> {}"
