@@ -7367,6 +7367,11 @@ lemma fixer_sub_stab:"fixer A \<subseteq> stabilizer A"
 
 lemma stabilizer_memI:"\<lbrakk>A \<in> Pow E; m \<in> M; (\<And>a. a \<in> A \<Longrightarrow> \<alpha> m a \<in> A)\<rbrakk> \<Longrightarrow> m \<in> stabilizer A"  unfolding stabilizer_def by(auto)
 
+lemma stabilizer_memD1:
+  assumes A0:"A \<in> Pow E" and A1:"m \<in> stabilizer A"
+  obtains "m \<in> M" and "(\<And>a. a \<in> A \<Longrightarrow> \<alpha> m a \<in> A)"
+  using A0 A1 stabilizer_def by force
+
 lemma singleton_stabilizer_memE:
   assumes A0:"x \<in> E" and A1:"m \<in> stabilizer {x}"
   obtains "m \<in> M" and "\<alpha> m x = x"
@@ -7585,9 +7590,101 @@ proof-
       using A0 B0 B4 m_closed orbit_memI by presburger
   qed
 qed
-  
+ 
+end
+
+(*lowkey cooked*)
+locale equivariant_morphism=
+  set_morphism f X Y+
+  dom:monoid_operating_on_set M "(\<cdot>)" e X \<alpha>  +
+  cod:monoid_operating_on_set M "(\<cdot>)" d Y \<beta>
+  for M and \<alpha> and \<beta> and f and X and domain_law (infixl "\<cdot>" 70) and Y and  e and d+
+  assumes equivar:"\<lbrakk>x \<in> X; m \<in> M\<rbrakk> \<Longrightarrow> f (\<alpha> m x) =  \<beta> m (f x) "
+begin
+
+lemma subs_stabilizers:
+  assumes A0:"E \<in> Pow X"
+  shows "dom.stabilizer E \<subseteq> cod.stabilizer (f`E)"
+proof-
+  have B0:"f ` E \<in> Pow Y"
+    using A0 by auto
+  show "dom.stabilizer E \<subseteq> cod.stabilizer (f`E)"
+  proof
+    fix m assume A1:"m \<in> dom.stabilizer E"
+    then obtain B1:"\<And>x. x \<in> E \<Longrightarrow> \<alpha> m x \<in> E" and B2:"m \<in> M"
+      using A1 dom.stabilizer_memD1[of E] A0 by auto
+    have "\<And>y. y \<in> f ` E \<Longrightarrow> \<beta> m y \<in> f ` E"
+    proof-
+      fix y assume A2:"y \<in> f`E"
+      then obtain x where B3:"x \<in> E" and B4:"y = f x" and B5:"x \<in> X"
+        using assms by blast    
+      then have B6:"\<beta> m y = \<beta> m (f x)"
+        by auto
+      also have B7:"... = f (\<alpha> m x)"
+        using B2 B5 equivar by presburger
+      also have B8:"... \<in> f`E"
+        using B1 B3 by blast
+      finally show "\<beta> m y \<in> f ` E"
+        by blast
+    qed
+    then show "m \<in> cod.stabilizer (f`E)"
+      using  cod.stabilizer_memI
+      using B0 B2 by presburger
+  qed
+qed
+
+lemma preserved_stabilizers:
+  assumes A0:"E \<in> Pow X" and A1:"inj_on f X"
+  shows "dom.stabilizer E = cod.stabilizer (f`E)"
+proof-
+  have P2:"f`E \<in> Pow Y"
+    using A0 by blast
+  have P0:"dom.stabilizer E \<subseteq> cod.stabilizer (f`E)"
+  proof
+    fix m assume A2:"m \<in> dom.stabilizer E"
+    then obtain B0:"m \<in> M" and  B1:"\<And>x. x \<in> E \<Longrightarrow> \<alpha> m x \<in> E"
+      unfolding dom.stabilizer_def using A0 by fastforce
+    have B3:"\<And>y. y \<in> f`E \<Longrightarrow> \<beta> m y \<in> f`E"
+    proof-
+      fix y assume A3:"y \<in> f`E"
+      then obtain x where B4:"x \<in> E" and B5:"y = f x"
+        by blast
+      then obtain B6:"\<alpha> m x \<in> E" and "f (\<alpha> m x) = \<beta> m y"
+        using A0 B0 B1 equivar by auto
+      then show "\<beta> m y \<in> f`E"
+        by (simp add: rev_image_eqI)
+    qed
+    then show "m \<in> cod.stabilizer (f`E)"
+      using B0 P2 cod.stabilizer_memI by presburger
+  qed
+  have P1:"cod.stabilizer (f`E) \<subseteq> dom.stabilizer E"
+  proof
+    fix m assume A2:"m \<in> cod.stabilizer (f`E)"
+    then obtain B0:"m \<in> M"
+      using P2 cod.b151prop11(11) by blast
+    have B1:"\<And>a. a\<in> E \<Longrightarrow> \<alpha> m a \<in> E"
+    proof-
+      fix a assume A3:"a \<in> E"
+      have B1:"\<beta> m (f a) \<in> f`E"
+        by (meson A2 A3 P2 cod.stabilizer_memD1 imageI)
+      have B2:"\<beta> m (f a) = f (\<alpha> m a)"
+        by (metis A0 A3 B0 Pow_iff equivar subsetD)
+      then obtain B3:"\<alpha> m a \<in> X" and B4:"f (\<alpha> m a) \<in> (f`E)" and B5:"f (\<alpha> m a) \<in> Y"
+        by (metis A0 A3 B0 B1 P2 Pow_iff dom.actsE211 subsetD)
+      then show "\<alpha> m a \<in> E"
+        by (meson A0 A1 Pow_iff bij_betw_def inj_on_image_mem_iff)
+    qed
+    show  "m \<in> dom.stabilizer E"
+      using dom.stabilizer_memI A0 B0 B1 by blast
+  qed
+  show ?thesis
+    using P0 P1 by blast
+qed
+
+    
 
 end
+
 
 locale transformations_notation=fixes X::"'a set"
 begin
@@ -8782,7 +8879,7 @@ lemma extendo_peen2:
   shows "frm.map_frm (g \<circ> r) y= frm.map_frm id y"
   using A0 A1 free_magma_frm_set[of _ Y] frm.map_cong0[of y "g \<circ> r" "id"] by blast
 
-lemma is_hom1:"\<lbrakk>x \<in> dom.M;x' \<in> dom.M\<rbrakk> \<Longrightarrow> (M(f) x )\<star> (M(f) x') = M(f) (x \<star> x')"
+lemma is_hom1:"\<lbrakk>x \<in> dom.M;x' \<in> dom.M\<rbrakk> \<Longrightarrow> (M(f) x ) \<star> (M(f) x') = M(f) (x \<star> x')"
   by simp
 
 lemma is_hom2:"comm M(f) dom.M Op cod.M Op" 
