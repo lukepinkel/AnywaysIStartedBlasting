@@ -7739,6 +7739,10 @@ end
 
 locale symmetric_group=transformations_notation X+subgroup G "Units" "compose X" "Id X"  for G and X
 begin
+
+definition supp::"('a \<Rightarrow> 'a) \<Rightarrow> 'a set" where
+  "supp \<sigma> \<equiv> {x \<in> X. \<sigma> x \<noteq> x}"
+
 lemma closed [intro, simp]:
   "\<lbrakk> \<sigma> \<in> G; x \<in> X \<rbrakk> \<Longrightarrow> \<sigma> x \<in> X"
   using bij_betwE by blast
@@ -7749,6 +7753,132 @@ lemma undef[intro, simp]:
 
 lemma inv_set_inv:"g \<in> G \<Longrightarrow> inv g = (rinv g X X)"
   using inv_eq_inv mem_UnitsD sub_mem by presburger
+
+lemma elem_bij:"\<sigma> \<in> G \<Longrightarrow> bij_betw \<sigma> X X"
+  by simp
+
+lemma elem_inj:"\<sigma> \<in> G \<Longrightarrow> inj_on \<sigma> X"
+  using bij_betw_def elem_bij by blast
+
+lemma elem_inj_app_contra:
+  assumes A0:"\<sigma> \<in> G" and A1:"x1 \<in> X" and A2:"x2 \<in> X" and A3:"x1 \<noteq> x2"
+  shows "\<sigma> x1 \<noteq> \<sigma> x2"
+proof-
+  have B0:"inj_on \<sigma> X"
+    by (simp add: A0 elem_inj)
+  then show ?thesis
+    by (simp add: A1 A2 A3 inj_on_contraD)
+qed
+
+lemma supp_memI:"x \<in> X \<Longrightarrow> \<sigma> x \<noteq> x \<Longrightarrow> x \<in> supp \<sigma>" 
+  by(simp add:supp_def)
+
+lemma supp_memD:
+  assumes "x \<in> supp \<sigma>"
+  obtains "x \<in> X" and "\<sigma> x \<noteq> x"
+  using assms supp_def by force
+
+lemma supp_memD2:
+  assumes "x \<in> X-supp \<sigma>"
+  obtains "x \<in> X" and "\<sigma> x = x"
+  using assms supp_def by force
+
+lemma supp_closed:
+  assumes A0:"\<sigma> \<in> G" and A1:"x \<in> supp \<sigma>"
+  shows "\<sigma> x \<in> supp \<sigma>"
+proof-
+  obtain B0:"\<sigma> x \<in> X" and "\<sigma> x \<noteq> x"
+    using A0 A1 supp_memD by auto
+  have B0:"\<sigma> x \<in> X"
+    using A0 A1 supp_memD by auto
+  have B1:"\<sigma> (\<sigma> x) \<noteq> (\<sigma> x)"
+    by (meson A0 A1 B0 elem_inj_app_contra supp_memD)
+  then show ?thesis
+    using B0 supp_memI by blast
+qed
+
+
+lemma disjoint_cycle_perm1:
+  assumes A0:"\<sigma> \<in> G" and A1:"\<tau> \<in> G" and A2:"x \<in> (X-(supp \<sigma> \<union> supp \<tau>))"
+  shows "(compose X \<sigma> \<tau> x) = (compose X \<tau> \<sigma> x)"
+proof-
+  obtain "x \<in> X-supp \<sigma> \<inter> X-supp \<tau>"
+    using A2 by fastforce
+  then obtain B1:"x \<in> X" and B2:"\<sigma> x = x" and B3:"\<tau> x = x"
+    by (simp add: supp_def)
+  have "compose X \<sigma> \<tau> x = \<tau> x"
+    by (simp add: B1 B2 B3 comp_eq) 
+  also have "... = x"
+    by (simp add: B3)
+  also have "... = \<sigma> x"
+    by (simp add: B2)
+  also have "... = compose X \<tau> \<sigma> x"
+    by (simp add: B1 B2 B3 comp_eq)
+  finally show "(compose X \<sigma> \<tau> x) = (compose X \<tau> \<sigma> x)"
+    by blast
+qed
+
+lemma disjoint_cycle_perm2:
+  assumes A0:"\<sigma> \<in> G" and A1:"\<tau> \<in> G" and A2:"supp \<sigma> \<inter> supp \<tau> = {}" and A3:" x \<in> supp \<sigma>"
+  shows "(\<tau> x) = x \<and> \<sigma> x \<in> supp \<sigma>"
+  using A0 A2 A3 supp_closed supp_def by auto
+
+lemma disjoint_cycle_perm3:
+  assumes A0:"\<sigma> \<in> G" and A1:"\<tau> \<in> G" and A2:"supp \<sigma> \<inter> supp \<tau> = {}" and A3:" x \<in> supp \<sigma>"
+  shows "(compose X \<sigma> \<tau> x) = (compose X \<tau> \<sigma> x)"
+proof-
+  obtain B0:"x \<in> X" and B1:"\<tau> x = x" and B2:"\<sigma> x \<in> supp \<sigma>"
+    using supp_memD disjoint_cycle_perm2[of \<sigma> \<tau> x] A0 A1 A2 A3 by blast
+  then obtain B3:"\<sigma> x \<notin> supp \<tau>" and B4:"\<tau> (\<sigma> x) = \<sigma> x"
+    using A0 A1 A2 disjoint_cycle_perm2 by blast
+  have B5:"(compose X \<sigma> \<tau> x) = \<sigma> (\<tau> x)"
+    by (simp add: B0 comp_eq)
+  also have B6:"... = \<sigma> x"
+    by (simp add: B1)
+  also have B7:"... = \<tau> (\<sigma> x)"
+    using B4 by force
+  also have B8:"... = (compose X \<tau> \<sigma> x)"
+    by (simp add: B0 comp_eq)
+  finally show ?thesis
+    by auto
+qed
+
+lemma ligma:
+  assumes A0:"\<sigma> \<in> G" and A1:"\<tau> \<in> G" and A2:"supp \<sigma> \<inter> supp \<tau> = {}"
+  shows "(compose X \<sigma> \<tau>) = (compose X \<tau> \<sigma>)"
+proof(rule fun_eqI)
+  show "compose X \<sigma> \<tau> \<in> set_mor X X"
+    using A0 A1 mem_UnitsD symmetric.m_closed by blast
+  show "compose X \<tau> \<sigma> \<in> set_mor X X"
+    using A0 A1 mem_UnitsD symmetric.m_closed by blast
+  show "\<And>x. x \<in> X \<Longrightarrow> compose X \<sigma> \<tau> x = compose X \<tau> \<sigma> x"
+  proof-
+    fix x assume A3:"x \<in>X"
+    show "compose X \<sigma> \<tau> x = compose X \<tau> \<sigma> x"
+    proof(cases "x \<in> (X-(supp \<sigma> \<union> supp \<tau>))")
+      case True
+      then show ?thesis
+        using A0 A1 disjoint_cycle_perm1 by blast 
+    next
+      case False
+      then obtain A4:"x \<in> supp \<sigma> \<or> x \<in> supp \<tau>"
+        using A3 by blast 
+      then show ?thesis 
+      proof(cases "x \<in> supp \<sigma>")
+        case True
+        then show ?thesis
+          using A0 A1 A2 disjoint_cycle_perm3 by blast
+      next
+        case False
+        then obtain "x \<in> supp \<tau>"
+          using A4 by auto
+        then show ?thesis
+          by (simp add: A0 A1 A2 Int_commute disjoint_cycle_perm3)
+      qed
+    qed
+  qed
+qed
+
 
 end
 
@@ -9543,7 +9673,7 @@ lemma he_disconnected:
   A4:"w \<noteq> y"
   shows cumtown:"w=x"
 proof-
-  obtain B0:"magma (free_magma X) Op"
+  obtain weezer:"magma (free_magma X) Op"
     by (simp add: Mx_def My_def magma.cl_def magma.intro)
   have B7:"w \<notin> {y}"
     by (simp add: A4)
@@ -9551,9 +9681,9 @@ proof-
   proof(rule ccontr)
     assume C0:"w \<notin> {x}"
     then obtain a b where C1:"a \<in> Mx" and C2:"b \<in> Mx" and C3:"w = a \<star> b"
-      by (metis A2 B0 Int_iff Mx_def generated_magma.simps magma.cl_def)
+      by (metis A2 weezer Int_iff Mx_def generated_magma.simps magma.cl_def)
     obtain a' b' where C4:"a' \<in> My" and C5:"b' \<in> My" and C6:"w = a' \<star> b'"
-      by (metis A2 B0 B7 Int_iff My_def generated_magma.simps magma.cl_def)
+      by (metis A2 weezer B7 Int_iff My_def generated_magma.simps magma.cl_def)
     then obtain C7:"a=a'" and C8:"b=b'"
       by (simp add: C3)
     then obtain C9:"a \<in> Mx \<inter> My" and "l a < l w"
