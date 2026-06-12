@@ -4885,7 +4885,51 @@ lemma set_inv_memI2:"H \<subseteq> X \<Longrightarrow> h \<in> H \<Longrightarro
 
 lemma inv_prod_l_coset1:
   "\<lbrakk>x \<in> X;y \<in> X;H \<subseteq> X;l_coset (inv x \<cdot> y) H = H\<rbrakk> \<Longrightarrow> l_coset x H = l_coset y H"
-  by (metis inv_rcancel invertible l_coset_assoc m_closed unit_inv_closed) 
+proof-
+  assume A0:"x \<in> X" and A1:"y \<in> X" and A2:"H \<subseteq> X" and A3:"l_coset (inv x \<cdot> y) H = H" 
+  show "l_coset x H = l_coset y H"
+  proof
+    show "l_coset x H \<subseteq> l_coset y H"
+    proof
+      fix a assume A4:"a \<in> l_coset x H"
+      then obtain h where B0:"h \<in> H" and B1:"a=x \<cdot> h"
+        by blast
+      then obtain g where B2:"g \<in> H" and B3:"h = (inv x \<cdot> y) \<cdot> g"
+        using A3 by blast
+      then have B4:"a = x \<cdot> h"
+        using B1 by blast
+      also have "... = x \<cdot> ((inv x \<cdot> y) \<cdot> g)"
+        by (simp add: B3)
+      also have "... = (x \<cdot> (inv x \<cdot> y)) \<cdot> g"
+        using A0 A1 A2 B2 asc m_closed by auto
+      also have "... = y \<cdot> g"
+        by (simp add: A0 A1 inv_rcancel)
+      then show "a \<in> l_coset y H"
+        using B2 calculation l_coset_memI1 by blast
+    qed
+    show "l_coset y H \<subseteq> l_coset x H"
+    proof
+      fix a assume A4:"a \<in> l_coset y H"
+      then obtain h where B0:"h \<in> H" and B1:"a = y \<cdot> h"
+        by blast
+      then obtain g where B2:"g \<in> H" and B3:"g = (inv x \<cdot> y) \<cdot> h"
+        using A3 by blast
+      then have "a = y \<cdot> h"
+        using B1 by blast
+      also have "... = (x \<cdot> (inv x \<cdot> y)) \<cdot> h"
+        by (simp add: A0 A1 inv_rcancel)
+      also have "... = x \<cdot> ((inv x \<cdot> y) \<cdot> h)"
+        using A0 A1 A2 B0 asc m_closed by auto
+      also have "... = x \<cdot> g"
+        using B3 by force
+      then show "a \<in> l_coset x H"
+        using B2 calculation l_coset_memI1 by blast
+    qed    
+  qed
+qed
+  
+  
+      
 
 lemma inv_prod_r_coset1:
   "\<lbrakk>x \<in> X;y \<in> X;H \<subseteq> X;r_coset H (x \<cdot> inv y) = H\<rbrakk> \<Longrightarrow> r_coset H x = r_coset H y"
