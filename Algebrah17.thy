@@ -4883,6 +4883,35 @@ lemma set_inv_iso:"A \<subseteq> B \<Longrightarrow> B \<subseteq> X \<Longright
 lemma set_inv_memI1:"H \<subseteq> X \<Longrightarrow> (\<exists>h \<in> H. x = inv h) \<Longrightarrow> x \<in> set_inv H"  by (simp add: set_inv_def)
 lemma set_inv_memI2:"H \<subseteq> X \<Longrightarrow> h \<in> H \<Longrightarrow> x = inv h \<Longrightarrow> x \<in> set_inv H"  using set_inv_memI1 by blast
 
+
+lemma l_coset_stab:
+  assumes A0:"a \<in> X" and A1:"b \<in> X" and A2:"l_coset b H = H" and A3:"H \<subseteq> X"
+  shows "l_coset (a \<cdot> b) H = l_coset a H"
+proof
+  show "l_coset (a \<cdot> b) H \<subseteq> l_coset a H"
+  proof
+    fix x assume A4:"x \<in> l_coset (a \<cdot> b) H"
+    then obtain h where "h \<in> H" and "x = (a \<cdot> b) \<cdot> h"
+      by blast
+    then obtain "x = a \<cdot> (b \<cdot> h)" and "b \<cdot> h \<in> H"
+      using A0 A1 A2 A3 asc by blast
+    then show "x \<in> l_coset a H"
+      by blast
+  qed
+  show "l_coset a H \<subseteq> l_coset (a \<cdot> b) H"
+  proof
+    fix x assume A4:"x \<in> l_coset a H"
+    then obtain h where "h \<in> H" and B0:"x = a \<cdot> h"
+      by blast
+    then obtain g where B1:"g \<in> H" and "h = b \<cdot> g"
+      using A2 by blast
+    then obtain "x = a \<cdot> (b \<cdot> g)" and "x = (a \<cdot> b) \<cdot> g"
+      using A0 A1 A3 B0 asc by auto
+    then show "x \<in> l_coset (a \<cdot> b) H"
+      using B1 l_coset_memI1 by blast
+  qed
+qed
+
 lemma inv_prod_l_coset1:
   "\<lbrakk>x \<in> X;y \<in> X;H \<subseteq> X;l_coset (inv x \<cdot> y) H = H\<rbrakk> \<Longrightarrow> l_coset x H = l_coset y H"
 proof-
