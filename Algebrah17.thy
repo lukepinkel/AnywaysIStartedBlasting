@@ -129,7 +129,7 @@ lemma surjE4:assumes "surj f X Y" and "y \<in> Y"
   obtains x where "x \<in> X" and "f x =y"
   using assms surjE3[of f X Y y] by auto
 
-lemma surjE5:"surj f X Y \<Longrightarrow> X \<noteq> {}\<Longrightarrow>Y \<noteq> {} \<Longrightarrow> (\<And>x y. y \<in> Y \<Longrightarrow>  y = f x \<Longrightarrow> P) \<Longrightarrow> P"
+lemma surjE5:"surj f X Y \<Longrightarrow> X \<noteq> {} \<Longrightarrow> (\<And>x y. y \<in> Y \<Longrightarrow>  y = f x \<Longrightarrow> P) \<Longrightarrow> P"
   using surjE1[of f X Y] by blast
 
 lemma surj_on_inverseI: "(\<And>y. y \<in> Y \<Longrightarrow> f (s y) = y) \<Longrightarrow> surj f (s`Y) Y"
@@ -1956,7 +1956,7 @@ lemma mapping_compatible_with_equivalence:"mapping_compatible_with_equivalence f
 
 
 end
-
+subsection \<open>product  equivalence\<close>
 locale product_equivalence=eqr1:equivalence_relation X1 R1+
                            eqr2:equivalence_relation X2 R2
                            for X1 and X2 and R1 and R2
@@ -2135,6 +2135,126 @@ lemma prod_equiv_rel_mem2:"t \<in> X/R \<longleftrightarrow> (\<exists>t1 \<in> 
 
 end
 
+subsection \<open>preimage  equivalence\<close>
+
+locale preimage_equivalence=set_morphism f X Y+ cod_eqr:equivalence_relation Y S
+  for f and X and Y and S
+begin
+definition inducing_function ("pf")  where "inducing_function \<equiv> compose X cod_eqr.p f"
+
+lemma inducing_function1:"set_morphism pf X (Y/S)"
+  apply(rule set_morphismI1)
+  using hom2[of f X Y cod_eqr.p "Y/S"]
+  by (simp add: cod_eqr.proj_hom2 inducing_function_def mem_hom) 
+
+
+definition R where "R \<equiv>ker_pair X pf"
+
+lemma inducing_function2:"equivalence_relation X R "
+  unfolding R_def ker_pair_def 
+  apply(unfold_locales) 
+     apply(simp_all)
+  by blast
+
+sublocale dom_eqr:equivalence_relation X R
+  by (simp add: inducing_function2)
+
+lemma tmp1:" (x, x') \<in> R \<Longrightarrow> (f x, f x') \<in> S"
+proof-
+  assume "(x, x') \<in> R"
+  then obtain A1:"pf x = pf x'" and A2:"x \<in> X" and A3:"x' \<in> X"
+    unfolding R_def ker_pair_def by auto
+  then have  A4:"cod_eqr.p (f x) = cod_eqr.p (f x')"
+    by (simp add: compose_def inducing_function_def)
+  then show "(f x, f x') \<in> S"
+    by (simp add: A2 A3 cod_eqr.eq_class0)
+qed
+    
+lemma tmp2:"\<lbrakk>(x, x') \<in> X \<times> X;(f x, f x') \<in> S\<rbrakk> \<Longrightarrow> (x, x') \<in> R"
+proof-
+  assume A0:"(x, x') \<in> X \<times> X" and A1:"(f x, f x') \<in> S"
+  obtain A2:"x \<in> X" and A3:"x' \<in> X" and A4:"cod_eqr.p (f x) = cod_eqr.p (f x')"
+    using A0 A1 cod_eqr.p_eq1 by blast
+  then obtain A5:"pf x= pf x'"
+    by (simp add: comp_eq inducing_function_def)
+  then show "(x,x')\<in>R"
+    by (simp add: A2 A3 R_def ker_pair_def)
+qed
+
+lemma tmp3:"X/R = {X \<inter> (vimage f s)|s. s \<in> Y/S \<and> s \<inter> f`X \<noteq> {}}" (is "?lhs = ?rhs")
+proof
+  show "?lhs \<subseteq>?rhs"
+  proof
+    fix t assume A0:"t \<in> X/R"
+    then obtain x where B0:"x \<in> X" and B1:"t = dom_eqr.p x"
+      using dom_eqr.elem_ex6[of t] by metis
+    let ?s=" (cod_eqr.p (f x))"
+    have B2:"t = X \<inter> (vimage f) ?s"
+    proof
+      show "t \<subseteq> X \<inter> (vimage f) ?s"
+      proof
+        fix x' assume A1:"x' \<in> t"
+        have B2:"x' \<in>  vimage f ?s"
+          using A1 B0 B1 cod_eqr.p_I1 dom_eqr.p_D1 tmp1 by blast
+        also have B3:"x' \<in> X"
+          using A0 A1 dom_eqr.p_mem_closed by blast
+        then show "x' \<in> X \<inter> (vimage f) ?s"
+          using calculation by auto
+      qed
+      show "X \<inter> vimage f ?s \<subseteq> t"
+      proof
+        fix x' assume A1:"x' \<in> X \<inter> vimage f ?s"
+        then obtain B3:"x' \<in> X" and B4:"f x' \<in> ?s"
+          by simp
+        then show "x' \<in> t"
+          by (simp add: B0 B1 cod_eqr.p_D1 dom_eqr.p_I1 tmp2)
+      qed
+    qed
+    have B3:"?s \<in> Y/S"
+      by (simp add: B0 cod_eqr.p_in_quotient1)
+    have B4:"?s \<inter> f`X \<noteq> {}"
+      using B0 cod_eqr.p_self by blast
+    show "t \<in> ?rhs"
+      using B2 B3 B4 by blast
+  qed
+  show "?rhs \<subseteq> ?lhs"
+  proof
+    fix t assume A0:"t \<in> ?rhs"
+    then obtain s where B0:"s \<in> Y/S" and B1:"s \<inter> f`X \<noteq> {}" and B2:"t=X \<inter> (vimage f s)"
+      by blast
+    then obtain x where B3:"x \<in> X" and B4:"s = cod_eqr.p (f x)"
+      using cod_eqr.equiv_class_mem2  by blast
+    then obtain  B5:"s = pf x"
+      by (simp add: comp_eq inducing_function_def) 
+    have B6:"f x \<in> s"
+      by (simp add: B3 B4 cod_eqr.p_self)
+    have B7: "t = dom_eqr.p x"
+    proof
+      show "t \<subseteq> dom_eqr.p x"
+      proof
+        fix x' assume A1:"x' \<in> t"
+        then show "x' \<in> dom_eqr.p x"
+          by (simp add: B2 B3 B4 cod_eqr.p_simp dom_eqr.p_I1 tmp2)
+      qed
+      show "dom_eqr.p x \<subseteq> t"
+      proof
+        fix x' assume A1:"x' \<in> dom_eqr.p x"
+        then obtain "(x, x') \<in> R"
+          using B3 dom_eqr.p_D1 by blast
+        then show "x' \<in> t"
+          using B2 B4 cod_eqr.p_I1 tmp1 by auto
+      qed
+    qed
+    then show "t \<in> ?lhs"
+      by (simp add: B3 dom_eqr.p_in_quotient1)
+  qed
+qed
+  
+    
+    
+    
+
+end
 section Fold
 
 
@@ -5322,7 +5442,10 @@ sublocale monoid_epimorphism_factoring eqr.p f X "X/R" Y "(\<cdot>)" "(\<bullet>
 
 definition factor_map where "factor_map \<equiv> compose Y eqr.p (rinv f X Y)"
 
-definition "Q\<equiv> {(f x, f y)|x y. (x,y) \<in> R}"
+definition "Q \<equiv> {(f x, f y)|x y. (x,y) \<in> R}"
+
+lemma Q_subX:"Q \<subseteq> Y \<times> Y"
+  using Q_def by auto
 
 lemma Q_memE:assumes "(y1, y2)\<in>Q"
   obtains x1 x2 where "x1 \<in> X" and "x2 \<in> X" and "y1 = f x1" and "y2 = f x2" and "(x1, x2)\<in>R"
@@ -5330,8 +5453,7 @@ lemma Q_memE:assumes "(y1, y2)\<in>Q"
 
 lemma Q_refl_on:"refl_on Y Q"
   apply(rule refl_onI)
-  using Q_memE apply auto[1]
-  using Q_def eqr.ref map.sur by blast
+  using Q_memE Q_def eqr.ref map.sur by blast
 
 
 lemma Q_sym:"sym Q"
@@ -5351,8 +5473,8 @@ proof(rule transI)
     using Q_def y1 y3 by auto
 qed
 
-lemma q_eqr:"is_eqrel Y Q"
-  by (meson Q_refl_on Q_sym Q_trans is_eqrel_def refl_on_def)
+lemma q_eqr:"is_eqrel Y Q" 
+  using  is_eqrelI1[of Q Y] Q_refl_on Q_subX Q_sym Q_trans by auto
 
 lemma factor_maps_factors:"compose X (factor_map) f = eqr.p"
   using factor_map_def h_def h_eq3 by auto
@@ -7056,7 +7178,7 @@ proof -
   show "inj_on (\<lambda>x. x \<cdot> (b \<cdot> inv a)) (r_coset H b)"
     by (meson A1 B4 inj_onI r_cancel1 r_coset_sub_mem)
   show "inj_on (\<lambda>x. x \<cdot> (inv a \<cdot> b)) (r_coset H a)"
-    by (metis A0 A1 inj_on_multc inv_eq l_inv_ex m_closed r_coset_sub subset_inj_on)
+    by (metis A0 A1 inj_on_multc inj_on_subset invertible m_closed r_coset_sub unit_inv_closed)
 qed
  
 lemma coset_bij1: 
@@ -7143,16 +7265,32 @@ lemma id_in_l_sub_eq:"(e,e) \<in> l_sub_eq" by (simp add: l_sub_eq_def)
 lemma id_in_r_sub_eq:"(e,e) \<in> r_sub_eq" by (simp add: r_sub_eq_def)
 lemma l_sub_eq_mem:"x \<in> G \<Longrightarrow> (x,x)\<in> l_sub_eq" using coset_eq_iff(2) l_sub_eq_def by blast
 lemma r_sub_eq_mem:"x \<in> G \<Longrightarrow> (x,x)\<in> r_sub_eq" using coset_eq_iff(4) r_sub_eq_def by blast
-lemma l_sub_eq_refl:"refl_on G l_sub_eq" apply(simp add:refl_on_def l_sub_eq_def)  using id_mem by blast
-lemma r_sub_eq_refl:"refl_on G r_sub_eq" apply(simp add:refl_on_def r_sub_eq_def)  using id_mem by blast
-lemma l_sub_eq_sym:"sym l_sub_eq" unfolding l_sub_eq_def apply(auto simp add:sym_def) using coset_eq_iff(2) by blast
+
+lemma l_sub_eq_refl:"refl_on G l_sub_eq"
+  using l_sub_eq_mem refl_on_def by blast 
+
+lemma r_sub_eq_refl:"refl_on G r_sub_eq"
+  by (simp add: r_sub_eq_mem refl_on_def) 
+
+lemma l_sub_eq_refl2:"l_sub_eq \<subseteq> G \<times> G"
+  unfolding l_sub_eq_def by auto
+
+lemma r_sub_eq_refl2:"r_sub_eq \<subseteq> G \<times> G"
+  unfolding r_sub_eq_def by auto
+
+
+lemma l_sub_eq_sym:"sym l_sub_eq" 
+  unfolding l_sub_eq_def sym_def apply auto
+  using l_coset_equivs(2) by presburger
 lemma r_sub_eq_sym:"sym r_sub_eq" unfolding r_sub_eq_def apply(auto simp add:sym_def) using coset_eq_iff(4) by blast
 lemma l_sub_eq_trans:"trans l_sub_eq" unfolding l_sub_eq_def apply(auto simp add:trans_on_def)  by (metis coset_eq_iff(2))
 lemma r_sub_eq_trans:"trans r_sub_eq" unfolding r_sub_eq_def apply(auto simp add:trans_on_def)  by (metis coset_eq_iff(4))
 lemma l_sub_eqr:"is_eqrel G l_sub_eq"
-  by (meson is_eqrel_def l_sub_eq_refl l_sub_eq_sym l_sub_eq_trans refl_on_def) 
+  by (simp add: is_eqrel_def l_sub_eq_refl l_sub_eq_sym l_sub_eq_trans subgroup.l_sub_eq_refl2
+      subgroup_axioms)
 lemma r_sub_eqr:"is_eqrel G r_sub_eq"
-  by (meson is_eqrel_def r_sub_eq_refl r_sub_eq_sym r_sub_eq_trans refl_on_def)  
+  by (simp add: is_eqrel_def r_sub_eq_refl r_sub_eq_sym r_sub_eq_trans subgroup.r_sub_eq_refl2
+      subgroup_axioms)
 
 
 (*
@@ -10687,10 +10825,14 @@ end
 
 
 
-
+print_options
 print_commands
+find_unused_assms
 locale_deps
 unused_thms
 thm_deps group_operating_on_set.strict_stab_sub
 thm_oracles group_operating_on_set.strict_stab_sub
+print_quotientsQ3 
+print_quotmapsQ3
+print_quotients
 end
