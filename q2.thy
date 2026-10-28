@@ -1118,6 +1118,127 @@ qed
 end
 
 
-unused_thms
-find_unused_assms
+
+
+context magma_congruence
+begin
+
+lemma quotient_law_apply:
+  assumes "x \<in> X" "y \<in> X" shows "quotient_law (\<pi> x, \<pi> y) = \<pi> (law (x, y))"
+  using qlaw_apply[OF assms] assms by simp
+
+lemma quotient_magma: "magma Q quotient_law"
+proof (unfold_locales)
+  fix t s assume "t \<in> Q" "s \<in> Q"
+  then obtain x y where x: "x \<in> X" "t = \<pi> x" and y: "y \<in> X" "s = \<pi> y"
+    by (elim base_equivalence.ahhh_im_choosing_shit)
+  have lx: "law (x, y) \<in> X" by (rule base_magma.op_closed[OF x(1) y(1)])
+  have eq: "quotient_law (t, s) = \<pi> (law (x, y))"
+    unfolding x(2) y(2) by (rule quotient_law_apply[OF x(1) y(1)])
+  show "quotient_law (t, s) \<in> Q" unfolding eq by (rule base_equivalence.map_memI[OF lx])
+qed
+
+sublocale quotient: magma Q quotient_law
+  by (rule quotient_magma)
+
+end
+
+
+section \<open>Homomorphisms\<close>
+
+locale magma_hom = dom: magma X lawX + cod: magma Y lawY
+  for X :: "'a set" and lawX :: "'a \<times> 'a \<Rightarrow> 'a" and Y :: "'b set" and lawY :: "'b \<times> 'b \<Rightarrow> 'b" +
+  fixes f :: "'a \<Rightarrow> 'b"
+  assumes f_mor: "f \<in> set_mor X Y"
+    and f_hom: "\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f (lawX (x, y)) = lawY (f x, f y)"
+begin
+
+lemma f_maps: "x \<in> X \<Longrightarrow> f x \<in> Y"
+  using f_mor by blast
+
+lemma image_magma: "magma (f ` X) lawY"
+proof (unfold_locales)
+  fix a b assume "a \<in> f ` X" "b \<in> f ` X"
+  then obtain x y where "x \<in> X" "y \<in> X" "a = f x" "b = f y" by blast
+  then show "lawY (a, b) \<in> f ` X" by (simp add: f_hom[symmetric] dom.op_closed)
+qed
+
+
+lemma kernel_congruence: "magma_congruence X lawX (ker f X)"
+proof (rule magma_congruence.intro)
+  show "magma X lawX" by (rule dom.magma_axioms)
+  show eqr: "equivalence_relation X (ker f X)"
+    by (simp add: equivalence_relation.intro ker_is_equivalence)
+  show "magma_congruence_axioms X lawX (ker f X)"
+  proof (rule magma_congruence_axioms.intro, rule coarser_rel_imI)
+    fix u v assume uv: "(u, v) \<in> prod_rel X (ker f X) X (ker f X)"
+    obtain x1 x2 y1 y2 where u: "u = (x1, x2)" and v: "v = (y1, y2)" by (cases u, cases v)
+    have "(x1, y1) \<in> ker f X \<and> (x2, y2) \<in> ker f X"
+      using uv unfolding u v by (simp add: prod_rel_mem_iff[OF eqr eqr])
+    then have X: "x1 \<in> X" "x2 \<in> X" "y1 \<in> X" "y2 \<in> X" and eq: "f x1 = f y1" "f x2 = f y2"
+      by (auto simp: ker_def)
+    show "(lawX u, lawX v) \<in> ker f X"
+      unfolding u v by (rule ker_memI1[OF dom.op_closed dom.op_closed]) (simp_all add: X eq f_hom)
+  qed
+qed
+
+end
+
+
+
+
+context magma_hom
+begin
+
+interpretation ker: magma_congruence X lawX "ker f X"
+  by (rule kernel_congruence)
+
+
+
+abbreviation pr where "pr \<equiv> proj X (ker f X)"
+
+abbreviation induced where "induced \<equiv> qdf X Y (ker f X) f"
+
+lemma induced_proj: assumes "x \<in> X" shows "induced (pr x) = f x"
+proof -
+  have "f x = compose X induced pr x" by (rule fun_cong[OF canonical_ligma(3)[OF f_mor]])
+  then show ?thesis using assms by (simp add: compose_eq)
+qed
+
+lemma induced_mor: "induced \<in> set_mor (X / ker f X) Y"
+  and induced_inj: "inj_on induced (X / ker f X)"
+  and induced_image: "induced ` (X / ker f X) = f ` X"
+  by (rule canonical_ligma[OF f_mor])+
+
+lemma induced_mor_image: "induced \<in> set_mor (X / ker f X) (f ` X)"
+proof -
+  have "induced \<in> extensional (X / ker f X)" using induced_mor by (simp add: PiE_iff)
+  moreover have "induced \<in> Pi (X / ker f X) (\<lambda>_. f ` X)" using induced_image by blast
+  ultimately show ?thesis by (simp add: PiE_def)
+qed
+
+theorem first_isomorphism_magmas:
+  "magma_hom (X / ker f X) ker.quotient_law (f ` X) lawY induced"
+  "bij_betw induced (X / ker f X) (f ` X)"
+proof -
+  show "bij_betw induced (X / ker f X) (f ` X)"
+    using induced_inj induced_image by (simp add: bij_betw_def)
+  show "magma_hom (X / ker f X) ker.quotient_law (f ` X) lawY induced"
+  proof (rule magma_hom.intro[OF ker.quotient_magma image_magma], unfold_locales)
+    show "induced \<in> set_mor (X / ker f X) (f ` X)" by (rule induced_mor_image)
+    fix t s assume "t \<in> X / ker f X" "s \<in> X / ker f X"
+    then obtain x y where x: "x \<in> X" "t = pr x" and y: "y \<in> X" "s = pr y"
+      by (elim ker.base_equivalence.ahhh_im_choosing_shit)
+    have "induced (ker.quotient_law (t, s)) = induced (pr (lawX (x, y)))"
+      unfolding x(2) y(2) ker.quotient_law_apply[OF x(1) y(1)] ..
+    also have "\<dots> = f (lawX (x, y))" by (rule induced_proj[OF dom.op_closed[OF x(1) y(1)]])
+    also have "\<dots> = lawY (induced t, induced s)"
+      unfolding x(2) y(2) by (simp only: f_hom[OF x(1) y(1)] induced_proj[OF x(1)] induced_proj[OF y(1)])
+    finally show "induced (ker.quotient_law (t, s)) = lawY (induced t, induced s)" .
+  qed
+qed
+
+end
+
+
 end
