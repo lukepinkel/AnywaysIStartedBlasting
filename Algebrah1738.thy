@@ -376,34 +376,21 @@ end
 
 
 sublocale congruence \<subseteq> proj: magma_hom X mul quot qmul cls
-  rewrites "magma_hom.K X cls = R"
-proof -
-  show "magma_hom X (\<cdot>) quot (\<bullet>) cls" by (rule proj_hom)
-  then interpret proj: magma_hom X "(\<cdot>)" quot "(\<bullet>)" cls .
-  have K: "magma_hom.K X cls = {(x, y). x \<in> X \<and> y \<in> X \<and> cls x = cls y}" by (rule proj.K_def)
-  show "magma_hom.K X cls = R"
-  proof (intro set_eqI iffI)
-    fix u assume "u \<in> magma_hom.K X cls"
-    then obtain x y where "u = (x, y)" "x \<in> X" "y \<in> X" "cls x = cls y"
-      unfolding K by (cases u) auto
-    then show "u \<in> R" by (simp add: cls_eq_iff)
-  next
-    fix u assume "u \<in> R"
-    then obtain x y where u: "u = (x, y)" "(x, y) \<in> R" by (cases u) auto
-    then have "x \<in> X" "y \<in> X" using R_carrier by auto
-    then show "u \<in> magma_hom.K X cls" using u unfolding K by (simp add: cls_eq_iff)
-  qed
-qed
-
-sublocale magma_hom \<subseteq> ker: congruence X mul K
-  by (rule ker_congruence)
+  by (rule proj_hom)
 
 lemma (in congruence) quotient_monoid: "monoid X (\<cdot>) e \<Longrightarrow> monoid quot (\<bullet>) (cls e)"
   by (rule proj.surj_monoid[OF proj_surj])
 
 context magma_hom
 begin
-lemma first_iso_quotient:
+
+context
+begin
+
+interpretation ker: congruence X "(\<cdot>)" K
+  by (rule ker_congruence)
+
+theorem first_iso_quotient:
   obtains h where "magma_iso ker.quot ker.qmul (f ` X) (\<star>) h"
     and "\<And>x. x \<in> X \<Longrightarrow> h (ker.cls x) = f x"
 proof (rule first_iso[OF ker.proj_hom ker.proj_surj])
@@ -412,11 +399,21 @@ proof (rule first_iso[OF ker.proj_hom ker.proj_surj])
   also have "\<dots> \<longleftrightarrow> f x = f y" using xy by (simp add: K_def)
   finally show "ker.cls x = ker.cls y \<longleftrightarrow> f x = f y" .
 qed (rule that)
+
+end
+
 end
 
 context monoid_hom
 begin
-lemma first_iso_monoid:
+
+context
+begin
+
+interpretation ker: congruence X "(\<cdot>)" K
+  by (rule ker_congruence)
+
+theorem first_iso_monoid:
   obtains h where "magma_iso ker.quot ker.qmul (f ` X) (\<star>) h"
     and "monoid ker.quot ker.qmul (ker.cls e)" and "h (ker.cls e) = e'"
 proof (rule first_iso_quotient)
@@ -427,6 +424,9 @@ proof (rule first_iso_quotient)
   have "h (ker.cls e) = e'" by (simp add: h unit)
   with iso mon show thesis by (rule that)
 qed
+
+end
+
 end
 
 locale magma_u =
