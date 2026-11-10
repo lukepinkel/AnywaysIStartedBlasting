@@ -82,6 +82,25 @@ abbreviation lcro::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> '
 abbreviation lorc::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'a \<Rightarrow> 'a set"
   where "lorc R X a \<equiv> up_cl (dual R) X {a}"
 
+
+definition isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "isotone R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longrightarrow> (f x, f y) \<in> S)"
+
+abbreviation antitone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "antitone R X S \<equiv> isotone R X (dual S)"
+
+definition order_reflecting::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "order_reflecting R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (f x, f y) \<in> S \<longrightarrow> (x, y) \<in> R)"
+
+definition order_embedding::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "order_embedding R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longleftrightarrow> (f x, f y) \<in> S)"
+
+definition order_iso::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "order_iso R X S Y f \<longleftrightarrow> f ` X = Y \<and> order_embedding R X S f"
+
+definition strictly_isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
+  where "strictly_isotone R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longrightarrow> x \<noteq> y \<longrightarrow> (f x, f y) \<in> S \<and> f x \<noteq> f y)"
+
 lemma ubd_iff[simp]:"b \<in> ubd R X A \<longleftrightarrow> b \<in> X \<and> (\<forall>a\<in>A. (a, b) \<in> R)"
   by (simp add:ubd_def)
 
@@ -448,10 +467,38 @@ proof -
   show ?thesis unfolding Sup_def by (rule the_equality) (rule s, rule uniq)
 qed
 
-end
+lemma Inf_sub_eqI:"\<lbrakk>C \<subseteq> X; is_inf R C A s\<rbrakk> \<Longrightarrow> Inf R C A = s"
+  unfolding Inf_def using dual.poset_axioms poset.Sup_sub_eqI[of "dual R" X C A s] by simp
 
-lemma (in poset) Inf_sub_eqI:"\<lbrakk>C \<subseteq> X; is_inf R C A s\<rbrakk> \<Longrightarrow> Inf R C A = s"
-  unfolding Inf_def by (rule dual.Sup_sub_eqI)
+lemma closure_opI:
+  assumes A0:"\<And>x. x \<in> X \<Longrightarrow> f x \<in> X" and A1:"\<And>x. x \<in> X \<Longrightarrow> x \<le>' f x" and
+          A2:"\<And>x y. \<lbrakk>x \<in> X; y \<in> X; x \<le>' f y\<rbrakk> \<Longrightarrow> f x \<le>' f y"
+  shows "closure_op R X f"
+proof(unfold_locales)
+  show "\<And>x. x \<in> X \<Longrightarrow> f x \<in> X"
+    by (rule A0)
+  show "\<And>x. x \<in> X \<Longrightarrow> x \<le>' f x"
+    by (rule A1)
+  show "\<And>x y. \<lbrakk>x \<le>' y; x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> f x \<le>' f y"
+  proof-
+    fix x y assume B0:"x \<le>' y" and B1:"x \<in> X" and B2:"y \<in> X"
+    have "x \<le>' f y"
+      by (rule trans[OF B0 A1[OF B2] B1 B2 A0[OF B2]])
+    then show "f x \<le>' f y"
+      by (rule A2[OF B1 B2])
+  qed
+  show "\<And>x. x \<in> X \<Longrightarrow> f (f x) = f x"
+  proof-
+    fix x assume B0:"x \<in> X"
+    have "f (f x) \<le>' f x"
+      using A2[OF A0[OF B0] B0] A0[OF B0] by simp
+    moreover have "f x \<le>' f (f x)"
+      by (rule A1[OF A0[OF B0]])
+    ultimately show "f (f x) = f x"
+      using A0[OF B0] A0[OF A0[OF B0]] by (intro antisym) simp_all
+  qed
+qed
+end
 
 locale closure_range = poset +
   fixes C::"'a set"
@@ -1312,13 +1359,16 @@ next
   with d show ?case by auto
 qed
 
+
+
+lemma  dir_finite_bound_dual:
+  "\<lbrakk>is_dir (dual R) D; D \<subseteq> X; finite A; A \<noteq> {}; A \<subseteq> D\<rbrakk> \<Longrightarrow> \<exists>c\<in>D. \<forall>a\<in>A. c \<le>' a"
+  using dual.poset_axioms poset.dir_finite_bound by fastforce
 end
 
-lemma (in poset) dir_finite_bound_dual:
-  "\<lbrakk>is_dir (dual R) D; D \<subseteq> X; finite A; A \<noteq> {}; A \<subseteq> D\<rbrakk> \<Longrightarrow> \<exists>c\<in>D. \<forall>a\<in>A. c \<le>' a"
-  by (rule dual.dir_finite_bound)
-
-lemma (in sup_semilattice) sup_closed_dir:
+context sup_semilattice
+begin
+lemma  sup_closed_dir:
   assumes D:"D \<subseteq> X" and cl:"\<And>a b. \<lbrakk>a \<in> D; b \<in> D\<rbrakk> \<Longrightarrow> a \<or>' b \<in> D"
   shows "is_dir R D"
   unfolding is_dir_def
@@ -1328,8 +1378,6 @@ proof (intro ballI)
   with cl[OF ab] show "\<exists>c\<in>D. a \<le>' c \<and> b \<le>' c" by (intro bexI[of _ "a \<or>' b"]) auto
 qed
 
-context sup_semilattice
-begin
 lemma base_dir:"is_dir R X"
   by (rule sup_closed_dir) auto
 end
@@ -1458,27 +1506,13 @@ qed
 lemma lcro_inj:"\<lbrakk>a \<in> X; b \<in> X; lcro R X a = lcro R X b\<rbrakk> \<Longrightarrow> a = b"
   by (intro antisym) (auto simp:lcro_anti_iff)
 
+lemma up_cl_dir:
+  assumes A0:"is_dir (dual R) A" and A1:"A \<subseteq> X"
+  shows "is_dir (dual R) (up_cl R X A)"
+  by (simp add: A0 A1 up_cl_dwdir)
 end
 
 
-
-definition isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "isotone R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longrightarrow> (f x, f y) \<in> S)"
-
-abbreviation antitone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "antitone R X S \<equiv> isotone R X (dual S)"
-
-definition order_reflecting::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "order_reflecting R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (f x, f y) \<in> S \<longrightarrow> (x, y) \<in> R)"
-
-definition order_embedding::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "order_embedding R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longleftrightarrow> (f x, f y) \<in> S)"
-
-definition order_iso::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> 'b set \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "order_iso R X S Y f \<longleftrightarrow> f ` X = Y \<and> order_embedding R X S f"
-
-definition strictly_isotone::"'a rel \<Rightarrow> 'a set \<Rightarrow> 'b rel \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool"
-  where "strictly_isotone R X S f \<longleftrightarrow> (\<forall>x\<in>X. \<forall>y\<in>X. (x, y) \<in> R \<longrightarrow> x \<noteq> y \<longrightarrow> (f x, f y) \<in> S \<and> f x \<noteq> f y)"
 
 lemma isotoneI:"(\<And>x y. \<lbrakk>x \<in> X; y \<in> X; (x, y) \<in> R\<rbrakk> \<Longrightarrow> (f x, f y) \<in> S) \<Longrightarrow> isotone R X S f"
   and isotoneD:"\<lbrakk>isotone R X S f; x \<in> X; y \<in> X; (x, y) \<in> R\<rbrakk> \<Longrightarrow> (f x, f y) \<in> S"
@@ -1633,6 +1667,198 @@ lemma strict_part_iff[simp]:"(x, y) \<in> strict_part R X \<longleftrightarrow> 
   and reflcl_on_iff[simp]:"(x, y) \<in> reflcl_on S X \<longleftrightarrow> x \<in> X \<and> y \<in> X \<and> ((x, y) \<in> S \<or> x = y)"
   by (auto simp:strict_part_def reflcl_on_def)
 
+
+
+locale csup_semilattice = poset +
+  assumes ex_csup:"\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_sup R X A s"
+
+locale cinf_semilattice = poset +
+  assumes ex_cinf:"\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>s. is_inf R X A s"
+
+sublocale csup_semilattice \<subseteq> sup_semilattice
+  by unfold_locales (simp add:ex_csup)
+
+sublocale cinf_semilattice \<subseteq> inf_semilattice
+  by unfold_locales (simp add:ex_cinf)
+
+sublocale csup_semilattice \<subseteq> dual:cinf_semilattice "dual R" X
+  rewrites "dual (dual R) = R" and "\<And>a b. (a, b) \<in> dual R \<longleftrightarrow> (b, a) \<in> R"
+    and "Sup (dual R) X = Inf R X" and "Inf (dual R) X = Sup R X"
+    and "sup (dual R) X = inf R X" and "inf (dual R) X = sup R X"
+proof -
+  show "cinf_semilattice (dual R) X"
+    by unfold_locales (simp add:ex_csup)
+qed (simp_all add:dual_ops)
+
+sublocale cinf_semilattice \<subseteq> dual:csup_semilattice "dual R" X
+  rewrites "dual (dual R) = R" and "\<And>a b. (a, b) \<in> dual R \<longleftrightarrow> (b, a) \<in> R"
+    and "Sup (dual R) X = Inf R X" and "Inf (dual R) X = Sup R X"
+    and "sup (dual R) X = inf R X" and "inf (dual R) X = sup R X"
+proof -
+  show "csup_semilattice (dual R) X"
+    by unfold_locales (simp add:ex_cinf)
+qed (simp_all add:dual_ops)
+
+sublocale complete_lattice_on \<subseteq> csup_semilattice
+  by unfold_locales (simp add:ex_SupIn)
+
+sublocale complete_lattice_on \<subseteq> cinf_semilattice
+  by unfold_locales (simp add:ex_InfIn)
+
+context csup_semilattice
+begin
+
+lemma csup_SupIn:"\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> is_sup R X A (SupIn A)"
+  by (rule is_sup_SupIn[OF ex_csup])
+
+lemma csup_SupIn_base:"\<lbrakk>A \<subseteq> X; A \<noteq> {}\<rbrakk> \<Longrightarrow> SupIn A \<in> X"
+  and csup_SupIn_upper:"\<lbrakk>A \<subseteq> X; A \<noteq> {}; a \<in> A\<rbrakk> \<Longrightarrow> a \<le>' SupIn A"
+  and csup_SupIn_least:"\<lbrakk>A \<subseteq> X; A \<noteq> {}; b \<in> X; \<And>a. a \<in> A \<Longrightarrow> a \<le>' b\<rbrakk> \<Longrightarrow> SupIn A \<le>' b"
+  using csup_SupIn[of A] by (auto simp:is_sup_iff)
+
+lemma csup_SupIn_iso:"\<lbrakk>A \<noteq> {}; A \<subseteq> B; B \<subseteq> X\<rbrakk> \<Longrightarrow> SupIn A \<le>' SupIn B"
+  by (rule is_sup_iso[OF csup_SupIn csup_SupIn]) auto
+
+lemma csup_greatest:
+  assumes A0:"X \<noteq> {}"
+  shows "is_greatest R X (SupIn X)"
+  using csup_SupIn[OF _ A0] by (auto simp:is_sup_iff is_greatest_iff)
+
+lemma complete_if_least:
+  assumes A0:"is_least R X bt"
+  shows "complete_lattice_on R X"
+proof(unfold_locales)
+  fix A assume A1:"A \<subseteq> X"
+  show "\<exists>s. is_sup R X A s"
+  proof(cases "A = {}")
+    case True
+    then have "is_sup R X A bt"
+      using A0 by (auto simp:is_sup_iff is_least_iff)
+    then show ?thesis
+      by blast
+  next
+    case False
+    then show ?thesis
+      using ex_csup[OF A1] by simp
+  qed
+qed
+
+end
+
+lemma (in complete_lattice_on) SupIn_sub_le:
+  assumes A0:"complete_lattice_on R Y" and A1:"Y \<subseteq> X" and A2:"A \<subseteq> Y"
+  shows "SupIn A \<le>' Sup R Y A"
+proof-
+  have B0:"is_sup R Y A (Sup R Y A)"
+    by (rule poset.is_sup_SupIn[OF complete_lattice_on.axioms(1)[OF A0] complete_lattice_on.ex_SupIn[OF A0 A2]])
+  then have B1:"Sup R Y A \<in> X" and B2:"\<And>a. a \<in> A \<Longrightarrow> (a, Sup R Y A) \<in> R"
+    using A1 by (auto simp:is_sup_iff)
+  show ?thesis
+    using B1 B2 A1 A2 by (intro SupIn_least ex_SupIn) auto
+qed
+
+lemma (in complete_lattice_on) InfIn_sub_ge:
+  assumes A0:"complete_lattice_on R Y" and A1:"Y \<subseteq> X" and A2:"A \<subseteq> Y"
+  shows "Inf R Y A \<le>' InfIn A"
+proof-
+  have B0:"complete_lattice_on (dual R) Y"
+  proof-
+    interpret sub:complete_lattice_on R Y
+      by (rule A0)
+    show ?thesis
+      by (rule sub.dual.complete_lattice_on_axioms)
+  qed
+  have "(Sup (dual R) Y A, InfIn A) \<in> R"
+    using dual.SupIn_sub_le[OF B0 A1 A2] by simp
+  then show ?thesis
+    by (simp add:dual_ops)
+qed
+definition equivs::"'a set \<Rightarrow> 'a rel set"
+  where "equivs X = {E. equiv X E}"
+
+lemma equivs_memI:"equiv X E \<Longrightarrow> E \<in> equivs X"
+  and equivs_memD:"E \<in> equivs X \<Longrightarrow> equiv X E"
+  by (simp_all add:equivs_def)
+
+lemma equivs_base:"equivs X \<subseteq> Pow (X \<times> X)"
+  by (auto simp:equivs_def equiv_def refl_on_def)
+
+lemma equivs_whole:"X \<times> X \<in> equivs X"
+  by (auto simp:equivs_def equiv_def refl_on_def sym_def trans_def)
+
+lemma equivs_diag:"Id_on X \<in> equivs X"
+  by (auto simp:equivs_def equiv_def refl_on_def sym_def trans_def)
+
+lemma equivs_Inter:
+  assumes A0:"\<E> \<subseteq> equivs X" and A1:"\<E> \<noteq> {}"
+  shows "\<Inter>\<E> \<in> equivs X"
+proof-
+  have B0:"\<And>E. E \<in> \<E> \<Longrightarrow> E \<subseteq> X \<times> X"
+    using A0 equivs_base by blast
+  have B1:"\<And>E x. \<lbrakk>E \<in> \<E>; x \<in> X\<rbrakk> \<Longrightarrow> (x, x) \<in> E"
+    using A0 by (auto simp:equivs_def equiv_def refl_on_def)
+  have B2:"\<And>E x y. \<lbrakk>E \<in> \<E>; (x, y) \<in> E\<rbrakk> \<Longrightarrow> (y, x) \<in> E"
+    using A0 by (auto simp:equivs_def equiv_def sym_def)
+  have B3:"\<And>E x y z. \<lbrakk>E \<in> \<E>; (x, y) \<in> E; (y, z) \<in> E\<rbrakk> \<Longrightarrow> (x, z) \<in> E"
+    using A0 unfolding equivs_def equiv_def trans_def by blast
+  have C0:"\<Inter>\<E> \<subseteq> X \<times> X"
+    using A1 B0 by blast
+  have C1:"\<forall>x\<in>X. (x, x) \<in> \<Inter>\<E>"
+    using B1 by blast
+  have C2:"\<forall>x y. (x, y) \<in> \<Inter>\<E> \<longrightarrow> (y, x) \<in> \<Inter>\<E>"
+    using B2 by blast
+  have C3:"\<forall>x y z. (x, y) \<in> \<Inter>\<E> \<longrightarrow> (y, z) \<in> \<Inter>\<E> \<longrightarrow> (x, z) \<in> \<Inter>\<E>"
+  proof(intro allI impI)
+    fix x y z assume "(x, y) \<in> \<Inter>\<E>" and "(y, z) \<in> \<Inter>\<E>"
+    then have "\<And>E. E \<in> \<E> \<Longrightarrow> (x, z) \<in> E"
+      using B3 by blast
+    then show "(x, z) \<in> \<Inter>\<E>"
+      by blast
+  qed
+  show ?thesis
+    unfolding equivs_def equiv_def refl_on_def sym_def trans_def mem_Collect_eq
+    using C0 C1 C2 C3 by blast
+qed
+
+theorem equivs_moore:"moore_family (X \<times> X) (equivs X)"
+  by unfold_locales (simp_all add:equivs_base equivs_whole equivs_Inter)
+
+lemma equivs_clattice:"complete_lattice_on subset_order (equivs X)"
+proof-
+  interpret m:moore_family "X \<times> X" "equivs X"
+    by (rule equivs_moore)
+  show ?thesis
+    by (rule m.closed.complete_lattice_on_axioms)
+qed
+
+lemma equivs_least:"is_least subset_order (equivs X) (Id_on X)"
+  and equivs_greatest:"is_greatest subset_order (equivs X) (X \<times> X)"
+  using equivs_diag equivs_whole equivs_base by (auto simp:is_least_iff is_greatest_iff equivs_def equiv_def refl_on_def)
+
+
+
+lemma galois_connI:
+  assumes px:"poset R X" and py:"poset S Y" and fm:"\<And>x. x \<in> X \<Longrightarrow> f x \<in> Y" and gm:"\<And>y. y \<in> Y \<Longrightarrow> g y \<in> X" and
+          af:"antitone R X S f" and ag:"antitone S Y R g" and
+          ef:"\<And>x. x \<in> X \<Longrightarrow> (x, g (f x)) \<in> R" and eg:"\<And>y. y \<in> Y \<Longrightarrow> (y, f (g y)) \<in> S"
+  shows "galois_conn R X S Y f g"
+proof(intro galois_conn.intro galois_conn_axioms.intro px py fm gm)
+  fix x y assume xmem:"x \<in> X" and ymem:"y \<in> Y"
+  show "(x, g y) \<in> R \<longleftrightarrow> (y, f x) \<in> S"
+  proof
+    assume "(x, g y) \<in> R"
+    then have "(f (g y), f x) \<in> S"
+      using af xmem gm[OF ymem] by (simp add:isotone_def)
+    then show "(y, f x) \<in> S"
+      using poset.trans[OF py eg[OF ymem] _ ymem fm[OF gm[OF ymem]] fm[OF xmem]] by simp
+  next
+    assume "(y, f x) \<in> S"
+    then have "(g (f x), g y) \<in> R"
+      using ag ymem fm[OF xmem] by (simp add:isotone_def)
+    then show "(x, g y) \<in> R"
+      using poset.trans[OF px ef[OF xmem] _ xmem gm[OF fm[OF xmem]] gm[OF ymem]] by simp
+  qed
+qed
 locale strict_poset =
   fixes S::"'a rel" and X::"'a set"
   assumes irrefl:"x \<in> X \<Longrightarrow> (x, x) \<notin> S"
@@ -2279,6 +2505,83 @@ proof -
     show "x \<in> fcl (\<Union>\<F>)" using g F by (intro fclI[of _ "g ` \<F>"]) auto
   qed
   then show ?thesis using F by (simp add:filters_SupIn_eq)
+qed
+
+lemma lcro_InfIn_SupIn:"\<lbrakk>finite F; F \<noteq> {}; F \<subseteq> X\<rbrakk> \<Longrightarrow> filters.closed.SupIn (lcro R X ` F) = lcro R X (InfIn F)"
+  by (rule filters.closed.SupIn_eqI) (rule lcro_InfIn_is_sup)
+
+lemma filter_SupIn_lcro:
+  assumes F:"filter_on R X F"
+  shows "filters.closed.SupIn (lcro R X ` F) = F"
+proof-
+  have B0:"lcro R X ` F \<subseteq> filters"
+    using lcro_filter filter_base[OF F] by auto
+  have B1:"lcro R X ` F \<noteq> {}"
+    using filter_ne[OF F] by simp
+  have B2:"\<Union>(lcro R X ` F) = F"
+  proof
+    show "\<Union>(lcro R X ` F) \<subseteq> F"
+      using F unfolding filter_on_def by (auto simp:lcro_iff)
+    show "F \<subseteq> \<Union>(lcro R X ` F)"
+    proof
+      fix x assume "x \<in> F"
+      then have "x \<in> X"
+        using filter_base[OF F] by blast
+      then have "x \<in> lcro R X x"
+        by (simp add:lcro_iff)
+      then show "x \<in> \<Union>(lcro R X ` F)"
+        using \<open>x \<in> F\<close> by blast
+    qed
+  qed
+  have "filters.closed.SupIn (lcro R X ` F) = fcl F"
+    using filters_SupIn_eq[OF B0 B1] B2 by simp
+  also have "... = F"
+    using fcl_least[OF F] fcl_extensive[OF filter_base[OF F]] by blast
+  finally show ?thesis .
+qed
+
+lemma filters_Inter_SupIn:
+  assumes F:"\<F> \<subseteq> filters" "\<F> \<noteq> {}" "finite \<F>"
+  shows "\<Inter>\<F> = {SupIn (g ` \<F>)|g. \<forall>F\<in>\<F>. g F \<in> F}" (is "?L = ?R")
+proof
+  have fil:"\<And>F. F \<in> \<F> \<Longrightarrow> filter_on R X F"
+    using F(1) by blast
+  show "?L \<subseteq> ?R"
+  proof
+    fix x assume L0:"x \<in> ?L"
+    obtain F0 where F0:"F0 \<in> \<F>"
+      using F(2) by blast
+    then have xX:"x \<in> X"
+      using L0 filter_base[OF fil[OF F0]] by blast
+    have "(\<lambda>F. x) ` \<F> = {x}"
+      using F(2) by auto
+    then have "x = SupIn ((\<lambda>F. x) ` \<F>)"
+      using SupIn_singleton[OF xX] by simp
+    moreover have "\<forall>F\<in>\<F>. (\<lambda>F. x) F \<in> F"
+      using L0 by blast
+    ultimately show "x \<in> ?R"
+      by blast
+  qed
+  show "?R \<subseteq> ?L"
+  proof
+    fix x assume "x \<in> ?R"
+    then obtain g where g:"\<forall>F\<in>\<F>. g F \<in> F" and x:"x = SupIn (g ` \<F>)"
+      by blast
+    have gX:"g ` \<F> \<subseteq> X"
+      using g fil filter_base by blast
+    have "\<And>F. F \<in> \<F> \<Longrightarrow> x \<in> F"
+    proof-
+      fix F assume Fm:"F \<in> \<F>"
+      have "g F \<le>' SupIn (g ` \<F>)"
+        using F(2,3) gX Fm by (intro finite_SupIn_upper) auto
+      moreover have "SupIn (g ` \<F>) \<in> X"
+        using F(2,3) gX by simp
+      ultimately show "x \<in> F"
+        using fil[OF Fm] g Fm x unfolding filter_on_def by blast
+    qed
+    then show "x \<in> ?L"
+      using F(2) by blast
+  qed
 qed
 
 end
@@ -3187,6 +3490,112 @@ end
 context distributive_lattice_top
 begin
 
+lemma filters_SupIn_dist:
+  assumes F:"\<F> \<subseteq> filters" "\<F> \<noteq> {}" "finite \<F>"
+  shows "filters.closed.SupIn \<F> = {InfIn (g ` \<F>)|g. \<forall>F\<in>\<F>. g F \<in> F}" (is "?L = ?R")
+proof
+  have fil:"\<And>F. F \<in> \<F> \<Longrightarrow> filter_on R X F"
+    using F(1) by blast
+  show "?L \<subseteq> ?R"
+  proof
+    fix x assume "x \<in> ?L"
+    then obtain g where x:"x \<in> X" and g:"\<forall>F\<in>\<F>. g F \<in> F" and le:"InfIn (g ` \<F>) \<le>' x"
+      using filters_SupIn_finite[OF F] by blast
+    have gX:"g ` \<F> \<subseteq> X"
+      using g fil filter_base by blast
+    have iX:"InfIn (g ` \<F>) \<in> X"
+      using F(2,3) gX by (intro finite_InfIn_base) auto
+    have "x = x \<or>' InfIn (g ` \<F>)"
+      using le_iff_sup[OF iX x] le sup_commute[of x] by simp
+    also have "... = InfIn ((\<lambda>a. x \<or>' a) ` (g ` \<F>))"
+      using F(2,3) gX by (intro sup_InfIn_finite[OF x]) auto
+    also have "... = InfIn ((\<lambda>F. x \<or>' g F) ` \<F>)"
+      by (simp add:image_image)
+    finally have B0:"x = InfIn ((\<lambda>F. x \<or>' g F) ` \<F>)" .
+    have "\<forall>F\<in>\<F>. x \<or>' g F \<in> F"
+    proof
+      fix F assume Fm:"F \<in> \<F>"
+      have "g F \<in> X"
+        using g Fm gX by blast
+      then have "g F \<le>' x \<or>' g F" and "x \<or>' g F \<in> X"
+        using x sup_ge2 sup_closed by simp_all
+      then show "x \<or>' g F \<in> F"
+        using fil[OF Fm] g Fm unfolding filter_on_def by blast
+    qed
+    then show "x \<in> ?R"
+      using B0 by blast
+  qed
+  show "?R \<subseteq> ?L"
+  proof
+    fix x assume "x \<in> ?R"
+    then obtain g where g:"\<forall>F\<in>\<F>. g F \<in> F" and x:"x = InfIn (g ` \<F>)"
+      by blast
+    have gX:"g ` \<F> \<subseteq> X"
+      using g fil filter_base by blast
+    have "InfIn (g ` \<F>) \<in> X"
+      using F(2,3) gX by (intro finite_InfIn_base) auto
+    then show "x \<in> ?L"
+      using filters_SupIn_finite[OF F] g x refl by blast
+  qed
+qed
+
+lemma filters_SupIn_dist2:
+  assumes F:"\<F> \<subseteq> filters" "\<F> \<noteq> {}"
+  shows "filters.closed.SupIn \<F> = {InfIn G|G. finite G \<and> G \<noteq> {} \<and> G \<subseteq> \<Union>\<F>}" (is "?L = ?R")
+proof
+  have fil:"\<And>F. F \<in> \<F> \<Longrightarrow> filter_on R X F"
+    using F(1) by blast
+  have UX:"\<Union>\<F> \<subseteq> X"
+    using fil filter_base by blast
+  have B0:"?L = fcl (\<Union>\<F>)"
+    by (rule filters_SupIn_eq[OF F])
+  show "?L \<subseteq> ?R"
+  proof
+    fix x assume "x \<in> ?L"
+    then obtain G where x:"x \<in> X" and G:"G \<subseteq> \<Union>\<F>" "finite G" "G \<noteq> {}" and le:"InfIn G \<le>' x"
+      using B0 by (auto simp:fcl_def)
+    have GX:"G \<subseteq> X"
+      using G UX by blast
+    have iX:"InfIn G \<in> X"
+      using G GX by (intro finite_InfIn_base) auto
+    have "x = x \<or>' InfIn G"
+      using le_iff_sup[OF iX x] le sup_commute[of x] by simp
+    also have "... = InfIn ((\<lambda>a. x \<or>' a) ` G)"
+      using G GX by (intro sup_InfIn_finite[OF x]) auto
+    finally have B1:"x = InfIn ((\<lambda>a. x \<or>' a) ` G)" .
+    have "(\<lambda>a. x \<or>' a) ` G \<subseteq> \<Union>\<F>"
+    proof
+      fix y assume "y \<in> (\<lambda>a. x \<or>' a) ` G"
+      then obtain a where a:"a \<in> G" and y:"y = x \<or>' a"
+        by blast
+      then obtain F where Fm:"F \<in> \<F>" and aF:"a \<in> F"
+        using G(1) by blast
+      have "a \<in> X"
+        using a GX by blast
+      then have "a \<le>' x \<or>' a" and "x \<or>' a \<in> X"
+        using x sup_ge2 sup_closed by simp_all
+      then have "x \<or>' a \<in> F"
+        using fil[OF Fm] aF unfolding filter_on_def by blast
+      then show "y \<in> \<Union>\<F>"
+        using Fm y by blast
+    qed
+    moreover have "finite ((\<lambda>a. x \<or>' a) ` G)" and "(\<lambda>a. x \<or>' a) ` G \<noteq> {}"
+      using G by simp_all
+    ultimately show "x \<in> ?R"
+      using B1 by blast
+  qed
+  show "?R \<subseteq> ?L"
+  proof
+    fix x assume "x \<in> ?R"
+    then obtain G where G:"G \<subseteq> \<Union>\<F>" "finite G" "G \<noteq> {}" and x:"x = InfIn G"
+      by blast
+    have "InfIn G \<in> X"
+      using G UX by (intro finite_InfIn_base) auto
+    then show "x \<in> ?L"
+      using B0 G x refl by (auto simp:fcl_def)
+  qed
+qed
+
 lemma meet_irr_filter_prime:
   assumes F:"filter_on R X F" and irr:"filters.closed.meet_irr F"
   shows "sup_prime F"
@@ -3583,6 +3992,9 @@ proof (intro ballI impI)
   qed
 qed
 
+lemma grill_singleton:"x \<in> X \<Longrightarrow> grill X {{x}} = lcro subset_order (Pow X) {x}"
+  by (auto simp:grill_iff lcro_iff)
+
 lemma grill_empty:"grill X {} = Pow X"
   and grill_whole:"grill X {X} = {B. B \<subseteq> X \<and> B \<noteq> {}}"
   by (auto simp:grill_iff Int_absorb1)
@@ -3802,6 +4214,59 @@ lemma not_le_iff:"\<lbrakk>x \<in> X; y \<in> X\<rbrakk> \<Longrightarrow> \<not
 
 lemma total_sub:assumes "Y \<subseteq> X" shows "total_order R Y"
   by (rule total_order.intro[OF poset_sub[OF assms]]) (unfold_locales, use assms total in blast)
+
+lemma strictly_isotone_embedding:
+  assumes S:"poset S Y" and fm:"f ` X \<subseteq> Y" and si:"strictly_isotone R X S f"
+  shows "order_embedding R X S f"
+proof-
+  interpret cod:poset S Y
+    by (rule S)
+  show ?thesis
+    unfolding order_embedding_def
+  proof(intro ballI)
+    fix x y assume x:"x \<in> X" and y:"y \<in> X"
+    show "(x, y) \<in> R \<longleftrightarrow> (f x, f y) \<in> S"
+    proof
+      assume "(x, y) \<in> R"
+      then show "(f x, f y) \<in> S"
+        using si x y fm by (cases "x = y") (auto simp:strictly_isotone_def)
+    next
+      assume A0:"(f x, f y) \<in> S"
+      show "(x, y) \<in> R"
+      proof(rule ccontr)
+        assume "(x, y) \<notin> R"
+        then have "(y, x) \<in> R" and "x \<noteq> y"
+          using total[OF x y] x by auto
+        then have B0:"(f y, f x) \<in> S" and B1:"f y \<noteq> f x"
+          using si x y by (auto simp:strictly_isotone_def)
+        have "f x \<in> Y" and "f y \<in> Y"
+          using fm x y by auto
+        then have "f x = f y"
+          using cod.antisym[OF A0 B0] by simp
+        then show False
+          using B1 by simp
+      qed
+    qed
+  qed
+qed
+
+lemma strictly_isotone_inj:
+  assumes S:"poset S Y" and fm:"f ` X \<subseteq> Y" and si:"strictly_isotone R X S f"
+  shows "inj_on f X"
+  using order_embedding_inj[OF strictly_isotone_embedding[OF S fm si]] poset.refl[OF S] fm by blast
+
+lemma strictly_isotone_total:
+  assumes S:"poset S Y" and fm:"f ` X = Y" and si:"strictly_isotone R X S f"
+  shows "total_order S Y"
+proof(rule total_order.intro[OF S], unfold_locales)
+  fix u v assume "u \<in> Y" and "v \<in> Y"
+  then obtain x y where x:"x \<in> X" and y:"y \<in> X" and u:"u = f x" and v:"v = f y"
+    using fm by blast
+  have emb:"order_embedding R X S f"
+    using strictly_isotone_embedding[OF S _ si] fm by blast
+  then show "(u, v) \<in> S \<or> (v, u) \<in> S"
+    using total[OF x y] x y u v by (auto simp:order_embedding_def)
+qed
 
 end
 
